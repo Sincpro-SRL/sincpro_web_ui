@@ -7,7 +7,7 @@ make init
 make test
 ```
 
-Node 22 or newer. Tests run straight over the TypeScript sources with `node --test`.
+Node 26 (the active LTS) or newer — `nvm use` reads `.nvmrc`. Tests run straight over the TypeScript sources with `node --test`.
 
 ## Before you open a pull request
 

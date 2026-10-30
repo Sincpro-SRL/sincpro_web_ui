@@ -1,0 +1,1025 @@
+/* Latin and latin-ext only. A face that covers á, é, ñ in one file and drops
+ * them in the next is why a sentence looks like two fonts. Cyrillic and Greek
+ * stay out: they are not this product. */
+@import "@fontsource/ibm-plex-sans/latin-400.css";
+@import "@fontsource/ibm-plex-sans/latin-ext-400.css";
+@import "@fontsource/ibm-plex-sans/latin-500.css";
+@import "@fontsource/ibm-plex-sans/latin-ext-500.css";
+@import "@fontsource/ibm-plex-sans/latin-600.css";
+@import "@fontsource/ibm-plex-sans/latin-ext-600.css";
+@import "@fontsource/ibm-plex-mono/latin-400.css";
+@import "@fontsource/ibm-plex-mono/latin-ext-400.css";
+@import "@fontsource/ibm-plex-mono/latin-500.css";
+@import "@fontsource/ibm-plex-mono/latin-ext-500.css";
+
+@import "tailwindcss";
+
+/* The variants React Aria's states are styled with — `pressed:`, `selected:`,
+ * `focus-visible:`, `placement-bottom:` — read from its data attributes. Declared here so a
+ * consumer that imports this file gets them without configuring anything. */
+@plugin "tailwindcss-react-aria-components";
+
+/* The components are written with Tailwind classes, so Tailwind has to read them. The path
+ * is relative to THIS file: in the repo it is src/, once published it is the package dist/
+ * inside node_modules — which Tailwind skips unless told. Importing this file is the whole
+ * setup a consumer needs. */
+@source ".";
+
+/* ==================================================================== *
+ *  LIGHT THEME
+ *
+ *  Every contrast ratio below is MEASURED (WCAG 2.1, relative luminance
+ *  formula) against `--color-ground` = #FAF9F7. The number is written next to
+ *  each token because a token without its number invites someone to use it
+ *  where it cannot be read.
+ *
+ *  Tailwind v4: there is no tailwind.config.js and no postcss config. It all
+ *  lives here.
+ * ==================================================================== */
+@theme {
+  /* WARM white, not pure white: #FFFFFF on a full screen tires the eye and
+     cheapens the piece. It is called `ground` and not `base` because
+     `text-base` is already a Tailwind font size and the name would clash. */
+  --color-ground: #faf9f7;
+
+  /* The raised surface IS white — that is what separates it from the ground.
+     Elevation here is done with a hairline border, not with a shadow: a shadow
+     on a light background is dirty grey. */
+  --color-surface: #ffffff;
+
+  /* The two hairlines. WARM grey — a neutral grey against a warm ground looks
+     bluish. They are not text: 1.26:1 and 1.49:1 on the ground, which is
+     exactly what a line that separates without shouting should measure. */
+  --color-line: #e4dfd7; /* 1.26:1 — common separator */
+  --color-line-strong: #d5cec2; /* 1.49:1 — border of a box, table header */
+
+  /* Text: warm near-black. 16.96:1 on the ground, 17.85:1 on white. */
+  --color-ink: #1a1714;
+
+  /* Faint text — labels, metadata, units. 5.56:1 on the ground and 5.85:1 on
+     white: it passes AA for small text, which is exactly where it is used. The
+     #8A8178 from the dark theme gave 3.63:1 here and was discarded. */
+  --color-muted: #6b6459;
+
+  /* ---------------------------------------------------------------- *
+   *  THE GOLD — and the rule that governs it on light.
+   *
+   *  #C89B3C on #FAF9F7 gives 2.43:1. That is NOT enough for small text
+   *  (4.5:1), nor for large text (3:1), nor even for an icon or a border that
+   *  has to mean something (1.4.11, 3:1).
+   *
+   *  So on light the gold is used in TWO places and nowhere else:
+   *    · as the BACKGROUND of the primary action, with `ink` text on top → 6.98:1
+   *    · as a purely decorative 1px rule, next to nothing that has to be read.
+   *
+   *  Never as a text color, never as the color of an icon that informs, never
+   *  as the border that marks a state. If the gold needs to say something, it
+   *  is the dark text on top of it that says it.
+   * ---------------------------------------------------------------- */
+  --color-accent: #c89b3c; /* 2.43:1 on the ground → NEVER text */
+  --color-accent-hover: #b88a2e; /* on light the hover DARKENS: ink on top gives 5.71:1 */
+
+  /* The text ON the gold. It is its own token and not `ink` because `ink` flips
+     to a light colour in the dark theme, and light text on gold is 2.4:1: the
+     primary action would stop being readable the moment the theme changed. The
+     gold button is dark-on-gold in BOTH themes. */
+  --color-on-accent: #1a1714; /* 6.98:1 on the gold */
+
+  /* Data blue. On light the brand blue reads in full, without lightening it:
+     13.52:1. In the dark theme it had to be lightened to #3D5CA8 so that a 6px
+     bar would exist; here that problem does not exist. */
+  --color-data: #1b2a4a; /* 13.52:1 */
+
+  /* ---------------------------------------------------------------- *
+   *  THE ACTION ROLES — «it is in only 2 colors and does not have many
+   *  calls to action», and that was true.
+   *
+   *  The interface had grey and gold. Gold at 2.43:1 cannot say anything, so
+   *  everything that was an action ended up drawn with `data` (#1B2A4A) — a
+   *  blue so dark that next to `ink` (#1A1714) it IS INDISTINGUISHABLE. That
+   *  is: the palette had one action color and that color read as text. What
+   *  looks like text does not get clicked.
+   *
+   *  The fix is not to add decorative colors: it is to give each ROLE its own
+   *  color, and to measure it. Five roles and not one more:
+   *
+   *    primary  — what the screen wants you to press (background or text)
+   *    secondary— the action with weight but without urgency (box + `primary`)
+   *    danger   — what destroys something and cannot be undone
+   *    info     — what informs without being a state of the data
+   *    good/warn/bad — the three states, which already existed
+   *
+   *  `data` is NOT touched and is NOT an action: it remains the color of the
+   *  DATA — a bar, a series, an axis. That the data and the button shared a
+   *  color is what kept either of them from meaning anything.
+   * ---------------------------------------------------------------- */
+
+  /* The action. It serves both purposes at once — as TEXT on the ground and as a
+     BACKGROUND with white on top. A color that only works as a background forces
+     you to keep two blues; this is a single one.
+
+     It used to be a saturated royal blue (#1a4fa0, 216°) "so it looks blue at a
+     glance". Next to the chrome navy (224°) that made TWO unrelated blues on every
+     screen — the bar one family, every link and selected day another — and the
+     product read as assembled, not designed. It is now the chrome's own navy,
+     less saturated: still clearly blue, one family with the bar, and it reads
+     BETTER — 8.26:1 as text (was 7.48:1), white on top 8.69:1 (was 7.87:1). */
+  --color-primary: #2a4a85; /* 8.26:1 · white on top 8.69:1 */
+  --color-primary-hover: #1c3765; /* 11.19:1 · white on top 11.77:1 */
+
+  /* Destructive. It is the SAME red as the `bad` state, on purpose: the red
+     that says «this went wrong» and the one that says «this is going to delete
+     something» are the same warning, and two different reds are two things to
+     learn. */
+  --color-danger: #9b3b30; /* 6.52:1 · white on top 6.86:1 */
+  --color-danger-hover: #7c2d24; /* 8.84:1 · white on top 9.30:1 */
+
+  /* Informative. Blue-green, chosen because it is the only gap left between the
+     action blue and the state green: it is not confused with «press me» nor
+     with «this is fine». It is carried by a note, a counter, a label that
+     explains — never by a button. */
+  --color-info: #0f5c6e; /* 7.19:1 · white on top 7.56:1 */
+
+  /* The second stroke, for when there are two series. 4.43:1: it is still
+     legible text if it needs a label, and well above the 3:1 that a graphical
+     element requires. */
+  --color-data-soft: #5c74a6; /* 4.43:1 */
+
+  /* States. Muted on purpose —this is a tool, not an alarm panel— but all three
+     pass AA as TEXT on the ground, because all three are used as a word and not
+     as decoration. */
+  --color-good: #2f6b3c; /* 6.07:1 */
+  --color-warn: #7e5e12; /* 5.71:1 */
+  --color-bad: #9b3b30; /* 6.52:1 */
+
+  /* ---------------------------------------------------------------- *
+   *  THE CHROME — and why it exists.
+   *
+   *  One number settles this entire decision:
+   *
+   *      gold #C89B3C on the canvas #FAF9F7  →  2.43:1   unusable
+   *      gold #C89B3C on the chrome  #141B2E  →  6.70:1   AA
+   *
+   *  The gold is NOT a color for a light application: it is a color for a dark
+   *  surface. As long as the only background was #FAF9F7, the brand could only
+   *  appear as the fill of a button, and there it competed with the action blue
+   *  — which is exactly the symptom of «it is in only two colors» and of the
+   *  three contradictory primaries (`+ Crear` blue, `Registrar pago` gold).
+   *
+   *  So the interface has TWO surfaces and each one has its own set:
+   *
+   *    CHROME  header, menu rail, tab bar, activity bar.
+   *            It is the brand. Here the gold IS text.
+   *    CANVAS  the workspace. This is where the data lives, and the gold
+   *            appears only as the background of the CTA with `ink` on top.
+   *
+   *  And along the way it solves something that was not about color: today the
+   *  near-white header and the near-white work area are the SAME surface, so
+   *  nothing says where navigation ends and content begins.
+   *
+   *  The states are repeated lightened because the canvas ones cannot be read
+   *  on #141B2E: `good` #2F6B3C gives 1.4:1 there. They are not new colors —
+   *  they are the same meaning measured against the other surface.
+   * ---------------------------------------------------------------- */
+  /* DEEP NAVY. Chosen among six candidates that all passed AA, so the
+     measurement did not decide it: the eye looking at the real bar decided it.
+     It is the other end of the brand's blue→gold gradient, and that has a
+     practical consequence — the `brand-wash` is BORN out of the background
+     itself instead of being painted on top, which is why here the wash reads as
+     light and on black it read as a stain. */
+  --color-chrome: #141b2e; /* the base */
+  --color-chrome-raised: #1e2740; /* active tab, open menu */
+  /* The hairline under the application bar. On light the chrome already
+     separates from the canvas by luminance, so it IS the chrome (invisible); in the
+     dark theme the two are both near-black and the hairline is what tells them apart. */
+  --color-chrome-edge: #141b2e; /* 1.00:1 on the chrome — invisible on light, a hairline on dark */
+  --color-chrome-ink: #e8e4de; /* 13.53:1 — text */
+  --color-chrome-muted: #a39b90; /* 6.24:1 — faint text */
+  --color-chrome-accent: #c89b3c; /* 6.70:1 — the gold, here it IS text */
+
+  /* ── The link had to change, and the reason is NOT contrast ──────────
+     The blue #6FA0EA gave 6.44:1 on this background: too dark, it sank into the
+     navy. Then came a cyan (#7fd1e8, 193°) to separate by hue as well — and it
+     became the one color of the interface that belonged to neither family, the
+     navy or the gold: "Descartar" on the rail read as a different product.
+     The answer is luminance, not hue: a pale periwinkle of the navy's own family
+     (220°) at 9.46:1 separates from the bar as clearly as the cyan did (9.94:1)
+     and stays in the palette. WCAG measures luminance and people see hue — here
+     both agree: light on dark, one family. */
+  --color-chrome-link: #a9c1f2; /* 9.46:1 · same family as the navy, separated by luminance */
+
+  --color-chrome-good: #6fcf8b; /* 8.95:1 */
+  --color-chrome-warn: #e3b341; /* 8.80:1 */
+  --color-chrome-bad: #ff8a7a; /* 7.48:1 */
+
+  /* The veil behind a dialog or the command palette. It is a token because the
+     obvious `bg-ink/30` is a LIGHT veil in the dark theme (ink flips), which
+     would lighten what it is meant to dim. */
+  --color-scrim: #1a1714; /* 16.96:1 on the ground — a veil, never text */
+
+  /* ---------------------------------------------------------------- *
+   *  THE TWO FAMILIES — and the rule that decides which one goes.
+   *
+   *  This was already written here and it was NOT being followed: 242 uses of
+   *  `font-mono` and ZERO of `font-sans` were counted across the whole product.
+   *  Which means the monospaced face was not the identity of anything — it was
+   *  the only font, and that is why `ds_01a0999f…` and «buscar por nombre…»
+   *  looked exactly alike.
+   *
+   *  The monospaced face is useful when it says something the proportional one
+   *  cannot: that this was written by the machine, or that this column aligns
+   *  with the one below. Used for everything, it says nothing and on top of
+   *  that it reads worse — it is wider, it has less contrast between shapes and
+   *  it tires the eye sooner.
+   *
+   *  THE RULE, and there is no third case:
+   *
+   *    mono  — what the MACHINE wrote or what has to be ALIGNED:
+   *            identifiers, file and column names, fingerprints, figures,
+   *            units, keys, code fragments.
+   *    sans  — what a PERSON wrote to be read: sentences, help text, empty
+   *            states, button labels, titles, menu entries, placeholder text.
+   *
+   *  When in doubt, the question is: if this goes out of alignment with the
+   *  line below, is anything lost? If the answer is no, it goes in the
+   *  proportional face.
+   * ---------------------------------------------------------------- */
+  /* One pair, drawn together. A system sans next to Menlo is two products:
+     the mono is wider, the accents fall out, and a filename looks like it was
+     pasted in from a terminal. Plex Sans and Plex Mono share the same skeleton,
+     so an id and the sentence around it are the same voice at two widths. */
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+
+  /* ---------------------------------------------------------------- *
+   *  THE TYPE SCALE
+   *
+   *  Six steps, 14px base, ratio ~1.15. A size is never written at the point
+   *  of use: `text-[0.68rem]` is a size picked by eye, and a handful of those
+   *  end with two things that mean the same looking different and two that
+   *  mean different things looking the same.
+   *
+   *    micro   — the label of a pill, the index of a note
+   *    meta    — the subtitle of a row, the unit, the secondary datum
+   *    body    — the tool's default reading size
+   *    lead    — the name of a row, the label that heads it
+   *    title   — the title of a panel
+   *    display — the title of the workspace, and nothing else
+   *
+   *  Each step carries its own line height, which is half the job: a micro at
+   *  1.5 floats, and a display at 1.5 detaches from its own block.
+   *
+   *  The scale is deliberately generous. Density worth having is earned with
+   *  air and hierarchy —fewer things shouting at once—, not by shrinking the
+   *  type until it fits: small type plus lines everywhere is the vocabulary of
+   *  a control panel, and this is not one.
+   *  ------------------------------------------------------------------- */
+  --text-micro: 0.75rem;
+  --text-micro--line-height: 1.4;
+  --text-meta: 0.8125rem;
+  --text-meta--line-height: 1.45;
+  --text-body: 0.875rem;
+  --text-body--line-height: 1.6;
+  --text-lead: 0.9375rem;
+  --text-lead--line-height: 1.45;
+  --text-title: 1.1875rem;
+  --text-title--line-height: 1.35;
+  --text-display: 1.75rem;
+  --text-display--line-height: 1.2;
+
+  /* ---------------------------------------------------------------- *
+   *  THE RADIUS SCALE — «it is very square», and that was true.
+   *
+   *  The whole product used a literal `rounded-[2px]`, everywhere and for
+   *  everything: a button, a box, a notice band and a chip all had the same
+   *  corner. A single radius is not a density decision — it is the absence of a
+   *  scale, and what it produces is exactly the feeling that everything is the
+   *  same box repeated.
+   *
+   *  The radius GROWS WITH THE SURFACE, which is the only rule that makes a
+   *  radius scale read as intentional:
+   *    mark     — a glyph-sized box. At 8px a 16px checkbox is already a circle
+   *    control  — what you touch and what measures one line of text
+   *    box      — a content box, a panel, a band
+   *    panel    — a floating surface: popup menu, notice, window
+   *    pill     — what is round because it is a capsule, not a box
+   *
+   *  **The measured step.** 6/10/14 still read as the dense console. The median
+   *  control across measured production systems is 8px, and the button shares
+   *  it with the field: surveyed systems match those three (button, input,
+   *  select) instead of rounding the button alone. The surface still grows.
+   *  12 is the next published peak and the modal step; 16 is what floats.
+   *  The pill stays a capsule — a tag, a switch, an icon-only target — and
+   *  is not a labeled button.
+   *  ------------------------------------------------------------------- */
+  --radius-mark: 4px;
+  --radius-control: 8px;
+  --radius-box: 12px;
+  --radius-panel: 16px;
+  --radius-pill: 9999px;
+
+  /* ---------------------------------------------------------------- *
+   *  ELEVATION
+   *
+   *  On light a black shadow looks like dirt, so these are shadows the color of
+   *  the TEXT (warm) and very wide open. Three steps:
+   *    raised  — something that barely lifts off the ground (an active row)
+   *    float   — a menu, a popover: there is something underneath and it has to
+   *              be believable
+   *    window  — a floating window of the panel manager
+   *
+   *  The rule that survives from the previous theme: the PRIMARY elevation is
+   *  still a hairline border. The shadow accompanies, it does not replace — a
+   *  box with no border and a shadow on #FAF9F7 has no edge and looks blurry. */
+  --shadow-raised: 0 1px 2px -1px rgba(26, 23, 20, 0.1);
+  --shadow-float: 0 8px 24px -12px rgba(26, 23, 20, 0.35);
+  --shadow-window:
+    0 2px 6px -2px rgba(26, 23, 20, 0.18), 0 18px 40px -20px rgba(26, 23, 20, 0.42);
+
+  /* The air between the blocks of a view. Before, each view picked its `gap-3`
+     or its `gap-4` by eye; this is the value, and separating SIBLING blocks
+     uses twice as much. It went up with the «Aire» decision: what separates one
+     row from the next became the space, so the space has to be enough. */
+  --spacing-block: 1rem;
+
+  /* One step of NESTING: a group inside a group, a report line under its
+     section. Every presentation that draws depth multiplies by this one value,
+     so a grouped list and a grouped table step in at the same rhythm — nesting
+     read at two different widths is what makes two views of the same set look
+     like two different products.
+
+     It is wider than it looks necessary on purpose: the depth has to survive a
+     truncated label, and a step you have to measure to see is not a step. */
+  --spacing-indent: 1.25rem;
+
+  /* ---------------------------------------------------------------- *
+   *  ICONOGRAPHY — three sizes, and the stroke weight is part of the size.
+   *
+   *  `lucide` was chosen because it draws with a STROKE and not with a fill,
+   *  and a stroke can accompany 13px text without shouting. But a stroke has a
+   *  trap that a fill does not: **the weight does not scale with the size**. A
+   *  12px icon with the default 2px stroke clogs up and reads as a smudge; that
+   *  same stroke on an 18px one looks thin.
+   *
+   *  That is why the three steps come with their weight and are not mixed:
+   *
+   *      sm  12px / 2.00  — inside a line of text: a chevron, a breadcrumb
+   *      md  16px / 1.75  — the default size: a button, a row
+   *      lg  18px / 1.50  — the identity icon of a record
+   *
+   *  The size GROWS and the weight GOES DOWN. It is counterintuitive written
+   *  down and obvious once looked at: what stays constant is the optical
+   *  weight, not the number.
+   * ---------------------------------------------------------------- */
+  /* ---------------------------------------------------------------- *
+   *  CONTROL HEIGHT — the target you touch.
+   *
+   *  The product had 24px controls and the diagnosis was literal: «things that
+   *  are very flat and could be buttons». It was not a lack of color — it was
+   *  that at 24px a control stops reading as a target and starts getting missed
+   *  when you aim at it.
+   *
+   *  Three steps, and each one is a PLACE, not a taste:
+   *
+   *      sm  28px  inside a row or the header of a block
+   *      md  34px  the working size: form fields, menus, most buttons
+   *      lg  40px  the action that has to be found without looking
+   *
+   *  ── Why the whole scale went up ─────────────────────────────────
+   *
+   *  «the action buttons are kind of small and do not call to action, it is
+   *  hard to find them». It was true and the diagnosis is measurable: an action
+   *  bar at 26px has the same visual weight as a row of labels, so the eye does
+   *  not tell it apart from the content and you have to READ to find what to
+   *  press. The consoles that work —DigitalOcean, Odoo— put their primary
+   *  action near 40px, and it is not generosity: it is that at that size it can
+   *  be seen from far away, which is a primary button's entire job.
+   *
+   *  `md` is the working size because a form field and a bar button have to
+   *  measure the SAME: put in the same row —and they always end up in the same
+   *  row— two different heights read as an alignment mistake, not as a
+   *  hierarchy.
+   * ---------------------------------------------------------------- */
+  /* ---------------------------------------------------------------- *
+   *  THE MEASURE — how many characters fit in a line.
+   *
+   *  It is a typographic decision and that is why it is a token, not a loose
+   *  number in each component. The legible range is between 45 and 75
+   *  characters: below it the eye jumps lines too often, above it, it loses
+   *  track of where the next line started.
+   *
+   *  It matters MORE here than on the web: the panels of this product reach
+   *  1,800px, and a help paragraph stretched to 1,800px is illegible even if it
+   *  is perfectly contrasted.
+   *
+   *      short  48ch  an empty state, a notice — read in one go
+   *      prose  68ch  a paragraph of documentation or of help
+   * ---------------------------------------------------------------- */
+  --container-short: 48ch;
+  --container-prose: 68ch;
+
+  /* The width of a list's search field. It has a cap and it does not stretch: a
+     700px field to type «ventas» is an empty rectangle in the middle of the
+     screen, and what the eye reads first in a list has to be the rows. See
+     `ListingBar`. */
+  --container-search: 30rem;
+
+  /* Lo que PIDE una miga antes de recortarse, y lo que pide el rastro entero.
+     Los dos son pedidos y no anchos: una línea más angosta se los baja, y una
+     más ancha se los deja crecer.
+
+     Hacen falta los dos porque son dos problemas distintos. Un nombre de este
+     producto llega a cincuenta caracteres, así que UNA miga puede comerse la
+     línea entera aunque el rastro tenga tres: `--container-crumb` es lo que
+     cada una pide antes de terminar en «…», y ahí la que manda es la última
+     —dónde estoy— que nunca se recorta del todo.
+
+     `--container-trail` es lo que pide el rastro COMPLETO en la línea de la
+     banda. Sin él, «de dónde vengo» le saca el lugar a lo que cuelga del
+     registro y el centro deja de estar en el centro. */
+  --container-crumb: 12rem;
+  --container-trail: 20rem;
+
+  /* The grid of the app switcher: three columns of icon + word. */
+  --container-apps: 21rem;
+
+  /* The height of the application bar. It belongs to the system because
+     EVERYTHING that hangs up there has to measure the same. */
+  --size-appbar: 2.75rem;
+
+  /* The width of a toast. Capped and not full-screen: a toast as wide as the
+     window reads as a system band, and what it is has to be ignorable. */
+  --container-toast: 24rem;
+
+  /* The label column of an inline field. It belongs to the system and not to
+     the form: if every sheet picks its own, two sheets of the same product have
+     their values starting on different verticals. 10 rem: 11 left a hole next
+     to short values (a size, a date) and the sheet read as empty; 8 cut the
+     labels an ERP actually has — «Referencia del cliente», «Plazo de pago» —
+     to «Referencia del cli…», and a truncated label is a question. */
+  --container-label: 10rem;
+
+  /* The tag column of a list row. It is what the column ASKS FOR, and it
+     belongs to the system: with a width of its own every tag starts where its
+     own ends and twelve rows give twelve indents. Asking for the same 8 rem,
+     they all fall on the same vertical.
+
+     It is asked for and not imposed —a base and not a fixed width— because a
+     row also lands in a 480 px drawer, and there a quarter of the box reserved
+     for the word «vencida» is a quarter taken away from the name. When there
+     is not enough for everyone the column gives back what it is not using, and
+     it stops at the width of its own tags: from there down what shrinks is a
+     tag, not the column. */
+  --container-tags: 8rem;
+
+  /* What a name ASKS FOR in a list row before the rest of the line gives up
+     its place.
+
+     It is the only measure the row needs to lay itself out, and it is not a
+     breakpoint: there is no width at which a row «becomes narrow». There is a
+     name that asks for 12 rem, a metadata that asks for what it says, a tag
+     column that asks for `--container-tags`, and a box. When the three do not
+     fit, the metadata drops to the line below and the name keeps the first one
+     whole — it is what identifies the record, and cut down to «ve…» it
+     identifies nothing.
+
+     That it is an ask and not a minimum is what makes the row work in a box
+     narrower than this: with the metadata already below, the name uses whatever
+     there is instead of overflowing. And it is what makes a checkbox, an icon
+     or a row of actions shift the moment it wraps without anyone declaring it
+     — they take their width from the same line, and the ask stops being met
+     earlier. */
+  --container-name: 12rem;
+
+  /* The minimum width of a metric. It belongs to the system and not to the
+     component: three metrics of different widths read as three different
+     things, and what they have to let you compare is precisely the number. */
+  --container-metric: 7rem;
+
+  /* The width of the peek drawer. It is a system decision and not a component
+     one: 30rem is what fits of a record without leaving the list behind it
+     —which has to stay clickable— reduced to a useless strip. */
+  --container-peek: 30rem;
+
+  /* The width of the chatter, beside a record. Narrower than the peek because it
+     is not a record: it is a column of one-line entries —«se evaluó el
+     resultado», «el proyecto pasó a generado»— and 22rem holds one of those
+     without wrapping while leaving the record the width it needs. A system
+     decision for the same reason the peek is: two records whose history column
+     is a different width read as two different screens. */
+  --container-chatter: 22rem;
+
+  /* Below this a surface is held in one hand: a phone, or a panel just as narrow. 40rem is
+     the width the list already stops offering a table at (`ListView`), and it is the same
+     line for the record's thumb bar and for a dialog or a peek that turn into a bottom
+     sheet — three rules about «narrow» drawn at three different widths would make a
+     screen that is a phone for one piece and a desk for the next. As a container it is
+     `@max-handheld/<name>:`; on the window it is Tailwind's `max-sm:`, the same 40rem. */
+  --container-handheld: 40rem;
+
+  /* How tall a bottom sheet may grow: 90 % of the visible height. The strip it leaves on
+     top is functional — it shows the screen the sheet came from, and tapping it closes a
+     dismissable one. `dvh` and not `vh`: on a phone `vh` counts the browser bar that is
+     covering the bottom of the screen, which is exactly where the sheet's actions are. */
+  --size-sheet: 90dvh;
+
+  /* The width of a module's sidebar. 15rem holds an icon, a screen name of two
+     words —«Notas de crédito», «Órdenes de compra»— a count and one step of
+     nesting without truncating, and still leaves a 1280-wide window more than
+     1,000 px of list. Narrower and the names it exists to show get cut; wider
+     and it starts taking columns from the table beside it. A system decision:
+     two modules whose sidebars differ in width read as two products. */
+  --container-sidebar: 15rem;
+
+  /* The record sheet. The rail above it spans the whole window; the sheet does not: a form
+     stretched to 1,400 px puts the label and its value half a screen apart and turns every
+     input into a bar nobody fills. 72rem holds two columns of fields at a readable width —
+     the same measure an ERP sheet (Odoo's, for one) has always had — and centers on wider
+     screens, so the sheet reads as a document on a desk. */
+  --container-sheet: 72rem;
+
+  /* Three control heights. Everything that shares a row shares a height: the
+     hierarchy is made by color and weight, not by size — a primary taller than
+     its neighbor reads as a measuring mistake, and it was one.
+
+     They went up 2px with «Aire» to accompany the type: a 34px control with
+     14px text is cramped against its own border. */
+  --size-control-sm: 30px;
+  --size-control-md: 36px;
+  --size-control-lg: 42px;
+
+  --size-icon-sm: 12px;
+  --size-icon-md: 16px;
+  --size-icon-lg: 18px;
+
+  /* The thickness of a progress track. A hairline, not a bar: what informs is
+     the PROGRESS, and a thick bar competes with the content that is waiting. It
+     belongs to the system and not to the component — two progress bars of
+     different thickness on the same screen read as two different things. */
+  --size-track: 6px;
+
+  /* ---------------------------------------------------------------- *
+   *  MOTION — three durations, and none of them decorates.
+   *
+   *  There is a single rule: **an animation exists to explain where something
+   *  came from, never to decorate.** A panel that enters from the right says it
+   *  came from there and that it goes back there. A color that changes in 90ms
+   *  says the control responded. Everything else —a counter that ticks up, a
+   *  card that bounces— is time the user waits without receiving information.
+   *
+   *      instant  90ms   the control acknowledged: hover, focus, color
+   *      quick   160ms   something appeared where it was not: menu, notice, tag
+   *      panel   240ms   a whole surface moved: the peek drawer
+   *
+   *  Above ~250ms a working interface starts to feel slow, and this is used
+   *  eight hours straight. The ceiling is deliberate.
+   *
+   *  There are two curves and they are split by direction: what ENTERS
+   *  decelerates (it arrives and it stays), what moves between two states is
+   *  symmetrical.
+   * ---------------------------------------------------------------- */
+  --duration-instant: 90ms;
+  --duration-quick: 160ms;
+  --duration-panel: 240ms;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==================================================================== *
+ *  DARK THEME
+ *
+ *  The same tokens, redefined — components keep using the same utilities and
+ *  do not know which theme they are in. Two entry points, one palette:
+ *
+ *    · `data-theme="dark"` on any ancestor forces it;
+ *    · with no `data-theme`, `prefers-color-scheme: dark` selects it, and
+ *      `data-theme="light"` (on the root or on any subtree) is the way to opt out.
+ *
+ *  The palette is written twice because CSS has no way to share a block between
+ *  a media query and an attribute selector; `tests/tokens.test.ts` fails if the
+ *  two copies drift apart, and measures every number below against the DARK
+ *  ground, surface and chrome — same thresholds as the light theme.
+ *
+ *  What changes beyond colour: elevation. On dark a lighter surface is what
+ *  lifts, and a shadow is a deeper black rather than a warm tint. The chrome
+ *  gets a hairline (`chrome-edge`) because it and the canvas are both near
+ *  black. The gold keeps being the primary action; `on-accent` keeps the text
+ *  on it dark.
+ * ==================================================================== */
+:root {
+  color-scheme: light dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --color-ground: #181614; /* the canvas: warm near-black, not #000 */
+    --color-surface: #221f1c; /* 1.10:1 above the ground — in the dark, raised is LIGHTER */
+    --color-line: #302c28; /* 1.30:1 — common separator */
+    --color-line-strong: #443f38; /* 1.73:1 — border of a box, table header */
+    --color-ink: #ece8e1; /* 14.78:1 */
+    --color-muted: #a39b90; /* 6.57:1 */
+    --color-accent: #c89b3c; /* 7.05:1 — on dark the gold CAN be read, but it stays the primary action */
+    --color-accent-hover: #dbb055; /* on dark the hover LIGHTENS: on-accent on top gives 8.80:1 */
+    --color-on-accent: #1a1714; /* 6.98:1 on the gold */
+    --color-data: #8ea6d9; /* 7.40:1 */
+    --color-primary: #8fa9e8; /* 7.74:1 · surface on top 7.03:1 */
+    --color-primary-hover: #b0c3f1; /* 10.25:1 · surface on top 9.31:1 */
+    --color-danger: #f08d7f; /* 7.58:1 · surface on top 6.89:1 */
+    --color-danger-hover: #f6ab9f; /* 9.66:1 · surface on top 8.78:1 */
+    --color-info: #5cc4d8; /* 8.89:1 */
+    --color-data-soft: #6f88bd; /* 5.10:1 */
+    --color-good: #6fcf8b; /* 9.43:1 */
+    --color-warn: #e3b341; /* 9.27:1 */
+    --color-bad: #f08d7f; /* 7.58:1 */
+    --color-chrome: #0b101e; /* the base: deeper than the canvas */
+    --color-chrome-raised: #18223a; /* active tab, open menu */
+    --color-chrome-edge: #2b3656; /* 1.59:1 on the chrome — the hairline that separates the bar from the canvas */
+    --color-chrome-ink: #e8e4de; /* 14.98:1 — text */
+    --color-chrome-muted: #a39b90; /* 6.91:1 — faint text */
+    --color-chrome-accent: #c89b3c; /* 7.42:1 — the gold, here it IS text */
+    --color-chrome-link: #a9c1f2; /* 10.48:1 */
+    --color-chrome-good: #6fcf8b; /* 9.91:1 */
+    --color-chrome-warn: #e3b341; /* 9.75:1 */
+    --color-chrome-bad: #ff8a7a; /* 8.28:1 */
+    --color-scrim: #000000; /* 1.16:1 on the ground — a veil, never text */
+    --shadow-raised: 0 1px 2px -1px rgba(0, 0, 0, 0.5);
+    --shadow-float: 0 8px 24px -12px rgba(0, 0, 0, 0.75);
+    --shadow-window:
+      0 2px 6px -2px rgba(0, 0, 0, 0.55), 0 18px 40px -20px rgba(0, 0, 0, 0.85);
+  }
+}
+
+[data-theme="dark"] {
+  color-scheme: dark;
+  --color-ground: #181614; /* the canvas: warm near-black, not #000 */
+  --color-surface: #221f1c; /* 1.10:1 above the ground — in the dark, raised is LIGHTER */
+  --color-line: #302c28; /* 1.30:1 — common separator */
+  --color-line-strong: #443f38; /* 1.73:1 — border of a box, table header */
+  --color-ink: #ece8e1; /* 14.78:1 */
+  --color-muted: #a39b90; /* 6.57:1 */
+  --color-accent: #c89b3c; /* 7.05:1 — on dark the gold CAN be read, but it stays the primary action */
+  --color-accent-hover: #dbb055; /* on dark the hover LIGHTENS: on-accent on top gives 8.80:1 */
+  --color-on-accent: #1a1714; /* 6.98:1 on the gold */
+  --color-data: #8ea6d9; /* 7.40:1 */
+  --color-primary: #8fa9e8; /* 7.74:1 · surface on top 7.03:1 */
+  --color-primary-hover: #b0c3f1; /* 10.25:1 · surface on top 9.31:1 */
+  --color-danger: #f08d7f; /* 7.58:1 · surface on top 6.89:1 */
+  --color-danger-hover: #f6ab9f; /* 9.66:1 · surface on top 8.78:1 */
+  --color-info: #5cc4d8; /* 8.89:1 */
+  --color-data-soft: #6f88bd; /* 5.10:1 */
+  --color-good: #6fcf8b; /* 9.43:1 */
+  --color-warn: #e3b341; /* 9.27:1 */
+  --color-bad: #f08d7f; /* 7.58:1 */
+  --color-chrome: #0b101e; /* the base: deeper than the canvas */
+  --color-chrome-raised: #18223a; /* active tab, open menu */
+  --color-chrome-edge: #2b3656; /* 1.59:1 on the chrome — the hairline that separates the bar from the canvas */
+  --color-chrome-ink: #e8e4de; /* 14.98:1 — text */
+  --color-chrome-muted: #a39b90; /* 6.91:1 — faint text */
+  --color-chrome-accent: #c89b3c; /* 7.42:1 — the gold, here it IS text */
+  --color-chrome-link: #a9c1f2; /* 10.48:1 */
+  --color-chrome-good: #6fcf8b; /* 9.91:1 */
+  --color-chrome-warn: #e3b341; /* 9.75:1 */
+  --color-chrome-bad: #ff8a7a; /* 8.28:1 */
+  --color-scrim: #000000; /* 1.16:1 on the ground — a veil, never text */
+  --shadow-raised: 0 1px 2px -1px rgba(0, 0, 0, 0.5);
+  --shadow-float: 0 8px 24px -12px rgba(0, 0, 0, 0.75);
+  --shadow-window: 0 2px 6px -2px rgba(0, 0, 0, 0.55), 0 18px 40px -20px rgba(0, 0, 0, 0.85);
+}
+
+/* The light palette again, for a SUBTREE forced to light inside a dark page — a printed
+   preview of an invoice, an email template. On the root it restates what `@theme` already
+   says; its reason to exist is nesting, which CSS cannot do from the `:root` copy alone.
+   `tests/tokens.test.ts` keeps it equal to `@theme`. */
+[data-theme="light"] {
+  color-scheme: light;
+  --color-ground: #faf9f7;
+  --color-surface: #ffffff;
+  --color-line: #e4dfd7; /* 1.26:1 — common separator */
+  --color-line-strong: #d5cec2; /* 1.49:1 — border of a box, table header */
+  --color-ink: #1a1714;
+  --color-muted: #6b6459;
+  --color-accent: #c89b3c; /* 2.43:1 on the ground → NEVER text */
+  --color-accent-hover: #b88a2e; /* on light the hover DARKENS: ink on top gives 5.71:1 */
+  --color-on-accent: #1a1714; /* 6.98:1 on the gold */
+  --color-data: #1b2a4a; /* 13.52:1 */
+  --color-primary: #2a4a85; /* 8.26:1 · white on top 8.69:1 */
+  --color-primary-hover: #1c3765; /* 11.19:1 · white on top 11.77:1 */
+  --color-danger: #9b3b30; /* 6.52:1 · white on top 6.86:1 */
+  --color-danger-hover: #7c2d24; /* 8.84:1 · white on top 9.30:1 */
+  --color-info: #0f5c6e; /* 7.19:1 · white on top 7.56:1 */
+  --color-data-soft: #5c74a6; /* 4.43:1 */
+  --color-good: #2f6b3c; /* 6.07:1 */
+  --color-warn: #7e5e12; /* 5.71:1 */
+  --color-bad: #9b3b30; /* 6.52:1 */
+  --color-chrome: #141b2e; /* the base */
+  --color-chrome-raised: #1e2740; /* active tab, open menu */
+  --color-chrome-edge: #141b2e; /* 1.00:1 on the chrome — invisible on light, a hairline on dark */
+  --color-chrome-ink: #e8e4de; /* 13.53:1 — text */
+  --color-chrome-muted: #a39b90; /* 6.24:1 — faint text */
+  --color-chrome-accent: #c89b3c; /* 6.70:1 — the gold, here it IS text */
+  --color-chrome-link: #a9c1f2; /* 9.46:1 · same family as the navy, separated by luminance */
+  --color-chrome-good: #6fcf8b; /* 8.95:1 */
+  --color-chrome-warn: #e3b341; /* 8.80:1 */
+  --color-chrome-bad: #ff8a7a; /* 7.48:1 */
+  --color-scrim: #1a1714; /* 16.96:1 on the ground — a veil, never text */
+  --shadow-raised: 0 1px 2px -1px rgba(26, 23, 20, 0.1);
+  --shadow-float: 0 8px 24px -12px rgba(26, 23, 20, 0.35);
+  --shadow-window:
+    0 2px 6px -2px rgba(26, 23, 20, 0.18), 0 18px 40px -20px rgba(26, 23, 20, 0.42);
+}
+
+@layer base {
+  /* No forced height anywhere: the document is exactly as tall as its content.
+   * The color still has to reach the bottom of the viewport on a short page —
+   * `html` carries it because `html` always covers the viewport, with or
+   * without a height rule; `body` would need `min-height: 100%` to do the
+   * same, and that's the rule that kept re-appearing as a blank gap below a
+   * short view. One color, on the element that doesn't need a height rule to
+   * cover the screen. */
+  html {
+    background-color: var(--color-ground);
+  }
+
+  body {
+    background-color: var(--color-ground);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    /* Sólo horizontal. Sacar el `overflow: hidden` entero destapó algo que se
+     * desborda a los costados —un panel oculto fuera de pantalla, medido para
+     * un ancho que ya no es el suyo— y sin este freno se podía scrollear hacia
+     * la derecha para verlo. El alto sigue libre: es lo que se vino a arreglar. */
+    overflow-x: hidden;
+  }
+
+  /* Tabular figures on everything monospaced: a column of rows has to line up
+     across rows. */
+  .font-mono {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Thin and warm scrollbars. With six panels open, six grey system bars are
+     six stripes that say nothing. */
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ *  THE BRAND GRADIENT — deep blue towards gold.
+ *
+ *  It keeps appearing in FOUR places and nowhere else:
+ *    1. `brand-wash`  — the wash behind the workspace title bar
+ *    2. `rule-brand`  — the 1px rule under that bar
+ *    3. `btn-accent`  — the primary action
+ *    4. `bar-brand`   — the bar of an import in progress
+ *
+ *  On light it goes MUCH fainter than on black. A gradient that on #0A0806 read
+ *  as light, on #FAF9F7 reads as a stain: the alphas were halved and the gold
+ *  almost disappears.
+ *
+ *  If a fifth one is added, one has to be removed.
+ * ------------------------------------------------------------------ */
+
+/* 1. The wash. Effective alpha of ~6% (blue) to ~4% (gold). */
+@utility brand-wash {
+  position: relative;
+  isolation: isolate;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: linear-gradient(
+      104deg,
+      color-mix(in srgb, var(--color-data) 6%, transparent) 0%,
+      color-mix(in srgb, var(--color-data) 4%, transparent) 38%,
+      color-mix(in srgb, var(--color-accent) 4%, transparent) 74%,
+      transparent 100%
+    );
+  }
+}
+
+/* 1b. The same wash, on the chrome.
+ *
+ * Context: the one above is calibrated against #FAF9F7 — the blue at 6% on the
+ * navy cannot be seen, because it is blue on blue. Here both ends are the
+ * LIGHTENED ones (the chrome's cyan and gold), and that is why the wash reads
+ * as light born out of the background itself instead of as a stain on top. */
+@utility brand-wash-chrome {
+  position: relative;
+  isolation: isolate;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background-image: linear-gradient(
+      104deg,
+      color-mix(in srgb, var(--color-chrome-link) 11%, transparent) 0%,
+      color-mix(in srgb, var(--color-chrome-link) 5%, transparent) 38%,
+      color-mix(in srgb, var(--color-chrome-accent) 7%, transparent) 74%,
+      transparent 100%
+    );
+  }
+}
+
+/* 2. The rule. It is the detail that sells it: 1px, blue → gold, transparent at
+      both ends so that it does not look like the border of a box. Decorative:
+      there is nothing to read in it, which is what allows it to carry the
+      gold. */
+@utility rule-brand {
+  height: 1px;
+  border: 0;
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--color-data) 64%, transparent) 22%,
+    color-mix(in srgb, var(--color-accent) 80%, transparent) 62%,
+    transparent 100%
+  );
+}
+
+/* 3. The primary action. Gold background, `ink` text on top: 6.98:1. The
+      gradient is barely a metallic sheen — on light, a strong gradient turns a
+      tool button into a landing page button. */
+@utility btn-accent {
+  color: var(--color-on-accent);
+  background-image: linear-gradient(
+    160deg,
+    color-mix(in oklab, var(--color-accent) 88%, white) 0%,
+    var(--color-accent) 58%,
+    var(--color-accent-hover) 100%
+  );
+
+  &:hover {
+    background-image: linear-gradient(
+      160deg,
+      var(--color-accent) 0%,
+      var(--color-accent-hover) 62%,
+      color-mix(in oklab, var(--color-accent-hover) 88%, black) 100%
+    );
+  }
+}
+
+/* 4. The bar of an import: the only place where the brand and motion cross paths.
+      Blue at the start, gold at the tip. The stops are explicit on purpose:
+      letting the browser interpolate blue against gold gives a muddy grey
+      midpoint. */
+@utility bar-brand {
+  background-image: linear-gradient(
+    90deg,
+    var(--color-data) 0%,
+    var(--color-data) 46%,
+    var(--color-accent) 100%
+  );
+}
+
+/* ------------------------------------------------------------------ *
+ *  Horizontal scroll hint.
+ *
+ *  It is NOT a fifth use of the gradient: it carries neither blue nor gold. It
+ *  is the ground itself fading out over the edge of a box that scrolls, so that
+ *  it can be seen that there is something beyond. With 300px-wide panels, a
+ *  twelve-column table hides nine — and a hidden column with no warning is
+ *  worse than one cut off in plain sight.
+ *
+ *  Two `local` layers that travel with the content cover two `scroll` layers
+ *  that stay fixed: the shadow on one side is only visible when something was
+ *  left on that side. It is the only way to ask «is there overflow?» from CSS.
+ *
+ *  On light the shadow is DARK again — on the black theme it had to be inverted
+ *  and use an edge the color of the text.
+ * ------------------------------------------------------------------ */
+@utility scroll-hint {
+  background-image:
+    linear-gradient(to right, var(--color-surface) 40%, transparent),
+    linear-gradient(to left, var(--color-surface) 40%, transparent),
+    linear-gradient(
+      to right,
+      color-mix(in srgb, var(--color-scrim) 14%, transparent),
+      transparent
+    ),
+    linear-gradient(
+      to left,
+      color-mix(in srgb, var(--color-scrim) 14%, transparent),
+      transparent
+    );
+  background-position:
+    0 0,
+    100% 0,
+    0 0,
+    100% 0;
+  background-repeat: no-repeat;
+  background-size:
+    36px 100%,
+    36px 100%,
+    10px 100%,
+    10px 100%;
+  background-attachment: local, local, scroll, scroll;
+}
+
+/* ------------------------------------------------------------------ *
+ *  WHAT DOES NOT LIVE HERE: THE WINDOW MANAGER THEME.
+ *
+ *  `dockview` and its `.dockview-theme-sincpro` class stayed in the
+ *  application, and it is the same rule that separates this project from
+ *  `frontend/`: a theme for a concrete panel library is not a design token —
+ *  it is the infrastructure of ONE application. The day the window manager is
+ *  swapped, this file does not find out.
+ *
+ *  What does come out of here are the variables that theme consumes
+ *  (`--color-surface`, `--color-line`, the radius scale…), which is exactly the
+ *  right direction: the app reads the system, the system does not know the app.
+ * ------------------------------------------------------------------ */
+
+/* ------------------------------------------------------------------ *
+ *  REDUCED MOTION
+ *
+ *  It goes here and not in each component because an accessibility rule spread
+ *  across forty files is honored in thirty. If the system declares durations,
+ *  the system declares how they are turned off.
+ *
+ *  It is not turned off to zero: 1ms keeps `transitionend` alive, which is what
+ *  the components that unmount something when the animation finishes hang
+ *  from. At zero that event does not fire in some browsers and the menu never
+ *  closes.
+ * ------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ------------------------------------------------------------------ *
+ *  THE WIDTH OF THE PEEK DRAWER
+ *
+ *  It is not a fixed width: it is 30rem, unless the window is so narrow that it
+ *  would cover everything. The clamp always leaves 2rem of what is behind in
+ *  view, and that margin is functional, not aesthetic — **a peek that covers
+ *  100% is a dialog without a scrim**, and then it is not understood that what
+ *  is behind can still be used.
+ * ------------------------------------------------------------------ */
+@utility peek-width {
+  width: min(var(--container-peek), calc(100% - 2rem));
+}
+
+/* ------------------------------------------------------------------ *
+ *  THE BOTTOM EDGE OF A PHONE
+ *
+ *  What sits on the bottom edge of the screen —a sheet's footer, the record's thumb
+ *  bar— keeps its usual 0.75rem below the buttons, unless the phone has a home
+ *  indicator there, and then it keeps that. A button under the indicator is a button
+ *  whose tap the system takes for a swipe home. It needs `viewport-fit=cover` in the
+ *  page to measure anything; without it the inset is 0 and this is plain `pb-3`.
+ * ------------------------------------------------------------------ */
+@utility safe-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
+/* A field with its label beside it: the label column is `--container-label`. When the
+   container it sits in is too narrow to give the control at least as much room as the
+   label, the label goes on top — a 10rem label next to a zero-width input is what a
+   two-column form looked like on a phone. */
+@utility grid-label {
+  grid-template-columns: var(--container-label) minmax(0, 1fr);
+  & > [data-under-control] {
+    grid-column-start: 2;
+  }
+  @container (width < 21rem) {
+    grid-template-columns: minmax(0, 1fr);
+    & > [data-under-control] {
+      grid-column-start: auto;
+    }
+  }
+}
+
+/* ==================================================================== *
+ *  TOUCH — the same controls, sized for a finger.
+ *
+ *  The three control heights above are for a mouse: 30/36/42 px keep an ERP
+ *  dense, forty rows on a screen. A finger needs more — 44 pt is Apple's
+ *  minimum, 48 dp Material's — and a 30 px target on a phone is a tap that
+ *  lands on the row below. Only the POINTER changes the size, not the width:
+ *  a desktop browser narrowed to 400 px keeps the mouse sizes, a tablet in
+ *  landscape gets the finger ones. Every component reads these tokens, so
+ *  nothing else has to know about touch.
+ * ==================================================================== */
+@media (pointer: coarse) {
+  :root {
+    --size-control-sm: 44px;
+    --size-control-md: 44px;
+    --size-control-lg: 48px;
+  }
+}

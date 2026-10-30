@@ -1,0 +1,7 @@
+{
+  "enabledPlugins": {
+    "ui-theme-designer@anthropic-plugin-directory": true,
+    "playwright@anthropic-plugin-directory": true,
+    "ux-ui-audit@anthropic-plugin-directory": true
+  }
+}
