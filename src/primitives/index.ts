@@ -17,4 +17,5 @@ export * from "@sincpro/web-ui/primitives/table/index";
 export * from "@sincpro/web-ui/primitives/tabs/index";
 export * from "@sincpro/web-ui/primitives/tag/index";
 export * from "@sincpro/web-ui/primitives/toolbar/index";
+export * from "@sincpro/web-ui/primitives/tree/index";
 export * from "@sincpro/web-ui/primitives/value/index";

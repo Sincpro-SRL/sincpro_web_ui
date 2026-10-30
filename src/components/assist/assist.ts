@@ -28,7 +28,7 @@ import type { ReactNode } from "react";
  *  automated assistant did this», which is a fact, not a celebration.
  *
  *  Exported so a screen that composes the assistant into a piece of its own — a `Callout`,
- *  a `ChatterEvent` — uses the same mark and not a second one. */
+ *  a `ActivityEvent` — uses the same mark and not a second one. */
 export const ASSIST_ICON: LucideIcon = Bot;
 
 /** Where a suggestion or a change comes from: «orden de compra PO/2026/0042», «las últimas

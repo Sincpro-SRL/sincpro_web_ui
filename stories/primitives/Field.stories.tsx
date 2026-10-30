@@ -2,17 +2,20 @@ import {
   Button,
   Checkbox,
   CheckList,
+  CopyButton,
   DataField,
   DateValue,
   DensityProvider,
   DropZone,
   Field,
+  FieldCopyProvider,
   FormActions,
   type FormMode,
   FormModeProvider,
   FormSection,
   IconButton,
   NumberInput,
+  Picker,
   SegmentedControl,
   Select,
   Sheet,
@@ -238,6 +241,48 @@ export const ConError: Story = {
               ]}
             />
           </Field>
+        </div>
+      </Card>
+    );
+  },
+};
+
+/** **Una nota de UN campo.** «Vence en 3 días» es de «Vencimiento», no de toda la factura:
+ *  va pegada a su campo. Fuera de un registro ancho es una marca al lado del rótulo —forma y
+ *  palabra, nunca sólo color— que abre la frase y su acción al apretarla; adentro de un
+ *  registro con actividad, además, se lista en sus avisos y lleva de vuelta al campo (ver
+ *  `4 · Vistas/Registro · Con avisos`). Un lector de pantalla la oye con el campo: entra en
+ *  su `aria-describedby`, después del error. */
+export const ConNota: Story = {
+  render: function Render() {
+    const [vence, setVence] = useState("2/11/2026");
+    return (
+      <Card>
+        <div className="flex flex-col gap-4">
+          <Field
+            label="Vencimiento"
+            note={{
+              tone: "warn",
+              label: "Vence en 3 días",
+              detail: "Sin pagos registrados todavía.",
+            }}
+          >
+            <TextInput value={vence} onChange={setVence} />
+          </Field>
+          <DataField
+            label="Cliente"
+            value="Ferretería Sur S.R.L."
+            note={{
+              tone: "info",
+              label: "Tiene una nota de crédito sin aplicar",
+              detail: "NC/2026/0012 por Bs. 1.200,00.",
+              action: (
+                <Button role="ghost" size="sm">
+                  Aplicar
+                </Button>
+              ),
+            }}
+          />
         </div>
       </Card>
     );
@@ -741,4 +786,76 @@ export const ZonaDeArchivo: Story = {
       <DropZone accept=".xml,application/xml" onFile={() => {}} onCancel={() => {}} />
     </div>
   ),
+};
+
+/**
+ * **Copiar sin entrar.** Cada campo trae un botón chico de copiar junto a su rótulo, en
+ * lectura y en edición: pasá el puntero (o llegá con el tabulador) y aparece; en una pantalla
+ * táctil está siempre. Copia lo que se VE —el nombre del cliente aunque el campo sea un
+ * vínculo que abre su ficha, el monto formateado, la fecha armada—, así que lo que se pega es
+ * lo que se leía.
+ *
+ * Nunca se impone: `copy="…"` copia otra cosa (acá, el NIT solo, sin el nombre), `copy={false}`
+ * lo saca de un campo, y `FieldCopyProvider value={false}` de un formulario entero.
+ */
+export const CopiarSinEntrar: Story = {
+  render: function Render() {
+    const [cliente, setCliente] = useState("c1");
+    const [referencia, setReferencia] = useState("OC-CSG-2026-0412");
+    const [monto, setMonto] = useState<number | "">(31490);
+    return (
+      <div className="bg-ground p-8">
+        <div className="max-w-(--container-sheet) rounded-box border border-line bg-surface p-6">
+          <SheetGroups columns={2}>
+            <SheetGroup title="En lectura">
+              <DataField label="Cliente" value="Clínica San Gabriel S.A." />
+              <DataField label="NIT" value="1020304050" mono copy="1020304050" />
+              <DataField
+                label="Vence"
+                value={<DateValue when="2026-11-12" format="date" />}
+              />
+              <DataField label="Nota interna" value="Sólo para el equipo" copy={false} />
+              <DataField label="Contacto" value={null} />
+            </SheetGroup>
+            <SheetGroup title="En edición">
+              <Field label="Cliente">
+                <Picker
+                  items={[
+                    { id: "c1", name: "Clínica San Gabriel S.A.", meta: "NIT 1020304050" },
+                    { id: "c2", name: "Ferretería El Progreso", meta: "NIT 4587123018" },
+                  ]}
+                  value={cliente}
+                  onChange={setCliente}
+                />
+              </Field>
+              <Field label="Referencia del cliente">
+                <TextInput value={referencia} onChange={setReferencia} mono />
+              </Field>
+              <Field label="Importe adeudado">
+                <NumberInput value={monto} onChange={setMonto} unit="Bs." />
+              </Field>
+            </SheetGroup>
+          </SheetGroups>
+          {/* A form where copying means nothing — a login, a wizard — turns it off once. */}
+          <FieldCopyProvider value={false}>
+            <SheetGroups columns={2}>
+              <SheetGroup title="Sin botones de copiar (FieldCopyProvider)">
+                <DataField label="Usuario" value="agutierrez" />
+              </SheetGroup>
+              <SheetGroup title="El botón suelto (CopyButton)">
+                <DataField
+                  label="CUF"
+                  mono
+                  value="46D3A1F8B2C7…"
+                  action={
+                    <CopyButton value="46D3A1F8B2C70E5D9A4F1B6C3E8D2A7F5B0C9E1D4A6F8B3C" />
+                  }
+                />
+              </SheetGroup>
+            </SheetGroups>
+          </FieldCopyProvider>
+        </div>
+      </div>
+    );
+  },
 };

@@ -12,7 +12,7 @@ import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
 import { Line } from "@sincpro/web-ui/primitives/block/Line";
 import { Tag } from "@sincpro/web-ui/primitives/tag/Tag";
 import type { LucideIcon } from "lucide-react";
-import { cloneElement, isValidElement, type ReactElement, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
 /* ==================================================================== *
  *  THE SHAPE OF A RECORD — the rail and the sheet.
@@ -69,8 +69,10 @@ export function RecordHeader({
   smart,
   aspects,
   dirty,
-  chatter,
-  chatterLayout = "page",
+  activity,
+  activityLayout = "auto",
+  blocking,
+  indicator,
   children,
 }: {
   crumbs?: readonly Crumb[];
@@ -80,25 +82,23 @@ export function RecordHeader({
    *  never the navigation ones. They take the rail's surface from context: write
    *  them without `surface`, light by default, dark on `Record.Rail surface="chrome"`. */
   actions?: ReactNode;
-  /** La historia del registro: `<Chatter …/>`. En `page` es la última fila de
-   *  la hoja —el mismo papel, separado por una línea— y no una segunda tarjeta.
-   *  En `aside` sigue al costado, con su propio marco. */
-  chatter?: ReactNode;
+  /** Everything around the record: its notices, conversation and history — an
+   *  `Activity`. Never inside the sheet: it is about the record, not part of the form. */
+  activity?: ReactNode;
   /**
-   * Dónde se pone respecto de la hoja.
+   * Where the activity goes, as the record's width allows (THE PAGE, below).
    *
-   *     page    debajo y a todo el ancho, como hoja propia. **El default**: un
-   *             formulario necesita su ancho, y una columna al costado se lo
-   *             come en cuanto la pantalla no sobra.
-   *     aside   al costado cuando hay ancho, debajo cuando no.
+   *     auto    a column at the RIGHT of the sheet, joined to it, when the page is
+   *             `--container-beside` wide, and a card BELOW the sheet when it is not.
+   *             **The default.**
+   *     below   always below the sheet, at its width.
    *
-   * Lo dice el REGISTRO y no se adivina del hijo: la dirección del flex la pone
-   * este contenedor, y un padre que mira qué le pasaron adentro para decidir
-   * cómo acomodarse se rompe la próxima vez que alguien envuelva el chatter en
-   * otra cosa.
+   * It is said by the RECORD and not guessed from the child: the flex direction is set by
+   * this container, and a parent that inspects what it was handed to decide how to lay
+   * itself out breaks the next time someone wraps the panel in something else.
    */
-  chatterLayout?: "aside" | "page";
-  /** `StatusBar` (where is it at?), the chatter's `Timeline` (what happened to get
+  activityLayout?: "auto" | "below";
+  /** `StatusBar` (where is it at?), the activity's `Timeline` (what happened to get
    *  here?), or both: they are different questions and many records only have one. */
   status?: ReactNode;
   /** The category, small and above the name: «factura de cliente». It makes a
@@ -127,6 +127,12 @@ export function RecordHeader({
    *  it has no way to know. As long as there are changes, the only thing that
    *  can be done is confirm them or throw them away. */
   dirty?: DirtyState;
+  /** What is WRONG with the record — `RecordBlocking`. Always visible, outside the sheet:
+   *  between the rail and the paper, never among the fields (see `RecordNotices`). */
+  blocking?: ReactNode;
+  /** The rest of the record's notices, as one indicator — `RecordNoticeIndicator`. In the
+   *  rail next to the counters; without a rail, first in the record, next to them. */
+  indicator?: ReactNode;
   /** The record body. It sits IN the paper with the title, so groups, tabs
    *  and the page are one white sheet on the ground — Odoo's `<sheet>`. */
   children?: ReactNode;
@@ -149,6 +155,8 @@ export function RecordHeader({
      front of it. */
   const withRail = hasRail && d === "comfortable";
 
+  /* The activity column at the RIGHT of the sheet when the page is wide (THE PAGE). */
+  const beside = activity !== undefined && activityLayout === "auto";
   /* The thumb bar's content (see THE THUMB BAR in `ThumbBar`): dirty first, else the primary. */
   const {
     rail: railActions,
@@ -185,7 +193,12 @@ export function RecordHeader({
             is not there —in a drawer, in a dialog— and then they go FIRST: the
             first thing to be read has to be what that surface's header does NOT
             say, and the title already said it. */}
-      {withRail || smart === undefined ? null : <div className="min-w-0">{smart}</div>}
+      {withRail || (smart === undefined && indicator === undefined) ? null : (
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          {smart}
+          {indicator}
+        </div>
+      )}
 
       {/* It wraps: when the name and the figure do not fit side by side (a phone),
           the figure goes below. Without wrapping, the figure kept its width and the
@@ -273,7 +286,17 @@ export function RecordHeader({
                     <Breadcrumb crumbs={crumbs} surface={railSurface} />
                   )
                 }
-                center={smart}
+                center={
+                  /* The notices' indicator rides with the counters: both are about the
+                     record and both open something; neither is my position in front of
+                     it. The line wraps on a phone, so it is never pushed out of reach. */
+                  smart === undefined && indicator === undefined ? undefined : (
+                    <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
+                      {smart}
+                      {indicator}
+                    </div>
+                  )
+                }
                 end={pager}
               />
 
@@ -321,57 +344,84 @@ export function RecordHeader({
         </SurfaceProvider>
       ) : null}
 
-      <div className={paper ? "bg-ground px-3 pt-3 pb-3" : ""}>
-        {/* DOS divs y no uno: `@container` declara el contexto para sus
-            DESCENDIENTES, así que la dirección del flex no puede vivir en el
-            mismo elemento que lo declara — resolvería contra el contenedor de
-            más arriba y el chatter terminaría encima del registro.
-
-            Por consulta de CONTENEDOR y no de ventana: con cuatro paneles
-            abiertos cada uno mide 380 px en una pantalla de 1.600, y una regla
-            de ventana metería una columna de 22rem adentro de un panel de 380. */}
-        <div
-          className={chatter !== undefined && chatterLayout === "aside" ? "@container" : ""}
-        >
-          <div
-            className={
-              chatter !== undefined && chatterLayout === "aside"
-                ? "flex min-w-0 flex-col gap-3 @4xl:flex-row @4xl:items-start"
-                : ""
-            }
-          >
-            {/* The sheet has a reading width (`--container-sheet`) and centers under a
-                rail that spans the window — a form stretched to 1,400 px puts each label
-                half a screen from its value. Next to an aside chatter it does not center:
-                the two go together, the record first. It clips with
-                `overflow-clip`, not `overflow-hidden`: hidden would make the sheet a scroll
-                container and the line table header would stick inside it, not under the
-                application bar. */}
+      {paper ? (
+        /* ==================================================================== *
+         *  THE PAGE — [sheet | Actividad], on the ground.
+         *
+         *  Two columns, joined, placed together and centred: the sheet
+         *  (≤ --container-sheet, 72rem) and, at its RIGHT, the record's ACTIVITY
+         *  (--container-activity, 22rem) — no strip of ground between them, so the page
+         *  reads left to right as one paper: the record, then what it has. The pair is at
+         *  most --container-record (94rem) wide; on a 1680 px desk both fit whole.
+         *
+         *  A note of a field or a row is not drawn in the column: its mark (`Flag`) stays
+         *  by its label or at its row — WHERE — and the activity lists it with the record's
+         *  notices above the timeline — WHAT —, taking you to it on press. Cards aligned in
+         *  the column were tried and dropped: they and the history fought for one column,
+         *  and the history is what everybody reads.
+         *
+         *  As the page narrows: below --container-beside (76rem) the activity goes BELOW
+         *  the sheet as a card at the sheet's width.
+         *
+         *  Folded, the column is a slim strip with its counts; the pair re-centres and the
+         *  sheet keeps its width. A container query, not the window: with four panels open
+         *  each is 380 px on a 1,600 screen.
+         *
+         *  The sheet clips with `overflow-clip`, not `overflow-hidden`: hidden would make it
+         *  a scroll container and the line table header would stick inside it, not under
+         *  the application bar.
+         * ==================================================================== */
+        <div className="bg-ground px-3 pt-3 pb-3">
+          <div className="@container/page">
             <div
-              className={
-                paper
-                  ? `flex w-full max-w-(--container-sheet) min-w-0 flex-1 flex-col overflow-clip rounded-box border border-line bg-surface ${
-                      chatter !== undefined && chatterLayout === "aside" ? "" : "mx-auto"
-                    }`
-                  : "flex min-w-0 flex-1 flex-col bg-surface"
-              }
+              className={`mx-auto flex min-w-0 flex-col gap-3 ${
+                beside
+                  ? "max-w-(--container-record) @beside/page:flex-row @beside/page:items-stretch @beside/page:justify-center @beside/page:gap-0"
+                  : "max-w-(--container-sheet)"
+              }`}
             >
-              {identity}
-              {children}
-              {chatter !== undefined && chatterLayout === "page" ? (
-                <div className="border-t border-line">
-                  {isValidElement(chatter)
-                    ? cloneElement(chatter as ReactElement<{ embedded?: boolean }>, {
-                        embedded: true,
-                      })
-                    : chatter}
+              <div
+                className={`flex min-w-0 flex-1 flex-col gap-3 ${
+                  beside ? "mx-auto w-full max-w-(--container-sheet) @beside/page:mx-0" : ""
+                }`}
+              >
+                {/* What is wrong sits OUTSIDE the sheet, between the rail and the
+                    paper, at the paper's width: always seen, never read as a field. */}
+                {blocking}
+                <div
+                  className={`flex min-w-0 flex-col overflow-clip rounded-box border border-line bg-surface ${
+                    beside ? "@beside/page:rounded-r-none" : ""
+                  }`}
+                >
+                  {identity}
+                  {children}
+                </div>
+                {activity !== undefined && activityLayout === "below" ? activity : null}
+              </div>
+              {beside ? (
+                /* After the sheet: the record first, what is around it second — in the
+                   reading order and on screen. */
+                <div className="mx-auto w-full max-w-(--container-sheet) min-w-0 @beside/page:mx-0 @beside/page:flex @beside/page:w-auto @beside/page:max-w-none @beside/page:shrink-0">
+                  {activity}
                 </div>
               ) : null}
             </div>
-            {chatter !== undefined && chatterLayout === "aside" ? chatter : null}
           </div>
         </div>
-      </div>
+      ) : (
+        /* No paper (a dialog, a drawer, a `Drill` context): one surface, no ground beside
+           it — the band first, the record, and the activity below. */
+        <div className="flex min-w-0 flex-1 flex-col bg-surface">
+          {blocking === undefined ? null : (
+            <div className={byDensity(d, "px-4 pt-3.5", "pb-2")}>{blocking}</div>
+          )}
+          {identity}
+          {children}
+          {activity === undefined ? null : (
+            <div className={byDensity(d, "px-4 pb-4", "pb-2")}>{activity}</div>
+          )}
+        </div>
+      )}
 
       {thumb === null ? null : <ThumbBar mode={thumb} dirty={dirty} primaries={primaries} />}
     </>

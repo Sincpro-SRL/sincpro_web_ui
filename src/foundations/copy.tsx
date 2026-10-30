@@ -73,6 +73,13 @@ export type UiCopy = {
     /** Read aloud next to a stage that failed: the red fill alone says nothing to a
      *  screen reader. */
     failed: string;
+    /** The title of the list of the record's notices, opened from the rail. */
+    notices: string;
+    /** The rail's indicator: how many notices, singular and plural. */
+    noticeOne: string;
+    noticeMany: string;
+    /** The accessible name of the band of what is wrong with the record. */
+    blocking: string;
   };
   shell: {
     modules: string;
@@ -109,6 +116,10 @@ export type UiCopy = {
   choice: {
     /** What an open list says when what was typed matches nothing. */
     noResults: string;
+    /** The name of a search box nobody labelled — no `Field`, no `aria-label`, no
+     *  placeholder. A field a screen reader announces as «edit text» is a field nobody
+     *  can find. */
+    search: string;
   };
   search: {
     tools: string;
@@ -183,6 +194,8 @@ export type UiCopy = {
     retry: string;
   };
   table: {
+    /** Under an editable list: write a new record as one more row. */
+    add: string;
     row: string;
     rows: string;
     yes: string;
@@ -212,9 +225,15 @@ export type UiCopy = {
      *  filtro. Decir «todavía no hay nada» a quien tiene ciento ochenta y
      *  escribió mal un nombre es contestar otra pregunta. */
     emptyFiltered: string;
+    /** How many records an embedded list holds, on its one-line bar. Two keys and not
+     *  one: «1 records» is wrong in every language this ships in. */
+    countOne: string;
+    count: string;
   };
   /** La historia de un registro: eventos y mensajes. */
-  chatter: {
+  /** The panel of everything around a record: its notices, its conversation and its
+   *  history (`Activity`). */
+  activity: {
     /** Quién hizo algo que no hizo nadie. Es una respuesta, no un hueco. */
     bySystem: string;
     /** Abrir y cerrar el error completo. */
@@ -232,18 +251,37 @@ export type UiCopy = {
     noRecipients: string;
     /** El campo vacío de un mensaje que sí sale. */
     messagePlaceholder: string;
-    /** Un hilo donde todavía no pasó nada. */
-    empty: string;
-    /** The default name of the chatter, and what its fold and unfold buttons say
-     *  about it. */
-    history: string;
+    /** Nobody wrote yet, and nothing was logged yet: two different answers. */
+    emptyMessages: string;
+    emptyEvents: string;
+    /** The panel's name, and what its fold and unfold buttons say about it. */
+    title: string;
     open: string;
     fold: string;
-    /** The three tabs: everything mixed, only what people wrote, only what the
-     *  system logged. */
-    tabAll: string;
-    tabMessages: string;
-    tabEvents: string;
+    /** The parts of the timeline: what is true now, what people wrote, what the system
+     *  logged. */
+    alerts: string;
+    conversation: string;
+    history: string;
+    /** The name of the history, under the notices. */
+    viewTimeline: string;
+    /** The notices beyond the first three, folded: «Ver 4 más». */
+    moreAlerts: string;
+    fewerAlerts: string;
+    /** The timeline's filters: everything, or one kind of entry. */
+    filters: string;
+    filterAll: string;
+    filterConversation: string;
+    filterNotes: string;
+    filterEvents: string;
+    /** The day separators of the timeline that are not a date. */
+    today: string;
+    yesterday: string;
+    /** A filter that leaves nothing. */
+    emptyFilter: string;
+    /** A note in the timeline takes you to what it belongs to. `{owner}` is that field or
+     *  line. */
+    goTo: string;
     /** The composer's buttons. */
     send: string;
     sending: string;
@@ -255,6 +293,10 @@ export type UiCopy = {
     done: string;
     /** Sin portapapeles —contexto no seguro, permiso negado— se dice. */
     failed: string;
+    /** The copy button of a field, named by the field: «Copiar «Cliente»». */
+    field: string;
+    /** A field with nothing in it: said, not a silent success. */
+    empty: string;
   };
   /** Ordenar, cuando la presentación no tiene encabezados donde hacer clic. */
   sorting: {
@@ -326,6 +368,8 @@ export type UiCopy = {
   };
   editable: {
     add: string;
+    /** The spreadsheet's: a row, not a line of a document. */
+    addRow: string;
     empty: string;
     remove: string;
   };
@@ -338,6 +382,8 @@ export type UiCopy = {
     refine: string;
     open: string;
     browseAll: string;
+    /** The quiet row at the end of a list that is fetching its next page. */
+    loadingMore: string;
   };
   cell: {
     missing: string;
@@ -348,6 +394,13 @@ export type UiCopy = {
     justNow: string;
     invalid: string;
     noDate: string;
+  };
+  /** The dialog that holds a stack of contexts opened from a record (`Drill`). */
+  drill: {
+    /** Up one level. `{name}` is the context it goes back to. */
+    back: string;
+    /** The accessible name of the trail of contexts this one was opened from. */
+    trail: string;
   };
   dialog: {
     expand: string;
@@ -467,6 +520,12 @@ export type UiCopy = {
     empty: string;
     /** Closing the line being edited. */
     done: string;
+    /** Sections and notes among the lines (Odoo's `display_type`). */
+    addSection: string;
+    addNote: string;
+    /** The names of their text field, for a screen reader. */
+    section: string;
+    note: string;
   };
   /** `LineItems`, beyond the `lines` keys: counting, the editor of a new line, removing. */
   lineItems: {
@@ -496,6 +555,23 @@ export type UiCopy = {
     /** The name of the button that opens it, and of the card. `{name}` is the record. */
     summary: string;
   };
+  /** The money summary of a document once something is applied against it. */
+  totals: {
+    /** Read, not shown, before a deducted amount: «Pagado el 12/10/2026, menos Bs. 100». */
+    less: string;
+    /** The name of a deduction's `i`. `{label}` is the deduction — «Pagado el 12/10/2026». */
+    details: string;
+    /** Go to the applied record, from its detail. */
+    open: string;
+    /** Take a deduction back off the document, from its detail. */
+    unlink: string;
+    /** The title of what could still be applied. */
+    credits: string;
+    /** The visible word on each available credit's button. */
+    apply: string;
+    /** Its accessible name, which says WHICH. `{label}` is the credit — «NC/2026/0012». */
+    applyCredit: string;
+  };
   /** Changing a value where it is drawn: one more tag of a many2many, one cell of a list. */
   inlineEdit: {
     /** The inline input of a tags field, while it holds no tag yet. */
@@ -512,6 +588,11 @@ export type UiCopy = {
     system: string;
     light: string;
     dark: string;
+  };
+  /** A hierarchy of records — a chart of accounts, product categories, locations. */
+  tree: {
+    /** What an empty tree says, unless the screen says something closer to its domain. */
+    empty: string;
   };
   /** The assistant acting inside a screen: what it suggests, what it proposes to change,
    *  what it set, and what it is still working on. */
@@ -612,6 +693,10 @@ export const ENGLISH_COPY: UiCopy = {
     saving: "Saving…",
     discard: "Discard",
     failed: "failed",
+    notices: "Notices about this record",
+    noticeOne: "{count} notice",
+    noticeMany: "{count} notices",
+    blocking: "What is wrong with this record",
   },
   shell: {
     modules: "All modules",
@@ -640,6 +725,7 @@ export const ENGLISH_COPY: UiCopy = {
   },
   choice: {
     noResults: "No results",
+    search: "Search",
   },
   search: {
     tools: "Filter, group and favorites",
@@ -683,6 +769,7 @@ export const ENGLISH_COPY: UiCopy = {
     retry: "Try again",
   },
   table: {
+    add: "Add",
     row: "row",
     rows: "rows",
     yes: "yes",
@@ -698,8 +785,10 @@ export const ENGLISH_COPY: UiCopy = {
   list: {
     empty: "There is nothing here yet.",
     emptyFiltered: "Nothing matches what is on.",
+    countOne: "1 record",
+    count: "{count} records",
   },
-  chatter: {
+  activity: {
     bySystem: "the system",
     more: "show the whole error",
     less: "show less",
@@ -710,13 +799,26 @@ export const ENGLISH_COPY: UiCopy = {
     recipients: "Who receives it",
     noRecipients: "nobody to send it to yet",
     messagePlaceholder: "Write a message…",
-    empty: "Nothing has happened here yet.",
-    history: "history",
+    emptyMessages: "Nobody has written here yet.",
+    emptyEvents: "Nothing has been logged yet.",
+    title: "Activity",
     open: "Open the {label}",
     fold: "Fold the {label}",
-    tabAll: "all",
-    tabMessages: "messages",
-    tabEvents: "events",
+    alerts: "Notices",
+    conversation: "Conversation",
+    history: "History",
+    viewTimeline: "Timeline",
+    moreAlerts: "Show {count} more",
+    fewerAlerts: "Show fewer",
+    filters: "Show",
+    filterAll: "All",
+    filterConversation: "Messages",
+    filterNotes: "Notes",
+    filterEvents: "Events",
+    today: "Today",
+    yesterday: "Yesterday",
+    emptyFilter: "Nothing of this kind yet.",
+    goTo: "Go to {owner}",
     send: "Send",
     sending: "Sending…",
     cancel: "Cancel",
@@ -725,6 +827,8 @@ export const ENGLISH_COPY: UiCopy = {
     label: "Copy",
     done: "Copied",
     failed: "Could not copy",
+    field: "Copy «{label}»",
+    empty: "Nothing to copy",
   },
   sorting: {
     label: "Sort",
@@ -781,6 +885,7 @@ export const ENGLISH_COPY: UiCopy = {
   },
   editable: {
     add: "Add a line",
+    addRow: "Add a row",
     empty: "No lines yet.",
     remove: "Remove the line",
   },
@@ -793,6 +898,7 @@ export const ENGLISH_COPY: UiCopy = {
     refine: "— narrow the filter",
     open: "Open",
     browseAll: "see all…",
+    loadingMore: "loading more…",
   },
   cell: {
     missing: "missing",
@@ -803,6 +909,10 @@ export const ENGLISH_COPY: UiCopy = {
     justNow: "just now",
     invalid: "invalid date",
     noDate: "no date",
+  },
+  drill: {
+    back: "Back to {name}",
+    trail: "Opened from",
   },
   dialog: {
     expand: "Expand to a panel",
@@ -889,6 +999,10 @@ export const ENGLISH_COPY: UiCopy = {
     remove: "Remove line",
     empty: "No lines yet.",
     done: "Done",
+    addSection: "Add a section",
+    addNote: "Add a note",
+    section: "Section",
+    note: "Note",
   },
   lineItems: {
     one: "{count} line",
@@ -907,6 +1021,15 @@ export const ENGLISH_COPY: UiCopy = {
   relationCard: {
     summary: "Summary of {name}",
   },
+  totals: {
+    less: "less",
+    details: "Details: {label}",
+    open: "Open",
+    unlink: "Unlink",
+    credits: "Outstanding credits",
+    apply: "Apply",
+    applyCredit: "Apply {label}",
+  },
   inlineEdit: {
     addTag: "Add…",
     createTag: "Create «{name}»",
@@ -917,6 +1040,9 @@ export const ENGLISH_COPY: UiCopy = {
     system: "System",
     light: "Light",
     dark: "Dark",
+  },
+  tree: {
+    empty: "Nothing here yet.",
   },
   assist: {
     assistant: "Assistant",
@@ -999,11 +1125,12 @@ export type UiCopyOverride = {
   ops?: Record<string, string>;
   sorting?: Partial<UiCopy["sorting"]>;
   copyable?: Partial<UiCopy["copyable"]>;
-  chatter?: Partial<UiCopy["chatter"]>;
+  activity?: Partial<UiCopy["activity"]>;
   editable?: Partial<UiCopy["editable"]>;
   picker?: Partial<UiCopy["picker"]>;
   cell?: Partial<UiCopy["cell"]>;
   time?: Partial<UiCopy["time"]>;
+  drill?: Partial<UiCopy["drill"]>;
   dialog?: Partial<UiCopy["dialog"]>;
   report?: Partial<UiCopy["report"]>;
   builder?: Partial<UiCopy["builder"]>;
@@ -1013,8 +1140,10 @@ export type UiCopyOverride = {
   lineItems?: Partial<UiCopy["lineItems"]>;
   relation?: Partial<UiCopy["relation"]>;
   relationCard?: Partial<UiCopy["relationCard"]>;
+  totals?: Partial<UiCopy["totals"]>;
   inlineEdit?: Partial<UiCopy["inlineEdit"]>;
   theme?: Partial<UiCopy["theme"]>;
+  tree?: Partial<UiCopy["tree"]>;
   assist?: Partial<UiCopy["assist"]>;
 };
 
@@ -1041,11 +1170,12 @@ export function mergeCopy(over?: UiCopyOverride): UiCopy {
     ops: { ...ENGLISH_COPY.ops, ...over.ops },
     sorting: { ...ENGLISH_COPY.sorting, ...over.sorting },
     copyable: { ...ENGLISH_COPY.copyable, ...over.copyable },
-    chatter: { ...ENGLISH_COPY.chatter, ...over.chatter },
+    activity: { ...ENGLISH_COPY.activity, ...over.activity },
     editable: { ...ENGLISH_COPY.editable, ...over.editable },
     picker: { ...ENGLISH_COPY.picker, ...over.picker },
     cell: { ...ENGLISH_COPY.cell, ...over.cell },
     time: { ...ENGLISH_COPY.time, ...over.time },
+    drill: { ...ENGLISH_COPY.drill, ...over.drill },
     dialog: { ...ENGLISH_COPY.dialog, ...over.dialog },
     report: { ...ENGLISH_COPY.report, ...over.report },
     builder: { ...ENGLISH_COPY.builder, ...over.builder },
@@ -1055,8 +1185,10 @@ export function mergeCopy(over?: UiCopyOverride): UiCopy {
     lineItems: { ...ENGLISH_COPY.lineItems, ...over.lineItems },
     relation: { ...ENGLISH_COPY.relation, ...over.relation },
     relationCard: { ...ENGLISH_COPY.relationCard, ...over.relationCard },
+    totals: { ...ENGLISH_COPY.totals, ...over.totals },
     inlineEdit: { ...ENGLISH_COPY.inlineEdit, ...over.inlineEdit },
     theme: { ...ENGLISH_COPY.theme, ...over.theme },
+    tree: { ...ENGLISH_COPY.tree, ...over.tree },
     assist: { ...ENGLISH_COPY.assist, ...over.assist },
   };
 }

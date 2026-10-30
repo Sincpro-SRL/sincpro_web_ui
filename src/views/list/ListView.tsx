@@ -33,6 +33,7 @@ import { ReportTable } from "@sincpro/web-ui/primitives/table/ReportTable";
 import { groupedColumnIds } from "@sincpro/web-ui/views/list/columns";
 import {
   groupLevelsOf,
+  reportColumnsOf,
   reportRowsOf,
   sheetFromColumns,
   sheetRowsOf,
@@ -89,7 +90,8 @@ export function ListView<T extends object>({
   keyOf,
   identity,
   crumbs,
-  surface,
+  embedded = false,
+  surface: requestedSurface,
   metrics,
   search,
   pagination,
@@ -112,6 +114,7 @@ export function ListView<T extends object>({
   sortable,
   totals = false,
   rowActions,
+  create,
   group,
   selection,
   onOpen,
@@ -122,6 +125,9 @@ export function ListView<T extends object>({
   children,
 }: ListViewProps<T>) {
   const { frame, offered, present } = useNarrowList(presents, requested);
+  /* Embedded, the list sits on the record's paper: there is no dark band to inherit, and a
+     navy switcher inside a white sheet would be a second chrome on the screen. */
+  const surface = embedded ? undefined : requestedSurface;
 
   const density = useDensity();
   const copy = useUiCopy();
@@ -226,10 +232,21 @@ export function ListView<T extends object>({
       </>
     );
 
-  const bar = (
+  /* Embedded, the line is drawn only if it has something to OFFER: a count alone repeats
+     what the rows (and the footer) already say. */
+  const barHasControls =
+    !embedded ||
+    search !== undefined ||
+    viewsSlot !== undefined ||
+    actions !== undefined ||
+    pagination !== undefined ||
+    (selection?.count ?? 0) > 0;
+
+  const bar = !barHasControls ? undefined : (
     <ListingBar
       surface={surface}
-      {...(crumbs === undefined || crumbs.length === 0 || density === "compact"
+      {...(embedded ? { inline: true, count: items.length } : {})}
+      {...(embedded || crumbs === undefined || crumbs.length === 0 || density === "compact"
         ? {}
         : {
             crumbs: (
@@ -317,7 +334,10 @@ export function ListView<T extends object>({
     error === null &&
     (present === "pivot" && pivotShown !== undefined
       ? pivotIsEmpty(pivotShown)
-      : items.length === 0);
+      : items.length === 0) &&
+    /* The first record of an empty list is written in the table, not under a sentence
+       saying there is nothing. */
+    !(present === "table" && create?.draft != null);
 
   /* La única línea que hace agrupable a una vista: el árbol que le pasaron, o el
      que se arma con las filas en la mano. */
@@ -404,6 +424,7 @@ export function ListView<T extends object>({
         {...(selection === undefined ? {} : { selection })}
         totals={totals}
         {...(rowActions === undefined ? {} : { rowActions })}
+        {...(create === undefined ? {} : { create })}
         {...(onPeek === undefined ? {} : { onPeek })}
         {...(onOpen === undefined ? {} : { onOpen })}
       />
@@ -422,7 +443,13 @@ export function ListView<T extends object>({
          declaradas: ahí el informe es este conjunto contado por los niveles que
          estén puestos. */
       <ReportTable
-        columns={report.columns}
+        /* Built from the piles, the numbers are the list's columns' — and so is how they
+           are written. Declared by the domain, the columns are the domain's. */
+        columns={
+          report.rows === undefined
+            ? reportColumnsOf(report.columns, columns)
+            : report.columns
+        }
         rows={report.rows ?? reportRows}
         {...(report.defaultOpen === undefined ? {} : { defaultOpen: report.defaultOpen })}
         {...(report.height === undefined ? {} : { height: report.height })}
@@ -475,8 +502,12 @@ export function ListView<T extends object>({
       <Listing
         bar={bar}
         /* La barra se queda arriba: con 187 filas, scrollear para ver la última
-           dejaba sin buscador, sin paginador y sin el conmutador. */
-        sticky
+           dejaba sin buscador, sin paginador y sin el conmutador.
+           Embedded it does NOT: the record has its own sticky parts (its rail, its tabs),
+           and a second band stuck under them — or carried up into the frame's header slot,
+           which is what a sticky list bar does under a sidebar — would cover the record
+           for a collection of a dozen rows. */
+        sticky={!embedded}
         {...(surface === undefined ? {} : { surface })}
         {...(metrics === undefined
           ? {}

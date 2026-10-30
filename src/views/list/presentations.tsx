@@ -23,7 +23,7 @@ type TableProps<T extends object> = {
   totals: boolean;
 } & Pick<
   ListViewProps<T>,
-  "sort" | "onSortChange" | "selection" | "rowActions" | "onPeek" | "onOpen"
+  "sort" | "onSortChange" | "selection" | "rowActions" | "create" | "onPeek" | "onOpen"
 >;
 
 /** The table receives EVERYTHING that belongs to the set —sorting, selection, grouping,
@@ -40,6 +40,7 @@ export function TablePresentation<T extends object>({
   onSortChange,
   selection,
   rowActions,
+  create,
   onPeek,
   onOpen,
 }: TableProps<T>) {
@@ -70,6 +71,7 @@ export function TablePresentation<T extends object>({
           })}
       {...(totals ? { totals: true } : {})}
       {...(rowActions === undefined ? {} : { rowActions })}
+      {...(create === undefined ? {} : { create })}
       /* `onPeek` con `onOpen` de reserva — ver el mismo comentario en
          `Listing.tsx`: sin vista previa encendida, un click en la fila
          tiene que abrir cuando es lo único que declararon. */
@@ -183,6 +185,13 @@ export function SheetPresentation<T extends object>({
                 : (spec.editable?.(item, column, columnIndex) ?? false);
             },
           })}
+      {
+        /* Only ungrouped: a new row lands at the end of the sheet, and in a grouped one
+           the end is the last group — not where the new record belongs. */
+        ...(spec.onAddRow === undefined || entries !== null
+          ? {}
+          : { onAddRow: spec.onAddRow })
+      }
     />
   );
 }

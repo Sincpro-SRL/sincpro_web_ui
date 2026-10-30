@@ -2,13 +2,13 @@ import { Button, Timeline } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 /**
- * Context: **la línea de tiempo, suelta.** El chatter la usa para la historia de un registro;
+ * Context: **la línea de tiempo, suelta.** La actividad la usa para la historia de un registro;
  * suelta sirve para cualquier auditoría — quién cambió qué y cuándo. El color vive en el
  * punto y el texto queda en tinta: un renglón entero en rojo no se lee más urgente, se lee
  * peor.
  */
 const meta: Meta = {
-  title: "3 · Componentes/Chatter · línea de tiempo",
+  title: "3 · Componentes/Actividad · línea de tiempo",
   parameters: { layout: "padded" },
 };
 

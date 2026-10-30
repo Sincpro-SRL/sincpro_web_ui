@@ -168,6 +168,39 @@ export const Corregir: Story = {
   },
 };
 
+/**
+ * **La planilla crece.** `Enter` en la última fila confirma y baja a una fila nueva, en la
+ * misma columna — como cualquier planilla —, y «agregar una fila» abajo hace lo mismo desde
+ * el mouse, parado en la primera celda que se puede escribir. La fila nueva es del dominio:
+ * acá sólo sube la cuenta de filas, y la planilla espera a que llegue para pararse en ella.
+ */
+export const Crecer: Story = {
+  render: function Render() {
+    const BASE = 6;
+    const [filas, setFilas] = useState(BASE);
+    const [tocadas, setTocadas] = useState<Map<string, string>>(new Map());
+    const clave = (r: number, ci: number) => `${r}:${ci}`;
+
+    return (
+      <div className="flex flex-col gap-3 bg-ground p-8">
+        <SheetTable
+          columns={COLUMNS.slice(0, 6)}
+          rows={filas}
+          height="auto"
+          value={(r, c, ci) => tocadas.get(clave(r, ci)) ?? (r < BASE ? valor(r, c, ci) : "")}
+          tone={(r, _c, ci) => (tocadas.has(clave(r, ci)) ? "good" : undefined)}
+          editable={(r, c) => r >= BASE || c.id !== "referencia"}
+          onCommit={(r, _c, ci, next) =>
+            setTocadas((prev) => new Map(prev).set(clave(r, ci), next))
+          }
+          onAddRow={() => setFilas((n) => n + 1)}
+          caption={`${filas} movimientos · los nuevos se escriben enteros`}
+        />
+      </div>
+    );
+  },
+};
+
 /* ==================================================================== *
  *  LAS TRES VARIANTES: plano · agrupado · anidado
  *

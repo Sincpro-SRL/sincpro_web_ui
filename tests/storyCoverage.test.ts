@@ -33,7 +33,6 @@ const SHOWN_THROUGH: Readonly<Record<string, string>> = {
   AssistLabel: "AssistSuggestion, AssistPending and ChangeReview — 3 · Componentes/Asistente",
   AssistSourceLink:
     "AssistSuggestion, ChangeReview and AssistMark — 3 · Componentes/Asistente",
-  Totals: "LineItems' `totals` — 3 · Componentes/Datos/Líneas, 5 · Plantillas · Factura",
 };
 
 const ROOT = join(import.meta.dirname, "..");

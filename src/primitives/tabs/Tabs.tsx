@@ -9,7 +9,7 @@ import { Tab, TabList, Tabs as AriaTabs } from "react-aria-components";
  * UNA TIRA DE PESTAÑAS. La misma en todo el sistema.
  *
  * Context: esto vivía adentro del encabezado del registro y se llamaba
- * `Aspects`, así que el chatter —que necesita exactamente lo mismo— no podía
+ * `Aspects`, así que la actividad —que necesita exactamente lo mismo— no podía
  * usarlo: un contexto no importa de otro contexto. El resultado era una tira de
  * pestañas de segunda mano, con el activo marcado de otra manera, en la misma
  * pantalla que la buena.
@@ -105,7 +105,7 @@ const NOTICE_DOT: Record<Tone, string> = {
 };
 
 /**
- * The strip only: what each tab opens is drawn by whoever uses it (`Record`, `Chatter`).
+ * The strip only: what each tab opens is drawn by whoever uses it (`Record`, `Activity`).
  *
  * Built on React Aria's `Tabs`, so the strip is a real tab list for the keyboard: the
  * arrows move between tabs and select them, Home/End jump to the ends, and only the open

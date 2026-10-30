@@ -7,10 +7,10 @@ import { Send, Users, X } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
 /**
- * The box to write in. What gets written is drawn by `Chatter`, together with
+ * The box to write in. What gets written is drawn by `Activity`, together with
  * what the system logged — see its note on why the merge is the default.
  *
- * Odoo's chatter is two things sharing a column — a log the system writes and a
+ * Odoo's chatter —our activity— is two things sharing a column — a log the system writes and a
  * thread people write — and they are usually confused because they sit
  * together. They are not the same: an event is a fact that happened, and a
  * message is somebody's account of it. The system's half never needs a reply
@@ -67,9 +67,9 @@ export function writeANote(): MessageKind {
   const copy = currentCopy();
   return {
     id: "note",
-    label: copy.chatter.writeNote,
+    label: copy.activity.writeNote,
     internal: true,
-    placeholder: copy.chatter.notePlaceholder,
+    placeholder: copy.activity.notePlaceholder,
   };
 }
 
@@ -112,7 +112,9 @@ export function MessageComposer({
         {ways.map((kind) => (
           <Button
             key={kind.id}
-            role={writing?.id === kind.id ? "primary" : "ghost"}
+            /* Chosen is `secondary`, not `primary`: the gold is the record's one action,
+               and a way of writing that is merely selected is not an action. */
+            role={writing?.id === kind.id ? "secondary" : "ghost"}
             size="sm"
             onClick={() => (writing?.id === kind.id ? close() : setWriting(kind))}
           >
@@ -129,12 +131,12 @@ export function MessageComposer({
           {writing.internal === true || writing.recipients === undefined ? null : (
             <p
               className="flex min-w-0 items-center gap-1.5 text-micro text-muted"
-              title={copy.chatter.recipients}
+              title={copy.activity.recipients}
             >
               <Users className="size-3.5 shrink-0" aria-hidden />
               <span className="min-w-0 truncate">
                 {writing.recipients.length === 0
-                  ? copy.chatter.noRecipients
+                  ? copy.activity.noRecipients
                   : writing.recipients.join(" · ")}
               </span>
             </p>
@@ -142,12 +144,14 @@ export function MessageComposer({
           <TextArea
             value={body}
             onChange={setBody}
-            placeholder={writing.placeholder ?? copy.chatter.messagePlaceholder}
+            placeholder={writing.placeholder ?? copy.activity.messagePlaceholder}
             rows={3}
           />
           <div className="flex min-w-0 items-center gap-2">
+            {/* Secondary: the panel sits beside the record, and the record's rail already
+                holds the screen's one gold action (PRINCIPLES §2). */}
             <Button
-              role="primary"
+              role="secondary"
               size="sm"
               icon={Send}
               disabled={!ready}
@@ -156,10 +160,10 @@ export function MessageComposer({
                 close();
               }}
             >
-              {sending ? copy.chatter.sending : copy.chatter.send}
+              {sending ? copy.activity.sending : copy.activity.send}
             </Button>
             <Button role="ghost" size="sm" icon={X} onClick={close}>
-              {copy.chatter.cancel}
+              {copy.activity.cancel}
             </Button>
           </div>
         </div>

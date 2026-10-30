@@ -2,10 +2,12 @@ import assert from "node:assert/strict";
 import { test } from "node:test";
 
 import {
+  Calendar,
   DatePicker,
   DateRangePicker,
   Field,
   FormModeProvider,
+  RangeCalendar,
   SPANISH_COPY,
   UiCopyProvider,
 } from "@sincpro/web-ui";
@@ -63,4 +65,53 @@ test("a range in read mode reads as one span", () => {
 test("an empty or broken ISO renders an empty field instead of throwing", () => {
   assert.doesNotThrow(() => renderToStaticMarkup(<DatePicker value="" />));
   assert.doesNotThrow(() => renderToStaticMarkup(<DatePicker value="no-es-fecha" />));
+});
+
+test("a day in read mode is that day wherever the machine is: the 30th is not the 29th in La Paz", () => {
+  const zone = process.env.TZ;
+  process.env.TZ = "America/La_Paz";
+  try {
+    const html = renderToStaticMarkup(
+      <UiCopyProvider copy={SPANISH_COPY}>
+        <FormModeProvider value="read">
+          <DatePicker value="2026-10-30" />
+        </FormModeProvider>
+      </UiCopyProvider>,
+    );
+    assert.match(html, />30 oct/);
+  } finally {
+    if (zone === undefined) delete process.env.TZ;
+    else process.env.TZ = zone;
+  }
+});
+
+/* The heading's month and year are selects named by `Intl` in the copy's language, and the
+   year list reaches a century back — a birth date is one pick, not eighty months. */
+test("the calendar heading jumps: a month and a year select, named in the copy's language", () => {
+  const html = renderToStaticMarkup(
+    <UiCopyProvider copy={SPANISH_COPY}>
+      <Calendar value="1987-04-12" aria-label="Fecha de nacimiento" />
+    </UiCopyProvider>,
+  );
+  assert.match(html, /aria-label="mes"/);
+  assert.match(html, /aria-label="año"/);
+  assert.match(html, />abril</);
+  assert.match(html, />1987</);
+});
+
+test("two months side by side keep their heading; one month jumps like the calendar", () => {
+  const two = renderToStaticMarkup(
+    <UiCopyProvider copy={SPANISH_COPY}>
+      <RangeCalendar months={2} value={{ start: "2026-10-01", end: "2026-11-15" }} />
+    </UiCopyProvider>,
+  );
+  assert.doesNotMatch(two, /aria-label="año"/);
+  assert.match(two, /<h2/);
+  const one = renderToStaticMarkup(
+    <UiCopyProvider copy={SPANISH_COPY}>
+      <RangeCalendar value={{ start: "2019-03-01", end: "2019-03-15" }} />
+    </UiCopyProvider>,
+  );
+  assert.match(one, /aria-label="año"/);
+  assert.match(one, />2019</);
 });

@@ -65,11 +65,15 @@ grupo. Ordena más que poner bordes.
 
 Primero lo que el 80 % necesita; el resto en pestañas, secciones plegables o "ver más".
 
-| Cómo lo aplica el sistema                        | Dónde                      |
-| ------------------------------------------------ | -------------------------- |
-| Pestañas del registro.                           | `Record.Pages`             |
-| Opciones avanzadas plegadas.                     | `Disclosure`, `Accordion`  |
-| Ayuda bajo demanda, no un párrafo en cada campo. | `Hint` (el `?` del rótulo) |
+| Cómo lo aplica el sistema                                                                                                                                                                                                                                                                                                        | Dónde                                           |
+| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
+| Pestañas del registro.                                                                                                                                                                                                                                                                                                           | `Record.Pages`                                  |
+| Opciones avanzadas plegadas.                                                                                                                                                                                                                                                                                                     | `Disclosure`, `Accordion`                       |
+| Ayuda bajo demanda, no un párrafo en cada campo.                                                                                                                                                                                                                                                                                 | `Hint` (el `?` del rótulo)                      |
+| Avisos del registro: lo que está mal, siempre a la vista y fuera de la hoja; el resto, en la sección «Avisos» de la Actividad, y el indicador del riel lleva a ellos.                                                                                                                                                            | `Record.Notice`                                 |
+| Lo que rodea al registro en UNA columna, «Actividad», unida a la hoja por la derecha si hay ancho y debajo si no, abierta por defecto: arriba, compactos, los avisos (lo que está mal AHORA); debajo, siempre a la vista, la línea de tiempo (lo que PASÓ): mensajes, notas y eventos por fecha, separados por día, con filtros. | `Record.Activity`, `Activity`                   |
+| Lo que es de UN campo va con su campo: una marca al lado del rótulo dice DÓNDE y abre la frase; la Actividad la lista con los avisos y lleva de vuelta al campo.                                                                                                                                                                 | `note` de `Field`, `DataField` y `Record.Facts` |
+| Un registro abierto desde otro: UN diálogo con rastro, no diálogos apilados.                                                                                                                                                                                                                                                     | `Drill`, `Drill.Context`                        |
 
 ## 6. Consistencia y convenciones
 

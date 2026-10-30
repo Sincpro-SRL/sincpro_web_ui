@@ -3,7 +3,9 @@
 import { type CalendarDate, parseDate } from "@internationalized/date";
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { focusRing, tv } from "@sincpro/web-ui/foundations/variants";
-import { ChevronLeft, ChevronRight } from "lucide-react";
+import { listOptionStyles } from "@sincpro/web-ui/primitives/field/aria";
+import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
+import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   Button as AriaButton,
   Calendar as AriaCalendar,
@@ -13,8 +15,15 @@ import {
   CalendarGridHeader,
   CalendarHeaderCell,
   CalendarHeading,
+  CalendarMonthPicker,
+  CalendarYearPicker,
   type DateValue as AriaDateValue,
+  type Key,
+  ListBox,
+  ListBoxItem,
   RangeCalendar as AriaRangeCalendar,
+  Select as AriaSelect,
+  SelectValue,
   useLocale,
 } from "react-aria-components";
 
@@ -25,6 +34,12 @@ import {
  * implements the grid pattern (arrows move a day, PageUp/PageDown a month, Home/End the
  * week). The selected day is the system's `primary`, not the gold: the gold is for the ONE
  * action of a screen, and a calendar is not an action.
+ *
+ * The month and the year of the heading are two small selects: a birth date in 1987 or a
+ * contract signed in 2019 is two picks away, not eighty presses of «previous month». They
+ * are ALWAYS there, not behind a prop, because they cost nothing to the look — the words of
+ * the heading become the buttons, same weight, same color, the arrows where they were — and
+ * a prop is the one every app forgets on the one form (the birth date) that needed it.
  */
 
 const navButton = tv({
@@ -32,7 +47,60 @@ const navButton = tv({
   base: "inline-flex size-(--size-control-sm) items-center justify-center rounded-control text-muted transition-colors duration-(--duration-instant) hover:bg-ink/6 hover:text-ink pressed:bg-ink/10 disabled:text-line-strong",
 });
 
-function Header() {
+const jumpTrigger = tv({
+  extend: focusRing,
+  base: "inline-flex h-(--size-control-sm) items-center gap-1 rounded-control px-1.5 text-body font-semibold text-ink transition-colors duration-(--duration-instant) hover:bg-ink/6 pressed:bg-ink/10",
+});
+
+/* What `CalendarMonthPicker` and `CalendarYearPicker` hand over: the localized name of the
+   field («mes», «año» — from `Intl`, so no copy entry), the shown month or year, and the
+   choices around it. */
+type JumpProps = {
+  "aria-label": string;
+  value: Key;
+  onChange: (key: Key | null) => void;
+  items: readonly { id: number; formatted: string }[];
+};
+
+/* A word of the heading that opens a list. `first-letter` needs a block box: Spanish month
+   names are lower case, and a heading that starts «octubre» reads like a typo. */
+function Jump({ "aria-label": label, value, onChange, items }: JumpProps) {
+  return (
+    <AriaSelect aria-label={label} value={value} onChange={onChange}>
+      <AriaButton className={jumpTrigger}>
+        <SelectValue className="inline-block first-letter:uppercase">
+          {({ selectedText }) => selectedText}
+        </SelectValue>
+        <ChevronDown
+          aria-hidden
+          className="size-(--size-icon-sm) text-muted"
+          strokeWidth={2.5}
+        />
+      </AriaButton>
+      <Popover placement="bottom" className="min-w-(--trigger-width)">
+        <ListBox items={items} className="max-h-[inherit] overflow-auto p-1 outline-0">
+          {(item) => (
+            <ListBoxItem id={item.id} textValue={item.formatted} className={listOptionStyles}>
+              <span className="block tabular-nums first-letter:uppercase">
+                {item.formatted}
+              </span>
+            </ListBoxItem>
+          )}
+        </ListBox>
+      </Popover>
+    </AriaSelect>
+  );
+}
+
+/* A century around the shown year: wide enough for a birth date or an old contract in one
+   pick, and `min`/`max` clip it (a birth date with `max` = today lists back from today).
+   The list opens scrolled to the shown year and typing «1987» jumps to it. */
+const YEARS_LISTED = 100;
+
+/** `jump` turns the heading into the month and year selects. Off only for two months side
+ *  by side: their heading names a span («octubre – noviembre de 2026») that one month
+ *  select cannot stand for. */
+function Header({ jump }: { jump: boolean }) {
   const { direction } = useLocale();
   const [Prev, Next] =
     direction === "rtl" ? [ChevronRight, ChevronLeft] : [ChevronLeft, ChevronRight];
@@ -41,7 +109,18 @@ function Header() {
       <AriaButton slot="previous" className={navButton}>
         <Prev aria-hidden className="size-(--size-icon-md)" strokeWidth={2} />
       </AriaButton>
-      <CalendarHeading className="flex-1 text-center text-body font-semibold text-ink first-letter:uppercase" />
+      {jump ? (
+        <div className="flex flex-1 items-center justify-center">
+          <CalendarMonthPicker format="long">
+            {(aria) => <Jump {...aria} />}
+          </CalendarMonthPicker>
+          <CalendarYearPicker visibleYears={YEARS_LISTED}>
+            {(aria) => <Jump {...aria} />}
+          </CalendarYearPicker>
+        </div>
+      ) : (
+        <CalendarHeading className="flex-1 text-center text-body font-semibold text-ink first-letter:uppercase" />
+      )}
       <AriaButton slot="next" className={navButton}>
         <Next aria-hidden className="size-(--size-icon-md)" strokeWidth={2} />
       </AriaButton>
@@ -132,7 +211,7 @@ export function Calendar({
   return (
     <AriaLocale>
       <AriaCalendar {...rest} {...props} className="w-fit">
-        <Header />
+        <Header jump />
         <CalendarGrid className="border-separate border-spacing-0.5">
           <WeekDays />
           <CalendarGridBody>
@@ -194,7 +273,7 @@ export function RangeCalendar({
   return (
     <AriaLocale>
       <AriaRangeCalendar {...rest} {...props} visibleDuration={{ months }} className="w-fit">
-        <Header />
+        <Header jump={months === 1} />
         <div className="flex gap-4">
           {Array.from({ length: months }, (_, i) => (
             <CalendarGrid

@@ -1,6 +1,6 @@
 "use client";
 
-import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
@@ -40,7 +40,39 @@ import type { ReactNode } from "react";
  *  checkboxes, and the row they were about to tick is no longer where it was.
  *
  *  The actions on the left do NOT go away: «Nuevo» stays available with three
- *  rows selected, because selecting is not entering a mode. */
+ *  rows selected, because selecting is not entering a mode.
+ *
+ *  ── Inside a record it is ONE line (`inline`) ────────────────────────
+ *
+ *      ┌───────────────────────────────────────────────────────────────┐
+ *      │ 🔍 search the lines…               12 records  [sort][cols][▤▦] │
+ *      └───────────────────────────────────────────────────────────────┘
+ *        WHAT I LOOK FOR (fills)          HOW MANY    HOW I LOOK
+ *
+ *  A collection that is a FIELD of a record — the lines of an order, the
+ *  contacts of a customer, the journal items of an invoice — is not a screen.
+ *  Everything the two rows above answer is already answered by the record
+ *  around it: where I am (the record's crumbs), what this is (the tab it sits
+ *  in), what I can do (the record's actions). Drawn with the page bar, it
+ *  spent two rows and a rule on the one question left —the search, alone and
+ *  centred on the first row; «Ordenar» and the switcher alone on the second—
+ *  and pushed the rows, which are what the tab is for, below the fold.
+ *
+ *  So it is a single line, and the order is the order of the questions: the
+ *  search FILLS from the left (it is the only thing with variable content),
+ *  then how many there are, then how they are looked at, then what starts a
+ *  new one. No band, no padding, no hairline: it sits on the record's paper,
+ *  aligned with the fields above it, and a light band inside a white sheet is
+ *  a rectangle inside a rectangle.
+ *
+ *  On a phone the line breaks by itself, with no threshold written anywhere:
+ *  the search asks for `--container-name` before it gives up its place, so
+ *  when the controls do not fit next to it they drop to a second line, pushed
+ *  to the right, and the search keeps the whole first one.
+ *
+ *  The count is a live region: typing in the search changes it, and somebody
+ *  who cannot see the rows thin out hears how many are left. With
+ *  `pagination` the page range replaces it — it already says how many. */
 export function ListingBar({
   actions,
   title,
@@ -52,6 +84,8 @@ export function ListingBar({
   views,
   crumbs,
   surface,
+  inline = false,
+  count,
 }: {
   /** What starts something new. It stays visible even when there is a selection. */
   actions?: ReactNode;
@@ -74,11 +108,18 @@ export function ListingBar({
   /** `chrome` paints the whole band navy and everything inside inherits it:
    *  the search box, the pagination and the switcher. See `system/surface.tsx`. */
   surface?: Surface;
+  /** One line, for a collection inside a record: search, count, views, actions. The
+   *  title, the description, the counters and the crumbs are not drawn — the record
+   *  around it already says them. Always on the canvas. See the header. */
+  inline?: boolean;
+  /** How many records there are, said on the inline line when there is no
+   *  `pagination` to say it. Ignored by the two-row bar: its identity has counters. */
+  count?: number;
 }) {
   const selecting = selection !== undefined && selection.count > 0;
   const d = useDensity();
   const copy = useUiCopy();
-  const activeSurface = useSurface(surface);
+  const activeSurface = useSurface(inline ? "canvas" : surface);
   const isChrome = activeSurface === "chrome";
 
   /* In compact the title and the description are NOT drawn, and it is not for
@@ -129,6 +170,45 @@ export function ListingBar({
        selection. */
     <div className="w-full min-w-0">{search}</div>
   );
+
+  if (inline) {
+    const howMany =
+      pagination ??
+      (count === undefined ? null : (
+        <span role="status" className="shrink-0 text-meta text-muted tabular-nums">
+          {count === 1
+            ? copy.list.countOne
+            : fillCopy(copy.list.count, { count: count.toLocaleString(copy.locale) })}
+        </span>
+      ));
+    return (
+      <SurfaceProvider value="canvas">
+        <div
+          className={`flex min-w-0 flex-wrap items-center gap-y-1.5 ${byDensity(d, "gap-x-3", "gap-x-2")}`}
+        >
+          {/* `basis` is what the search asks for before the line breaks; `flex-1` is what
+              makes it fill once it has its line. `overflow-x-clip` for the reason given
+              on the two-row bar below: the filter panel hangs out of this box. */}
+          {center === null ? null : (
+            <div className="flex min-w-0 flex-1 basis-(--container-name) items-center overflow-x-clip overflow-y-visible">
+              {center}
+            </div>
+          )}
+          {howMany}
+          {views === undefined ? null : (
+            <div className="ml-auto flex shrink-0 items-center gap-2">{views}</div>
+          )}
+          {actions === undefined ? null : (
+            <div
+              className={`flex shrink-0 items-center gap-1.5 ${views === undefined ? "ml-auto" : ""}`}
+            >
+              {actions}
+            </div>
+          )}
+        </div>
+      </SurfaceProvider>
+    );
+  }
 
   /* El campo de búsqueda va en el CENTRO de la línea, y centrado contra la
      línea: pide `--container-search` y los dos lados se reparten lo que sobra

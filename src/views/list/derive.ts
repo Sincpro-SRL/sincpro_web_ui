@@ -6,8 +6,13 @@ import {
   pileItems,
   pileLabel,
 } from "@sincpro/web-ui/foundations/grouping";
-import { aggregateOf, type DataColumn } from "@sincpro/web-ui/primitives/table/DataTable";
-import type { ReportRow } from "@sincpro/web-ui/primitives/table/ReportTable";
+import {
+  aggregateFormat,
+  aggregateOf,
+  aggregateText,
+  type DataColumn,
+} from "@sincpro/web-ui/primitives/table/DataTable";
+import type { ReportColumn, ReportRow } from "@sincpro/web-ui/primitives/table/ReportTable";
 import type { SheetColumn } from "@sincpro/web-ui/primitives/table/SheetTable";
 import type { ListGroup, ListSheet, RowOf } from "@sincpro/web-ui/views/list/types";
 
@@ -155,10 +160,14 @@ export function sheetRowsOf<T extends object>(
              las `columns` de la lista —las mismas que suma el pie de la
              tabla— para que la planilla y la tabla no digan números distintos
              del mismo montón. La planilla declara SUS columnas aparte, así que
-             se busca por id. */
+             se busca por id. Y se ESCRIBE como el pie: con el `format` de la
+             columna, para que el montón no diga «78752,9» debajo de «Bs.». */
           total: (column: SheetColumn) => {
             const declared = columns?.find((one) => one.id === column.id);
-            return declared === undefined ? null : aggregateOf(declared, inside);
+            const value = declared === undefined ? null : aggregateOf(declared, inside);
+            return declared === undefined || value === null
+              ? null
+              : aggregateText(declared, value);
           },
         },
       });
@@ -227,4 +236,29 @@ export function reportRowsOf<T extends object>(
   };
 
   return piles.map(line);
+}
+
+/**
+ * The columns of a report built from the piles, written like the list's own columns.
+ *
+ * `reportRowsOf` puts in position `i` the aggregate of the `i`-th column that declared one,
+ * so `report.columns[i]` is THAT column's: a report column without its own `format` takes
+ * the one the list column declared — otherwise the report wrote «Bs. 78.752,90» in the
+ * table's footer and «78.752,90» in its own total line. A format declared on the report
+ * column wins: it is the more specific declaration. A `count` column keeps the report's own
+ * number format — a count of rows is not an amount.
+ */
+export function reportColumnsOf<T extends object>(
+  reportColumns: readonly ReportColumn[],
+  columns: readonly DataColumn<T>[] | undefined,
+): readonly ReportColumn[] {
+  if (columns === undefined) return reportColumns;
+  const numeric = columns.filter((column) => column.aggregate !== undefined);
+  return reportColumns.map((column, index) => {
+    const declared = numeric[index];
+    const format = declared === undefined ? undefined : aggregateFormat(declared);
+    return column.format !== undefined || format === undefined
+      ? column
+      : { ...column, format };
+  });
 }

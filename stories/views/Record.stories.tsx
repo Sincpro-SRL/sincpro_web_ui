@@ -1,9 +1,8 @@
 import {
+  type ActivityEvent,
   Block,
   Button,
   Cell,
-  Chatter,
-  type ChatterEvent,
   Copyable,
   DataField,
   type Message,
@@ -14,7 +13,6 @@ import {
   Th,
   THead,
   Tr,
-  useChatter,
   writeANote,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
@@ -47,7 +45,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          "Un registro entero: el riel con su lugar y sus acciones, la hoja con los hechos y el cuaderno, y el chatter al costado. Las piezas por separado están en `3 · Componentes/Registro`.",
+          "Un registro entero: el riel con su lugar y sus acciones, la hoja con los hechos y el cuaderno, y la actividad a la derecha. Las piezas por separado están en `3 · Componentes/Registro`.",
       },
     },
   },
@@ -88,7 +86,7 @@ const LINEAS: readonly InvoiceLine[] = [
   },
 ];
 
-const EVENTOS: ChatterEvent[] = ORDER_EVENTS;
+const EVENTOS: ActivityEvent[] = ORDER_EVENTS;
 const MENSAJES: Message[] = ORDER_MESSAGES.slice(0, 1);
 
 const CLIENTE = "Importadora y Exportadora del Oriente Boliviano Ltda.";
@@ -103,14 +101,13 @@ const CLIENTE = "Importadora y Exportadora del Oriente Boliviano Ltda.";
  * éste. Un «ver las entregas» puesto como acción promete que va a pasar algo acá,
  * y lo que hace es irse.
  *
- * El chatter va al costado cuando hay ancho y abajo cuando no. Arranca plegado:
- * abierto, se lleva una columna de 22rem en cada registro que abrís, antes de
- * que nadie la haya pedido.
+ * La **actividad** —avisos, conversación e historial— va a la DERECHA de la hoja, unida a
+ * ella, cuando la página es ancha, y debajo cuando no. Arranca abierta: en una pantalla
+ * grande se ve de una lo que tiene el registro; plegarla deja una tira con sus cuentas.
  */
 export const Completo: Story = {
   render: function Render() {
     const [page, setPage] = useState("lineas");
-    const chatter = useChatter(false);
 
     return (
       <div className="bg-ground p-8">
@@ -207,15 +204,11 @@ export const Completo: Story = {
             </Record.Pages>
           </Record.Paper>
 
-          <Record.Chatter>
-            <Chatter
-              open={chatter.open}
-              onToggle={chatter.toggle}
-              events={EVENTOS}
-              messages={MENSAJES}
-              composer={<MessageComposer kinds={[writeANote()]} onSend={() => {}} />}
-            />
-          </Record.Chatter>
+          <Record.Activity
+            events={EVENTOS}
+            messages={MENSAJES}
+            composer={<MessageComposer kinds={[writeANote()]} onSend={() => {}} />}
+          />
         </Record>
       </div>
     );
@@ -322,105 +315,106 @@ export const SinRiel: Story = {
   },
 };
 
-/**
- * **El chatter ABAJO — el default.** Debajo del registro y a todo el ancho, como
- * hoja propia.
- *
- * Es el default y no por comodidad: un formulario necesita su ancho para que los
- * campos no se apilen, y una columna de 22rem al costado se lo come en cuanto la
- * pantalla no sobra. Abajo, la conversación no compite con el registro.
- *
- * En esta variante plegar es de pantalla chica: mientras haya ancho, plegarlo
- * esconde media pantalla para no ganar nada.
- */
-export const ChatterAbajo: Story = {
-  render: function Render() {
-    const chatter = useChatter(true);
-    return (
-      <div className="bg-ground p-8">
-        <Record
-          identity={{
-            icon: ShoppingCart,
-            title: "S00142",
-            tag: { label: "pedido de venta" },
-          }}
-        >
-          <Record.Paper>
-            <Record.Facts
-              fields={[
-                { label: "Cliente", value: CLIENTE },
-                { label: "Total", value: "Bs. 58.000,00" },
-              ]}
-            />
-          </Record.Paper>
+const RIEL = (
+  <Record.Rail>
+    <Record.Crumbs
+      crumbs={[
+        { label: "Ventas", onClick: () => {} },
+        { label: "Pedidos", onClick: () => {} },
+        { label: "S00142" },
+      ]}
+    />
+    <Record.Actions>
+      <Button role="primary" size="sm">
+        Crear factura
+      </Button>
+    </Record.Actions>
+  </Record.Rail>
+);
 
-          <Record.Chatter layout="page">
-            <Chatter
-              layout="page"
-              open={chatter.open}
-              onToggle={chatter.toggle}
-              events={EVENTOS}
-              messages={MENSAJES}
-              composer={<MessageComposer kinds={[writeANote()]} onSend={() => {}} />}
-            />
-          </Record.Chatter>
-        </Record>
-      </div>
-    );
-  },
+/**
+ * **La actividad a la DERECHA — el default en una página ancha.** Una columna de
+ * `--container-activity` unida a la hoja, la pareja centrada: se lee de izquierda a
+ * derecha, el registro y después lo que tiene. Arriba, compactos, los AVISOS: los del
+ * registro y las notas de sus campos y líneas, cada una diciendo de qué es y llevando a
+ * ella. Debajo, siempre a la vista, la LÍNEA DE TIEMPO: mensajes, notas internas y eventos
+ * intercalados por fecha, separados por día, con filtros.
+ *
+ * Achicá la ventana: por debajo de `--container-beside` la actividad baja y queda debajo
+ * de la hoja. Es una consulta de
+ * CONTENEDOR, no de ventana: en este producto la ventana puede ser enorme y el panel
+ * angosto igual.
+ */
+export const ActividadALaDerecha: Story = {
+  render: () => (
+    <Record
+      identity={{
+        icon: ShoppingCart,
+        title: "S00142",
+        tag: { label: "pedido de venta" },
+      }}
+    >
+      {RIEL}
+      <Record.Paper layout="horizontal">
+        <Record.Facts
+          fields={[
+            { label: "Cliente", value: CLIENTE },
+            { label: "Total", value: "Bs. 58.000,00" },
+            {
+              label: "Fecha del pedido",
+              value: "28/10/2026",
+              note: {
+                tone: "warn",
+                label: "Entrega prometida en 2 días",
+                detail: "La impresora todavía no llegó al depósito.",
+              },
+            },
+          ]}
+        />
+      </Record.Paper>
+      <Record.Activity
+        defaultOpen
+        events={EVENTOS}
+        messages={MENSAJES}
+        composer={<MessageComposer kinds={[writeANote()]} onSend={() => {}} />}
+      />
+    </Record>
+  ),
 };
 
 /**
- * **El chatter AL COSTADO.** La otra variante, y la que hay que pedir
- * explícitamente con `layout="aside"`.
- *
- * Es para un registro que se LEE más de lo que se edita: ahí tener la historia a
- * la vista mientras se mira el dato vale el ancho que cuesta. En un formulario
- * no — le come el ancho a los campos y los apila.
- *
- * **Responde al tamaño.** Al costado sólo cuando hay ancho; en una pantalla
- * angosta —o en un panel de 380 px con otros tres abiertos— baja solo y se pone
- * debajo. Por eso la regla es una consulta de CONTENEDOR y no de ventana: en
- * este producto la ventana puede ser enorme y el panel angosto igual.
- *
- * Achicá la ventana y mirá cómo pasa de columna a fila.
+ * **La actividad siempre DEBAJO** (`layout="below"`): para un registro que se edita más
+ * de lo que se lee, donde la hoja necesita todo el ancho. Es una tarjeta propia bajo la
+ * hoja, al ancho de la hoja — no la última fila del formulario: es sobre el registro, no
+ * parte de él.
  */
-export const ChatterAlCostado: Story = {
-  render: function Render() {
-    const chatter = useChatter(true);
-    return (
-      <div className="bg-ground p-8">
-        <Record
-          identity={{
-            icon: ShoppingCart,
-            title: "S00142",
-            tag: { label: "pedido de venta" },
-          }}
-        >
-          <Record.Paper layout="horizontal">
-            <Record.Facts
-              fields={[
-                { label: "Cliente", value: CLIENTE },
-                { label: "Total", value: "Bs. 58.000,00" },
-                { label: "Fecha del pedido", value: "28/10/2026" },
-              ]}
-            />
-          </Record.Paper>
-
-          <Record.Chatter layout="aside">
-            <Chatter
-              layout="aside"
-              open={chatter.open}
-              onToggle={chatter.toggle}
-              events={EVENTOS}
-              messages={MENSAJES}
-              composer={<MessageComposer kinds={[writeANote()]} onSend={() => {}} />}
-            />
-          </Record.Chatter>
-        </Record>
-      </div>
-    );
-  },
+export const ActividadDebajo: Story = {
+  render: () => (
+    <Record
+      identity={{
+        icon: ShoppingCart,
+        title: "S00142",
+        tag: { label: "pedido de venta" },
+      }}
+    >
+      {RIEL}
+      <Record.Paper>
+        <Record.Facts
+          fields={[
+            { label: "Cliente", value: CLIENTE },
+            { label: "Total", value: "Bs. 58.000,00" },
+          ]}
+        />
+      </Record.Paper>
+      <Record.Activity
+        layout="below"
+        defaultOpen
+        events={EVENTOS}
+        messages={MENSAJES}
+        composer={<MessageComposer kinds={[writeANote()]} onSend={() => {}} />}
+      />
+    </Record>
+  ),
 };
 
 /** La ficha todavía no llegó. No es un vacío: el riel, el nombre, los hechos y
@@ -437,7 +431,7 @@ export const Cargando: Story = {
 /**
  * **Sólo la historia, sin mensajes.** Es lo que hay hoy en la mayoría de los
  * registros: sin servicio de mensajería no se le pasan `messages`, y entonces el
- * chatter no dibuja pestañas — con una sola fuente, «todo» y esa fuente son la
+ * panel no dibuja el filtro — con una sola fuente, «todo» y esa fuente son la
  * misma lista.
  *
  * Mirá la línea de tiempo: el riel une los puntos y es lo que hace que se lea
@@ -452,16 +446,133 @@ export const Cargando: Story = {
  */
 export const SoloLaHistoria: Story = {
   render: function Render() {
-    const chatter = useChatter(true);
     return (
       <div className="bg-ground p-8">
         <Record identity={{ icon: ShoppingCart, title: "S00142" }}>
+          {RIEL}
           <Record.Paper>
             <Record.Facts fields={[{ label: "Total", value: "Bs. 58.000,00" }]} />
           </Record.Paper>
-          <Record.Chatter>
-            <Chatter open={chatter.open} onToggle={chatter.toggle} events={EVENTOS} />
-          </Record.Chatter>
+          <Record.Activity defaultOpen events={EVENTOS} />
+        </Record>
+      </div>
+    );
+  },
+};
+
+/**
+ * **Los avisos, anclados.** Ningún aviso va entre los campos: ahí empujaban el formulario
+ * hacia abajo y se leían como un campo más. Se reparten por lo que le piden a la persona:
+ *
+ * - **Lo que está mal** (`tone="bad"`, y el `error` de la operación) queda siempre a la
+ *   vista, AFUERA de la hoja: entre el riel y el papel.
+ * - **El resto** vive en la sección «Avisos» de la ACTIVIDAD, cada uno con su título, su
+ *   frase y su acción; el riel guarda UN indicador —«⚠ 2 avisos», con el tono del más
+ *   urgente— que abre la actividad y lleva el foco a esos avisos. Un registro sin
+ *   actividad (un `Drill`, un diálogo) los abre en un popover desde el mismo indicador.
+ * - **Lo que es de UN campo** no es un aviso del registro: es la `note` del campo. Una
+ *   marca (`Flag`) al lado del rótulo dice DÓNDE y abre la frase; en la actividad, la nota
+ *   se lista con los avisos y lleva de vuelta al campo. Un lector de pantalla la oye con el
+ *   campo.
+ */
+export const ConAvisos: Story = {
+  render: function Render() {
+    const [sent, setSent] = useState(true);
+    return (
+      <div className="bg-ground p-8 max-sm:p-0">
+        <Record
+          identity={{
+            icon: Receipt,
+            title: "FAC/2026/0115",
+            subtitle: CLIENTE,
+            tag: { label: "vencida", tone: "bad" },
+            figure: { label: "Saldo", value: "Bs. 12.480,00" },
+          }}
+        >
+          <Record.Rail>
+            <Record.Crumbs
+              crumbs={[{ label: "Facturas", onClick: () => {} }, { label: "FAC/2026/0115" }]}
+            />
+            <Record.Smart links={[{ icon: Truck, count: 1, label: "entregas" }]} />
+            <Record.Actions>
+              <Button role="primary" size="sm">
+                Registrar pago
+              </Button>
+            </Record.Actions>
+          </Record.Rail>
+
+          <Record.Paper layout="horizontal">
+            {/* Lo que está mal: siempre a la vista, entre el riel y el papel. */}
+            <Record.Notice tone="bad">
+              El SIN rechazó la factura: el NIT 3214569870 no está habilitado para facturar.
+            </Record.Notice>
+            {/* El resto: al indicador del riel, en orden de urgencia. */}
+            <Record.Notice
+              tone="warn"
+              title="Posible factura duplicada"
+              action={
+                <Button role="ghost" size="sm">
+                  Ver FAC/2026/0098
+                </Button>
+              }
+            >
+              FAC/2026/0098 tiene el mismo cliente y el mismo monto.
+            </Record.Notice>
+            {sent ? (
+              <Record.Notice tone="good" onDismiss={() => setSent(false)}>
+                Se envió por correo al cliente el 30/10/2026.
+              </Record.Notice>
+            ) : null}
+
+            {/* Lo que es de UN campo: su nota — una marca junto al rótulo, y en la actividad. */}
+            <Record.Facts
+              fields={[
+                {
+                  label: "Cliente",
+                  value: CLIENTE,
+                  note: {
+                    tone: "info",
+                    label: "Tiene una nota de crédito sin aplicar",
+                    detail: "NC/2026/0012 por Bs. 1.200,00.",
+                    action: (
+                      <Button role="ghost" size="sm">
+                        Aplicar
+                      </Button>
+                    ),
+                  },
+                },
+                { label: "Emitida", value: "18/09/2026" },
+                /* One note per row of facts: two cards at the same height would overlap in
+                   the margin — the margin has no layout of its own to stack them. */
+                { label: "Vence", value: "18/10/2026" },
+              ]}
+            />
+            <Record.Pages current="otra">
+              <Record.Page id="lineas" label="líneas" count={LINEAS.length}>
+                <DataField label="Líneas" value={`${LINEAS.length} productos`} />
+              </Record.Page>
+              <Record.Page id="otra" label="otra información">
+                <DataField label="Vendedor" value="Andrés Gutiérrez" />
+                <DataField
+                  label="Plazo de pago"
+                  value="30 días"
+                  note={{
+                    tone: "info",
+                    label: "El cliente suele pagar a 45 días",
+                    detail: "Promedio de las últimas 12 facturas.",
+                  }}
+                />
+              </Record.Page>
+            </Record.Pages>
+          </Record.Paper>
+
+          {/* Con panel de actividad, «⚠ N avisos» del riel lo abre y lleva el foco a sus
+              avisos: a la derecha en una página ancha, debajo (con scroll) en una angosta. */}
+          <Record.Activity
+            events={EVENTOS}
+            messages={MENSAJES}
+            composer={<MessageComposer kinds={[writeANote()]} onSend={() => {}} />}
+          />
         </Record>
       </div>
     );

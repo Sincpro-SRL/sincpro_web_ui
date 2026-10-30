@@ -8,6 +8,7 @@ import {
   LineItems,
   SPANISH_COPY,
   stackPlaces,
+  tabTarget,
   ToastProvider,
   UiCopyProvider,
 } from "@sincpro/web-ui";
@@ -254,4 +255,54 @@ test("stacked cards are ONE tab stop and open with Enter; onOpen makes a read-on
     cards(stacked({ onOpen: noop })).filter((c) => /tabindex="0"/.test(c)).length,
     1,
   );
+});
+
+/* ── adding in place, and Tab across rows ──────────────────────────────────────── */
+
+test("tabTarget: past the last control opens the next row; before the first, the previous", () => {
+  const order = ["1", "2", "3"];
+  const can = { canAdd: true, blank: false };
+  assert.deepEqual(tabTarget(order, "1", "next", can), { kind: "row", id: "2" });
+  assert.deepEqual(tabTarget(order, "2", "prev", can), { kind: "row", id: "1" });
+  assert.deepEqual(tabTarget(order, "1", "prev", can), { kind: "leave" });
+});
+
+test("tabTarget: past the last row it adds one — not from a row just added and still blank", () => {
+  const order = ["1", "2"];
+  assert.deepEqual(tabTarget(order, "2", "next", { canAdd: true, blank: false }), {
+    kind: "add",
+  });
+  assert.deepEqual(tabTarget(order, "2", "next", { canAdd: true, blank: true }), {
+    kind: "leave",
+  });
+  assert.deepEqual(tabTarget(order, "2", "next", { canAdd: false, blank: false }), {
+    kind: "leave",
+  });
+});
+
+test("LineItems adding inline: «add» is the table's row under the grid, not a header button", () => {
+  const columns: LineItemColumn<Linea>[] = [
+    { id: "producto", header: "Producto", value: (l) => l.producto, edit: () => null },
+  ];
+  const props = {
+    columns,
+    getLineId: (l: Linea) => l.id,
+    onChange: noop,
+    onAdd: noop,
+    newLine: () => ({ id: "n", producto: "", cantidad: 1 }),
+  };
+  const inline = html(<LineItems<Linea> {...props} lines={LINEAS} adding="inline" />);
+  assert.doesNotMatch(inline, /data-line-add/);
+  assert.match(
+    inline,
+    new RegExp(`<button[^>]*>.*${SPANISH_COPY.lines?.add ?? "Agregar una línea"}</button>`),
+  );
+  /* Empty, it is still a table to write in — its header and the add under it — not the
+     «nothing here yet» sentence with a button that would open nothing. */
+  const empty = html(<LineItems<Linea> {...props} lines={[]} adding="inline" />);
+  assert.match(empty, /<table/);
+  assert.match(empty, new RegExp(SPANISH_COPY.lines?.empty ?? ""));
+  /* With an editor and no `adding`, the dialog keeps adding, as before. */
+  const dialog = html(<LineItems<Linea> {...props} lines={LINEAS} editor={() => null} />);
+  assert.match(dialog, /data-line-add/);
 });

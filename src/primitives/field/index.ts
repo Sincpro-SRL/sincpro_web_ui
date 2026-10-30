@@ -4,6 +4,12 @@
    a dialog. */
 export { Checkbox, type CheckItem, CheckList } from "@sincpro/web-ui/primitives/field/Checks";
 export { type FieldIds, useFieldIds } from "@sincpro/web-ui/primitives/field/context";
+/* The copy button every field carries by its label — on by default, off by field or by form. */
+export {
+  FieldCopyProvider,
+  shownText,
+  useFieldCopy,
+} from "@sincpro/web-ui/primitives/field/copy";
 export { DropZone, type DropZoneProps } from "@sincpro/web-ui/primitives/field/DropZone";
 export {
   controlClasses,
@@ -27,3 +33,5 @@ export {
   useFormMode,
 } from "@sincpro/web-ui/primitives/field/mode";
 export { Suggest, type SuggestProps } from "@sincpro/web-ui/primitives/field/Suggest";
+/* A note that belongs to one field: a card in the record's margin, or a flag by its label. */
+export { type FieldNote } from "@sincpro/web-ui/primitives/field/note";

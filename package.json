@@ -99,9 +99,13 @@
     "ui",
     "sincpro"
   ],
+  "homepage": "https://github.com/Sincpro-SRL/sincpro_web_ui#readme",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/Sincpro-SRL/sincpro_web_ui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Sincpro-SRL/sincpro_web_ui/issues"
   },
   "author": "Gutierrez, Andres <andres.gutierrez@sincpro.com.bo>",
   "license": "MIT",

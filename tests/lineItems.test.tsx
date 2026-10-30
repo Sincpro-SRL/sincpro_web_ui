@@ -138,16 +138,21 @@ test("read mode is inherited from the form", () => {
   assert.doesNotMatch(out, /Agregar una línea|Quitar la línea/);
 });
 
-test("without lines: the sentence and the way to add the first one", () => {
+/* Empty and still editable, the document shows its TABLE: the headers say what a line will
+   hold, and «add» sits where the first one appears. A sentence in a blank box hid both. */
+test("without lines: the table with its headers, the sentence and the way to add", () => {
   const out = editable(0);
   assert.match(out, /Todavía no hay líneas\./);
   assert.match(out, /Agregar una línea/);
-  assert.doesNotMatch(out, /<table/);
+  assert.match(out, /<table/);
+  assert.match(out, /<th[^>]*>[^<]*<\/th>/, "the headers are drawn");
   const read = html(
     <LineItems<L> mode="read" lines={[]} columns={COLUMNS} getLineId={(l) => l.id} />,
   );
   assert.match(read, /Todavía no hay líneas\./);
   assert.doesNotMatch(read, /Agregar una línea/);
+  /* Read-only, there is nothing to add: the sentence alone says it. */
+  assert.doesNotMatch(read, /<table/);
 });
 
 test("the search filters by every column's text, ignoring case", () => {

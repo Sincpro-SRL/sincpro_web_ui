@@ -1,5 +1,6 @@
 "use client";
 
+import { Activity, type ActivityProps } from "@sincpro/web-ui/components/activity/Activity";
 import {
   Sheet,
   type SheetField,
@@ -9,6 +10,12 @@ import type { Crumb } from "@sincpro/web-ui/components/record/Breadcrumb";
 import type { DirtyState } from "@sincpro/web-ui/components/record/DirtyActions";
 import { Pager as PagerControl } from "@sincpro/web-ui/components/record/Pager";
 import { RecordHeader } from "@sincpro/web-ui/components/record/RecordHeader";
+import {
+  RecordBlocking,
+  RecordNoticeIndicator,
+  type RecordNoticeSpec,
+  splitNotices,
+} from "@sincpro/web-ui/components/record/RecordNotices";
 import { RecordSkeleton } from "@sincpro/web-ui/components/record/RecordSkeleton";
 import { SmartButton, SmartButtons } from "@sincpro/web-ui/components/record/SmartButtons";
 import { type Stage, StatusBar } from "@sincpro/web-ui/components/record/StatusBar";
@@ -17,15 +24,19 @@ import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import {
   flatten,
   pick as pickSlot,
+  pickAll,
   propsOf,
   slot,
   slotOf,
 } from "@sincpro/web-ui/foundations/slots";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
-import { Failed } from "@sincpro/web-ui/primitives/notice/Notice";
+import {
+  createNoteRegistry,
+  NoteRegistryContext,
+} from "@sincpro/web-ui/primitives/field/note";
 import { type TabNotice, Tabs } from "@sincpro/web-ui/primitives/tabs/Tabs";
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useId, useState, useSyncExternalStore } from "react";
 
 /**
  * ARCHETYPE 2 — ONE record, written as a TREE.
@@ -83,10 +94,11 @@ type SlotName =
   | "actions"
   | "status"
   | "paper"
-  | "chatter"
+  | "activity"
   | "facts"
   | "pages"
-  | "page";
+  | "page"
+  | "notice";
 
 const pick = (nodes: readonly ReactNode[], name: SlotName) => pickSlot(nodes, name);
 
@@ -126,6 +138,10 @@ export type RecordPager = {
 };
 
 export type { SheetField };
+
+/** A notice of the record: the props of `Record.Notice` (a `Callout` without its × label,
+ *  which the record writes from the copy table). */
+export type RecordNotice = RecordNoticeSpec;
 
 /* ---------------------------------------------------------------- *
  *  Las piezas del riel
@@ -207,25 +223,49 @@ type PageProps = {
   children?: ReactNode;
 };
 
+/** What has to be known about THIS record before acting on it: «este cliente tiene
+ *  Bs. 1.200 en créditos pendientes · Aplicar», «posible factura duplicada», «vencida
+ *  hace 12 días», a blocking error from the backend. A `Callout` — the tone, one
+ *  sentence, an optional `title`, an optional `action` (secondary or ghost: the primary
+ *  belongs to the rail) and `onDismiss` when it can be put away.
+ *
+ *  Context: written as a child of `Record` or of `Record.Paper`, as many as are true —
+ *  `{overdue ? <Record.Notice tone="warn">…</Record.Notice> : null}`. Where they go is
+ *  the record's, and NONE goes among the fields: a `bad` one (blocking) stays visible
+ *  between the rail and the paper; the rest gather in one indicator in the rail —
+ *  «⚠ 2 avisos», toned by the most urgent — that opens their list on press. Both in
+ *  urgency order. A note about ONE field is that field's `note`. See `RecordNotices`.
+ *
+ *  Named `Notice` and not `Alert`: an ARIA `alert` interrupts the screen reader, and a
+ *  notice that was already true when the record opened interrupts nothing (`Callout`
+ *  is `role="status"`). */
+const NoticeSlot = slot("notice", (_props: RecordNoticeSpec): ReactNode => null);
+
 /** El papel: el registro. El `<sheet>` blanco sobre el piso. */
 const Paper = slot("paper", (_props: PaperProps): ReactNode => null);
 
-/** Lo que al registro le PASÓ, al costado: mensajes y eventos en una columna.
+/** The record's ACTIVITY panel, as DATA: its conversation, its history, its composer.
+ *  The record draws the `Activity` itself and gives it what only the record has — its
+ *  notices (the ones that are not blocking), and the indicator in the rail that opens the
+ *  panel on them.
  *
- *  Va al lado y no abajo porque la historia es el contexto de todo lo demás que
- *  está en pantalla — leer «la factura fue rechazada» mirando los datos que la
- *  produjeron es justamente para lo que sirve, y una sección más abajo obliga a
- *  ver una cosa o la otra. Lo que va adentro lo arma quien compone: el kit no
- *  sabe qué es un evento de este producto. */
-const ChatterSlot = slot(
-  "chatter",
-  (_props: {
-    children?: ReactNode;
-    /** `page` lo pone SIEMPRE debajo y a todo el ancho, como una hoja propia. Sin
-     *  esto va al costado cuando hay ancho, que es la forma angosta. */
-    layout?: "aside" | "page";
-  }): ReactNode => null,
-);
+ *  Context: it was `<Record.Chatter><Chatter open onToggle …/></Record.Chatter>`, a node
+ *  the record could only place. Written as data — like `Record.Status` — the record owns
+ *  the panel's open state (`defaultOpen`, or `open` + `onOpenChange` to control it), so
+ *  «⚠ 2 avisos» in the rail can open it and move the focus to its notices. */
+export type RecordActivityProps = Omit<
+  ActivityProps,
+  "open" | "onToggle" | "alerts" | "alertsId"
+> & {
+  /** Starts OPEN unless this says otherwise: on a big screen you see what the record has. */
+  defaultOpen?: boolean;
+  /** Controls the panel: then `onOpenChange` must follow it. Remembering it between
+   *  records is the app's — the system only reports. */
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
+};
+
+const ActivitySlot = slot("activity", (_props: RecordActivityProps): ReactNode => null);
 
 /** Los hechos globales del registro. Están en TODAS las páginas, y por eso van
  *  arriba del cuaderno y no adentro de una. */
@@ -243,7 +283,8 @@ const Page = slot("page", (_props: PageProps): ReactNode => null);
 
 export type RecordProps = {
   identity: RecordIdentity;
-  /** Lo que falló al operar sobre el registro. Va arriba del papel, adentro. */
+  /** Lo que falló al operar sobre el registro. Va con los avisos que bloquean, primero:
+   *  entre el riel y el papel, siempre a la vista (ver `Record.Notice`). */
   error?: string | null;
   /** Hay cambios sin guardar. Su presencia REEMPLAZA los botones de acción por
    *  guardar y descartar — ver la nota en `RecordHeader`. */
@@ -258,15 +299,12 @@ export function Record({ identity, error = null, dirty, children }: RecordProps)
   const top = flatten(children);
   const railNode = pick(top, "rail");
   const paperNode = pick(top, "paper");
-  const chatterSlot = propsOf<{ children?: ReactNode; layout?: "aside" | "page" }>(
-    pick(top, "chatter"),
-  );
-  const chatter = chatterSlot?.children;
+  const activitySlot = propsOf<RecordActivityProps>(pick(top, "activity"));
   /* La escotilla: lo que el arquetipo no previó se dibuja igual, en el papel.
      Que aparezca algo acá es la señal de que al arquetipo le falta una pieza. */
   const loose = top.filter(
     (node) =>
-      slotOf(node) !== "rail" && slotOf(node) !== "paper" && slotOf(node) !== "chatter",
+      slotOf(node) !== "rail" && slotOf(node) !== "paper" && slotOf(node) !== "activity",
   );
 
   const rail = flatten(propsOf<RailProps>(railNode)?.children);
@@ -307,6 +345,40 @@ export function Record({ identity, error = null, dirty, children }: RecordProps)
   const paper = propsOf<PaperProps>(paperNode);
   const inPaper = [...flatten(paper?.children), ...loose];
   const fields = propsOf<FactsProps>(pick(inPaper, "facts"))?.fields;
+  /* Written at the top of the record or inside the paper: both are «on the record». */
+  const notices = pickAll(inPaper, "notice")
+    .map((node) => propsOf<RecordNoticeSpec>(node))
+    .filter((notice): notice is RecordNoticeSpec => notice !== undefined);
+  const { blocking, rest } = splitNotices(notices);
+
+  /* The notes of the record's fields and rows, which the cards register as they mount. */
+  const [registry] = useState(createNoteRegistry);
+  const notes = useSyncExternalStore(
+    registry.subscribe,
+    registry.snapshot,
+    registry.snapshot,
+  );
+
+  /* The panel's open state is the record's, so the rail's indicator can open it. */
+  const [ownOpen, setOwnOpen] = useState(activitySlot?.defaultOpen ?? true);
+  const activityOpen = activitySlot?.open ?? ownOpen;
+  const setActivityOpen = (next: boolean) => {
+    activitySlot?.onOpenChange?.(next);
+    if (activitySlot?.open === undefined) setOwnOpen(next);
+  };
+  const alertsId = useId();
+  /* «⚠ 2 avisos» with a panel to go to: open it, then — once it is drawn — bring its
+     notices into view and put the focus on them. On a wide record they are beside the
+     sheet already; on a narrow one the panel is below and this is the scroll that finds
+     it. A counter and not a flag, so pressing it twice moves the focus twice. */
+  const [reveal, setReveal] = useState(0);
+  useEffect(() => {
+    if (reveal === 0) return;
+    const section = document.getElementById(alertsId);
+    if (section === null) return;
+    section.scrollIntoView({ block: "start" });
+    section.focus({ preventScroll: true });
+  }, [reveal, alertsId]);
 
   const notebook = propsOf<PagesProps>(pick(inPaper, "pages"));
   const pages = flatten(notebook?.children).filter((node) => slotOf(node) === "page");
@@ -351,90 +423,142 @@ export function Record({ identity, error = null, dirty, children }: RecordProps)
        bar (last in it, `mt-auto`) reaches the bottom of the screen even when the record is
        shorter than the screen. The extra height has no paint of its own: on a desk
        nothing changes. */
-    <article className="flex min-w-0 flex-1 flex-col">
-      <RecordHeader
-        railSurface={surface}
-        {...(dirty === undefined ? {} : { dirty })}
-        {...(crumbs === undefined ? {} : { crumbs })}
-        {...(pager === undefined
-          ? {}
-          : {
-              pager: (
-                <PagerControl
-                  index={pager.index}
-                  total={pager.total}
-                  surface={surface}
-                  {...(pager.onPrev === undefined ? {} : { onPrev: pager.onPrev })}
-                  {...(pager.onNext === undefined ? {} : { onNext: pager.onNext })}
-                />
-              ),
-            })}
-        {...(actions === undefined ? {} : { actions })}
-        {...(statusBlock === undefined ? {} : { status: statusBlock })}
-        {...(identity.icon === undefined ? {} : { icon: identity.icon })}
-        title={identity.title}
-        {...(identity.subtitle === undefined ? {} : { subtitle: identity.subtitle })}
-        {...(identity.figure === undefined ? {} : { figure: identity.figure })}
-        {...(identity.tag === undefined ? {} : { tag: identity.tag })}
-        {...(smart === undefined || smart.length === 0
-          ? {}
-          : {
-              smart: (
-                <SmartButtons>
-                  {smart.map((s) => (
-                    <SmartButton
-                      key={s.label}
-                      icon={s.icon}
-                      {...(s.count === undefined ? {} : { count: s.count })}
-                      label={s.label}
-                      layout={onTheRail && d === "comfortable" ? "inline" : "stacked"}
-                      {...(s.onClick === undefined ? {} : { onClick: s.onClick })}
-                    />
-                  ))}
-                </SmartButtons>
-              ),
-            })}
-        {...(aspectsNode === undefined || globalSheet ? {} : { aspects: aspectsNode })}
-        {...(chatter === undefined ? {} : { chatter })}
-        {...(chatterSlot?.layout === undefined ? {} : { chatterLayout: chatterSlot.layout })}
-      >
-        <div
-          className={`flex min-w-0 flex-col ${byDensity(
-            d,
-            "gap-(--spacing-block) px-4 pt-(--spacing-block) pb-4",
-            "gap-2.5 pt-2.5 pb-2",
-          )}`}
+    /* The record knows the notes of its fields and rows: their cards register here. */
+    <NoteRegistryContext value={registry}>
+      <article className="flex min-w-0 flex-1 flex-col">
+        <RecordHeader
+          railSurface={surface}
+          {...(dirty === undefined ? {} : { dirty })}
+          {...(crumbs === undefined ? {} : { crumbs })}
+          {...(pager === undefined
+            ? {}
+            : {
+                pager: (
+                  <PagerControl
+                    index={pager.index}
+                    total={pager.total}
+                    surface={surface}
+                    {...(pager.onPrev === undefined ? {} : { onPrev: pager.onPrev })}
+                    {...(pager.onNext === undefined ? {} : { onNext: pager.onNext })}
+                  />
+                ),
+              })}
+          {...(actions === undefined ? {} : { actions })}
+          {...(statusBlock === undefined ? {} : { status: statusBlock })}
+          {...(identity.icon === undefined ? {} : { icon: identity.icon })}
+          title={identity.title}
+          {...(identity.subtitle === undefined ? {} : { subtitle: identity.subtitle })}
+          {...(identity.figure === undefined ? {} : { figure: identity.figure })}
+          {...(identity.tag === undefined ? {} : { tag: identity.tag })}
+          {...(smart === undefined || smart.length === 0
+            ? {}
+            : {
+                smart: (
+                  <SmartButtons>
+                    {smart.map((s) => (
+                      <SmartButton
+                        key={s.label}
+                        icon={s.icon}
+                        {...(s.count === undefined ? {} : { count: s.count })}
+                        label={s.label}
+                        layout={onTheRail && d === "comfortable" ? "inline" : "stacked"}
+                        {...(s.onClick === undefined ? {} : { onClick: s.onClick })}
+                      />
+                    ))}
+                  </SmartButtons>
+                ),
+              })}
+          {...(aspectsNode === undefined || globalSheet ? {} : { aspects: aspectsNode })}
+          {...(activitySlot === undefined
+            ? {}
+            : {
+                activity: (
+                  <Activity
+                    {...activitySlot}
+                    alerts={rest}
+                    alertsId={alertsId}
+                    open={activityOpen}
+                    onToggle={() => setActivityOpen(!activityOpen)}
+                  />
+                ),
+                activityLayout: activitySlot.layout ?? "auto",
+              })}
+          {...(blocking.length === 0 && error === null
+            ? {}
+            : {
+                blocking: (
+                  <RecordBlocking
+                    notices={blocking}
+                    error={error}
+                    errorHeading={copy.failed.operation}
+                  />
+                ),
+              })}
+          {...(rest.length === 0 && (activitySlot === undefined || notes.length === 0)
+            ? {}
+            : {
+                indicator: (
+                  <RecordNoticeIndicator
+                    notices={rest}
+                    anchored={notes.map((entry) => ({ tone: entry.note.tone ?? "info" }))}
+                    {...(activitySlot === undefined
+                      ? {}
+                      : {
+                          /* With a panel, the notices live there: the indicator goes to them
+                           instead of floating a second copy in a popover. */
+                          reveal: {
+                            target: alertsId,
+                            onReveal: () => {
+                              setActivityOpen(true);
+                              setReveal((n) => n + 1);
+                            },
+                          },
+                        })}
+                  />
+                ),
+              })}
         >
-          {error === null ? null : (
-            <Failed heading={copy.failed.operation} sentence={error} />
-          )}
-          <Sheet
-            layout={paper?.layout ?? "stacked"}
-            columns={paper?.columns ?? 2}
-            {...(hasFacts ? { fields } : {})}
-            {...(above.length > 0 || (globalSheet && aspectsNode !== undefined)
-              ? {
-                  head: (
-                    <>
-                      {above}
-                      {globalSheet && aspectsNode !== undefined ? (
-                        <div
-                          className={`border-b border-line-strong ${byDensity(d, "-mx-4 px-4", "")}`}
-                        >
-                          {aspectsNode}
-                        </div>
-                      ) : null}
-                    </>
-                  ),
-                }
-              : {})}
-          >
-            {pageBody}
-            {below}
-          </Sheet>
-        </div>
-      </RecordHeader>
-    </article>
+          {/* THE MARGIN of field notes lives OUTSIDE the paper, on the ground beside it —
+            Google-Docs style — and is laid out by `RecordHeader` (see THE MARGIN there).
+            Nothing between a field and that page box may be positioned: a note's card is
+            absolute against the page, at its field's height. */}
+          <div className="min-w-0">
+            <div
+              className={`flex min-w-0 flex-col ${byDensity(
+                d,
+                "gap-(--spacing-block) px-4 pt-(--spacing-block) pb-4",
+                "gap-2.5 pt-2.5 pb-2",
+              )}`}
+            >
+              <Sheet
+                layout={paper?.layout ?? "stacked"}
+                columns={paper?.columns ?? 2}
+                {...(hasFacts ? { fields } : {})}
+                {...(above.length > 0 || (globalSheet && aspectsNode !== undefined)
+                  ? {
+                      head: (
+                        <>
+                          {above}
+                          {globalSheet && aspectsNode !== undefined ? (
+                            <div
+                              className={`border-b border-line-strong ${byDensity(d, "-mx-4 px-4", "")}`}
+                            >
+                              {aspectsNode}
+                            </div>
+                          ) : null}
+                        </>
+                      ),
+                    }
+                  : {})}
+              >
+                {pageBody}
+                {below}
+              </Sheet>
+            </div>
+          </div>
+        </RecordHeader>
+      </article>
+    </NoteRegistryContext>
   );
 }
 
@@ -446,7 +570,8 @@ Record.Smart = Smart;
 Record.Actions = Actions;
 Record.Status = Status;
 Record.Paper = Paper;
-Record.Chatter = ChatterSlot;
+Record.Activity = ActivitySlot;
 Record.Facts = Facts;
 Record.Pages = Pages;
 Record.Page = Page;
+Record.Notice = NoticeSlot;

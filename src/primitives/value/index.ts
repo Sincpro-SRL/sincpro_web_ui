@@ -1,5 +1,9 @@
 /* Show a number or a datum so that it reads as such and not as text. */
-export { Copyable, type CopyableProps } from "@sincpro/web-ui/primitives/value/Copyable";
+export {
+  Copyable,
+  type CopyableProps,
+  CopyButton,
+} from "@sincpro/web-ui/primitives/value/Copyable";
 export {
   DateValue,
   formatDateTime,
@@ -24,13 +28,24 @@ export {
   UserStack,
 } from "@sincpro/web-ui/primitives/value/Person";
 export {
+  ProgressBar,
+  type ProgressBarProps,
+} from "@sincpro/web-ui/primitives/value/ProgressBar";
+export {
   RelationCard,
   type RelationCardProps,
   type RelationSummary,
   RelationValue,
   type RelationValueProps,
 } from "@sincpro/web-ui/primitives/value/Relation";
-export { Totals, type TotalsRow } from "@sincpro/web-ui/primitives/value/Totals";
+export {
+  Totals,
+  type TotalsCredit,
+  type TotalsDeduction,
+  type TotalsFact,
+  type TotalsProps,
+  type TotalsRow,
+} from "@sincpro/web-ui/primitives/value/Totals";
 export {
   Cell,
   formatCount,
@@ -38,5 +53,4 @@ export {
   formatNumber,
   KeyValue,
   Numeric,
-  ProgressBar,
 } from "@sincpro/web-ui/primitives/value/Value";

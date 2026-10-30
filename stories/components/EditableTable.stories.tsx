@@ -1,16 +1,24 @@
 import {
+  ComboBox,
+  DatePicker,
+  DateValue,
   EditableTable,
   type EditColumn,
   NumberInput,
+  Picker,
   Select,
   StatusDot,
   Switch,
   Tag,
+  Tags,
+  TagsField,
+  TextInput,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 
-import { PRODUCT_NAMES } from "../support/erp";
+import { CUSTOMER_OPTIONS, PRODUCT_NAMES, SALESPERSON_OPTIONS } from "../support/erp";
+import { INVOICE_LABELS } from "../support/erp-tags";
 
 interface Linea {
   id: string;
@@ -217,12 +225,12 @@ export const Lineas: Story = {
             }
             onRemove={(id) => setLineas((prev) => prev.filter((l) => l.id !== id))}
             onAdd={() => {
-              setLineas((prev) => [
-                ...prev,
-                linea(String(siguiente), "", "inmediata", 1, ""),
-              ]);
+              const id = String(siguiente);
+              setLineas((prev) => [...prev, linea(id, "", "inmediata", 1, "")]);
               setSiguiente((n) => n + 1);
+              return id;
             }}
+            onDiscard={(id) => setLineas((prev) => prev.filter((l) => l.id !== id))}
             addLabel="Agregar un producto"
             totals={[
               `${lines.length} líneas`,
@@ -552,13 +560,198 @@ export const EnElTelefono: Story = {
             }
             onRemove={(id) => setLineas((prev) => prev.filter((l) => l.id !== id))}
             onAdd={() => {
-              setLineas((prev) => [
+              const id = String(siguiente);
+              setLineas((prev) => [...prev, linea(id, "", "inmediata", 1, "")]);
+              setSiguiente((n) => n + 1);
+              return id;
+            }}
+            onDiscard={(id) => setLineas((prev) => prev.filter((l) => l.id !== id))}
+            addLabel="Agregar un producto"
+          />
+        </div>
+      </div>
+    );
+  },
+};
+
+interface Cobro {
+  id: string;
+  cliente: string;
+  etiquetas: string[];
+  vendedor: string | null;
+  vence: string | null;
+  monto: number | "";
+  referencia: string;
+}
+
+const CLIENTES = CUSTOMER_OPTIONS.map((c) => ({ id: c.value, name: c.label, meta: c.value }));
+const nombreCliente = (id: string) => CLIENTES.find((c) => c.id === id)?.name ?? "";
+const etiquetasDe = (ids: readonly string[]) =>
+  INVOICE_LABELS.filter((t) => ids.includes(t.value)).map((t) => ({
+    id: t.value,
+    label: t.label,
+    ...(t.tone === undefined ? {} : { tone: t.tone }),
+  }));
+
+const COBROS: Cobro[] = [
+  {
+    id: "c1",
+    cliente: CLIENTES[0]!.id,
+    etiquetas: ["lbl-contrato"],
+    vendedor: SALESPERSON_OPTIONS[0]!.value,
+    vence: "2026-11-15",
+    monto: 12500,
+    referencia: "FAC/2026/0118",
+  },
+  {
+    id: "c2",
+    cliente: CLIENTES[1]!.id,
+    etiquetas: ["lbl-anticipo", "lbl-reclamo"],
+    vendedor: null,
+    vence: "2026-11-30",
+    monto: 3200,
+    referencia: "FAC/2026/0121",
+  },
+];
+
+/**
+ * **Todos los campos en la celda.** Cada tipo de dato con su control de siempre, ahora dentro
+ * de una fila: el cliente es un many2one (`Picker`), las etiquetas un many2many
+ * (`TagsField`), el vendedor se busca escribiendo (`ComboBox`), el vencimiento es una fecha
+ * con calendario (`DatePicker`), el monto un número y la referencia texto. Fuera de un
+ * `Field` cada control toma su nombre de `aria-label`.
+ *
+ * **Agregar es escribir.** «Agregar un cobro» pone la fila nueva ya abierta, con el cursor en
+ * el cliente. `Tab` recorre la fila y, pasado el último campo, abre la siguiente; pasada la
+ * última, agrega otra. `Escape` sobre una fila recién agregada la descarta, y una que se
+ * deja sin tocar se va sola.
+ */
+export const TodosLosCampos: Story = {
+  render: function Render() {
+    const [cobros, setCobros] = useState<Cobro[]>(COBROS);
+    const [siguiente, setSiguiente] = useState(3);
+
+    const COLUMNS: EditColumn<Cobro>[] = [
+      {
+        id: "cliente",
+        header: "cliente",
+        width: 260,
+        render: (c) => nombreCliente(c.cliente) || vacio,
+        edit: (c, set) => (
+          <Picker
+            aria-label="Cliente"
+            items={CLIENTES}
+            value={c.cliente}
+            onChange={(id) => set({ ...c, cliente: id })}
+            placeholder="Buscá un cliente o su NIT…"
+          />
+        ),
+      },
+      {
+        id: "etiquetas",
+        header: "etiquetas",
+        width: 240,
+        render: (c) =>
+          c.etiquetas.length === 0 ? vacio : <Tags items={etiquetasDe(c.etiquetas)} />,
+        edit: (c, set) => (
+          <TagsField
+            aria-label="Etiquetas"
+            value={c.etiquetas}
+            options={INVOICE_LABELS}
+            onChange={(next) => set({ ...c, etiquetas: next })}
+          />
+        ),
+      },
+      {
+        id: "vendedor",
+        header: "vendedor",
+        width: 200,
+        render: (c) => c.vendedor ?? vacio,
+        edit: (c, set) => (
+          <ComboBox
+            aria-label="Vendedor"
+            value={c.vendedor}
+            options={SALESPERSON_OPTIONS}
+            onChange={(v) => set({ ...c, vendedor: v })}
+          />
+        ),
+      },
+      {
+        id: "vence",
+        header: "vence",
+        width: 170,
+        render: (c) =>
+          c.vence === null ? vacio : <DateValue when={c.vence} format="date" />,
+        edit: (c, set) => (
+          <DatePicker
+            aria-label="Vence"
+            value={c.vence}
+            onChange={(v) => set({ ...c, vence: v })}
+          />
+        ),
+      },
+      {
+        id: "monto",
+        header: "monto Bs.",
+        width: 140,
+        numeric: true,
+        render: (c) => (c.monto === "" ? vacio : c.monto.toLocaleString("es-BO")),
+        edit: (c, set) => (
+          <NumberInput
+            aria-label="Monto"
+            value={c.monto}
+            min={0}
+            onChange={(v) => set({ ...c, monto: v })}
+          />
+        ),
+      },
+      {
+        id: "referencia",
+        header: "referencia",
+        width: 160,
+        render: (c) => c.referencia || vacio,
+        edit: (c, set) => (
+          <TextInput
+            aria-label="Referencia"
+            mono
+            spellCheck={false}
+            value={c.referencia}
+            onChange={(v) => set({ ...c, referencia: v })}
+          />
+        ),
+      },
+    ];
+
+    return (
+      <div className="flex flex-col gap-4 bg-ground p-8">
+        <div className="overflow-clip rounded-box border border-line bg-surface">
+          <EditableTable
+            rows={cobros}
+            columns={COLUMNS}
+            getRowId={(c) => c.id}
+            onChange={(id, next) =>
+              setCobros((prev) => prev.map((c) => (c.id === id ? next : c)))
+            }
+            onRemove={(id) => setCobros((prev) => prev.filter((c) => c.id !== id))}
+            onAdd={() => {
+              const id = `c${siguiente}`;
+              setCobros((prev) => [
                 ...prev,
-                linea(String(siguiente), "", "inmediata", 1, ""),
+                {
+                  id,
+                  cliente: "",
+                  etiquetas: [],
+                  vendedor: null,
+                  vence: null,
+                  monto: "",
+                  referencia: "",
+                },
               ]);
               setSiguiente((n) => n + 1);
+              return id;
             }}
-            addLabel="Agregar un producto"
+            onDiscard={(id) => setCobros((prev) => prev.filter((c) => c.id !== id))}
+            addLabel="Agregar un cobro"
           />
         </div>
       </div>

@@ -45,7 +45,9 @@ const segment = tv({
   },
 });
 
-function Segments({ slot }: { slot?: "start" | "end" }) {
+/** The typed segments inside the field box — shared with `TimeField` and `DateTimePicker`
+ *  (internal: not in the family barrel). */
+export function Segments({ slot }: { slot?: "start" | "end" }) {
   return (
     <DateInput slot={slot} className="flex min-w-0 items-center px-2.5 whitespace-nowrap">
       {(part) => <DateSegment segment={part} className={segment} />}
@@ -64,7 +66,9 @@ function parse(iso: string | null | undefined): CalendarDate | null {
 
 function useReadDate(): (iso: string | null) => string {
   const copy = useUiCopy();
-  const format = new DateFormatter(copy.locale, { dateStyle: "medium" });
+  /* `toDate("UTC")` is midnight in UTC, so the formatter has to read it in UTC too: in the
+     zone of the machine, anywhere west of Greenwich, the 30th was drawn as the 29th. */
+  const format = new DateFormatter(copy.locale, { dateStyle: "medium", timeZone: "UTC" });
   return (iso) => {
     const date = parse(iso);
     return date === null ? "" : format.format(date.toDate("UTC"));
@@ -79,6 +83,9 @@ type Shared = {
   /** The earliest and latest day that can be chosen, as ISO dates. */
   min?: string;
   max?: string;
+  /** The name of the control when it is NOT inside a `Field` — a cell of an editable table.
+   *  Inside a field, the field's label names it. */
+  "aria-label"?: string;
   /** Forces the mode. By default it inherits the form's: in read mode it draws the value. */
   mode?: FormMode;
 };
@@ -95,6 +102,7 @@ export function DateField({
   min,
   max,
   mode,
+  "aria-label": ariaLabel,
 }: Shared & { value: string | null; onChange?: (next: string | null) => void }) {
   const { id, labelledBy, describedBy, invalid } = useFieldIds({
     id: ownId,
@@ -108,6 +116,7 @@ export function DateField({
       <AriaDateField
         id={id}
         aria-labelledby={labelledBy}
+        aria-label={ariaLabel}
         aria-describedby={describedBy}
         value={parse(value)}
         onChange={(next) => onChange?.(next === null ? null : next.toString())}
@@ -136,6 +145,7 @@ export function DatePicker({
   min,
   max,
   mode,
+  "aria-label": ariaLabel,
 }: Shared & { value: string | null; onChange?: (next: string | null) => void }) {
   const { id, labelledBy, describedBy, invalid } = useFieldIds({
     id: ownId,
@@ -149,6 +159,7 @@ export function DatePicker({
       <AriaDatePicker
         id={id}
         aria-labelledby={labelledBy}
+        aria-label={ariaLabel}
         aria-describedby={describedBy}
         value={parse(value)}
         onChange={(next) => onChange?.(next === null ? null : next.toString())}
@@ -188,6 +199,7 @@ export function DateRangePicker({
   min,
   max,
   mode,
+  "aria-label": ariaLabel,
 }: Shared & {
   value: DateRangeValue | null;
   onChange?: (next: DateRangeValue | null) => void;
@@ -210,6 +222,7 @@ export function DateRangePicker({
       <AriaDateRangePicker
         id={id}
         aria-labelledby={labelledBy}
+        aria-label={ariaLabel}
         aria-describedby={describedBy}
         value={start === null || end === null ? null : { start, end }}
         onChange={(next) =>

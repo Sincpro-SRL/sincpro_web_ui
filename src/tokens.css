@@ -501,13 +501,25 @@
      —which has to stay clickable— reduced to a useless strip. */
   --container-peek: 30rem;
 
-  /* The width of the chatter, beside a record. Narrower than the peek because it
-     is not a record: it is a column of one-line entries —«se evaluó el
-     resultado», «el proyecto pasó a generado»— and 22rem holds one of those
-     without wrapping while leaving the record the width it needs. A system
-     decision for the same reason the peek is: two records whose history column
-     is a different width read as two different screens. */
-  --container-chatter: 22rem;
+  /* THE ACTIVITY COLUMN — at the RIGHT of a record's sheet, joined to it (`Activity`,
+     `RecordHeader` THE PAGE). It holds what is true now (the record's
+     notices and its fields' and rows' notes, compact) over what happened (the timeline:
+     messages, notes and events by time) — both always in sight.
+
+     `--container-activity` is the column: 22rem holds a notice with its action and a
+     message bubble of readable measure.
+
+     `--container-beside` is how wide the record's PAGE has to be for the column to stand
+     beside the sheet: the column and a sheet that keeps 54rem — two groups of fields side by
+     side still fit their labels. Narrower (a laptop with a sidebar, a phone, a `Drill`), the
+     panel goes BELOW the sheet as a card. Written as a number and not a `calc()` because a container query cannot
+     read a variable.
+
+     `--container-record` is the pair at its widest — the sheet's reading width and the
+     column — so on a big screen they are placed together, centred. At 1680 px: 72 + 22. */
+  --container-activity: 22rem;
+  --container-beside: 76rem;
+  --container-record: calc(var(--container-sheet) + var(--container-activity));
 
   /* Below this a surface is held in one hand: a phone, or a panel just as narrow. 40rem is
      the width the list already stops offering a table at (`ListView`), and it is the same
@@ -522,6 +534,12 @@
      dismissable one. `dvh` and not `vh`: on a phone `vh` counts the browser bar that is
      covering the bottom of the screen, which is exactly where the sheet's actions are. */
   --size-sheet: 90dvh;
+
+  /* How tall a floating list grows before it scrolls inside: about eight two-line rows,
+     the height a capped `Picker` already has, so a list that loads page after page from the
+     backend opens at the same size as one that shows the first eight. Taller, and a list of
+     two thousand customers fills the window and covers the form it is choosing for. */
+  --size-dropdown: 20rem;
 
   /* The width of a module's sidebar. 15rem holds an icon, a screen name of two
      words —«Notas de crédito», «Órdenes de compra»— a count and one step of
@@ -583,6 +601,25 @@
   --duration-panel: 240ms;
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
   --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+
+  /* The one loop of the system: the bar of a task under way that cannot say how far
+     it is (`ProgressBar` without a value). It is not a move between two states — it
+     has no end until the task ends — so the 250ms ceiling above does not apply; at
+     1.6s a bar that stays a minute on screen moves slowly enough not to flicker in
+     the corner of the eye. The bar uses it behind `motion-safe:`: with reduced
+     motion it stands still. */
+  --animate-progress-sweep: progress-sweep 1.6s var(--ease-in-out) infinite;
+}
+
+/* The segment is two fifths of its track: from just off the left edge (-100 % of
+   itself) to just off the right one (250 % of itself = the track's width). */
+@keyframes progress-sweep {
+  from {
+    translate: -100%;
+  }
+  to {
+    translate: 250%;
+  }
 }
 
 /* ==================================================================== *

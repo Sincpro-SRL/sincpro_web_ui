@@ -126,7 +126,8 @@ export function Listing({
           qué esté puesta la lista — el piso de la página o el papel blanco de
           un registro. Contestan «de qué está hecho esto», no «qué estoy
           mirando»: se pueden ir. */}
-      {inSlot ? (
+      {/* No bar, no band: an empty sticky box would still take a gap above the rows. */}
+      {bar === undefined || bar === null ? null : inSlot ? (
         createPortal(bar, slot)
       ) : (
         <div

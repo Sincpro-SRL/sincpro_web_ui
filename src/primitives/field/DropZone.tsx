@@ -7,7 +7,7 @@ import { useFieldIds } from "@sincpro/web-ui/primitives/field/context";
 import { ReadValue } from "@sincpro/web-ui/primitives/field/Field";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
 import { Failed } from "@sincpro/web-ui/primitives/notice/Notice";
-import { ProgressBar } from "@sincpro/web-ui/primitives/value/Value";
+import { ProgressBar } from "@sincpro/web-ui/primitives/value/ProgressBar";
 import {
   Button as AriaButton,
   type DropItem,

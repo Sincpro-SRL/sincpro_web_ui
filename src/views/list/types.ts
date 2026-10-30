@@ -4,7 +4,7 @@ import type { SortField } from "@sincpro/web-ui/components/listing/SortMenu";
 import type { Grouping, GroupLevel } from "@sincpro/web-ui/foundations/grouping";
 import type { Pivot, PivotKey, PivotSpec } from "@sincpro/web-ui/foundations/pivot";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
-import type { DataColumn } from "@sincpro/web-ui/primitives/table/DataTable";
+import type { DataColumn, DataTableCreate } from "@sincpro/web-ui/primitives/table/DataTable";
 import type { ReportColumn, ReportRow } from "@sincpro/web-ui/primitives/table/ReportTable";
 import type { RowAction } from "@sincpro/web-ui/primitives/table/RowActions";
 import type { SheetColumn } from "@sincpro/web-ui/primitives/table/SheetTable";
@@ -87,6 +87,9 @@ export type ListSheet<T> = {
    *  convertirlo al tipo de la columna es del dominio, no de acá. */
   onCommit?: (item: T, column: SheetColumn, columnIndex: number, next: string) => void;
   editable?: (item: T, column: SheetColumn, columnIndex: number) => boolean;
+  /** Present = the sheet adds rows: «add a row» under it, and `Enter` on the last row.
+   *  The consumer appends the item; the sheet lands on it. Not while grouped. */
+  onAddRow?: () => void;
 };
 
 /**
@@ -164,6 +167,11 @@ export type ListViewProps<T extends object> = {
   /** The metrics that also NARROW: «2 por confirmar», «41 por entregar». They go
    *  below the bar and above the rows — they belong to the set, not to the frame. */
   metrics?: ReactNode;
+  /** The list is a FIELD of a record (a one2many / many2many) and not a screen: the bar
+   *  is one line — search, count, sort, columns, switcher, actions —, it does not stick
+   *  and it does not move into the frame's header. Identity and crumbs are not drawn: the
+   *  record around it already says them. See `ListingBar`'s header. */
+  embedded?: boolean;
   /** Which surface the BAR sits on. `canvas` (the default) is a light control bar;
    *  `chrome` turns it into a dark band — an explicit choice, since the application bar
    *  is the screen's one dark band (same as the rail of a record). */
@@ -214,6 +222,10 @@ export type ListViewProps<T extends object> = {
   /** What gets done to ONE row without entering it, in the table presentation.
    *  They are drawn hidden and appear on the row being pointed at. */
   rowActions?: (item: T) => readonly RowAction[];
+  /** Write a new record as a row of the table presentation — Odoo's editable list. The
+   *  columns that declare `input` get a control in that row. See `DataTable`'s header.
+   *  While a record is being written the table shows even if the set is empty. */
+  create?: DataTableCreate<T>;
   /** The board presentation. */
   card?: (item: T) => ReactNode;
 

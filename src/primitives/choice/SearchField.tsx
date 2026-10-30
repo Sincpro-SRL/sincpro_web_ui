@@ -1,6 +1,7 @@
 "use client";
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
+import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { FieldButton, FieldGroup } from "@sincpro/web-ui/primitives/field/aria";
 import { useFieldIds } from "@sincpro/web-ui/primitives/field/context";
 import { Search, X } from "lucide-react";
@@ -15,7 +16,17 @@ export type SearchFieldProps = {
   disabled?: boolean;
   id?: string;
   describedBy?: string;
+  /** The name of the box when it is NOT inside a `Field` — the search of a list bar, of a
+   *  panel. Inside a field, the field's label names it. Without either, see below. */
+  "aria-label"?: string;
 };
+
+/** The trailing «…» of a placeholder is a visual cue that typing is expected, not part of
+ *  the name: «Buscar una cuenta…» is announced as «Buscar una cuenta». */
+function nameFromPlaceholder(placeholder: string | undefined): string | undefined {
+  const name = placeholder?.replace(/[\s.…]+$/u, "").trim();
+  return name === undefined || name === "" ? undefined : name;
+}
 
 /**
  * A plain search box: a text, a clear button, Enter to submit. To filter the rows of a panel,
@@ -29,6 +40,12 @@ export type SearchFieldProps = {
  * It does not follow the form's read mode: what is typed here is never data of the record, so
  * there is nothing to draw as text. The browser's own clear cross is hidden; ours is the one
  * the keyboard and the screen reader know.
+ *
+ * It is never nameless. Most search boxes live OUTSIDE a form — the bar of a list, a panel —
+ * where there is no `Field` to label them, and a nameless one is read as «edit text» (React
+ * Aria warns about it in the console). The name is, in this order: the enclosing `Field`'s
+ * label, an explicit `aria-label`, the placeholder (what the eye reads is what the ear
+ * should hear), and finally the copy table's «Search».
  */
 export function SearchField({
   value,
@@ -38,16 +55,25 @@ export function SearchField({
   disabled = false,
   id: ownId,
   describedBy: ownDescribedBy,
+  "aria-label": ariaLabel,
 }: SearchFieldProps) {
+  const copy = useUiCopy();
   const { id, labelledBy, describedBy } = useFieldIds({
     id: ownId,
     describedBy: ownDescribedBy,
   });
+  /* A `Field` names it through its label; anything else falls back so it always has one. */
+  const name =
+    ariaLabel ??
+    (labelledBy === undefined
+      ? (nameFromPlaceholder(placeholder) ?? copy.choice.search)
+      : undefined);
   return (
     <AriaLocale>
       <AriaSearchField
         id={id}
         aria-labelledby={labelledBy}
+        aria-label={name}
         aria-describedby={describedBy}
         value={value}
         onChange={(next) => onChange?.(next)}
