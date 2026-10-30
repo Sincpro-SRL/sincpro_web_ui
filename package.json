@@ -1,0 +1,63 @@
+{
+  "name": "@sincpro/web-ui",
+  "version": "0.0.0",
+  "description": "The Sincpro design system for React: tokens, primitives and behaviour rules.",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    },
+    "./*.css": "./dist/*.css"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "prettier": {
+    "printWidth": 94
+  },
+  "peerDependencies": {
+    "react": ">=19",
+    "react-dom": ">=19"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "eslint": "^10.11.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "prettier": "^3.9.8",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "tsc-alias": "^1.8.16",
+    "tsx": "^4.23.13",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.70.0"
+  },
+  "keywords": [
+    "design-system",
+    "react",
+    "ui",
+    "sincpro"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sincpro-SRL/sincpro_web_ui.git"
+  },
+  "author": "Gutierrez, Andres <andres.gutierrez@sincpro.com.bo>",
+  "license": "MIT",
+  "engines": {
+    "node": ">=22"
+  }
+}
