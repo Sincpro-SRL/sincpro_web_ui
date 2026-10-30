@@ -1,0 +1,67 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Introducción" />
+
+# @sincpro/web-ui
+
+**Un sistema de diseño para software de gestión** — ERPs, back offices, herramientas
+internas: las pantallas donde alguien pasa ocho horas por día leyendo registros, filtrando
+listas y llenando formularios.
+
+La mayoría de los sistemas de diseño nacen para sitios de marketing y apps de consumo, y
+después se estiran sobre el software de gestión. Éste empieza por el otro lado: datos densos,
+sesiones largas, gente que usa el teclado, números que se tienen que leer, y pantallas que
+siempre son sobre _registros_.
+
+## La idea
+
+**Toda pantalla de gestión es una de dos cosas: un registro, o N registros.** Esa es toda la
+superficie del producto, y el sistema se ordena alrededor de ella en cuatro niveles — cada uno
+definido por lo que _sabe_, y cada uno importando sólo de los de abajo:
+
+- **1 · Fundamentos** — las decisiones; no hay componentes. Empezá por Color, Tipografía,
+  Escalas y Superficies.
+- **2 · Primitivas** — no saben en qué pantalla están. Button, Controles de formulario, Menu.
+- **3 · Componentes** — contestan una pregunta del producto, por familia: Datos, Búsqueda,
+  Registro, Chatter.
+- **4 · Vistas** — las dos macros, y nada más: Registro (uno) y Lista (N).
+- **5 · Plantillas** — nada nuevo: páginas enteras armadas con lo de arriba. Facturas · un
+  módulo de ERP.
+
+Si algo no entra en ninguna de las dos vistas, no es una vista: es un componente disfrazado.
+Y si algo necesita saber qué es una factura o un cliente, no va acá — eso es dominio, y vive en
+la aplicación. Las **plantillas** son la excepción que confirma la regla: usan dominio de
+ejemplo para mostrar cómo se ve todo junto, y están armadas sólo con la API pública.
+
+## Usarlo
+
+```bash
+yarn add @sincpro/web-ui react react-dom tailwindcss @tanstack/react-table @tanstack/react-virtual
+```
+
+```css
+/* una sola vez: fuentes, tema y Tailwind vienen con esto */
+@import "@sincpro/web-ui/tokens.css";
+```
+
+```tsx
+import { Field, List, Record, TextInput } from "@sincpro/web-ui";
+
+<Field label="Razón social" required>
+  <TextInput value={nombre} onChange={setNombre} />
+</Field>;
+```
+
+Cada nivel es también su propia entrada: `@sincpro/web-ui/primitives`,
+`@sincpro/web-ui/components`, `@sincpro/web-ui/views`.
+
+## Las reglas que el build hace cumplir
+
+- **Tokens o nada.** Sin valores arbitrarios, sin hex, sin `px` crudos, sin la paleta cruda
+  de Tailwind.
+- **El contraste se mide.** Cada color lleva su relación WCAG escrita al lado, y una prueba la
+  recalcula.
+- **Los niveles no se saltean.** Una primitiva nunca importa un componente; un componente
+  nunca importa una vista.
+- **Accesible por defecto.** Las pruebas de accesibilidad de Storybook fallan como error, y
+  cada historia se abre en un navegador real antes de publicar (`make smoke`).

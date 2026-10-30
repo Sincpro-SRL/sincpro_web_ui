@@ -155,3 +155,5 @@ vite.config.ts.timestamp-*
 storybook-static/
 .vscode/
 .idea/
+# Playwright MCP artifacts
+.playwright-mcp/

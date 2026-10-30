@@ -13,6 +13,9 @@ help:
 	@echo "  test            node --test over the TypeScript sources"
 	@echo "  verify-format   format + lint + doctor, then fail if the tree is dirty (CI)"
 	@echo "  build           compile into dist/"
+	@echo "  dev             Storybook on :6006 (with its MCP server at /mcp)"
+	@echo "  storybook       static Storybook into storybook-static/"
+	@echo "  smoke           open every story in headless Chrome; fail on errors or blanks"
 	@echo "  update-version  VERSION=x.y.z — release pipeline only, never by hand"
 	@echo "  publish         build + publish to NPM (release pipeline)"
 	@echo "  clean           remove dist/ and node_modules/"
@@ -54,6 +57,15 @@ doctor:
 	if $(SCAN) 'from "[^"]+\.tsx?"' src | $(NOT_COMMENT); then \
 		echo >&2 "✘ .ts/.tsx extension in an import — the build emits it as-is and breaks"; found=1; \
 	fi; \
+	if $(SCAN) 'from "$(PACKAGE)/(primitives|components|views)/' src/foundations | $(NOT_COMMENT); then \
+		echo >&2 "✘ foundations importing a level above — foundations import nothing but foundations"; found=1; \
+	fi; \
+	if $(SCAN) 'from "$(PACKAGE)/(components|views)/' src/primitives | $(NOT_COMMENT); then \
+		echo >&2 "✘ a primitive importing a component or a view — a primitive knows no screen"; found=1; \
+	fi; \
+	if $(SCAN) 'from "$(PACKAGE)/views/' src/components | $(NOT_COMMENT); then \
+		echo >&2 "✘ a component importing a view — move what both need down into components/"; found=1; \
+	fi; \
 	if [ "$$found" = "1" ]; then exit 1; fi; \
 	echo "✓ no traps found"
 
@@ -78,6 +90,16 @@ build:
 	@npx tsc-alias -p tsconfig.build.json
 	@node -e "const fs = require('node:fs'); fs.cpSync('src', 'dist', { recursive: true, filter: (p) => fs.statSync(p).isDirectory() || p.endsWith('.css') });"
 	@echo "✓ Build ready in ./dist (JS + .d.ts + .css, @sincpro/web-ui resolved to relative)"
+
+dev:
+	@npx storybook dev -p 6006 --no-open
+
+storybook:
+	@npx storybook build -o storybook-static
+
+# Every story opened in a headless Chrome: fails on a console error or a blank story.
+smoke:
+	@node --import tsx .storybook/smoke.ts
 
 # `--package-lock=false`: npm (unlike yarn, which manages this repo's installs) doesn't read
 # yarn.lock, so without it `npm version` rebuilds a dependency tree against the real registry
@@ -110,8 +132,8 @@ deploy:
 	@echo "Deploy not applicable for library packages"
 
 clean:
-	@rm -rf dist node_modules
+	@rm -rf dist storybook-static node_modules
 	@echo "✓ Cleaned"
 
 .PHONY: help prepare-environment init typecheck format lint doctor test verify-format build \
-	update-version publish deploy clean
+	dev storybook smoke update-version publish deploy clean
