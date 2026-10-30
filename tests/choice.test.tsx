@@ -106,7 +106,8 @@ test("a segmented control follows read mode only when it is a form answer", () =
       </Field>
     </FormModeProvider>,
   );
-  assert.doesNotMatch(inField, /<button/);
+  /* No segment buttons — the field's own copy button (by its label) is not the control. */
+  assert.doesNotMatch(inField, /<button(?![^>]*aria-label="Copy)/);
   assert.match(inField, /Dólar/);
 
   const asView = renderToStaticMarkup(

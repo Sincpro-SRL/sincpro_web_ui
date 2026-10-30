@@ -8,20 +8,27 @@ import {
   type ListPresent,
   Metric,
   Metrics,
+  NumberInput,
   Pagination,
+  Picker,
   type PivotFold,
   pivotFrom,
   ProgressBar,
+  Record,
   SearchBar,
   type SearchCriteria,
+  SearchField,
+  Select,
   type SheetColumn,
   type SortState,
   StatusDot,
   Tag,
+  TextInput,
   useGroupingControl,
   useTreeControl,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { money } from "../support/erp";
@@ -1216,6 +1223,325 @@ export const InformeAgrupado: Story = {
             <List.Rows<Item> row={(d) => ({ name: orderName(d) })} />
           </List>
         </div>
+      </div>
+    );
+  },
+};
+
+type Tasa = {
+  id: string;
+  nombre: string;
+  aplica: string;
+  porcentaje: number | "";
+  cuenta: string;
+};
+
+const APLICA = [
+  { value: "ventas", label: "ventas" },
+  { value: "compras", label: "compras" },
+];
+
+const CUENTAS = [
+  { id: "2.1.03.01", name: "IVA débito fiscal", meta: "2.1.03.01" },
+  { id: "1.1.05.01", name: "IVA crédito fiscal", meta: "1.1.05.01" },
+  { id: "2.1.03.02", name: "IT por pagar", meta: "2.1.03.02" },
+  { id: "2.1.03.05", name: "RC-IVA retenido", meta: "2.1.03.05" },
+];
+
+const TASAS: Tasa[] = [
+  { id: "t1", nombre: "IVA 13 %", aplica: "ventas", porcentaje: 13, cuenta: "2.1.03.01" },
+  {
+    id: "t2",
+    nombre: "IVA 13 % compras",
+    aplica: "compras",
+    porcentaje: 13,
+    cuenta: "1.1.05.01",
+  },
+  { id: "t3", nombre: "IT 3 %", aplica: "ventas", porcentaje: 3, cuenta: "2.1.03.02" },
+];
+
+/**
+ * **Una lista que se escribe.** La lista editable de Odoo para una tabla de configuración:
+ * «Agregar» —abajo, o «Nueva tasa» en la barra— pone una fila con un control en cada columna
+ * que declaró `input`, con el cursor en el nombre. `Tab` recorre la fila y, pasado el último
+ * campo, guarda la tasa y empieza otra; `Enter` guarda; `Escape` la descarta, y una fila que
+ * se deja sin escribir se va sola. Una tasa sin nombre no se guarda: la fila se queda.
+ *
+ * Las tasas que ya existen no se tocan acá: la lista no pierde el orden, la selección ni las
+ * columnas que se esconden, que una tabla editada fila por fila no tiene.
+ */
+export const ListaEditable: Story = {
+  render: function Render() {
+    const [tasas, setTasas] = useState<Tasa[]>(TASAS);
+    const [draft, setDraft] = useState<Tasa | null>(null);
+    const [siguiente, setSiguiente] = useState(4);
+    const create = {
+      draft,
+      label: "Agregar una tasa",
+      onStart: () => {
+        setDraft({
+          id: `t${siguiente}`,
+          nombre: "",
+          aplica: "ventas",
+          porcentaje: "",
+          cuenta: "",
+        });
+        setSiguiente((n) => n + 1);
+      },
+      onChange: setDraft,
+      onCommit: (t: Tasa) => {
+        if (t.nombre.trim() === "") return;
+        setTasas((all) => [...all, t]);
+        setDraft(null);
+      },
+      onCancel: () => setDraft(null),
+    };
+    return (
+      <div className="bg-ground p-8">
+        <div className="@container overflow-clip rounded-box border border-line-strong bg-surface">
+          <List<Tasa>
+            items={tasas}
+            keyOf={(t) => t.id}
+            present="table"
+            empty={{ sentence: "Todavía no hay tasas de impuesto." }}
+          >
+            <List.Bar>
+              <List.Identity
+                title="Impuestos"
+                description="las tasas que se aplican a ventas y compras"
+              />
+              <List.Actions>
+                <Button
+                  role="primary"
+                  size="sm"
+                  onClick={create.onStart}
+                  disabled={draft !== null}
+                >
+                  Nueva tasa
+                </Button>
+              </List.Actions>
+            </List.Bar>
+            <List.Rows<Tasa> row={(t) => ({ name: t.nombre })} />
+            <List.Table<Tasa>
+              create={create}
+              columns={[
+                {
+                  id: "nombre",
+                  header: "nombre",
+                  value: (t: Tasa) => t.nombre,
+                  input: (t: Tasa, set: (next: Tasa) => void) => (
+                    <TextInput
+                      aria-label="Nombre"
+                      value={t.nombre}
+                      onChange={(v) => set({ ...t, nombre: v })}
+                    />
+                  ),
+                },
+                {
+                  id: "aplica",
+                  header: "aplica a",
+                  value: (t: Tasa) => t.aplica,
+                  input: (t: Tasa, set: (next: Tasa) => void) => (
+                    <Select
+                      aria-label="Aplica a"
+                      value={t.aplica}
+                      options={APLICA}
+                      onChange={(v) => set({ ...t, aplica: v })}
+                    />
+                  ),
+                },
+                {
+                  id: "porcentaje",
+                  header: "%",
+                  numeric: true,
+                  width: 120,
+                  value: (t: Tasa) => (t.porcentaje === "" ? null : t.porcentaje),
+                  input: (t: Tasa, set: (next: Tasa) => void) => (
+                    <NumberInput
+                      aria-label="Porcentaje"
+                      value={t.porcentaje}
+                      min={0}
+                      max={100}
+                      onChange={(v) => set({ ...t, porcentaje: v })}
+                    />
+                  ),
+                },
+                {
+                  id: "cuenta",
+                  header: "cuenta contable",
+                  value: (t: Tasa) => CUENTAS.find((c) => c.id === t.cuenta)?.name ?? "",
+                  input: (t: Tasa, set: (next: Tasa) => void) => (
+                    <Picker
+                      aria-label="Cuenta contable"
+                      items={CUENTAS}
+                      value={t.cuenta}
+                      onChange={(id) => set({ ...t, cuenta: id })}
+                      placeholder="Buscá la cuenta o su código…"
+                    />
+                  ),
+                },
+              ]}
+            />
+          </List>
+        </div>
+      </div>
+    );
+  },
+};
+
+/* ================================================================== *
+ *  UNA LISTA DENTRO DE UN REGISTRO
+ * ================================================================== */
+
+/** Las columnas de los pedidos de un equipo. El total se ESCRIBE con su moneda en la
+ *  celda (`cell`) y en el pie (`format`): son dos lugares, y el pie no tiene fila. */
+const COLUMNAS_DEL_EQUIPO = [
+  { id: "number", header: "pedido", value: (d: Item) => d.number, mono: true },
+  { id: "customer", header: "cliente", value: (d: Item) => d.customer },
+  {
+    id: "salesperson",
+    header: "vendedor",
+    value: (d: Item) => d.salesperson,
+    optional: true,
+  },
+  { id: "date", header: "fecha", value: (d: Item) => d.date, optional: true },
+  {
+    id: "stage",
+    header: "estado",
+    value: (d: Item) => LABEL[d.stage],
+    cell: (d: Item) => <Tag tone={TONE[d.stage]}>{LABEL[d.stage]}</Tag>,
+    text: (d: Item) => LABEL[d.stage],
+  },
+  {
+    id: "lines",
+    header: "líneas",
+    value: (d: Item) => d.lines,
+    numeric: true as const,
+    optional: true,
+    defaultHidden: true,
+  },
+  {
+    id: "total",
+    header: "total",
+    value: (d: Item) => d.total,
+    cell: (d: Item) => money(d.total),
+    text: (d: Item) => money(d.total),
+    numeric: true as const,
+    aggregate: "sum" as const,
+    format: money,
+  },
+];
+
+/** Quiénes venden en el equipo: lo que sale de los pedidos, sin repetir. */
+const MIEMBROS = [...new Set(ITEMS.map((d) => d.salesperson))].map((name) => ({
+  id: name,
+  name,
+  orders: ITEMS.filter((d) => d.salesperson === name).length,
+}));
+
+/**
+ * **Un one2many es la MISMA lista que la del módulo**, puesta adentro de una pestaña de
+ * un registro: busca, ordena, elige columnas, selecciona y cambia de presentación —
+ * tabla, filas, tablero y planilla— igual. Lo único que cambia es `embedded`.
+ *
+ * Con `embedded` la barra es **un solo renglón**: el buscador a la izquierda ocupando lo
+ * que haya, cuántos son, y a la derecha el orden, las columnas y el conmutador. No dibuja
+ * título ni migas —la pestaña y el riel del registro ya los dicen—, no se pega arriba al
+ * scrollear —el registro tiene sus propias partes pegadas— y no se muda a la cabecera de
+ * la aplicación cuando hay barra lateral.
+ *
+ * Probá: escribí «andina» en el buscador y mirá cómo cambia la cuenta; tildá dos filas y
+ * mirá cómo la selección toma el lugar del buscador **en el mismo renglón**; prendé
+ * «líneas» desde el menú de columnas; pasá a la planilla y fijate que el pie sigue
+ * escribiendo «Bs.». La pestaña «miembros» es una lista embebida con UNA sola cara y sin
+ * buscador: ahí no hay nada que ofrecer, y no se dibuja ninguna barra.
+ *
+ * Achicá la ventana: en un teléfono el buscador se queda con el primer renglón, los
+ * controles bajan al segundo, y la tabla y la planilla dejan su lugar a filas y tablero.
+ */
+export const DentroDeUnRegistro: Story = {
+  name: "Dentro de un registro",
+  render: function Render() {
+    const l = useLista();
+    const [page, setPage] = useState("pedidos");
+    const [query, setQuery] = useState("");
+    const [present, setPresent] = useState<ListPresent>("table");
+    const q = query.trim().toLocaleLowerCase("es-BO");
+    const items = ITEMS.filter(
+      (d) => q === "" || `${d.number} ${d.customer}`.toLocaleLowerCase("es-BO").includes(q),
+    );
+    return (
+      <div className="bg-ground p-8">
+        <Record
+          identity={{
+            icon: Users,
+            title: "Corporativo · La Paz",
+            tag: { label: "equipo de ventas", tone: "neutral" },
+          }}
+        >
+          <Record.Rail>
+            <Record.Crumbs
+              crumbs={[
+                { label: "Ventas", onClick: () => {} },
+                { label: "Equipos", onClick: () => {} },
+                { label: "Corporativo · La Paz" },
+              ]}
+            />
+          </Record.Rail>
+          <Record.Paper>
+            <Record.Facts
+              fields={[
+                { label: "Líder del equipo", value: "Josefa Muñoz" },
+                { label: "Meta del mes", value: money(250000) },
+              ]}
+            />
+            <Record.Pages current={page} onChange={setPage}>
+              <Record.Page id="pedidos" label="pedidos" count={ITEMS.length}>
+                <List<Item>
+                  embedded
+                  items={items}
+                  keyOf={(d) => d.id}
+                  selection={l.selection}
+                  sortable={ORDENABLES}
+                  sort={l.sort}
+                  onSortChange={l.setSort}
+                  present={present}
+                  onPresentChange={setPresent}
+                  filtered={q !== ""}
+                  empty={{ sentence: "Este equipo todavía no vendió nada." }}
+                >
+                  <List.Bar>
+                    <List.Search>
+                      <SearchField
+                        value={query}
+                        onChange={setQuery}
+                        placeholder="Buscar un pedido o un cliente…"
+                      />
+                    </List.Search>
+                  </List.Bar>
+                  <List.Table<Item> columns={COLUMNAS_DEL_EQUIPO} totals />
+                  <List.Rows<Item> row={filaDe} />
+                  <List.Board<Item> card={(d) => <Tarjeta d={d} />} />
+                  <List.Sheet<Item> />
+                </List>
+              </Record.Page>
+              <Record.Page id="miembros" label="miembros" count={MIEMBROS.length}>
+                <List<(typeof MIEMBROS)[number]>
+                  embedded
+                  items={MIEMBROS}
+                  keyOf={(m) => m.id}
+                >
+                  <List.Rows<(typeof MIEMBROS)[number]>
+                    row={(m) => ({
+                      name: m.name,
+                      meta: `${m.orders} ${m.orders === 1 ? "pedido" : "pedidos"}`,
+                    })}
+                  />
+                </List>
+              </Record.Page>
+            </Record.Pages>
+          </Record.Paper>
+        </Record>
       </div>
     );
   },

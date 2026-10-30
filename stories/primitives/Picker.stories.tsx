@@ -1,7 +1,7 @@
 import { Field, Picker, type PickerItem, Tag } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Package, PackageX, Truck, Warehouse, Wrench } from "lucide-react";
-import { useState } from "react";
+import { Building2, Package, PackageX, Truck, Warehouse, Wrench } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 
 /* Products the way a sales line needs to see them: the name, what kind of thing it is, and
    the specs that decide — stock on hand, the price, the unit. The internal code and the
@@ -241,4 +241,115 @@ export const CargandoYLectura: Story = {
       </Field>
     </div>
   ),
+};
+
+/* Two thousand customers that live «on the server»: the story hands them out forty at a
+   time, with a delay, the way a `search_read` with `limit` and `offset` would. */
+const RAZONES = [
+  "Ferretería",
+  "Constructora",
+  "Importadora",
+  "Distribuidora",
+  "Agroindustrias",
+];
+const LUGARES = [
+  "Illimani",
+  "Andina",
+  "del Oriente",
+  "Mamoré",
+  "Sajama",
+  "Titicaca",
+  "Chiquitana",
+];
+const CIUDADES = ["La Paz", "El Alto", "Santa Cruz", "Cochabamba", "Sucre", "Tarija"];
+const TOTAL = 2000;
+const PAGINA = 40;
+const cliente = (n: number): PickerItem => ({
+  id: `C-${n}`,
+  name: `${RAZONES[n % RAZONES.length]} ${LUGARES[n % LUGARES.length]} ${Math.floor(n / 35) + 1}`,
+  icon: Building2,
+  meta: `NIT ${(1020304000 + n * 7).toString()} · ${CIUDADES[n % CIUDADES.length]}`,
+  haystack: `${1020304000 + n * 7}`,
+});
+
+/** Desde el servidor: dos mil clientes que no están en memoria. Con `onLoadMore` la lista no
+ *  se corta en 8 ni ofrece «ver todos…»: crece mientras bajás, de a cuarenta, dentro de una
+ *  altura fija, y una fila callada al final dice que viene la página siguiente. Escribí y
+ *  filtra lo que ya llegó — si el filtro deja el final a la vista, pide más solo. */
+export const DesdeElServidor: Story = {
+  args: { items: [] },
+  render: function Render() {
+    const [clientes, setClientes] = useState<PickerItem[]>([]);
+    const [cargando, setCargando] = useState(true);
+    const [cargandoMas, setCargandoMas] = useState(false);
+    const [elegido, setCliente] = useState("");
+    const pidiendo = useRef(false);
+
+    const pedir = (desde: number, alLlegar: () => void) => {
+      if (pidiendo.current || desde >= TOTAL) return;
+      pidiendo.current = true;
+      window.setTimeout(() => {
+        const hasta = Math.min(desde + PAGINA, TOTAL);
+        setClientes((ya) => [
+          ...ya,
+          ...Array.from({ length: hasta - desde }, (_, i) => cliente(desde + i)),
+        ]);
+        pidiendo.current = false;
+        alLlegar();
+      }, 700);
+    };
+
+    useEffect(() => {
+      pedir(0, () => setCargando(false));
+    }, []);
+
+    return (
+      <div className="max-w-xl rounded-box border border-line bg-surface p-4">
+        <Field
+          label="Cliente"
+          hint={`${clientes.length.toLocaleString("es-BO")} de ${TOTAL.toLocaleString("es-BO")} cargados`}
+        >
+          <Picker
+            items={clientes}
+            value={elegido}
+            onChange={setCliente}
+            loading={cargando}
+            loadingMore={cargandoMas}
+            onLoadMore={() => {
+              if (clientes.length >= TOTAL) return;
+              setCargandoMas(true);
+              pedir(clientes.length, () => setCargandoMas(false));
+            }}
+          />
+        </Field>
+      </div>
+    );
+  },
+};
+
+/** Secciones: los clientes con los que trabajaste esta semana arriba, bajo «Recientes», y el
+ *  resto bajo «Todos». El orden es el que viene en `items` — el picker agrupa las seguidas
+ *  con la misma `section`, no reordena. */
+export const Secciones: Story = {
+  args: { items: [] },
+  render: function Render() {
+    const recientes = [3, 17, 42].map((n) => ({ ...cliente(n), section: "Recientes" }));
+    const todos = Array.from({ length: 30 }, (_, n) => ({
+      ...cliente(n + 100),
+      section: "Todos",
+    }));
+    const [valor, setValor] = useState("C-17");
+    return (
+      <div className="max-w-xl rounded-box border border-line bg-surface p-4">
+        <Field label="Cliente">
+          <Picker
+            items={[...recientes, ...todos]}
+            value={valor}
+            onChange={setValor}
+            onBrowseAll={() => {}}
+          />
+        </Field>
+      </div>
+    );
+  },
 };

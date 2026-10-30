@@ -5,21 +5,34 @@ import {
   filterLines,
   planRemoval,
 } from "@sincpro/web-ui/components/lines/lines";
+import {
+  type ColumnSpec,
+  useColumnControl,
+} from "@sincpro/web-ui/components/listing/columns";
+import { ColumnsMenu } from "@sincpro/web-ui/components/listing/ColumnsMenu";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { Button, IconButton } from "@sincpro/web-ui/primitives/button/Button";
 import { SearchField } from "@sincpro/web-ui/primitives/choice/SearchField";
 import { Dialog, type DialogContext } from "@sincpro/web-ui/primitives/dialog/Dialog";
 import { FieldIdsContext } from "@sincpro/web-ui/primitives/field/context";
+import { TextInput } from "@sincpro/web-ui/primitives/field/Field";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
+import type { FlagTone } from "@sincpro/web-ui/primitives/notice/Flag";
 import { Empty } from "@sincpro/web-ui/primitives/notice/Notice";
 import { useToast } from "@sincpro/web-ui/primitives/notice/Toast";
 import type { DataColumn } from "@sincpro/web-ui/primitives/table/DataTable";
 import {
   EditableTable,
+  type EditAdd,
+  type EditBands,
   type EditColumn,
   type EditLayout,
 } from "@sincpro/web-ui/primitives/table/EditableTable";
-import { Totals, type TotalsRow } from "@sincpro/web-ui/primitives/value/Totals";
+import {
+  Totals,
+  type TotalsProps,
+  type TotalsRow,
+} from "@sincpro/web-ui/primitives/value/Totals";
 import { Pencil, Plus, Trash2 } from "lucide-react";
 import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from "react";
 
@@ -42,6 +55,38 @@ import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from "rea
  *  line in a `Dialog` with real fields and «Listo» / «Cancelar». The dialog is
  *  also the keyboard's way in: «Editar la línea» is a button on every row, and
  *  closing the dialog gives focus back to it (React Aria restores it).
+ *
+ *  ── Two ways to add, too ────────────────────────────────────────────
+ *
+ *  `adding="editor"` opens the blank line in the dialog: a line with six
+ *  fields, or one that needs to be thought before it exists. `adding="inline"`
+ *  is Odoo's `editable="bottom"`: «Agregar una línea» sits under the grid, the
+ *  new row appears there already open with the focus on its first control, and
+ *  `Tab` past the last control of the last line starts the next one — the way
+ *  someone enters twenty lines off a paper order without touching the mouse. A
+ *  line added and left blank goes away by itself. Every column the new line
+ *  needs must then have an `edit` (the product too: a `Picker` fits a cell);
+ *  the dialog stays for changing a whole line, from its pencil.
+ *
+ *  ── Sections and notes (`structure`) ───────────────────────────────
+ *
+ *  An order of forty lines is read in parts — «Equipos», «Instalación»,
+ *  «Soporte» — and a sentence between lines says what a column cannot. With
+ *  `structure` some lines are SECTIONS or NOTES (Odoo's `display_type`): they
+ *  are drawn as bands across the row (`EditableTable`'s `bands`), a section
+ *  shows what its lines add up to in the columns that declared `subtotal`, and
+ *  «Agregar una sección» / «Agregar una nota» sit under the grid. They are
+ *  always written in place — a dialog for one title is a form for nothing —,
+ *  they are not counted as lines, and a search shows only lines: a section
+ *  with none of its lines left would be a title over nothing.
+ *
+ *  ── Optional columns ────────────────────────────────────────────────
+ *
+ *  A real invoice line has ten fields; a screen shows five. A column with
+ *  `optional` can be hidden from the same columns menu the lists use
+ *  (`ColumnsMenu`), and `defaultHidden` starts it off — Odoo's
+ *  `optional="show" | "hide"`. Who remembers the choice is the owner
+ *  (`visibleColumnIds`), or this block for as long as it lives.
  *
  *  ── On a phone the line is a card, and a press opens the editor ─────
  *
@@ -76,7 +121,15 @@ import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from "rea
  */
 export type LineItemColumn<T> = Pick<
   DataColumn<T>,
-  "id" | "header" | "value" | "cell" | "text" | "numeric" | "width"
+  | "id"
+  | "header"
+  | "value"
+  | "cell"
+  | "text"
+  | "numeric"
+  | "width"
+  | "optional"
+  | "defaultHidden"
 > &
   /* Where the column goes on a phone, and how it reads in the card's detail line —
      `EditableTable`'s contract, passed through. */
@@ -85,7 +138,22 @@ export type LineItemColumn<T> = Pick<
      *  only — a computed amount, a code. Only simple values belong here; the whole
      *  line is edited in the `editor`. */
     edit?: (line: T, set: (next: T) => void) => ReactNode;
+    /** What the lines of a section add up to in this column, already formatted. Only
+     *  with `structure`; without it the section says nothing in this column. */
+    subtotal?: (lines: readonly T[]) => ReactNode;
   };
+
+/** Which lines are sections or notes, and how their text is read and written. See
+ *  «Sections and notes» in the file's header. */
+export type LineStructure<T> = {
+  kind: (line: T) => "line" | "section" | "note";
+  text: (line: T) => string;
+  withText: (line: T, text: string) => T;
+  /** A blank section; enables «Agregar una sección». */
+  newSection?: () => T;
+  /** A blank note; enables «Agregar una nota». */
+  newNote?: () => T;
+};
 
 /** What the popup editor receives besides the draft. */
 export type LineEditorState = {
@@ -128,11 +196,30 @@ export type LineItemsProps<T> = {
   /** The search shows up only with MORE lines than this. Four lines are read, not
    *  searched; a search box over them is a control that answers nothing. */
   searchFrom?: number;
-  /** The money summary under the lines, on the right: the system's `Totals`. */
-  totals?: readonly TotalsRow[];
+  /** The money summary under the lines, on the right: the system's `Totals`. Its rows,
+   *  or all of it — payments deducted, the balance due, the credits that can be applied. */
+  totals?: readonly TotalsRow[] | TotalsProps;
   /** `auto` (the default) draws the lines as stacked cards below
    *  `--container-handheld`; `table` and `stacked` force one. */
   layout?: EditLayout;
+  /** How «Agregar una línea» adds: `editor` opens the blank line in the dialog;
+   *  `inline` puts it in the table, open, under the others (see the file's header).
+   *  By default the dialog when there is an `editor`, the table when there is not. */
+  adding?: "inline" | "editor";
+  /** Open the whole line somewhere else than this block's dialog — the app's `Drill`, so
+   *  the line opens as «S00142 › Línea 3» and can go deeper (its product, its lot) without
+   *  a modal over a modal. When given, it replaces `editor` for existing lines. */
+  onOpenLine?: (id: string) => void;
+  /** A warning about one line, on the line: «Sin existencias», «Precio bajo el costo».
+   *  `EditableTable`'s `flag`, passed through. */
+  flag?: (
+    line: T,
+  ) => { tone: FlagTone; label: string; detail?: ReactNode; owner?: string } | null;
+  /** Sections and notes among the lines. See the file's header. */
+  structure?: LineStructure<T>;
+  /** Which columns are on screen, when the owner remembers it (a preference). */
+  visibleColumnIds?: readonly string[];
+  onVisibleColumnIdsChange?: (ids: readonly string[]) => void;
 };
 
 /** The notice is optional: without a `ToastProvider` the line is still removed, just
@@ -178,6 +265,12 @@ export function LineItems<T>({
   searchFrom = 8,
   totals,
   layout = "auto",
+  adding,
+  onOpenLine,
+  flag,
+  structure,
+  visibleColumnIds,
+  onVisibleColumnIdsChange,
 }: LineItemsProps<T>) {
   const copy = useUiCopy();
   const toast = useOptionalToast();
@@ -198,7 +291,16 @@ export function LineItems<T>({
   const canChange = !read && onChange !== undefined;
   const canAdd = !read && onAdd !== undefined && newLine !== undefined;
   const canRemove = !read && onRemove !== undefined;
-  const canEdit = canChange && editor !== undefined;
+  /* The whole line opens either in this block's own dialog (`editor`) or wherever the app
+     opens records (`onOpenLine`, a `Drill` context) — never both, so a line's form never
+     sits on top of another modal. */
+  const canEdit = (canChange && editor !== undefined) || onOpenLine !== undefined;
+  const openLine = (id: string, line: T) => {
+    if (onOpenLine !== undefined) onOpenLine(id);
+    else openEditor(id, line);
+  };
+  const inline =
+    canAdd && (adding ?? (editor === undefined ? "inline" : "editor")) === "inline";
 
   const labelOf = (line: T): string => {
     if (lineLabel !== undefined) return lineLabel(line);
@@ -207,21 +309,50 @@ export function LineItems<T>({
     return first.text?.(line) ?? plain(first.value(line));
   };
 
-  const searchable = lines.length > searchFrom;
+  const kindOf = (line: T) => structure?.kind(line) ?? "line";
+  /* Sections and notes are not lines: they are not counted, and a search leaves only lines. */
+  const lineCount =
+    structure === undefined ? lines.length : lines.filter((l) => kindOf(l) === "line").length;
+  const searchable = lineCount > searchFrom;
   const q = searchable ? query.trim() : "";
-  const shown = useMemo(
+  const shown = useMemo(() => {
+    const found = filterLines(
+      lines,
+      q,
+      (line) =>
+        searchText !== undefined
+          ? searchText(line)
+          : columns.map((c) => c.text?.(line) ?? plain(c.value(line))).join(" "),
+      copy.locale,
+    );
+    return q === "" || structure === undefined
+      ? found
+      : found.filter((l) => structure.kind(l) === "line");
+  }, [lines, columns, searchText, q, copy.locale, structure]);
+
+  /* ── which columns are on screen ── */
+  const specs = useMemo<ColumnSpec[]>(
     () =>
-      filterLines(
-        lines,
-        q,
-        (line) =>
-          searchText !== undefined
-            ? searchText(line)
-            : columns.map((c) => c.text?.(line) ?? plain(c.value(line))).join(" "),
-        copy.locale,
-      ),
-    [lines, columns, searchText, q, copy.locale],
+      columns.map((c) => ({
+        id: c.id,
+        label: c.header,
+        optional: c.optional === true,
+        ...(c.defaultHidden === true ? { defaultHidden: true } : {}),
+      })),
+    [columns],
   );
+  /* `visibleColumnIds` alone is a fixed choice, the way a controlled input without
+     `onChange` is: the owner said which columns, and the menu cannot change them. */
+  const columnControl = useColumnControl(
+    specs,
+    visibleColumnIds === undefined && onVisibleColumnIdsChange === undefined
+      ? {}
+      : {
+          ...(visibleColumnIds === undefined ? {} : { visibleIds: visibleColumnIds }),
+          onVisibleIdsChange: onVisibleColumnIdsChange ?? (() => {}),
+        },
+  );
+  const onScreen = columns.filter((c) => columnControl.isVisible(c.id));
 
   useEffect(() => {
     const target = focusNext.current;
@@ -276,6 +407,62 @@ export function LineItems<T>({
     } else openEditor(null, blank);
   };
 
+  /* In place: the table opens the row whose id this returns. */
+  const addInline = (make: (() => T) | undefined = newLine): string | undefined => {
+    if (make === undefined) return undefined;
+    const blank = make();
+    setQuery("");
+    onAdd?.(blank);
+    return getLineId(blank);
+  };
+
+  /* A section and a note are always written in place, editor or not. */
+  const bandAdds: EditAdd[] =
+    read || onAdd === undefined || structure === undefined
+      ? []
+      : [
+          ...(structure.newSection === undefined
+            ? []
+            : [
+                {
+                  label: copy.lines.addSection,
+                  onAdd: () => addInline(structure.newSection),
+                },
+              ]),
+          ...(structure.newNote === undefined
+            ? []
+            : [{ label: copy.lines.addNote, onAdd: () => addInline(structure.newNote) }]),
+        ];
+  const inPlace = inline || bandAdds.length > 0;
+
+  const bands: EditBands<T> | undefined =
+    structure === undefined
+      ? undefined
+      : {
+          kind: (line) => {
+            const k = structure.kind(line);
+            return k === "line" ? null : k;
+          },
+          render: (line) => structure.text(line),
+          ...(canChange
+            ? {
+                edit: (line: T, set: (next: T) => void) => (
+                  <TextInput
+                    aria-label={
+                      structure.kind(line) === "section"
+                        ? copy.lines.section
+                        : copy.lines.note
+                    }
+                    value={structure.text(line)}
+                    onChange={(text) => set(structure.withText(line, text))}
+                  />
+                ),
+              }
+            : {}),
+          total: (column, under) =>
+            columns.find((c) => c.id === column.id)?.subtotal?.(under) ?? null,
+        };
+
   const remove = (line: T) => {
     const id = getLineId(line);
     const { index, focus } = planRemoval(lines, shown, id, getLineId);
@@ -296,7 +483,7 @@ export function LineItems<T>({
 
   /* ── the table ──────────────────────────────────────────────────── */
 
-  const tableColumns: EditColumn<T>[] = columns.map((c) => ({
+  const tableColumns: EditColumn<T>[] = onScreen.map((c) => ({
     id: c.id,
     header: c.header,
     ...(c.width === undefined ? {} : { width: c.width }),
@@ -329,6 +516,7 @@ export function LineItems<T>({
          would be two more targets on a small screen. Without an editor the trash
          is the only way to remove, so it stays — at the card's top right, lit. */
       stack: canEdit ? "hidden" : "trail",
+      onBands: true,
       render: (line: T) => {
         const id = getLineId(line);
         const nameId = `${formId}-line-${id}`;
@@ -345,13 +533,13 @@ export function LineItems<T>({
             <span id={nameId} className="sr-only">
               {labelOf(line)}
             </span>
-            {canEdit ? (
+            {canEdit && kindOf(line) === "line" ? (
               <IconButton
                 icon={Pencil}
                 label={copy.lines.edit}
                 aria-describedby={nameId}
                 haspopup="dialog"
-                onClick={() => openEditor(id, line)}
+                onClick={() => openLine(id, line)}
               />
             ) : null}
             {canRemove ? (
@@ -369,20 +557,22 @@ export function LineItems<T>({
     });
   }
 
-  const addButton = canAdd ? (
-    <Button role="secondary" size="sm" icon={Plus} onClick={add} data-line-add="">
-      {copy.lines.add}
-    </Button>
-  ) : null;
+  /* In place, «add» is the table's own row under the grid: where the line will appear. */
+  const addButton =
+    canAdd && !inline ? (
+      <Button role="secondary" size="sm" icon={Plus} onClick={add} data-line-add="">
+        {copy.lines.add}
+      </Button>
+    ) : null;
 
   const count =
     q === ""
-      ? fillCopy(lines.length === 1 ? copy.lineItems.one : copy.lineItems.many, {
-          count: lines.length.toLocaleString(copy.locale),
+      ? fillCopy(lineCount === 1 ? copy.lineItems.one : copy.lineItems.many, {
+          count: lineCount.toLocaleString(copy.locale),
         })
       : fillCopy(copy.lineItems.shown, {
           shown: shown.length.toLocaleString(copy.locale),
-          count: lines.length.toLocaleString(copy.locale),
+          count: lineCount.toLocaleString(copy.locale),
         });
 
   return (
@@ -391,7 +581,10 @@ export function LineItems<T>({
       aria-label={copy.lineItems.table}
       className="flex min-w-0 flex-col gap-4"
     >
-      {lines.length === 0 ? (
+      {/* Empty, a document that can still change shows its table — the headers say what
+          a line will hold, and «add» is right where the first one appears. Only one that
+          cannot change says it in a sentence. */}
+      {lines.length === 0 && !canAdd ? (
         /* Said, with its way out: an empty document is a question («what is sold
            here?»), not a blank box. In read mode there is no way out to offer. */
         <Empty align="start" sentence={copy.lines.empty} action={addButton ?? undefined} />
@@ -425,20 +618,38 @@ export function LineItems<T>({
             <span className="text-meta text-muted tabular-nums" aria-live="polite">
               {count}
             </span>
-            {addButton === null ? null : <span className="ml-auto">{addButton}</span>}
+            {columnControl.hasOptional || addButton !== null ? (
+              <span className="ml-auto flex items-center gap-2">
+                <ColumnsMenu control={columnControl} />
+                {addButton}
+              </span>
+            ) : null}
           </div>
 
           <EditableTable<T>
             rows={shown}
             columns={tableColumns}
             getRowId={getLineId}
-            empty={fillCopy(copy.lineItems.noMatch, { query: query.trim() })}
+            empty={
+              lines.length === 0
+                ? copy.lines.empty
+                : fillCopy(copy.lineItems.noMatch, { query: query.trim() })
+            }
             layout={layout}
+            {...(inline ? { onAdd: () => addInline(), addLabel: copy.lines.add } : {})}
+            {...(bandAdds.length === 0 ? {} : { adds: bandAdds })}
+            {...(bands === undefined ? {} : { bands })}
+            {...(flag === undefined ? {} : { flag })}
+            {...(inPlace && onRemove !== undefined
+              ? /* A blank row nobody wrote in is taken back without a notice: nobody
+                   removed anything, so there is nothing to undo. */
+                { onDiscard: onRemove }
+              : {})}
             {...(canEdit
               ? {
                   onOpen: (id: string) => {
                     const line = lines.find((l) => getLineId(l) === id);
-                    if (line !== undefined) openEditor(id, line);
+                    if (line !== undefined) openLine(id, line);
                   },
                 }
               : {})}
@@ -449,10 +660,10 @@ export function LineItems<T>({
         </div>
       )}
 
-      {totals === undefined || totals.length === 0 ? null : (
+      {totals === undefined || ("length" in totals && totals.length === 0) ? null : (
         /* Inset like the table's cells, so the last figure lines up with the amounts. */
         <div className="px-4">
-          <Totals rows={totals} />
+          {"length" in totals ? <Totals rows={totals} /> : <Totals {...totals} />}
         </div>
       )}
 

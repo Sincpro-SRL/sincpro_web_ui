@@ -3,7 +3,9 @@
 import { fillCopy, type UiCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { pathKey } from "@sincpro/web-ui/foundations/grouping";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
+import { CellCopy } from "@sincpro/web-ui/primitives/table/CellCopy";
 import { CellEditor } from "@sincpro/web-ui/primitives/table/CellEditor";
+import { EditRow, firstControl } from "@sincpro/web-ui/primitives/table/EditableTable";
 import { type RowAction, RowActions } from "@sincpro/web-ui/primitives/table/RowActions";
 import {
   SelectBox,
@@ -29,8 +31,8 @@ import {
   tableFeatures,
   useTable,
 } from "@tanstack/react-table";
-import { ChevronRight } from "lucide-react";
-import { type ReactNode, useMemo } from "react";
+import { ChevronRight, Plus } from "lucide-react";
+import { type ReactNode, useEffect, useMemo, useRef, useState } from "react";
 
 /* ==================================================================== *
  *  DATATABLE — grouping, sorting and expanding, without writing it ourselves.
@@ -58,6 +60,22 @@ import { type ReactNode, useMemo } from "react";
  *  to aggregate it; the translation to the library happens here. Exposing
  *  `ColumnDef` would make every screen in the product depend on a TanStack
  *  version, which is exactly what this layer exists to avoid.
+ *
+ *  ── A new record is written in the list (`create`) ──────────────────
+ *
+ *  Odoo's editable list: «Add» puts a row at the bottom with a control in each
+ *  column that declared an `input`, the focus on the first one, and the record
+ *  is written where it will live. The rows that already exist keep their own
+ *  way — one cell at a time through `edit` —, so the list does not lose its
+ *  selection, its sorting, its grouping or its optional columns, which a table
+ *  edited row by row (`EditableTable`) does not have.
+ *
+ *  The row being written is NOT part of the data: it does not exist yet, so it
+ *  is neither sorted nor grouped — it stays at the bottom, where it was asked
+ *  for. Its keys are `EditableTable`'s, the same `EditRow`: `Enter` or leaving
+ *  the row saves it, `Escape` drops it, a row left untouched is dropped, and
+ *  `Tab` past its last control saves it and starts the next one — twenty
+ *  records off a paper list without the mouse.
  * ==================================================================== */
 
 /** How a column is aggregated when its rows are pulled together into a group.
@@ -67,21 +85,52 @@ import { type ReactNode, useMemo } from "react";
  *  mean nothing. An aggregate has to be chosen on purpose. */
 export type Aggregate = "count" | "sum" | "mean" | "min" | "max" | "unique";
 
-function aggregateLabel(copy: UiCopy, kind: Aggregate, v: number): string {
+/** The aggregates that are an amount OF the column — a sum of bolivianos is bolivianos — and
+ *  so are written the way the column writes its numbers. `count` and `unique` count rows
+ *  and values: «Bs. 12,00 rows» would be nonsense. */
+const IN_COLUMN_UNITS: ReadonlySet<Aggregate> = new Set(["sum", "mean", "min", "max"]);
+
+/**
+ * How the aggregate of a column is written: its `format` when the aggregate is in the
+ * column's units, `undefined` (the bare number) otherwise.
+ *
+ * Exported for the other places that draw `aggregateOf` — the bands of the sheet, the report
+ * built from the piles — so the footer and the band never write the same total two ways.
+ * Not public.
+ */
+export function aggregateFormat<T>(
+  column: DataColumn<T>,
+): ((value: number) => string) | undefined {
+  return column.aggregate !== undefined && IN_COLUMN_UNITS.has(column.aggregate)
+    ? column.format
+    : undefined;
+}
+
+/** An aggregate of a column, written — or the bare number when nothing says how. */
+export function aggregateText<T>(column: DataColumn<T>, value: number): string | number {
+  const format = aggregateFormat(column);
+  return format === undefined ? value : format(value);
+}
+
+function aggregateLabel<T>(copy: UiCopy, column: DataColumn<T>, v: number): string {
   const n = v.toLocaleString(copy.locale);
-  switch (kind) {
+  /* Raw, a sum of amounts read «78.752,9»: one decimal lost and no currency, under a
+     column whose every cell says «Bs. 12.300,00». */
+  const amount = (fallback: string) =>
+    column.format === undefined ? fallback : column.format(v);
+  switch (column.aggregate ?? "count") {
     case "sum":
-      return n;
+      return amount(n);
     case "count":
       return `${n} ${v === 1 ? copy.table.row : copy.table.rows}`;
     case "mean":
       return fillCopy(copy.table.mean, {
-        value: v.toLocaleString(copy.locale, { maximumFractionDigits: 2 }),
+        value: amount(v.toLocaleString(copy.locale, { maximumFractionDigits: 2 })),
       });
     case "min":
-      return fillCopy(copy.table.min, { value: n });
+      return fillCopy(copy.table.min, { value: amount(n) });
     case "max":
-      return fillCopy(copy.table.max, { value: n });
+      return fillCopy(copy.table.max, { value: amount(n) });
     case "unique":
       return fillCopy(copy.table.distinct, { value: n });
   }
@@ -135,6 +184,19 @@ export interface DataColumn<T> {
   numeric?: boolean;
   width?: number;
   aggregate?: Aggregate;
+  /**
+   * How a number of this column is WRITTEN where the code draws it instead of a row: the
+   * footer's aggregate, the total of a band of the sheet, the lines of a report built
+   * from the piles. `(n) => money(n)` makes the footer read «Bs. 78.752,90» like the cells
+   * above it, and not «78.752,9».
+   *
+   * Context: the cells already had their way (`cell`), and that way takes a ROW — the
+   * footer has no row, only a number. A string and not a node because two of the three
+   * places are grids of text: the sheet and the report. Applies to the aggregates in the
+   * column's units (`sum`, `mean`, `min`, `max`); a `count` stays a count. Without it,
+   * the number in the copy table's locale, as before.
+   */
+  format?: (value: number) => string;
   sortable?: boolean;
   /** Odoo: fields without `optional` cannot leave the view. When true, the
    *  column appears in the columns submenu and can be hidden. */
@@ -157,7 +219,33 @@ export interface DataColumn<T> {
     /** Which rows can be changed — a paid invoice cannot. All of them by default. */
     when?: (row: T) => boolean;
   };
+  /** The control of this column in the row of a NEW record (`DataTable`'s `create`).
+   *  The same contract as `EditableTable`'s `edit`: `set` replaces the draft. Give it an
+   *  `aria-label` — a cell has no `Field` to name it. Without it the column stays
+   *  empty in that row: a computed amount, a sequence the backend assigns. */
+  input?: (draft: T, set: (next: T) => void) => ReactNode;
+  /** The copy button of the cells (`CellCopy`): on by default, copying what the cell shows.
+   *  A function copies what it returns for the row instead; `false` removes it from this
+   *  column — a column of tags or of buttons has nothing worth pasting. */
+  copy?: false | ((row: T) => string);
 }
+
+/** Writing a new record in the list. See the file's header. */
+export type DataTableCreate<T> = {
+  /** The record being written, or `null` when there is none. */
+  draft: T | null;
+  /** «Add» was asked for: the consumer sets a blank `draft`. */
+  onStart: () => void;
+  onChange: (next: T) => void;
+  /** `Enter`, leaving the row after writing in it, or `Tab` past its last control. The
+   *  consumer validates and saves, and sets `draft` back to `null` — or keeps it, to
+   *  say what is missing. */
+  onCommit: (draft: T) => void;
+  /** `Escape`, or leaving the row without having written anything. */
+  onCancel: () => void;
+  /** The «add» under the table. Defaults to the copy table's. */
+  label?: string;
+};
 
 /* The features are declared once. In v9 they are opt-in: asking only for what
    is used is what keeps the bundle down to what is actually needed. */
@@ -248,6 +336,8 @@ export function DataTable<T extends object>({
   totals = false,
   collapsed,
   onGroupToggle,
+  create,
+  copyable = true,
 }: {
   data: readonly T[];
   columns: readonly DataColumn<T>[];
@@ -281,8 +371,46 @@ export function DataTable<T extends object>({
    *  table does not reopen what rows just folded. */
   collapsed?: readonly string[];
   onGroupToggle?: (key: string) => void;
+  /** Write a new record as a row of the list. See the file's header. */
+  create?: DataTableCreate<T>;
+  /** The cells' copy buttons, on by default. `false` takes them off the whole table; a
+   *  column turns its own off with `copy: false`. */
+  copyable?: boolean;
 }) {
   const copy = useUiCopy();
+  const draft = create?.draft ?? null;
+  const draftRow = useRef<HTMLElement | null>(null);
+  const addButton = useRef<HTMLButtonElement>(null);
+  /* Whether anything was written in the draft: leaving a blank one drops it. */
+  const touched = useRef(false);
+  const writing = draft !== null;
+  /* Each «add» is a session. With `Tab` the next draft replaces the saved one without
+     ever being `null`, so `writing` alone would not say a new record began. */
+  const [session, setSession] = useState(0);
+  /* «add» is hidden while writing: the focus goes back to it once it is there again. */
+  const backToAdd = useRef(false);
+  const start = () => {
+    setSession((n) => n + 1);
+    create?.onStart();
+  };
+  /* A draft that appears takes the focus on its first control — «add» is a request to
+     write, not to look for where to. */
+  useEffect(() => {
+    if (!writing) {
+      if (backToAdd.current) addButton.current?.focus();
+      backToAdd.current = false;
+      return;
+    }
+    touched.current = false;
+    const node = draftRow.current;
+    if (node !== null) (firstControl(node) ?? node).focus();
+  }, [writing, session]);
+  const saveDraft = (refocus: boolean) => {
+    if (create === undefined || draft === null) return;
+    backToAdd.current = refocus;
+    if (touched.current) create.onCommit(draft);
+    else create.onCancel();
+  };
   // In v9 the helper is bound to the features AND to the data type: that is what
   // makes the compiler know about `enableGrouping` only if we ask for the
   // feature.
@@ -417,7 +545,7 @@ export function DataTable<T extends object>({
     onSelectedChange?.(n);
   }
 
-  return (
+  const grid = (
     <Table height={height}>
       <THead>
         {selecting ? (
@@ -556,6 +684,14 @@ export function DataTable<T extends object>({
                       >
                         {drawCell(copy, c, original)}
                       </CellEditor>
+                    ) : copyable && c.copy !== false ? (
+                      <CellCopy
+                        header={c.header}
+                        numeric={c.numeric === true}
+                        {...(c.copy === undefined ? {} : { value: c.copy(original) })}
+                      >
+                        {drawCell(copy, c, original)}
+                      </CellCopy>
                     ) : (
                       drawCell(copy, c, original)
                     )}
@@ -568,6 +704,50 @@ export function DataTable<T extends object>({
             </Tr>
           );
         })}
+        {create === undefined || draft === null ? null : (
+          <EditRow
+            as="tr"
+            rowId="\u0000draft"
+            rowRef={(node) => {
+              draftRow.current = node;
+            }}
+            editable
+            editing
+            tabbable={false}
+            className="group/row"
+            onStart={() => {}}
+            onCommit={saveDraft}
+            onCancel={() => {
+              backToAdd.current = true;
+              create.onCancel();
+            }}
+            onMove={() => {}}
+            onFocusRow={() => {}}
+            onTabOut={(direction) => {
+              /* Past the last control: saved, and the next one started — unless nothing
+                 was written, which is «I am done». Backwards, the browser's way. */
+              if (direction === "prev" || !touched.current) return false;
+              create.onCommit(draft);
+              start();
+              return true;
+            }}
+          >
+            {selecting ? <td className={DRAFT_CELL} /> : null}
+            {columns.map((c) => (
+              <td
+                key={c.id}
+                {...(c.input === undefined ? {} : { "data-edit": "" })}
+                className={`${DRAFT_CELL} ${c.numeric === true ? "text-right tabular-nums" : ""}`}
+              >
+                {c.input?.(draft, (next) => {
+                  touched.current = true;
+                  create.onChange(next);
+                }) ?? null}
+              </td>
+            ))}
+            {rowActions === undefined ? null : <td className={DRAFT_CELL} />}
+          </EditRow>
+        )}
       </tbody>
 
       {footer === null ? null : (
@@ -592,7 +772,7 @@ export function DataTable<T extends object>({
                       {data.length === 1 ? copy.table.row : copy.table.rows}
                     </span>
                   ) : value === null ? null : (
-                    aggregateLabel(copy, c.aggregate ?? "count", value)
+                    aggregateLabel(copy, c, value)
                   )}
                 </td>
               );
@@ -603,4 +783,31 @@ export function DataTable<T extends object>({
       )}
     </Table>
   );
+
+  if (create === undefined) return grid;
+  return (
+    <div className="flex min-w-0 flex-col">
+      {grid}
+      {/* Under the table, as text, like `EditableTable`'s «add»: what is about to happen
+          is one more row right above it. Hidden while a record is being written — one
+          at a time; `Tab` past the last control starts the next. */}
+      {writing ? null : (
+        <div className="px-1 py-0.5">
+          <button
+            ref={addButton}
+            type="button"
+            onClick={start}
+            className="flex w-full items-center gap-1.5 rounded-control px-3 py-1 text-left text-meta text-primary transition-colors duration-(--duration-instant) hover:bg-primary/5 focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-primary"
+          >
+            <Plus className="size-(--size-icon-sm)" strokeWidth={2.5} aria-hidden />
+            {create.label ?? copy.table.add}
+          </button>
+        </div>
+      )}
+    </div>
+  );
 }
+
+/* A cell of the row being written: the table's cell, washed like an edited row. */
+const DRAFT_CELL =
+  "border-b border-line bg-primary/5 px-3 py-1 align-middle text-meta text-ink first:rounded-l-control last:rounded-r-control";

@@ -26,7 +26,7 @@ const config: StorybookConfig = {
                            Datos      qué muestra N cosas
                            Búsqueda   cómo se recorta y se parte
                            Registro   las piezas de un registro
-                           Chatter    qué le pasó a algo
+                           Actividad  qué le pasó a algo y qué hay que saber
                          Siguen siendo componentes: se usan sueltos.
 
        4 · Vistas        las DOS macros, y nada más. Una pantalla de este
@@ -46,7 +46,7 @@ const config: StorybookConfig = {
      El error que esto corrige: había secciones hermanas con niveles
      distintos adentro —los controles (átomos) al lado de los tipos de
      formulario (templates)— y una sección que mezclaba `Button` con
-     `Chatter`. Cuando el nivel no manda, la jerarquía se aplana y deja de
+     `Activity` (el chatter de entonces). Cuando el nivel no manda, la jerarquía se aplana y deja de
      decir por dónde empezar a leer. */
   stories: [
     "../stories/Introduction.mdx",

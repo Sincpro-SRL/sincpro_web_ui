@@ -10,16 +10,23 @@ import {
   FieldIdsContext,
   useFieldIds,
 } from "@sincpro/web-ui/primitives/field/context";
+import { FieldCopy, useFieldCopy } from "@sincpro/web-ui/primitives/field/copy";
 import { useSheetLayout } from "@sincpro/web-ui/primitives/field/layout";
 import {
   type FormMode,
   FormModeProvider,
   useFormMode,
 } from "@sincpro/web-ui/primitives/field/mode";
+import {
+  describedByOf,
+  type FieldNote,
+  NoteCard,
+  NoteFlag,
+} from "@sincpro/web-ui/primitives/field/note";
 import { Hint } from "@sincpro/web-ui/primitives/hint/Hint";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
 import { AlertCircle, Check, ChevronDown, ChevronUp } from "lucide-react";
-import { type ReactNode, useId } from "react";
+import { type ReactNode, useId, useRef } from "react";
 import {
   Button as AriaButton,
   Input,
@@ -68,6 +75,8 @@ export function Field({
   layout,
   action,
   mode,
+  note,
+  copy: copyAs,
 }: {
   label: string;
   /** What is expected. A `?` on the label that opens it on press. */
@@ -94,9 +103,18 @@ export function Field({
   action?: ReactNode;
   /** Forces the mode of this field. By default it inherits it from the view. */
   mode?: FormMode;
+  /** A note that belongs to THIS field — «vence en 3 días», «tiene una NC sin aplicar ·
+   *  Aplicar». A card in the record's margin when there is one, a `Flag` by the label when
+   *  there is not; its sentence describes the control (`aria-describedby`). See `note.tsx`. */
+  note?: FieldNote;
+  /** The copy button by the label (see `copy.tsx`): on by default, copying what the control
+   *  shows. A string copies that instead; `false` removes the button from this field. */
+  copy?: string | false;
 }) {
   const d = useDensity();
   const copy = useUiCopy();
+  const copies = useFieldCopy() && copyAs !== false;
+  const shown = useRef<HTMLDivElement>(null);
   const auto = useId();
   const id = htmlFor ?? auto;
   const sheetLayout = useSheetLayout();
@@ -105,10 +123,13 @@ export function Field({
 
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
-  const describedBy =
-    [hint === undefined ? null : hintId, error === undefined ? null : errorId]
-      .filter((x) => x !== null)
-      .join(" ") || undefined;
+  const noteId = `${id}-note`;
+  /* The error first: what has to be corrected is heard before what is worth knowing. */
+  const describedBy = describedByOf(
+    hint === undefined ? null : hintId,
+    error === undefined ? null : errorId,
+    note === undefined ? null : noteId,
+  );
 
   const labelNode = (
     <span
@@ -129,8 +150,20 @@ export function Field({
         ) : null}
       </label>
       {hint === undefined ? null : <Hint id={hintId}>{hint}</Hint>}
+      {note === undefined ? null : <NoteFlag note={note} />}
+      {copies ? (
+        <FieldCopy
+          label={label}
+          scope={shown}
+          {...(typeof copyAs === "string" ? { value: copyAs } : {})}
+        />
+      ) : null}
     </span>
   );
+  /* Last in the field so it is read last; absolutely placed, it still sits at the field's
+     top — the static position of an absolute child of a flex or grid box is its start. */
+  const noteCard =
+    note === undefined ? null : <NoteCard note={note} id={noteId} owner={label} />;
 
   /* The field's `mode` propagates INWARDS and is not used here: what knows how
      to draw itself as data is the control, not the label. That way a computed
@@ -146,7 +179,10 @@ export function Field({
      inside it then also finds the label that names it, not only the id it is handed. */
   const content = (
     <FieldIdsContext.Provider value={ids}>
-      {typeof children === "function" ? children(ids) : children}
+      {/* `contents`: a box for the copy button to read the value from, that lays out nothing. */}
+      <div ref={shown} className="contents">
+        {typeof children === "function" ? children(ids) : children}
+      </div>
     </FieldIdsContext.Provider>
   );
   const body = (
@@ -175,7 +211,7 @@ export function Field({
 
   if (inline) {
     return (
-      <div className="grid-label grid min-w-0 items-start gap-x-4 gap-y-1">
+      <div className="grid-label grid min-w-0 items-start gap-x-4 gap-y-1 group/field">
         {labelNode}
         <div className="flex min-w-0 flex-col gap-1">{body}</div>
         {action === undefined ? null : (
@@ -183,18 +219,20 @@ export function Field({
             {action}
           </div>
         )}
+        {noteCard}
       </div>
     );
   }
 
   return (
-    <div className={`flex min-w-0 flex-col ${byDensity(d, "gap-1", "gap-0.5")}`}>
+    <div className={`group/field flex min-w-0 flex-col ${byDensity(d, "gap-1", "gap-0.5")}`}>
       <div className="flex min-w-0 items-center gap-2">
         {labelNode}
         {action === undefined ? null : <span className="ml-auto shrink-0">{action}</span>}
       </div>
 
       {body}
+      {noteCard}
     </div>
   );
 }
@@ -218,6 +256,8 @@ export function DataField({
   layout,
   mono = false,
   action,
+  note,
+  copy: copyAs,
 }: {
   label: string;
   /** `undefined` and `null` are drawn with the missing mark: saying there is no
@@ -228,8 +268,15 @@ export function DataField({
   /** The value was written by the machine: an id, a code, an account number. */
   mono?: boolean;
   action?: ReactNode;
+  /** A note that belongs to this value — the same as `Field`'s. */
+  note?: FieldNote;
+  /** The copy button by the label, as `Field`'s: on by default for a value that is there. */
+  copy?: string | false;
 }) {
   const d = useDensity();
+  const shown = useRef<HTMLSpanElement>(null);
+  const allowed = useFieldCopy() && copyAs !== false;
+  const noteId = `${useId()}-note`;
   const sheetLayout = useSheetLayout();
   const inline =
     layout === "inline" || (layout === undefined && sheetLayout === "horizontal");
@@ -242,11 +289,24 @@ export function DataField({
     >
       <span className={inline ? "min-w-0 truncate" : ""}>{label}</span>
       {hint === undefined ? null : <Hint>{hint}</Hint>}
+      {note === undefined ? null : <NoteFlag note={note} />}
+      {/* Nothing there, nothing to copy: no button over the missing mark. */}
+      {allowed && !empty ? (
+        <FieldCopy
+          label={label}
+          scope={shown}
+          {...(typeof copyAs === "string" ? { value: copyAs } : {})}
+        />
+      ) : null}
     </span>
   );
+  const noteCard =
+    note === undefined ? null : <NoteCard note={note} id={noteId} owner={label} />;
 
   const valueNode = (
     <span
+      ref={shown}
+      {...(note === undefined ? {} : { "aria-describedby": noteId })}
       className={`min-w-0 text-meta ${empty ? "text-muted italic" : "text-ink"} ${
         mono ? "font-mono tabular-nums" : ""
       }`}
@@ -257,23 +317,25 @@ export function DataField({
 
   if (inline) {
     return (
-      <div className="grid-label grid min-w-0 items-baseline gap-x-4 gap-y-0.5">
+      <div className="grid-label grid min-w-0 items-baseline gap-x-4 gap-y-0.5 group/field">
         {labelNode}
         <span className="flex min-w-0 items-baseline gap-2">
           {valueNode}
           {action}
         </span>
+        {noteCard}
       </div>
     );
   }
 
   return (
-    <div className={`flex min-w-0 flex-col ${byDensity(d, "gap-1", "gap-0.5")}`}>
+    <div className={`group/field flex min-w-0 flex-col ${byDensity(d, "gap-1", "gap-0.5")}`}>
       <div className="flex min-w-0 items-center gap-2">
         {labelNode}
         {action === undefined ? null : <span className="ml-auto shrink-0">{action}</span>}
       </div>
       {valueNode}
+      {noteCard}
     </div>
   );
 }

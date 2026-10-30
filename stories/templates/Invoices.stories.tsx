@@ -1,4 +1,5 @@
 import {
+  type ActivityEvent,
   type AppEntry,
   AppFrame,
   AssistedValue,
@@ -8,8 +9,6 @@ import {
   Button,
   Calendar,
   ChangeReview,
-  Chatter,
-  type ChatterEvent,
   CommandPalette,
   DatePicker,
   Field,
@@ -41,7 +40,6 @@ import {
   ToastProvider,
   TopBar,
   type TopMenu,
-  useChatter,
   useCommandPaletteShortcut,
   UserChip,
   useToast,
@@ -449,7 +447,7 @@ function InvoiceList({
  *  ONE RECORD — the invoice
  * ==================================================================== */
 
-const HISTORY: ChatterEvent[] = [
+const HISTORY: ActivityEvent[] = [
   {
     id: "e1",
     label: "se creó la factura",
@@ -507,7 +505,10 @@ function InvoiceLines({
     <LineItems
       mode={editable ? "edit" : "read"}
       lines={lines}
-      columns={lineColumns()}
+      /* The line is written where it will live: «Agregar una línea» under the grid opens a
+         row with the product to search in its cell; the pencil still opens the whole line. */
+      columns={lineColumns({ productInCell: true })}
+      adding="inline"
       getLineId={(l) => l.id}
       lineLabel={(l) => l.product || "línea nueva"}
       onChange={(id, next) => set(lines.map((l) => (l.id === id ? next : l)))}
@@ -549,7 +550,6 @@ function InvoiceRecord({
   const [lines, setLines] = useState<readonly InvoiceLine[]>(invoice.lines);
   const [savedLines, setSavedLines] = useState<readonly InvoiceLine[]>(invoice.lines);
   const [paid, setPaid] = useState(false);
-  const chatter = useChatter(false);
   const toast = useToast();
   const customer = customerCard(invoice.taxId);
   const state = paid ? "paid" : invoice.state;
@@ -715,15 +715,11 @@ function InvoiceRecord({
         </Record.Pages>
       </Record.Paper>
 
-      <Record.Chatter>
-        <Chatter
-          open={chatter.open}
-          onToggle={chatter.toggle}
-          events={HISTORY}
-          messages={NOTES}
-          composer={<MessageComposer kinds={[writeANote()]} onSend={() => {}} />}
-        />
-      </Record.Chatter>
+      <Record.Activity
+        events={HISTORY}
+        messages={NOTES}
+        composer={<MessageComposer kinds={[writeANote()]} onSend={() => {}} />}
+      />
     </Record>
   );
 }
@@ -1088,11 +1084,10 @@ function AssistedInvoice() {
   const [termSet, setTermSet] = useState(false);
   const [lines, setLines] = useState<readonly InvoiceLine[]>(DRAFT_LINES_BEFORE);
   const [proposal, setProposal] = useState<Proposal>("idle");
-  const [events, setEvents] = useState<ChatterEvent[]>([]);
-  const chatter = useChatter(true);
+  const [events, setEvents] = useState<ActivityEvent[]>([]);
   const total = subtotalOf({ ...INVOICES[0]!, lines });
 
-  const log = (event: ChatterEvent) => setEvents((now) => [event, ...now]);
+  const log = (event: ActivityEvent) => setEvents((now) => [event, ...now]);
   const unlog = (id: string) => setEvents((now) => now.filter((e) => e.id !== id));
 
   return (
@@ -1249,14 +1244,7 @@ function AssistedInvoice() {
         </Record.Pages>
       </Record.Paper>
 
-      <Record.Chatter>
-        <Chatter
-          open={chatter.open}
-          onToggle={chatter.toggle}
-          events={events}
-          messages={[]}
-        />
-      </Record.Chatter>
+      <Record.Activity defaultOpen events={events} messages={[]} />
     </Record>
   );
 }

@@ -262,7 +262,7 @@ export const EstadoElegible: Story = {
 };
 
 /* La historia del registro ya NO vive en el riel: lo que le pasó a un registro
-   se lee en el chatter, al costado o debajo (`3 · Componentes/Chatter`). Tenerla
+   se lee en la actividad, a la derecha o debajo (`3 · Componentes/Actividad`). Tenerla
    también acá arriba eran dos lugares para una cosa, y el de arriba obligaba a
    desplegar algo ENCIMA del registro para leerlo. */
 

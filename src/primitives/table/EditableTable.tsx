@@ -13,6 +13,8 @@ import {
 import { HANDHELD_WIDTH } from "@sincpro/web-ui/foundations/layout";
 import { stickyTop, useScrollBox } from "@sincpro/web-ui/foundations/sticky";
 import { IconButton } from "@sincpro/web-ui/primitives/button/Button";
+import { NoteCard } from "@sincpro/web-ui/primitives/field/note";
+import { Flag, type FlagProps } from "@sincpro/web-ui/primitives/notice/Flag";
 import { Plus, Trash2 } from "lucide-react";
 import {
   Fragment,
@@ -63,6 +65,46 @@ import { useKeyboard } from "react-aria";
  *  close it with the focus back on the row — so the next arrow press goes on from
  *  where you were. A read-only table (no `onChange`) has no stops at all: there
  *  is nothing to do on its rows.
+ *
+ *  `Tab` past the last control of the row does not fall out of the table: it
+ *  commits the row and opens the NEXT one on its first control, and `Shift+Tab`
+ *  before the first opens the previous one on its last — the way lines are
+ *  entered, one after the other, without the mouse. Past the last row it adds
+ *  one (when the table adds); past a row just added and still blank it leaves
+ *  the table, or a held `Tab` would print blank lines forever.
+ *
+ *  ── Adding is writing, not one more click ───────────────────────────
+ *
+ *  «Add a line» puts the new row ALREADY OPEN, with the focus on its first
+ *  control — Odoo's `editable="bottom"`. A blank row that has to be clicked
+ *  before it can be written in is a step that says nothing. For that the table
+ *  needs to know which row is the new one: `onAdd` returns its id (or a promise
+ *  of it, when the backend makes the record). And a row added and left without
+ *  a single change —`Escape`, or walking away— is taken back (`onDiscard`): a
+ *  line nobody wrote in is not a line. `Escape` on an added row discards it
+ *  even if it was written in, the way cancelling a new record does.
+ *
+ *  ── A warning about ONE row is drawn on that row (`flag`) ───────────
+ *
+ *  «Sin existencias» on line 3 is not news for the whole document: written at
+ *  the top it says nothing about where. `flag` puts the system's `Flag` —
+ *  a toned mark that opens its sentence — at the start of the row, before its
+ *  first value, in the table and on the phone's card alike. Inside a record
+ *  wide enough for a margin, the same sentence is also a card OUTSIDE the
+ *  sheet, at the row's height (the field notes' `NoteCard`, see THE MARGIN in
+ *  `RecordHeader`): the mark says WHERE, the card says WHAT, without a press.
+ *
+ *  ── Not every row is a line: sections and notes (`bands`) ──────────
+ *
+ *  A long document is read in parts: «Equipos», «Instalación», «Soporte»
+ *  — Odoo's `display_type` rows. A SECTION heads the lines under it until the
+ *  next one, and says what they add up to in the columns that add up (its
+ *  `total`); a NOTE is a sentence between lines — «los precios incluyen el
+ *  traslado». Both are rows of the same sequence, not a grouping: their place
+ *  is where the person put them, and they are added, edited, walked with the
+ *  keys and removed like any line. Their text spans the columns up to the
+ *  first one that has something to say on that row (a section's total, or a
+ *  column marked `onBands` — the row's buttons).
  *
  *  ── The header sticks the way `Table`'s does ────────────────────────
  *
@@ -133,6 +175,49 @@ export interface EditColumn<T> {
    *  discount. `null` or `""` leaves it out of that row's line — a zero discount is
    *  not news. Without it the line reads «<header> <cell>». */
   brief?: (row: T) => ReactNode;
+  /** Drawn on section and note rows too, instead of being covered by their text — the
+   *  row's buttons. `render` receives the band's row. */
+  onBands?: boolean;
+}
+
+/** What a row that is not a line is. See «sections and notes» in the file's header. */
+export type EditBands<T> = {
+  /** `section` heads the lines under it; `note` is a sentence between lines; `null` is a
+   *  line. */
+  kind: (row: T) => "section" | "note" | null;
+  /** The band's text as it reads. */
+  render: (row: T) => ReactNode;
+  /** Its control while the row is edited — a text field, named. */
+  edit?: (row: T, set: (next: T) => void) => ReactNode;
+  /** What a section's lines add up to in `column`, already formatted; `null` where the
+   *  column does not add up. The lines are the ones under it until the next section. */
+  total?: (column: EditColumn<T>, lines: readonly T[]) => ReactNode | null;
+};
+
+/** One more way to add, beside «add a line»: a section, a note. */
+export type EditAdd = {
+  label: string;
+  /** As `onAdd`: return the new row's id and it opens. */
+  onAdd: () => string | void | Promise<string | void>;
+};
+
+/** The lines each section heads: the rows after it up to the next section. Notes do not
+ *  cut a section, and are not lines. */
+export function sectionLines<T>(
+  rows: readonly T[],
+  getRowId: (row: T) => string,
+  kind: (row: T) => "section" | "note" | null,
+): Map<string, T[]> {
+  const out = new Map<string, T[]>();
+  let current: T[] | null = null;
+  for (const row of rows) {
+    const k = kind(row);
+    if (k === "section") {
+      current = [];
+      out.set(getRowId(row), current);
+    } else if (k === null) current?.push(row);
+  }
+  return out;
 }
 
 /**
@@ -181,19 +266,63 @@ function pileTag<T>(pile: Pile<T>, locale: string): ReactNode {
 const RING =
   "outline-0 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary forced-colors:focus-visible:outline-[Highlight]";
 
-/** What can take the focus in a row. Filtered again in `firstControl`: React Aria's
- *  hidden form mirrors (a `<select>` behind a `Select`) match this and are not stops. */
+/** What can take the focus in a row. Filtered again in `stopsIn`: React Aria's hidden form
+ *  mirrors (a `<select>` behind a `Select`, an `<input hidden>` in a date picker) match this
+ *  and are not stops. */
 const FOCUSABLE =
   'input:not([type="hidden"]):not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), a[href], [tabindex]';
 
+/** What `Tab` stops on inside `scope` of a row: focusable, and not a hidden form mirror.
+ *
+ *  Context: NOT filtered by `aria-hidden` / `inert`. While a list is open (a tags field, a
+ *  picker) React Aria hides everything outside it that way — the rest of the row included —
+ *  and the row then looked as if its open control were its last: `Tab` added a new row from
+ *  the middle of this one. The mirrors carry their own marks instead. */
+function stopsIn(row: HTMLElement, scope: string): HTMLElement[] {
+  return [...row.querySelectorAll<HTMLElement>(scope)].filter(
+    (el) =>
+      el.tabIndex >= 0 && el.closest("[hidden], [data-react-aria-prevent-focus]") === null,
+  );
+}
+
+/** The controls of the editable cells of a row, in tab order. */
+function editStops(row: HTMLElement): HTMLElement[] {
+  return stopsIn(row, `[data-edit] :is(${FOCUSABLE})`);
+}
+
 /** The first control of a row being edited: the first one in an editable cell, else
  *  anything focusable in the row (a column without `edit` may still hold a button). */
-function firstControl(row: HTMLElement): HTMLElement | null {
-  const stops = (scope: string) =>
-    [...row.querySelectorAll<HTMLElement>(scope)].find(
-      (el) => el.tabIndex >= 0 && el.closest('[aria-hidden="true"], [inert]') === null,
-    ) ?? null;
-  return stops(`[data-edit] :is(${FOCUSABLE})`) ?? stops(FOCUSABLE);
+export function firstControl(row: HTMLElement): HTMLElement | null {
+  return editStops(row)[0] ?? stopsIn(row, FOCUSABLE)[0] ?? null;
+}
+
+/** The last control of a row being edited — where `Shift+Tab` from the next row lands. */
+function lastControl(row: HTMLElement): HTMLElement | null {
+  return editStops(row).at(-1) ?? stopsIn(row, FOCUSABLE).at(-1) ?? null;
+}
+
+/** Where `Tab` goes from the edge of an edited row: the next or previous row opened, a new
+ *  row added, or out of the table the browser's way. */
+export type TabTarget = { kind: "row"; id: string } | { kind: "add" } | { kind: "leave" };
+
+/**
+ * Where `Tab` past the last control (`next`) or `Shift+Tab` before the first (`prev`) of
+ * the edited row `from` goes, over the rows in the order they are drawn.
+ *
+ * Past the last row it adds one when the table can — unless `from` is itself a row just
+ * added and still blank: one more `Tab` there means «I am done», not «another blank line».
+ */
+export function tabTarget(
+  order: readonly string[],
+  from: string,
+  direction: "next" | "prev",
+  { canAdd, blank }: { canAdd: boolean; blank: boolean },
+): TabTarget {
+  const at = order.indexOf(from);
+  if (at === -1) return { kind: "leave" };
+  const to = order[direction === "next" ? at + 1 : at - 1];
+  if (to !== undefined) return { kind: "row", id: to };
+  return direction === "next" && canAdd && !blank ? { kind: "add" } : { kind: "leave" };
 }
 
 /** Keys a control inside the row already answers with `Enter`: a button presses, a
@@ -207,15 +336,16 @@ function ownsEnter(target: EventTarget): boolean {
   );
 }
 
-type RowKey = "ArrowDown" | "ArrowUp" | "Home" | "End";
+export type RowKey = "ArrowDown" | "ArrowUp" | "Home" | "End";
 
 /**
  * One body row. Its own component so that it can hold React Aria's `useKeyboard`
  * (a hook per row) and the timer that decides whether the focus really left it.
- * The same row is a `<tr>` in the table and an `<li>` in the stacked list: one
- * keyboard model, two shapes.
+ * The same row is a `<tr>` in the table and an `<li>` in the stacked list — and the row
+ * of a new record in `DataTable`: one keyboard model, three shapes. Exported for that
+ * family sibling only; it is not in the barrel.
  */
-function EditRow({
+export function EditRow({
   as,
   rowId,
   rowRef,
@@ -228,6 +358,7 @@ function EditRow({
   onCancel,
   onMove,
   onFocusRow,
+  onTabOut,
   children,
 }: {
   as: "tr" | "li";
@@ -242,6 +373,9 @@ function EditRow({
   onCancel: () => void;
   onMove: (key: RowKey) => void;
   onFocusRow: () => void;
+  /** `Tab` left the row by one of its edges. `true` = the table took it (opened another
+   *  row, added one); `false` = the browser moves the focus as usual. */
+  onTabOut: (direction: "next" | "prev") => boolean;
   children: ReactNode;
 }) {
   const leaving = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -296,8 +430,18 @@ function EditRow({
          that field write the value it was holding (it commits on blur). */
     onKeyDownCapture: editing
       ? (e) => {
-          if (e.key !== "Enter" || e.nativeEvent.isComposing) return;
+          if (e.nativeEvent.isComposing) return;
           if (!(e.target instanceof Node) || !e.currentTarget.contains(e.target)) return;
+          if (e.key === "Tab") {
+            /* Only the default is prevented, never the propagation: a combobox still
+               hears its `Tab` and takes the option it has marked before the row moves. */
+            const stops = editStops(e.currentTarget);
+            const edge = e.shiftKey ? stops[0] : stops.at(-1);
+            if (edge === undefined || !edge.contains(e.target)) return;
+            if (onTabOut(e.shiftKey ? "prev" : "next")) e.preventDefault();
+            return;
+          }
+          if (e.key !== "Enter") return;
           if (ownsEnter(e.target)) return;
           e.preventDefault();
           e.stopPropagation();
@@ -382,13 +526,20 @@ export function EditableTable<T>({
   height,
   layout = "auto",
   onOpen,
+  onDiscard,
+  bands,
+  adds,
+  flag,
 }: {
   rows: readonly T[];
   columns: readonly EditColumn<T>[];
   getRowId: (row: T) => string;
   onChange?: (id: string, next: T) => void;
   onRemove?: (id: string) => void;
-  onAdd?: () => void;
+  /** «Add a line». Return the new row's id —or a promise of it, when the backend makes
+   *  the record— and the table opens that row with the focus on its first control.
+   *  Return nothing and the row just appears, closed. */
+  onAdd?: () => string | void | Promise<string | void>;
   addLabel?: string;
   totals?: readonly (ReactNode | null)[];
   empty?: string;
@@ -416,8 +567,66 @@ export function EditableTable<T>({
    *  form of its own, a dialog that is a bottom sheet on a phone. The table ignores it:
    *  there the row is edited where it is read. */
   onOpen?: (id: string) => void;
+  /** Take back a row `onAdd` opened when it is abandoned: `Escape` on it, or leaving it
+   *  without a single change. Not `onRemove`: nobody removed a line, so there is nothing
+   *  to undo or to announce. Without it the blank row stays. */
+  onDiscard?: (id: string) => void;
+  /** Rows that are not lines: sections and notes. See the file's header. */
+  bands?: EditBands<T>;
+  /** More ways to add, drawn beside «add» under the grid: «add a section», «add a note». */
+  adds?: readonly EditAdd[];
+  /** A warning about one row — stock, a price under cost — drawn as a `Flag` at its start.
+   *  `null` for the rows with nothing to say, which should be most of them. `owner` is what
+   *  the record's activity says it belongs to («Línea 3 · Impresora…»); without it, the
+   *  row's first value. */
+  flag?: (
+    row: T,
+  ) => (Omit<FlagProps, "children"> & { detail?: ReactNode; owner?: string }) | null;
 }) {
   const copy = useUiCopy();
+  const bandOf = (row: T) => bands?.kind(row) ?? null;
+  /* The row's mark, before its first value — and, in a record's margin, its card. */
+  const flagOf = (row: T, withCard = false): ReactNode => {
+    const said = flag?.(row) ?? null;
+    if (said === null) return null;
+    return (
+      <>
+        <Flag tone={said.tone} label={said.label}>
+          {said.detail}
+        </Flag>
+        {withCard ? (
+          <NoteCard
+            id={`flag-${getRowId(row)}`}
+            {...(said.owner === undefined ? {} : { owner: said.owner })}
+            note={{
+              tone: said.tone,
+              label: said.label,
+              ...(said.detail === undefined ? {} : { detail: said.detail }),
+            }}
+          />
+        ) : null}
+      </>
+    );
+  };
+  const underSection = useMemo(
+    () => (bands === undefined ? null : sectionLines(rows, getRowId, bands.kind)),
+    [rows, bands, getRowId],
+  );
+  /* Where a band's text stops: the first column with something of its own on that row. */
+  const bandFigures = (row: T): { span: number; figures: (ReactNode | null)[] } => {
+    const lines = underSection?.get(getRowId(row)) ?? null;
+    const figures = columns.map((c) =>
+      c.onBands === true
+        ? c.render(row)
+        : lines === null
+          ? null
+          : (bands?.total?.(c, lines) ?? null),
+    );
+    const first = figures.findIndex(
+      (f, i) => columns[i]?.onBands === true || (f !== null && f !== undefined),
+    );
+    return { span: first <= 0 ? columns.length : first, figures };
+  };
   const d = useDensity();
   const box = useScrollBox<HTMLDivElement>(height === undefined ? {} : { height });
   const [editing, setEditing] = useState<string | null>(null);
@@ -426,10 +635,16 @@ export function EditableTable<T>({
   const rowNodes = useRef(new Map<string, HTMLElement>());
   /* The row as it was when editing began, to put it back on `Escape`; `touched` says
      whether any control wrote to it since, so a cancel without changes changes nothing. */
-  const before = useRef<{ id: string; row: T; touched: boolean } | null>(null);
-  /* Set when the keyboard opened the row: its first control takes the focus once
-     the controls exist. A click opens it without moving the focus. */
-  const focusOnOpen = useRef<string | null>(null);
+  const before = useRef<{ id: string; row: T; touched: boolean; added: boolean } | null>(
+    null,
+  );
+  /* Set when the keyboard opened the row: its first control —or its last, coming back
+     with `Shift+Tab`— takes the focus once the controls exist. A click opens it without
+     moving the focus. */
+  const focusOnOpen = useRef<{ id: string; at: "first" | "last" } | null>(null);
+  /* The id `onAdd` returned, until that row shows up in `rows` and can be opened. */
+  const [arriving, setArriving] = useState<string | null>(null);
+  const addButton = useRef<HTMLButtonElement>(null);
 
   /* La secuencia que se dibuja: montones y filas intercalados. Sin agrupado, las
      filas tal cual — una tabla que no agrupa no paga nada por poder hacerlo. */
@@ -475,7 +690,7 @@ export function EditableTable<T>({
   const opens = stacked && onOpen !== undefined;
   const operable = editable || opens;
   const cell = byDensity(d, "px-3 py-1.5", "px-2 py-1");
-  const add = addLabel ?? copy.editable.add;
+  const addText = addLabel ?? copy.editable.add;
   const emptyText = empty ?? copy.editable.empty;
 
   /* The rows in the order they are drawn: what the arrows walk. */
@@ -485,30 +700,77 @@ export function EditableTable<T>({
   const stop = active !== null && order.includes(active) ? active : (order[0] ?? null);
 
   useEffect(() => {
-    const id = focusOnOpen.current;
-    if (id === null || id !== editing) return;
+    const target = focusOnOpen.current;
+    if (target === null || target.id !== editing) return;
     focusOnOpen.current = null;
-    const node = rowNodes.current.get(id);
-    if (node !== undefined) (firstControl(node) ?? node).focus();
+    const node = rowNodes.current.get(target.id);
+    if (node === undefined) return;
+    const control = target.at === "last" ? lastControl(node) : firstControl(node);
+    (control ?? node).focus();
   }, [editing]);
 
-  const start = (id: string, row: T, viaKeyboard: boolean) => {
-    if (opens) {
+  const start = (
+    id: string,
+    row: T,
+    viaKeyboard: boolean,
+    { at = "first", added = false }: { at?: "first" | "last"; added?: boolean } = {},
+  ) => {
+    /* A row just added is written where it appeared, card or not: it was added in place
+       precisely so that it would not open somewhere else. */
+    if (opens && !added && bandOf(row) === null) {
       setActive(id);
       onOpen?.(id);
       return;
     }
-    before.current = { id, row, touched: false };
-    focusOnOpen.current = viaKeyboard ? id : null;
+    before.current = { id, row, touched: false, added };
+    focusOnOpen.current = viaKeyboard ? { id, at } : null;
     setActive(id);
     setEditing(id);
+  };
+
+  /* The added row is opened the render it appears in — which may be this one, or the one
+     after the backend answered. */
+  useEffect(() => {
+    if (arriving === null) return;
+    const row = rows.find((r) => getRowId(r) === arriving);
+    if (row === undefined) return;
+    setArriving(null);
+    start(arriving, row, true, { added: true });
+    /* `start` and `getRowId` are new every render; what decides is the id and the rows. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [arriving, rows]);
+
+  const add = (maker: (() => string | void | Promise<string | void>) | undefined = onAdd) => {
+    if (maker === undefined) return;
+    const made = maker();
+    if (typeof made === "string") setArriving(made);
+    else if (made instanceof Promise) {
+      void made.then((id) => {
+        if (typeof id === "string") setArriving(id);
+      });
+    }
   };
 
   /* Keyed by the row: a commit that arrives late (the blur of the row you clicked
      away from) must not close the row the click just opened. */
   const close = (id: string) => setEditing((current) => (current === id ? null : current));
 
+  /* A row added and abandoned goes away. `true` when it did. */
+  const discard = (id: string, untouchedOnly: boolean): boolean => {
+    const was = before.current;
+    if (was === null || was.id !== id || !was.added || onDiscard === undefined) return false;
+    if (untouchedOnly && was.touched) return false;
+    before.current = null;
+    close(id);
+    onDiscard(id);
+    return true;
+  };
+
   const commit = (id: string, refocus: boolean) => {
+    if (discard(id, true)) {
+      if (refocus) addButton.current?.focus();
+      return;
+    }
     if (refocus) rowNodes.current.get(id)?.focus();
     if (before.current?.id === id) before.current = null;
     close(id);
@@ -519,10 +781,31 @@ export function EditableTable<T>({
        (a number field) writes it now, and the old row is put back after it, not
        before. */
     rowNodes.current.get(id)?.focus();
+    if (discard(id, false)) {
+      /* The row is gone with the focus in it: «add» is where it came from. */
+      addButton.current?.focus();
+      return;
+    }
     const was = before.current;
     before.current = null;
     if (was !== null && was.id === id && was.touched) onChange?.(id, was.row);
     close(id);
+  };
+
+  const tabOut = (from: string, direction: "next" | "prev"): boolean => {
+    const was = before.current;
+    const blank = was !== null && was.id === from && was.added && !was.touched;
+    const target = tabTarget(order, from, direction, { canAdd: onAdd !== undefined, blank });
+    if (target.kind === "leave") return false;
+    commit(from, false);
+    if (target.kind === "add") {
+      add();
+      return true;
+    }
+    const row = rows.find((r) => getRowId(r) === target.id);
+    if (row === undefined) return false;
+    start(target.id, row, true, { at: direction === "next" ? "first" : "last" });
+    return true;
   };
 
   /* What a control writes, marking the row as touched for `Escape`. */
@@ -546,6 +829,7 @@ export function EditableTable<T>({
     onCancel: () => cancel(id),
     onMove: (key: RowKey) => move(id, key),
     onFocusRow: () => setActive(id),
+    onTabOut: (direction: "next" | "prev") => tabOut(id, direction),
   });
 
   const move = (from: string, key: RowKey) => {
@@ -605,6 +889,7 @@ export function EditableTable<T>({
         }`}
       >
         <div className="flex min-w-0 items-start gap-2">
+          {flagOf(row)}
           <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-meta text-ink">
             {titles.map((c) => (
               <div key={c.id} className="min-w-0">
@@ -677,6 +962,52 @@ export function EditableTable<T>({
     );
   };
 
+  /* A section or a note on a phone: the band and, for a section, what it adds up to in
+     the card's amount; editing, its control under it. */
+  const bandCard = (row: T) => {
+    const id = getRowId(row);
+    const band = bandOf(row);
+    const isEditing = editing === id;
+    const lines = underSection?.get(id) ?? null;
+    return (
+      <EditRow
+        key={id}
+        as="li"
+        {...rowWiring(id, row)}
+        className={`flex min-w-0 flex-col gap-1.5 rounded-control border-b border-line ${pad} ${
+          isEditing ? "bg-primary/5" : band === "section" ? "bg-ground" : ""
+        } ${operable ? RING : ""}`}
+      >
+        <div className="flex min-w-0 items-baseline gap-3 text-meta">
+          <span
+            className={`min-w-0 flex-1 ${band === "section" ? "font-semibold text-ink" : "text-muted italic"}`}
+          >
+            {bands?.render(row)}
+          </span>
+          {lines === null
+            ? null
+            : amounts.map((c) => (
+                <span key={c.id} className="shrink-0 font-semibold text-ink tabular-nums">
+                  {bands?.total?.(c, lines) ?? null}
+                </span>
+              ))}
+          {isEditing && onRemove !== undefined ? (
+            <IconButton
+              icon={Trash2}
+              label={copy.editable.remove}
+              size="sm"
+              tone="danger"
+              onClick={() => onRemove(id)}
+            />
+          ) : null}
+        </div>
+        {isEditing && editable && bands?.edit !== undefined ? (
+          <div data-edit="">{bands.edit(row, setter(id))}</div>
+        ) : null}
+      </EditRow>
+    );
+  };
+
   const list = (
     <>
       <ul data-stacked="" className="flex min-w-0 flex-col px-1">
@@ -710,7 +1041,8 @@ export function EditableTable<T>({
                 </li>
               );
             }
-            return card(entry.row as T);
+            const row = entry.row as T;
+            return bandOf(row) === null ? card(row) : bandCard(row);
           })
         )}
       </ul>
@@ -811,6 +1143,68 @@ export function EditableTable<T>({
                   const row = entry.row as T;
                   const id = getRowId(row);
                   const isEditing = editing === id;
+                  const band = bandOf(row);
+                  if (band !== null) {
+                    const { span, figures } = bandFigures(row);
+                    const bandWash = isEditing
+                      ? "bg-primary/5"
+                      : band === "section"
+                        ? "bg-ground group-hover/row:bg-ink/6"
+                        : "group-hover/row:bg-ink/4";
+                    const bandMark = `border-b border-line first:rounded-l-control last:rounded-r-control ${bandWash}`;
+                    const control = isEditing && editable && bands?.edit !== undefined;
+                    return (
+                      <EditRow
+                        key={id}
+                        as="tr"
+                        {...rowWiring(id, row)}
+                        className={`group/row ${editable ? RING : ""} ${
+                          editable && !isEditing ? "cursor-text" : ""
+                        }`}
+                      >
+                        <td
+                          colSpan={span}
+                          {...(control ? { "data-edit": "" } : {})}
+                          className={`text-meta ${bandMark} ${cell} ${
+                            band === "section"
+                              ? "font-semibold text-ink"
+                              : "text-muted italic"
+                          }`}
+                        >
+                          {control ? bands?.edit?.(row, setter(id)) : bands?.render(row)}
+                        </td>
+                        {columns.slice(span).map((c, i) => (
+                          <td
+                            key={c.id}
+                            className={`text-meta text-ink ${bandMark} ${cell} ${
+                              c.numeric === true
+                                ? "text-right font-semibold tabular-nums"
+                                : ""
+                            }`}
+                          >
+                            {figures[span + i] ?? null}
+                          </td>
+                        ))}
+                        {onRemove === undefined ? null : (
+                          <td className={`w-0 py-1 pr-2 pl-1 align-middle ${bandMark}`}>
+                            <span
+                              className="flex opacity-0 transition-opacity duration-(--duration-instant) group-hover/row:opacity-100 group-focus-visible/row:opacity-100 focus-within:opacity-100"
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <IconButton
+                                icon={Trash2}
+                                label={copy.editable.remove}
+                                size="sm"
+                                tone="danger"
+                                {...(editable && stop !== id ? { tabIndex: -1 } : {})}
+                                onClick={() => onRemove(id)}
+                              />
+                            </span>
+                          </td>
+                        )}
+                      </EditRow>
+                    );
+                  }
                   /* The wash lives on the cells. A background on the row paints
                    edge to edge, and `border-collapse` would ignore a radius. */
                   const wash = isEditing ? "bg-primary/5" : "group-hover/row:bg-ink/4";
@@ -827,8 +1221,9 @@ export function EditableTable<T>({
                         editable && !isEditing ? "cursor-text" : ""
                       }`}
                     >
-                      {columns.map((c) => {
+                      {columns.map((c, ci) => {
                         const control = isEditing && c.edit !== undefined && editable;
+                        const mark = ci === 0 ? flagOf(row, true) : null;
                         return (
                           <td
                             key={c.id}
@@ -837,7 +1232,20 @@ export function EditableTable<T>({
                               c.numeric === true ? "text-right tabular-nums" : ""
                             }`}
                           >
-                            {control ? c.edit?.(row, set) : c.render(row)}
+                            {mark === null ? (
+                              control ? (
+                                c.edit?.(row, set)
+                              ) : (
+                                c.render(row)
+                              )
+                            ) : (
+                              <span className="flex min-w-0 items-start gap-1.5">
+                                {mark}
+                                <span className="min-w-0 flex-1">
+                                  {control ? c.edit?.(row, set) : c.render(row)}
+                                </span>
+                              </span>
+                            )}
                           </td>
                         );
                       })}
@@ -893,25 +1301,42 @@ export function EditableTable<T>({
         )}
       </div>
 
-      {onAdd === undefined ? null : (
+      {onAdd === undefined && (adds === undefined || adds.length === 0) ? null : (
         /* The «add» goes under the grid, as text, not as a button away from it:
            what is about to happen is that one more row shows up right here.
            The hover is the same inset mark as a row: the shell lines the label
            up with the cells, and the button itself is the rounded wash. It sits
-           outside the scroll box, so a table with its own height keeps it in view. */
-        <div className="px-1 py-0.5">
-          <button
-            type="button"
-            onClick={onAdd}
-            className={`flex w-full items-center gap-1.5 rounded-control text-left text-meta text-primary transition-colors duration-(--duration-instant) hover:bg-primary/5 focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-primary ${byDensity(
-              d,
-              "px-3 py-1",
-              "px-2 py-0.5",
-            )}`}
-          >
-            <Plus className="size-(--size-icon-sm)" strokeWidth={2.5} aria-hidden />
-            {add}
-          </button>
+           outside the scroll box, so a table with its own height keeps it in view.
+           A section and a note sit beside it, quieter: the line is what is added
+           most, so it keeps the lead and the whole free width. */
+        <div className="flex flex-wrap items-center gap-x-1 px-1 py-0.5">
+          {onAdd === undefined ? null : (
+            <button
+              ref={addButton}
+              type="button"
+              onClick={() => add()}
+              className={`flex items-center gap-1.5 rounded-control text-left text-meta text-primary transition-colors duration-(--duration-instant) hover:bg-primary/5 focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-primary ${
+                adds === undefined || adds.length === 0 ? "w-full" : ""
+              } ${byDensity(d, "px-3 py-1", "px-2 py-0.5")}`}
+            >
+              <Plus className="size-(--size-icon-sm)" strokeWidth={2.5} aria-hidden />
+              {addText}
+            </button>
+          )}
+          {(adds ?? []).map((extra) => (
+            <button
+              key={extra.label}
+              type="button"
+              onClick={() => add(extra.onAdd)}
+              className={`rounded-control text-left text-meta text-muted transition-colors duration-(--duration-instant) hover:bg-primary/5 hover:text-primary focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-primary ${byDensity(
+                d,
+                "px-3 py-1",
+                "px-2 py-0.5",
+              )}`}
+            >
+              {extra.label}
+            </button>
+          ))}
         </div>
       )}
     </div>

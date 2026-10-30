@@ -60,14 +60,18 @@ test("the pencil is drawn only for hover and focus, never always on", () => {
   }
 });
 
+/** A button that is not a cell's copy button. */
+const EDITOR = /<button(?![^>]*aria-label="Cop)/g;
+
 test("`when` leaves the rows that cannot change as plain cells", () => {
   const html = draw(withEdit((f) => f.estado !== "paid"));
-  assert.equal((body(html).match(/<button/g) ?? []).length, 1, "only the posted invoice");
+  /* The cells' copy buttons are not editors: only the editing buttons are counted. */
+  assert.equal((body(html).match(EDITOR) ?? []).length, 1, "only the posted invoice");
 });
 
 test("without `edit` the table is drawn exactly as before", () => {
   const plain = draw(BASE);
-  assert.doesNotMatch(body(plain), /<button/);
+  assert.doesNotMatch(body(plain), EDITOR);
   assert.doesNotMatch(plain, /lucide-pencil/);
   /* A column that declares `edit` but allows no row is the same table, byte for byte. */
   assert.equal(draw(withEdit(() => false)), plain);

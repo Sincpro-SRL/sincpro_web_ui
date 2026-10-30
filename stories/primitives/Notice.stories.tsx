@@ -1,4 +1,4 @@
-import { Button, Empty, Failed, ICONO_ROTO, Missing, Skeleton } from "@sincpro/web-ui";
+import { Button, Empty, Failed, Flag, ICONO_ROTO, Missing, Skeleton } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 const meta = {
@@ -131,6 +131,44 @@ export const Fallo: Story = {
           detail="sale.order/SO-2026-0418 — Cannot read properties of undefined (reading 'lines')"
         />
       </Marco>
+    </div>
+  ),
+};
+
+/**
+ * **Una marca sobre UNA cosa.** Lo que está mal en una línea, en un campo, en una cifra no se
+ * anuncia arriba del documento: se marca ahí. Cada tono tiene su forma además de su color —el
+ * círculo detiene, el triángulo advierte, la «i» informa, el visto confirma— y la marca se
+ * nombra con su frase. Tocala: el detalle se abre y queda hasta que lo cerrás.
+ */
+export const Marcas: Story = {
+  args: { sentence: "" },
+  render: () => (
+    <div className="flex flex-col gap-3 bg-ground p-8 text-meta text-ink">
+      <span className="flex items-center gap-2">
+        <Flag tone="bad" label="Sin existencias">
+          Se piden 3 y hay 0 en el depósito central. Llegan 10 el 04/11/2026.
+        </Flag>
+        Impresora térmica de tickets 80 mm
+      </span>
+      <span className="flex items-center gap-2">
+        <Flag tone="warn" label="Existencias justas">
+          Se piden 3 y quedan 3: no queda ninguna para otra venta.
+        </Flag>
+        Pantalla táctil 15″ para caja
+      </span>
+      <span className="flex items-center gap-2">
+        <Flag tone="info" label="Precio de lista actualizado">
+          El precio subió el 01/10/2026; esta línea usa el anterior.
+        </Flag>
+        Lector de código de barras inalámbrico
+      </span>
+      <span className="flex items-center gap-2">
+        <Flag tone="good" label="Reservado">
+          Las 3 unidades quedaron apartadas para este pedido.
+        </Flag>
+        Cajón de dinero con apertura automática
+      </span>
     </div>
   ),
 };

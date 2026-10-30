@@ -1,5 +1,6 @@
-/* LAS FECHAS — escritas por segmentos o elegidas en un calendario, con el orden del idioma de
-   la copia. El valor es un ISO (`"2026-10-30"`), lo que manda cualquier backend. */
+/* LAS FECHAS Y LAS HORAS — escritas por segmentos o elegidas en un calendario, con el orden
+   del idioma de la copia. El valor es un ISO (`"2026-10-30"`, `"09:05"`,
+   `"2026-10-30T09:05"`), lo que manda cualquier backend. */
 export {
   Calendar,
   type CalendarProps,
@@ -12,3 +13,4 @@ export {
   DateRangePicker,
   type DateRangeValue,
 } from "@sincpro/web-ui/primitives/date/DatePicker";
+export { DateTimePicker, TimeField } from "@sincpro/web-ui/primitives/date/DateTime";

@@ -194,3 +194,50 @@ export const Progreso: Story = {
     </div>
   ),
 };
+
+/**
+ * **Una tarea en curso: cuánto falta, o que todavía no se sabe.** La importación de 4.000
+ * clientes dice por dónde va —en filas, no en un porcentaje que hay que traducir— con su
+ * rótulo arriba, porque es la barra de la que trata la pantalla. El cierre de octubre recién
+ * empezó y el servidor no contó los asientos todavía: la barra no inventa un número, BARRE.
+ * Con «reducir movimiento» activado en el sistema operativo se queda quieta, la pista entera
+ * tenue —«ocupado» sin moverse—.
+ *
+ * No es un `Meter`: el medidor es una cantidad que ESTÁ en un rango (el stock, el crédito
+ * usado) y lleno suele ser la alarma; la barra de progreso es algo que está PASANDO, y llena
+ * es la buena noticia.
+ */
+export const TareaEnCurso: Story = {
+  args: { label: "importación", value: 1240 },
+  render: () => (
+    <div className="flex flex-col gap-6 bg-ground p-8">
+      <Caja label="determinada · la cifra en lo que se cuenta">
+        <ProgressBar
+          label="Importación de clientes"
+          value={1240}
+          maxValue={4000}
+          valueLabel="1.240 de 4.000 filas"
+          showLabel
+          width="w-80"
+        />
+        <ProgressBar
+          label="Conciliación bancaria de octubre"
+          value={87}
+          showLabel
+          width="w-80"
+        />
+      </Caja>
+      <Caja label="indeterminada · todavía no se sabe cuánto falta">
+        <ProgressBar label="Cierre de octubre" showLabel width="w-80" />
+        <ProgressBar
+          label="Leyendo el extracto"
+          valueLabel="leyendo el archivo…"
+          showLabel
+          tone="info"
+          width="w-80"
+        />
+        <ProgressBar label="Envío a Impuestos" width="w-20" tone="info" />
+      </Caja>
+    </div>
+  ),
+};

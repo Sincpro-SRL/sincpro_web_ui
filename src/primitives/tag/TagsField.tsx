@@ -90,6 +90,9 @@ export type TagsFieldProps = {
   id?: string;
   describedBy?: string;
   invalid?: boolean;
+  /** The name of the control when it is NOT inside a `Field` — a cell of an editable table.
+   *  Inside a field, the field's label names it. */
+  "aria-label"?: string;
   /** Forces the mode. By default it inherits the form's: in read mode it draws `Tags`. */
   mode?: FormMode;
 };
@@ -142,6 +145,7 @@ function EditableTagsField({
   id: ownId,
   describedBy: ownDescribedBy,
   invalid: ownInvalid,
+  "aria-label": ariaLabel,
 }: Omit<TagsFieldProps, "mode">) {
   const { id, labelledBy, describedBy, invalid } = useFieldIds({
     id: ownId,
@@ -227,11 +231,19 @@ function EditableTagsField({
       }
     >
       {chips.length === 0 ? null : (
-        <Tags items={chips} {...(labelledBy === undefined ? {} : { labelledBy })} />
+        <Tags
+          items={chips}
+          {...(labelledBy === undefined
+            ? ariaLabel === undefined
+              ? {}
+              : { label: ariaLabel }
+            : { labelledBy })}
+        />
       )}
       <AriaComboBox
         id={id}
         aria-labelledby={labelledBy}
+        aria-label={ariaLabel}
         aria-describedby={describedBy}
         items={listed}
         selectedKey={null}

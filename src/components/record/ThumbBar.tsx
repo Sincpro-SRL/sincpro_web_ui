@@ -43,7 +43,7 @@ import { cloneElement, isValidElement, type ReactElement, type ReactNode } from 
  *  Same reason as everything else here: a record in a 380 px panel is as
  *  narrow as one on a phone. The query is a NAMED container (`record`) on the
  *  rail and on the bar — never on the paper: an unnamed container around the
- *  sheet would change what `Sheet`, `SectionGrid` and the chatter measure
+ *  sheet would change what `Sheet`, `SectionGrid` and the activity panel measure
  *  against, and the desk layout with it.
  *
  *  ── Why CSS, and why the primary is in the DOM twice ─────────────────

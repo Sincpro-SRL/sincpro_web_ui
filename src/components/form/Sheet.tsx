@@ -5,9 +5,10 @@ import {
   FieldLayoutProvider,
   type SheetLayout,
 } from "@sincpro/web-ui/primitives/field/layout";
+import { type FieldNote, NoteCard, NoteFlag } from "@sincpro/web-ui/primitives/field/note";
 import { Hint } from "@sincpro/web-ui/primitives/hint/Hint";
 import type { LucideIcon } from "lucide-react";
-import { Children, type ReactNode } from "react";
+import { Children, type ReactNode, useId } from "react";
 
 export type { SheetLayout };
 
@@ -47,6 +48,9 @@ export type SheetField = {
   /** Help on the label, as a `?`. Hover or click. */
   hint?: string;
   mono?: boolean;
+  /** A note that belongs to this fact — the same as `Field`'s: a flag by the label, and an
+   *  entry in the record's activity. */
+  note?: FieldNote;
 };
 
 function Facts({
@@ -59,6 +63,7 @@ function Facts({
   layout: SheetLayout;
 }) {
   const d = useDensity();
+  const idBase = useId();
   const horizontal = layout === "horizontal";
   /* Horizontal facts are a run of pairs, not a grid stretched across the
      paper. A two-column grid put «Total Bs 12.480» on the left and «Vence
@@ -81,15 +86,25 @@ function Facts({
             : `flex min-w-0 flex-col ${byDensity(d, "gap-2.5", "gap-2")}`
       }
     >
-      {fields.map((field) => {
+      {fields.map((field, at) => {
+        const noteId = field.note === undefined ? undefined : `${idBase}-${at}-note`;
         const empty = field.value === undefined || field.value === null || field.value === "";
+        const card =
+          field.note === undefined || noteId === undefined ? null : (
+            <NoteCard note={field.note} id={noteId} owner={field.label} />
+          );
+        /* The note's card goes INSIDE the value: a `<dl>` holds only its terms and values.
+           With a note the value is a flex box, so the absolute card keeps the value's top
+           as its static position while being read after it. */
         const value = (
           <dd
-            className={`min-w-0 text-meta ${empty ? "text-muted italic" : "text-ink"} ${
-              field.mono === true ? "font-mono tabular-nums" : ""
-            }`}
+            {...(noteId === undefined ? {} : { "aria-describedby": noteId })}
+            className={`min-w-0 text-meta ${card === null ? "" : "flex"} ${
+              empty ? "text-muted italic" : "text-ink"
+            } ${field.mono === true ? "font-mono tabular-nums" : ""}`}
           >
             {empty ? "—" : field.value}
+            {card}
           </dd>
         );
         const name = (
@@ -100,6 +115,7 @@ function Facts({
           >
             <span>{field.label}</span>
             {field.hint === undefined ? null : <Hint>{field.hint}</Hint>}
+            {field.note === undefined ? null : <NoteFlag note={field.note} />}
           </dt>
         );
         if (horizontal) {

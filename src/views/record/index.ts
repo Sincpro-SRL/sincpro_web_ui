@@ -2,6 +2,7 @@
 export {
   Record,
   type RecordIdentity,
+  type RecordNotice,
   type RecordPager,
   type RecordProps,
   type SmartLink,

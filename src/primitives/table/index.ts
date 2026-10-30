@@ -4,14 +4,20 @@ export {
   type Aggregate,
   type DataColumn,
   DataTable,
+  type DataTableCreate,
   type GroupColumn,
 } from "@sincpro/web-ui/primitives/table/DataTable";
 export {
   EditableTable,
+  type EditAdd,
+  type EditBands,
   type EditColumn,
   type EditLayout,
+  sectionLines,
   type StackPlace,
   stackPlaces,
+  type TabTarget,
+  tabTarget,
 } from "@sincpro/web-ui/primitives/table/EditableTable";
 export {
   PivotTable,

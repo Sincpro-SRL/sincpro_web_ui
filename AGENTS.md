@@ -30,7 +30,7 @@ idea; this file is how to keep it.
 - There are two views — one record, N records. Do not add a third; find which one it is.
 - No domain. If it needs to know what an invoice or a dataset is, it belongs to the app.
 - What two views need goes DOWN into `components/` — `Listing`, `Pagination`, `Breadcrumb`
-  live there so the chatter or a frame can reuse them without importing a view.
+  live there so the activity panel or a frame can reuse them without importing a view.
 - Templates are whole pages (`5 · Plantillas`) built ONLY from the public API, with example
   domain data from `stories/support/`. If a template needs something the package does not
   export, the package is missing it — add it there, not in the template.
@@ -70,6 +70,10 @@ idea; this file is how to keep it.
 - **`overflow-hidden` around a `List` inside `AppFrame`** makes the card a scroll container,
   and the sticky list bar sticks inside it — pushed down by the application bar, covering the
   metrics. Use `overflow-clip`: it rounds the corners the same and does not break `sticky`.
+- **Never decide "is it focusable" by `aria-hidden` / `inert`.** While a list is open (a
+  `Picker`, a `TagsField`) React Aria's `ariaHideOutside` marks everything outside it that
+  way — the rest of the row included. React Aria's hidden form mirrors carry `[hidden]` or
+  `[data-react-aria-prevent-focus]`; filter by those (see `stopsIn` in `EditableTable`).
 
 ## Templates are composition only
 

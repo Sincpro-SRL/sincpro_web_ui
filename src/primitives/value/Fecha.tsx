@@ -68,6 +68,15 @@ export function formatDateTime(when: Date): string {
   return `${dateFormat(locale).format(when)} ${timeFormat(locale).format(when)}`;
 }
 
+/** A day written as `YYYY-MM-DD` (what a date field stores) is that day HERE. `new Date()`
+ *  reads it as midnight in UTC, and west of Greenwich that is the evening before: a due date
+ *  of the 15th was drawn as the 14th in La Paz. Anything else goes through `Date` as is. */
+function toDate(when: string | number): Date {
+  const day = typeof when === "string" ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(when) : null;
+  if (day === null) return new Date(when);
+  return new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3]));
+}
+
 export function DateValue({
   when,
   format = "relative",
@@ -82,7 +91,7 @@ export function DateValue({
   now?: Date;
 }) {
   const copy = useUiCopy();
-  const d = when instanceof Date ? when : new Date(when);
+  const d = when instanceof Date ? when : toDate(when);
 
   if (Number.isNaN(d.getTime())) {
     return (

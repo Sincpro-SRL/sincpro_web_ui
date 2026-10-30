@@ -5,8 +5,8 @@ import { stickyTop, useScrollBox } from "@sincpro/web-ui/foundations/sticky";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
 import { Cell } from "@sincpro/web-ui/primitives/value/Value";
 import { useVirtualizer } from "@tanstack/react-virtual";
-import { ChevronRight } from "lucide-react";
-import { type KeyboardEvent, type ReactNode, useState } from "react";
+import { ChevronRight, Plus } from "lucide-react";
+import { type KeyboardEvent, type ReactNode, useEffect, useState } from "react";
 
 /* ==================================================================== *
  *  SHEET TABLE — the glance at the raw data. The spreadsheet.
@@ -50,6 +50,14 @@ import { type KeyboardEvent, type ReactNode, useState } from "react";
  *
  *  It is the «I saw the missing value, I fix it here» case — which until now
  *  forced you to download the CSV, edit it outside and upload it again.
+ *
+ *  ── 5. And it can grow ──────────────────────────────────────────────
+ *
+ *  With `onAddRow` a row is added the spreadsheet's way: `Enter` on the last
+ *  row commits and lands on a new one below, in the same column, and «add a
+ *  row» under the grid does the same from the mouse. The new row is the
+ *  consumer's — it passes `rows` back one higher — and the active cell waits
+ *  for it, so a backend that takes a moment does not lose the place.
  * ==================================================================== */
 
 export interface SheetColumn {
@@ -95,6 +103,7 @@ export function SheetTable({
   caption,
   onCommit,
   editable,
+  onAddRow,
 }: {
   columns: readonly SheetColumn[];
   rows: number;
@@ -144,6 +153,9 @@ export function SheetTable({
   /** Which cells are editable. Without this, all of them — but a computed column
    *  or an identifier is not touched. */
   editable?: (row: number, column: SheetColumn, columnIndex: number) => boolean;
+  /** Present = rows can be added (see the file's header). Only with `onCommit`: a row
+   *  that cannot be written in is not worth adding. */
+  onAddRow?: () => void;
 }) {
   const copy = useUiCopy();
   const labelOf = rowLabel ?? ((i: number) => (i + 1).toLocaleString(copy.locale));
@@ -198,6 +210,26 @@ export function SheetTable({
     if (dr !== 0 || dc !== 0) goTo(active.r + dr, active.c + dc);
   }
 
+  /* The column the active cell waits in until the added row arrives, and how many rows
+     there were when it was asked for. */
+  const canAdd = isEditable && onAddRow !== undefined;
+  const [arriving, setArriving] = useState<{ c: number; from: number } | null>(null);
+  function addRow(c: number) {
+    if (!canAdd) return;
+    setArriving({ c, from: rows });
+    onAddRow?.();
+  }
+  useEffect(() => {
+    if (arriving === null || rows <= arriving.from) return;
+    setArriving(null);
+    setActive({ r: rows - 1, c: arriving.c });
+    setDraft(null);
+    v.scrollToIndex(rows - 1);
+    caja.ref.current?.focus();
+    /* `v` and `caja` are new objects every render; the row count is what decides. */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [rows, arriving]);
+
   /* All the keyboard handling in one place. Splitting it between the box and
      each cell is how you end up with spreadsheets whose arrows sometimes move
      and sometimes scroll. */
@@ -211,7 +243,10 @@ export function SheetTable({
         setDraft(null);
       } else if (e.key === "Enter") {
         e.preventDefault();
-        commit(e.shiftKey ? -1 : 1, 0);
+        if (!e.shiftKey && canAdd && r === rows - 1) {
+          commit(0, 0);
+          addRow(c);
+        } else commit(e.shiftKey ? -1 : 1, 0);
       } else if (e.key === "Tab") {
         e.preventDefault();
         commit(0, e.shiftKey ? -1 : 1);
@@ -488,6 +523,25 @@ export function SheetTable({
           </div>
         </div>
       </div>
+
+      {canAdd ? (
+        /* Under the grid and outside its scroll box, like the editable table's «add»: in
+           view however far down a long sheet is scrolled. The new row's first cell that
+           can be written takes the place. */
+        <div className="px-1 py-0.5">
+          <button
+            type="button"
+            onClick={() => {
+              const first = columns.findIndex((_, ci) => canEdit(rows, ci));
+              addRow(first === -1 ? 0 : first);
+            }}
+            className="flex w-full items-center gap-1.5 rounded-control px-2 py-0.5 text-left text-meta text-primary transition-colors duration-(--duration-instant) hover:bg-primary/5 focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-primary"
+          >
+            <Plus className="size-(--size-icon-sm)" strokeWidth={2.5} aria-hidden />
+            {copy.editable.addRow}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

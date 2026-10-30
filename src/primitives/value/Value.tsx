@@ -1,7 +1,6 @@
 "use client";
 
 import { currentCopyLocale, useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import type { Tone } from "@sincpro/web-ui/foundations/types";
 import type { ReactNode } from "react";
 
 /**
@@ -77,81 +76,6 @@ export function Numeric({
     </span>
   );
 }
-
-/**
- * A real bar, never a spinner.
- *
- * Context: a spinner says «wait» and doesn't say how much; a bar says both
- * things.
- *
- * ── Why the fill is FLAT and the gradient is asked for ──────────────
- *
- * The bar always lived with `bar-brand`, the blue→gold gradient. At 3 px and at
- * 62 % that doesn't read as a brand: it reads as a blue bar with a broken tip.
- * A gradient needs length to be a gradient, and a bar inside a list row doesn't
- * have it.
- *
- * Now the fill is a flat tone —and the tone SAYS something: `good` finished,
- * `warn` is running slow, `bad` failed— and the gradient is asked for with
- * `tone="brand"`, which is the long bar of a live import: there it does have room
- * to be read.
- *
- * And it got fatter, from 3 px to 6 px. At 3 px it isn't a bar, it's a line: it
- * can't be told apart from a separator and the fill isn't visible unless it goes
- * past 20 %.
- */
-export function ProgressBar({
-  value,
-  label,
-  width = "w-24",
-  tone = "brand",
-  /** The percentage next to it. It is turned off when the bar lives inside
-   *  something that already says the figure —a cell with its column— and it
-   *  would only mean reading it twice. */
-  showValue = true,
-}: {
-  /** 0 to 100. */
-  value: number;
-  label: string;
-  /** The activity bar wants to be longer than a list row; there is no reason for
-   *  it to be the same number on both sides. */
-  width?: string;
-  tone?: Tone | "brand";
-  showValue?: boolean;
-}) {
-  const clamped = Math.max(0, Math.min(100, Math.round(value)));
-  const fill = tone === "brand" ? "bar-brand" : FILL[tone];
-
-  return (
-    <span className="flex items-center gap-2">
-      <span
-        className={`h-(--size-track) overflow-hidden rounded-pill bg-ink/10 ${width}`}
-        role="progressbar"
-        aria-valuenow={clamped}
-        aria-valuemin={0}
-        aria-valuemax={100}
-        aria-label={label}
-      >
-        <span
-          className={`block h-full rounded-pill transition-[width] duration-(--duration-panel) ease-out ${fill}`}
-          style={{ width: `${clamped}%` }}
-        />
-      </span>
-      {showValue ? (
-        <span className="text-meta tabular-nums text-muted">{clamped}%</span>
-      ) : null}
-    </span>
-  );
-}
-
-const FILL: Record<Tone, string> = {
-  neutral: "bg-muted",
-  info: "bg-info",
-  good: "bg-good",
-  warn: "bg-warn",
-  bad: "bg-bad",
-  accent: "bg-accent",
-};
 
 /**
  * The content of a data cell, with what the system decides and the view does not.

@@ -1,11 +1,11 @@
 "use client";
 
+import type { ActivityEvent } from "@sincpro/web-ui/components/activity/Activity";
 import {
   ASSIST_ICON,
   type AssistOrigin,
   type AssistSource,
 } from "@sincpro/web-ui/components/assist/assist";
-import type { ChatterEvent } from "@sincpro/web-ui/components/chatter/Chatter";
 import { currentCopy, fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { cn, focusRing } from "@sincpro/web-ui/foundations/variants";
 import { PopoverTrigger } from "@sincpro/web-ui/primitives/overlay/PopoverTrigger";
@@ -180,7 +180,7 @@ export function AssistedValue({
 }
 
 /**
- * The assistant's entry in a record's history: the chatter's event, with the robot as its
+ * The assistant's entry in a record's history: the activity's event, with the robot as its
  * node, the assistant (and who accepted) as its author, and the source as its detail.
  *
  * Context: provenance has two places. The mark answers «where did THIS value come from»
@@ -204,7 +204,7 @@ export function assistEvent({
   at: Date | string | number;
   source?: AssistSource;
   acceptedBy?: string;
-}): ChatterEvent {
+}): ActivityEvent {
   const copy = currentCopy();
   const by =
     acceptedBy === undefined

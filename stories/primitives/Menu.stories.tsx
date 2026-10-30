@@ -1,6 +1,6 @@
 import { Menu } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { MoreHorizontal, Plus } from "lucide-react";
+import { Copy, Mail, MoreHorizontal, Plus, Printer, Truck } from "lucide-react";
 
 import { OnCanvas, OnChrome } from "../support/surface";
 
@@ -145,5 +145,74 @@ export const CrearSobreElCromo: Story = {
         ]}
       />
     </OnChrome>
+  ),
+};
+
+/** Submenús: «Imprimir ▸» y «Mover a ▸» abren sus opciones al costado, con la misma fila. Sin
+ *  submenú eran nueve filas de «Imprimir factura», «Imprimir remito»… empujando al resto de
+ *  los verbos fuera del panel. Probá el teclado: → abre el submenú, ← o Escape lo cierran y
+ *  el foco vuelve a la fila que lo abrió. Con el mouse, podés cruzar en diagonal sin que se
+ *  cierre. Los atajos se dibujan al final de la fila — los enlaza la aplicación, el menú
+ *  sólo los enseña. */
+export const Submenus: Story = {
+  args: { label: "", groups: [] },
+  render: () => (
+    <OnCanvas>
+      <Menu
+        label="Acciones"
+        icon={MoreHorizontal}
+        align="end"
+        groups={[
+          {
+            options: [
+              { id: "dup", label: "Duplicar el remito", icon: Copy, shortcut: "Ctrl+D" },
+              { id: "mail", label: "Enviar al cliente", icon: Mail, shortcut: "Ctrl+E" },
+              {
+                id: "print",
+                label: "Imprimir",
+                icon: Printer,
+                items: [
+                  { id: "print-invoice", label: "Factura", shortcut: "Ctrl+P" },
+                  { id: "print-waybill", label: "Remito de salida" },
+                  {
+                    id: "print-labels",
+                    label: "Etiquetas de bultos",
+                    hint: "Una por bulto, 10 × 15 cm",
+                  },
+                ],
+              },
+              {
+                id: "move",
+                label: "Mover a",
+                icon: Truck,
+                items: [
+                  {
+                    id: "W-CEN",
+                    label: "Almacén Central",
+                    hint: "Av. Montes 1240, La Paz",
+                  },
+                  { id: "W-ALT", label: "Almacén El Alto", hint: "Zona Senkata" },
+                  {
+                    id: "W-SCZ",
+                    label: "Almacén Santa Cruz",
+                    hint: "Parque Industrial",
+                  },
+                  {
+                    id: "W-TRA",
+                    label: "Almacén Central — tránsito",
+                    hint: "Sólo mercadería en camino",
+                    disabled: true,
+                  },
+                ],
+              },
+            ],
+          },
+          { options: [{ id: "cancel", label: "Anular el remito" }] },
+        ]}
+      />
+      <span className="text-meta text-muted">
+        el menú de acciones de un remito: imprimir y mover tienen más de una respuesta
+      </span>
+    </OnCanvas>
   ),
 };

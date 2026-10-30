@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 
-import { writeANote } from "@sincpro/web-ui/components/chatter/Messages";
+import { writeANote } from "@sincpro/web-ui/components/activity/Messages";
 import {
   currentCopy,
   installCopy,
@@ -60,9 +60,9 @@ test("lo que no se nombra no se pierde", () => {
    palabras que hubiera al cargarlo —las de fábrica— por más que después se
    instale otra. Por eso se arma cada vez que se pide. */
 test("la manera de escribir una nota se arma con la copia de ahora", () => {
-  installCopy({ locale: "es-BO", chatter: { writeNote: "Registrar una nota" } });
+  installCopy({ locale: "es-BO", activity: { writeNote: "Registrar una nota" } });
   assert.equal(writeANote().label, "Registrar una nota");
 
-  installCopy({ locale: "en", chatter: { writeNote: "Log a note" } });
+  installCopy({ locale: "en", activity: { writeNote: "Log a note" } });
   assert.equal(writeANote().label, "Log a note");
 });

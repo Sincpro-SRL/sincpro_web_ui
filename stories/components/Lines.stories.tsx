@@ -1,8 +1,8 @@
-import { LineItems, ToastProvider } from "@sincpro/web-ui";
+import { LineItems, NumberInput, TextInput, ToastProvider } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type ReactNode, useState } from "react";
 
-import type { InvoiceLine } from "../support/erp";
+import { type InvoiceLine, money } from "../support/erp";
 import {
   blankLine,
   DRAFT_LINES,
@@ -88,6 +88,35 @@ export const Borrador: Story = {
           getLineId={(l) => l.id}
           lineLabel={(l) => l.product || "línea nueva"}
           newLine={blankLine}
+          editor={lineEditor}
+          isValid={lineIsValid}
+          context={CONTEXT}
+          totals={lineTotals(state.lines)}
+        />
+      </Sheet>
+    );
+  },
+};
+
+/**
+ * **Agregar en línea.** «Agregar una línea» está debajo de la grilla y la línea nueva aparece
+ * ahí, ya abierta, con el cursor en el producto: se escribe el código, se elige, `Tab` a la
+ * cantidad, `Tab` al descuento, y `Tab` otra vez empieza la siguiente — veinte líneas de un
+ * pedido en papel sin tocar el mouse. Una línea agregada y dejada en blanco se va sola, y
+ * `Escape` la descarta. El lápiz sigue abriendo la línea entera en el editor.
+ */
+export const EnLinea: Story = {
+  render: function Render() {
+    const state = useLines(DRAFT_LINES);
+    return (
+      <Sheet>
+        <LineItems
+          {...state}
+          columns={lineColumns({ productInCell: true })}
+          getLineId={(l) => l.id}
+          lineLabel={(l) => l.product || "línea nueva"}
+          newLine={blankLine}
+          adding="inline"
           editor={lineEditor}
           isValid={lineIsValid}
           context={CONTEXT}
@@ -216,4 +245,157 @@ export const PublicadaEnElTelefono: Story = {
       />
     </Sheet>
   ),
+};
+
+type Renglon = {
+  id: string;
+  tipo: "line" | "section" | "note";
+  texto: string;
+  cuenta: string;
+  cantidad: number;
+  precio: number;
+};
+
+const renglon = (
+  id: string,
+  texto: string,
+  cantidad: number,
+  precio: number,
+  cuenta = "4.1.01 Ventas de equipos",
+): Renglon => ({ id, tipo: "line", texto, cuenta, cantidad, precio });
+const seccion = (id: string, texto: string): Renglon => ({
+  id,
+  tipo: "section",
+  texto,
+  cuenta: "",
+  cantidad: 0,
+  precio: 0,
+});
+const nota = (id: string, texto: string): Renglon => ({
+  ...seccion(id, texto),
+  tipo: "note",
+});
+
+const COTIZACION: readonly Renglon[] = [
+  seccion("s1", "Equipos"),
+  renglon("1", "Impresora térmica de tickets 80 mm", 3, 1450),
+  renglon("2", "Lector de código de barras inalámbrico", 3, 780),
+  renglon("3", "Cajón de dinero con apertura automática", 3, 690),
+  nota("n1", "Los equipos se entregan configurados y con un año de garantía."),
+  seccion("s2", "Instalación y capacitación"),
+  renglon("4", "Instalación en sucursal (por punto de venta)", 3, 450, "4.1.02 Servicios"),
+  renglon("5", "Capacitación presencial (por hora)", 6, 420, "4.1.02 Servicios"),
+  seccion("s3", "Soporte"),
+  renglon("6", "Soporte mensual (plan estándar)", 12, 1800, "4.1.02 Servicios"),
+  nota("n2", "El soporte se factura mes a mes desde la puesta en marcha."),
+];
+
+const importe = (r: Renglon) => r.cantidad * r.precio;
+const suma = (rs: readonly Renglon[]) => money(rs.reduce((a, r) => a + importe(r), 0));
+
+/**
+ * **Con secciones y notas.** Una cotización de cuarenta líneas se lee por partes: «Equipos»,
+ * «Instalación», «Soporte». Una SECCIÓN encabeza las líneas de abajo hasta la siguiente y dice
+ * cuánto suman; una NOTA es una frase entre líneas. Las dos se escriben en el lugar —«Agregar
+ * una sección», «Agregar una nota», abajo de la grilla—, no cuentan como líneas, y al buscar
+ * sólo quedan líneas.
+ *
+ * **Columnas opcionales.** La cuenta contable arranca escondida: el menú «columnas» la
+ * muestra, como en las listas. Una línea real tiene diez campos y una pantalla muestra cinco.
+ */
+export const ConSecciones: Story = {
+  render: function Render() {
+    const [lines, setLines] = useState<readonly Renglon[]>(COTIZACION);
+    const [siguiente, setSiguiente] = useState(100);
+    const nuevo = (tipo: Renglon["tipo"]) => () => {
+      setSiguiente((n) => n + 1);
+      return tipo === "line"
+        ? renglon(`r${siguiente}`, "", 1, 0)
+        : { ...seccion(`r${siguiente}`, ""), tipo };
+    };
+    return (
+      <Sheet>
+        <LineItems<Renglon>
+          lines={lines}
+          getLineId={(r) => r.id}
+          lineLabel={(r) => r.texto || "línea nueva"}
+          adding="inline"
+          onChange={(id, next) => setLines((all) => all.map((r) => (r.id === id ? next : r)))}
+          onAdd={(r) => setLines((all) => [...all, r])}
+          onRemove={(id) => setLines((all) => all.filter((r) => r.id !== id))}
+          onRestore={(r, index) => setLines((all) => restoreAt(all, r, index))}
+          newLine={nuevo("line")}
+          structure={{
+            kind: (r) => r.tipo,
+            text: (r) => r.texto,
+            withText: (r, texto) => ({ ...r, texto }),
+            newSection: nuevo("section"),
+            newNote: nuevo("note"),
+          }}
+          columns={[
+            {
+              id: "texto",
+              header: "Descripción",
+              value: (r) => r.texto,
+              edit: (r, set) => (
+                <TextInput
+                  aria-label="Descripción"
+                  value={r.texto}
+                  onChange={(texto) => set({ ...r, texto })}
+                />
+              ),
+            },
+            {
+              id: "cuenta",
+              header: "Cuenta",
+              value: (r) => r.cuenta,
+              optional: true,
+              defaultHidden: true,
+            },
+            {
+              id: "cantidad",
+              header: "Cantidad",
+              numeric: true,
+              width: 110,
+              value: (r) => r.cantidad,
+              edit: (r, set) => (
+                <NumberInput
+                  aria-label="Cantidad"
+                  value={r.cantidad}
+                  min={0}
+                  onChange={(v) => set({ ...r, cantidad: v === "" ? 0 : v })}
+                />
+              ),
+            },
+            {
+              id: "precio",
+              header: "Precio unit.",
+              numeric: true,
+              width: 140,
+              value: (r) => r.precio,
+              cell: (r) => money(r.precio),
+              optional: true,
+            },
+            {
+              id: "importe",
+              header: "Importe",
+              numeric: true,
+              width: 150,
+              value: (r) => importe(r),
+              cell: (r) => money(importe(r)),
+              subtotal: suma,
+              stack: "amount",
+            },
+          ]}
+          totals={[
+            {
+              label: "Total",
+              value: suma(lines.filter((r) => r.tipo === "line")),
+              total: true,
+            },
+          ]}
+        />
+      </Sheet>
+    );
+  },
 };

@@ -111,11 +111,30 @@ const number = (v: number) => v.toLocaleString("es-BO");
  *  it apart — with its picture when `pictures`; the numbers are edited in place. On a phone
  *  each line is a card: the product, «3 × Bs. 1.450,00 · desc. 5 %» under it and the amount
  *  at the right — the price is said by the quantity's `brief`, so its own column hides. */
-export function lineColumns({ pictures = false } = {}): LineItemColumn<InvoiceLine>[] {
+export function lineColumns({
+  pictures = false,
+  productInCell = false,
+} = {}): LineItemColumn<InvoiceLine>[] {
   return [
     {
       id: "product",
       header: "Producto",
+      /* Adding in place needs the product in the cell: a new line is nothing without it. */
+      ...(productInCell
+        ? {
+            edit: (l: InvoiceLine, set: (next: InvoiceLine) => void) => (
+              <Picker
+                aria-label="Producto"
+                items={PRODUCT_ITEMS}
+                value={l.product}
+                onChange={(name) =>
+                  set({ ...l, product: name, unitPrice: BY_NAME.get(name)?.price ?? 0 })
+                }
+                placeholder="Buscá un producto o su código…"
+              />
+            ),
+          }
+        : {}),
       value: (l) => l.product,
       text: (l) => `${l.product} ${BY_NAME.get(l.product)?.sku ?? ""}`,
       cell: (l) => {

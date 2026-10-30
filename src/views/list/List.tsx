@@ -9,7 +9,7 @@ import {
   slotOf,
 } from "@sincpro/web-ui/foundations/slots";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
-import type { DataColumn } from "@sincpro/web-ui/primitives/table/DataTable";
+import type { DataColumn, DataTableCreate } from "@sincpro/web-ui/primitives/table/DataTable";
 import type { RowAction } from "@sincpro/web-ui/primitives/table/RowActions";
 import type { SortState } from "@sincpro/web-ui/primitives/table/Table";
 import { ListView } from "@sincpro/web-ui/views/list/ListView";
@@ -70,6 +70,37 @@ import type { ReactNode } from "react";
  * CONJUNTO y no regiones de la pantalla. Dejarlos afuera no cambia la forma de
  * nada — es la misma regla por la que `identity` y `dirty` siguen siendo props
  * en `Record`.
+ *
+ * ── A list INSIDE a record: `embedded` ──────────────────────────────
+ *
+ *     <Record.Page id="items" label="journal items">
+ *       <List items={…} keyOf={…} embedded sortable={…} present={…}>
+ *         <List.Bar>
+ *           <List.Search><SearchField … /></List.Search>
+ *         </List.Bar>
+ *         <List.Table columns={…} totals />
+ *         <List.Rows row={…} />
+ *         <List.Sheet />
+ *       </List>
+ *     </Record.Page>
+ *
+ * A one2many or many2many shown as a collection is the SAME set as a module's main list —
+ * it searches, sorts, chooses columns, selects and switches presentation the same way, so
+ * it is the same `List` and not a smaller sibling that would drift. What changes is WHERE
+ * it sits, and only the composer knows that (the same reason `Listing`'s `sticky` is
+ * opt-in), so it is a prop and not a guess:
+ *
+ *   - Guessed from «no `List.Identity`», a full-page list that happens to have only a
+ *     search would lose its sticky bar; guessed from being inside `Record`, a view would
+ *     have to know another view. Neither is a fact this file can see.
+ *   - Not a slot: it is not a region of the screen, it is how all of them are laid out —
+ *     the rule above for `items`, `sort` and `state`.
+ *
+ * Embedded, the bar is ONE line (search filling, count, sort · columns · switcher,
+ * actions) that does not stick and does not move into the frame's header slot — the
+ * record already has its own sticky parts. Identity and crumbs are not drawn: the
+ * record's tab and crumbs already say them. The reasoning for the line is in
+ * `ListingBar`'s header.
  */
 
 type SlotName =
@@ -150,6 +181,9 @@ type TableProps<T extends object> = {
   /** Lo que se le hace a UNA fila sin entrar. Se dibujan escondidas y aparecen
    *  sobre la fila que se está apuntando. */
   rowActions?: (item: T) => readonly RowAction[];
+  /** Escribir un registro nuevo como una fila más de la tabla (la lista editable de
+   *  Odoo). Ver la cabecera de `DataTable`. */
+  create?: DataTableCreate<T>;
 };
 
 /** El tablero. Sin `card`, la tarjeta sale de lo que ya dice `List.Rows`: el
@@ -166,11 +200,13 @@ const Rows = slot("rows", (_props: RowsProps<never>): ReactNode => null) as <T>(
   props: RowsProps<T>,
 ) => ReactNode;
 
-const TableSlot = slot("table", (_props: TableProps<never>): ReactNode => null) as <
-  T extends object,
->(
-  props: TableProps<T>,
-) => ReactNode;
+/* Through `unknown`: `create` both receives and hands back a `T` (`onChange`, `draft`),
+   so `TableProps` is invariant in `T` and `TableProps<never>` no longer narrows to it. The
+   slot only carries the props; `List` reads them back typed against the list's `T`. */
+const TableSlot = slot(
+  "table",
+  (_props: TableProps<never>): ReactNode => null,
+) as unknown as <T extends object>(props: TableProps<T>) => ReactNode;
 
 const Board = slot("board", (_props: BoardProps<never>): ReactNode => null) as <T>(
   props: BoardProps<T>,
@@ -203,6 +239,10 @@ const FACES: readonly SlotName[] = ["rows", "table", "board", "sheet", "report",
 export type ListProps<T extends object> = {
   items: readonly T[];
   keyOf: (item: T) => string;
+
+  /** The list is a FIELD of a record — a one2many / many2many — and not a screen: a
+   *  one-line bar that does not stick. See «A list INSIDE a record» above. */
+  embedded?: boolean;
 
   /** En qué superficie se apoya la BARRA. `canvas` (el default) es una barra
    *  de control clara; `chrome` la convierte en una banda oscura, una opción
@@ -249,6 +289,7 @@ export type ListProps<T extends object> = {
 export function List<T extends object>({
   items,
   keyOf,
+  embedded,
   surface,
   group,
   selection,
@@ -303,6 +344,7 @@ export function List<T extends object>({
       {...(rows?.header === undefined ? {} : { rowHeader: rows.header })}
       {...(identity === undefined ? {} : { identity })}
       {...(crumbs === undefined ? {} : { crumbs })}
+      {...(embedded === undefined ? {} : { embedded })}
       {...(surface === undefined ? {} : { surface })}
       {...(search === undefined ? {} : { search })}
       {...(actions === undefined ? {} : { actions })}
@@ -315,6 +357,7 @@ export function List<T extends object>({
             columns: table.columns,
             ...(table.totals === undefined ? {} : { totals: table.totals }),
             ...(table.rowActions === undefined ? {} : { rowActions: table.rowActions }),
+            ...(table.create === undefined ? {} : { create: table.create }),
             ...(table.visibleColumnIds === undefined
               ? {}
               : { visibleColumnIds: table.visibleColumnIds }),

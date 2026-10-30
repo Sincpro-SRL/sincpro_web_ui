@@ -145,7 +145,12 @@ for (const { id, title, docs, throws, theme } of jobs) {
     const primaries = await page.evaluate(
       () =>
         [...document.querySelectorAll('[data-emphasis="primary"]')].filter(
-          (el) => (el as HTMLElement).offsetParent !== null,
+          /* A modal is its own view: what sits behind it is made inert (or hidden from
+             assistive technology) and cannot be pressed, so it does not compete with the
+             modal's one primary. */
+          (el) =>
+            (el as HTMLElement).offsetParent !== null &&
+            el.closest('[inert], [aria-hidden="true"]') === null,
         ).length,
     );
     if (primaries > 1)

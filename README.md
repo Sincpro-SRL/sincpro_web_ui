@@ -8,18 +8,39 @@ Most design systems are built for marketing sites and consumer apps, then stretc
 business software. This one starts from the other end: dense data, long sessions, keyboard
 users, numbers that must be legible, and screens that are always about _records_.
 
+## A UI that evolves — a method that holds
+
+`@sincpro/web-ui` **will keep changing.** Its look, the set of components and their props grow
+and get corrected as real screens ask for them. It is `0.x`: a minor release may break an API,
+and each release says what changed in
+[GitHub Releases](https://github.com/Sincpro-SRL/sincpro_web_ui/releases).
+
+What does not change is **how the components are managed** — and that is what this project is
+about:
+
+| Stable — the contract                                       | Evolving — the content            |
+| ----------------------------------------------------------- | --------------------------------- |
+| Every piece belongs to one of four levels, and imports down | Which components exist            |
+| Values come from tokens; contrast is measured               | The palette, sizes, density steps |
+| Interface copy is data, never written in a component        | The wording                       |
+| Every piece ships with a test and a story                   | Props, their names and defaults   |
+| Whole pages are built from the public API alone             | Visual details of each piece      |
+
+Each rule on the left is checked by a machine — `make test`, `make doctor`, `make smoke` — not
+by anyone's memory, so the catalogue can grow fast without rotting.
+
 ## The idea
 
 **Every management screen is one of two things: one record, or N records.** That is the
 whole product surface, and the system is organised around it in four levels — each one
 defined by what it _knows_, and each one importing only from the levels below:
 
-| Level           | What it knows                           | Examples                                                |
-| --------------- | --------------------------------------- | ------------------------------------------------------- |
-| **Foundations** | The decisions. No components.           | color, typography, scales, motion, surfaces             |
-| **Primitives**  | Nothing about the screen it is on.      | `Button`, `Field`, `Menu`, `Tag`, `Table`, `Dialog`     |
-| **Components**  | One question of the product, by family. | data tables, search and criteria, record parts, chatter |
-| **Views**       | The two macros, and nothing else.       | `Record` (one) · `List` (N)                             |
+| Level           | What it knows                           | Examples                                                 |
+| --------------- | --------------------------------------- | -------------------------------------------------------- |
+| **Foundations** | The decisions. No components.           | color, typography, scales, motion, surfaces              |
+| **Primitives**  | Nothing about the screen it is on.      | `Button`, `Field`, `Menu`, `Tag`, `Table`, `Dialog`      |
+| **Components**  | One question of the product, by family. | data tables, search and criteria, record parts, activity |
+| **Views**       | The two macros, and nothing else.       | `Record` (one) · `List` (N)                              |
 
 If something does not fit one of the two views, it is not a view — it is a component in
 disguise. And if something needs to know what an invoice, a dataset or a customer _is_, it
@@ -39,6 +60,12 @@ does not belong here: that is domain, and it lives in the application.
 - **Language is data.** Interface copy is English by default and replaced as a whole table
   (`installCopy(SPANISH_COPY)`, `UiCopyProvider`) — never hard-coded in a component.
 - **Accessible by default.** Storybook runs the a11y checks as errors, not warnings.
+
+The full set — hierarchy, one primary action, color that means something, progressive
+disclosure, undo over confirm… — each with the piece that applies it and the check that
+enforces it, is in
+[`docs/PRINCIPLES.md`](https://github.com/Sincpro-SRL/sincpro_web_ui/blob/main/docs/PRINCIPLES.md)
+(in Spanish).
 
 ## Using it
 
@@ -130,7 +157,7 @@ src/
 ├── index.ts       the public surface: the four levels below
 ├── foundations/   density, surface, copy, slots, calendar, pivot, xlsx
 ├── primitives/    one folder per family: button, field, menu, table, tabs, …
-├── components/    one folder per family: listing, record, search, form, chatter, frame, shell
+├── components/    one folder per family: listing, record, search, form, activity, frame, shell
 └── views/         list (N records) · record (one record)
 stories/           Storybook, by level — and templates/: whole pages built from the public API
 tests/             node --test over the TypeScript sources
@@ -142,7 +169,7 @@ component importing a view), so the layering holds without anyone remembering it
 ### Iterating with AI
 
 This system is developed together with AI agents, and it is set up for it: the rules an
-agent must follow live in [`AGENTS.md`](./AGENTS.md), the guards that catch what an agent
+agent must follow live in [`AGENTS.md`](https://github.com/Sincpro-SRL/sincpro_web_ui/blob/main/AGENTS.md), the guards that catch what an agent
 gets wrong (tokens, contrast, import direction, client boundaries, stories that blow up)
 run in `make test`, `make doctor` and `make smoke`, and
 while `make dev` runs, Storybook serves an MCP endpoint at `/mcp` so an agent reads the
@@ -150,9 +177,9 @@ stories that already exist instead of guessing them.
 
 ## Contributing
 
-See [CONTRIBUTING.md](./CONTRIBUTING.md). Issues and pull requests are welcome — especially
+See [CONTRIBUTING.md](https://github.com/Sincpro-SRL/sincpro_web_ui/blob/main/CONTRIBUTING.md). Issues and pull requests are welcome — especially
 from people who build business software for a living.
 
 ## License
 
-[MIT](./LICENSE) © SINCPRO S.R.L.
+[MIT](https://github.com/Sincpro-SRL/sincpro_web_ui/blob/main/LICENSE) © SINCPRO S.R.L.

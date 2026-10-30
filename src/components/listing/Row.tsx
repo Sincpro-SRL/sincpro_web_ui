@@ -5,6 +5,7 @@ import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { stickyTop } from "@sincpro/web-ui/foundations/sticky";
 import { Menu, type MenuGroup } from "@sincpro/web-ui/primitives/menu/Menu";
+import { CopyButton } from "@sincpro/web-ui/primitives/value/Copyable";
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight, MoreHorizontal, SquareArrowOutUpRight } from "lucide-react";
 import type { ReactNode } from "react";
@@ -44,9 +45,14 @@ export function Row({
   onMoreSelect,
   openHint,
   children,
+  copy: copyAs,
 }: {
   icon?: LucideIcon;
   name: string;
+  /** The copy button among the row's actions: on by default, copying the row's name — the
+   *  number of an invoice, a customer — without opening it. A string copies that instead;
+   *  `false` removes it. */
+  copy?: string | false;
   onOpen?: () => void;
   onPeek?: () => void;
   tags?: ReactNode;
@@ -184,8 +190,14 @@ export function Row({
 
         {/* The gesture, made visible. It shows up on hover and always occupies its
           place, so nothing shifts when it appears. */}
-        <span className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-(--duration-instant) group-hover/row:opacity-100 focus-within:opacity-100">
+        <span className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-(--duration-instant) group-hover/row:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
           {actions}
+          {copyAs === false ? null : (
+            <CopyButton
+              value={copyAs ?? name}
+              label={fillCopy(copy.copyable.field, { label: name })}
+            />
+          )}
           {onOpen === undefined ? null : (
             <button
               type="button"

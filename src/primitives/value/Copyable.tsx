@@ -45,9 +45,22 @@ export type CopyableProps = {
  *  quede en un estado que ya no es cierto. */
 const CONFIRMED_FOR = 2000;
 
-export function Copyable({ value, children, mono = false, bare = false }: CopyableProps) {
+/**
+ * The button alone, for a value that is only known when it is pressed — what a field shows
+ * at that moment (`Field`'s copy button reads it from the screen). `Copyable` is this
+ * button next to its value.
+ */
+export function CopyButton({
+  value,
+  label,
+}: {
+  /** The text, or how to get it at the moment of the press. */
+  value: string | (() => string);
+  /** Its name at rest. Defaults to the copy table's «Copiar». */
+  label?: string;
+}) {
   const copy = useUiCopy();
-  const [state, setState] = useState<"idle" | "done" | "failed">("idle");
+  const [state, setState] = useState<"idle" | "done" | "failed" | "empty">("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   /* Se limpia al desmontar: sin esto, copiar y cerrar el panel antes de los dos
@@ -61,8 +74,15 @@ export function Copyable({ value, children, mono = false, bare = false }: Copyab
 
   async function run() {
     if (timer.current !== null) clearTimeout(timer.current);
+    const text = typeof value === "function" ? value() : value;
+    if (text.trim() === "") {
+      /* Nothing on screen to copy: said, not a check mark over an empty clipboard. */
+      setState("empty");
+      timer.current = setTimeout(() => setState("idle"), CONFIRMED_FOR);
+      return;
+    }
     try {
-      await navigator.clipboard.writeText(value);
+      await navigator.clipboard.writeText(text);
       setState("done");
     } catch {
       /* Sin portapapeles —contexto no seguro, permiso negado— se DICE. Fingir
@@ -72,23 +92,29 @@ export function Copyable({ value, children, mono = false, bare = false }: Copyab
     timer.current = setTimeout(() => setState("idle"), CONFIRMED_FOR);
   }
 
-  const label =
+  const said =
     state === "done"
       ? copy.copyable.done
       : state === "failed"
         ? copy.copyable.failed
-        : copy.copyable.label;
+        : state === "empty"
+          ? copy.copyable.empty
+          : (label ?? copy.copyable.label);
 
-  const button = (
+  return (
     <button
       type="button"
-      onClick={run}
-      aria-label={label}
-      title={label}
+      onClick={(e) => {
+        /* Inside a row that opens or a link: copying is not opening. */
+        e.stopPropagation();
+        void run();
+      }}
+      aria-label={said}
+      title={said}
       className={`inline-flex shrink-0 items-center justify-center rounded-control p-0.5 transition-colors duration-(--duration-instant) ${
         state === "done"
           ? "text-good"
-          : state === "failed"
+          : state === "failed" || state === "empty"
             ? "text-bad"
             : "text-muted hover:bg-ink/6 hover:text-ink"
       }`}
@@ -100,7 +126,10 @@ export function Copyable({ value, children, mono = false, bare = false }: Copyab
       )}
     </button>
   );
+}
 
+export function Copyable({ value, children, mono = false, bare = false }: CopyableProps) {
+  const button = <CopyButton value={value} />;
   if (bare) return button;
 
   return (

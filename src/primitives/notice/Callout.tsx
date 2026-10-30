@@ -96,17 +96,23 @@ export function Callout({
     >
       <Icon className="mt-0.5 size-(--size-icon-sm) shrink-0" strokeWidth={2} aria-hidden />
 
-      <div className="flex min-w-0 flex-1 flex-col gap-1">
-        {title === undefined ? null : (
-          <p className="text-meta font-medium text-ink">{title}</p>
-        )}
-        {/* El texto va en tinta normal y no en el color del tono: un párrafo
-            entero pintado se lee peor, y el color ya lo pone el marco. El tono
-            se queda en el ícono y en el borde, que es donde alcanza. */}
-        <div className="min-w-0 text-meta text-ink">{children}</div>
-      </div>
+      {/* The sentence and its action share a row that WRAPS: the sentence asks for at
+          least `--container-name` and, when the action does not fit beside it (a phone, a
+          long label), the action drops under the sentence instead of squeezing it into a
+          column of three words. On a desk nothing moves. */}
+      <div className="flex min-w-0 flex-1 flex-wrap items-start gap-x-3 gap-y-2">
+        <div className="flex min-w-0 flex-1 basis-(--container-name) flex-col gap-1">
+          {title === undefined ? null : (
+            <p className="text-meta font-medium text-ink">{title}</p>
+          )}
+          {/* El texto va en tinta normal y no en el color del tono: un párrafo
+              entero pintado se lee peor, y el color ya lo pone el marco. El tono
+              se queda en el ícono y en el borde, que es donde alcanza. */}
+          <div className="min-w-0 text-meta text-ink">{children}</div>
+        </div>
 
-      {action === undefined ? null : <span className="shrink-0">{action}</span>}
+        {action === undefined ? null : <span className="shrink-0">{action}</span>}
+      </div>
 
       {onDismiss === undefined ? null : (
         <button
