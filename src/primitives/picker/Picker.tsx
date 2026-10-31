@@ -71,7 +71,7 @@ import {
  *
  *  Customers, products, accounts: thousands of records that are not in memory,
  *  and a cap of 8 over the first page would hide the rest behind a dialog. With
- *  `onLoadMore` the list is NOT capped and has no «see all…» row nor «N more»
+ *  `onLoadMore` the list is NOT capped and has no «N more»
  *  footer — the backend's total is not known, and the answer to «where are the
  *  others» is to keep scrolling. The list scrolls inside `--size-dropdown`
  *  (about eight two-line rows, the same height the capped list has), and React
@@ -125,7 +125,7 @@ interface PickerSection {
   items: PickerItem[];
 }
 
-/** The id of the «see all…» row. Not a record id: it cannot collide with one. */
+/** The id of the «Buscar más…» row. Not a record id: it cannot collide with one. */
 const BROWSE_ALL = "\u0000browse-all";
 const CAP = 8;
 
@@ -145,7 +145,7 @@ export function shownRows(
 }
 
 /** Folds consecutive items of the same `section` into one run under a header. The ids of
- *  the runs cannot collide with a record id, like the «see all…» one. */
+ *  the runs cannot collide with a record id, like the «Buscar más…» one. */
 function sectioned(items: readonly PickerItem[]): (PickerItem | PickerSection)[] {
   const out: (PickerItem | PickerSection)[] = [];
   for (const item of items) {
@@ -195,9 +195,10 @@ export type PickerProps = {
   value?: string;
   onChange?: (id: string) => void;
   placeholder?: string;
-  /** What to do with the ones that don't fit. Without this, the footer only
-   *  informs. */
-  onBrowseAll?: () => void;
+  /** «Buscar más…»: the last option of the list, always there when this is — the record
+   *  may not be among the eight, or two of them may need their columns to tell apart. It
+   *  gets what was typed, so the table (`LookupDialog`) opens on the same search. */
+  onBrowseAll?: (query: string) => void;
   /** Open the chosen record. Drawn as a trailing affordance, the way a many2one
    *  offers "open" next to "pick". Absent when there is nothing chosen. */
   onOpen?: (id: string) => void;
@@ -211,7 +212,7 @@ export type PickerProps = {
   loadingText?: string;
   /** The list grows from the backend: called when its end scrolls into view. The consumer
    *  appends the next page to `items`; with nothing more to fetch it does nothing. Turns off
-   *  the cap of 8, the «see all…» row and the footer count. */
+   *  the cap of 8 and the footer count. */
   onLoadMore?: () => void;
   /** A page asked for by `onLoadMore` is on its way: a quiet row at the end says so. Unlike
    *  `loading`, the rows already there stay. */
@@ -302,7 +303,7 @@ function EditablePicker({
   /* «See all…» is an OPTION at the end of the list and not a button in a footer: the
      arrows reach it like any other row. As a footer button it was out of the keyboard's
      path — Tab leaves the field and closes the list before getting there. */
-  const browsable = remaining > 0 && onBrowseAll !== undefined;
+  const browsable = onBrowseAll !== undefined;
   const listed: readonly PickerItem[] = browsable
     ? [...visible, { id: BROWSE_ALL, name: copy.picker.browseAll }]
     : visible;
@@ -315,10 +316,11 @@ function EditablePicker({
     if (next === BROWSE_ALL) {
       /* The full list opens somewhere else (a dialog, a panel): this one closes and the
          field keeps the chosen name. */
+      const typed = query;
       closeList.current?.();
       setText(chosenName);
       setQuery("");
-      onBrowseAll?.();
+      onBrowseAll?.(typed);
       return;
     }
     setText(items.find((i) => i.id === next)?.name ?? "");
@@ -415,7 +417,7 @@ function EditablePicker({
 }
 
 /**
- * The list of a `Picker`: its rows, the section headers, the «see all…» row and the loading
+ * The list of a `Picker`: its rows, the section headers, the «Buscar más…» row and the loading
  * row at the end. Internal — not exported from the family — and apart from the combobox so it
  * can be rendered on the server without a popover, which is how the tests see the rows.
  */
@@ -453,11 +455,14 @@ export function PickerOptions({
       >
         <span className="flex w-full items-center justify-between gap-2">
           <span className="font-medium">{item.name}</span>
-          <span className="text-micro tabular-nums text-muted">
-            {fillCopy(copy.picker.more, {
-              count: remaining.toLocaleString(copy.locale),
-            })}
-          </span>
+          {/* «0 más» says nothing: the row is there to see the columns, not the rest. */}
+          {remaining === 0 ? null : (
+            <span className="text-micro tabular-nums text-muted">
+              {fillCopy(copy.picker.more, {
+                count: remaining.toLocaleString(copy.locale),
+              })}
+            </span>
+          )}
         </span>
       </ListBoxItem>
     ) : (
@@ -595,7 +600,7 @@ function Row({
 }
 
 /** Hands the combobox's `close` to the code outside it: React Aria owns the open state and
- *  offers no controlled `isOpen`, and the «see all…» row has to close the list it lives in. */
+ *  offers no controlled `isOpen`, and the «Buscar más…» row has to close the list it lives in. */
 function CloseBridge({ into }: { into: { current: (() => void) | null } }) {
   const state = useContext(ComboBoxStateContext);
   into.current = state === null ? null : () => state.close();

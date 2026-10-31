@@ -33,6 +33,7 @@ import {
   ListFilter,
   Search,
   SlidersHorizontal,
+  X,
 } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
 
@@ -288,6 +289,9 @@ export type SearchBarProps = {
   onOpenBuilder?: (path?: CriteriaPath) => void;
   /** Lo que va pegado al campo, a su derecha. */
   trailing?: ReactNode;
+  /** How many facets the bar shows before folding the rest into «+N»; the grouping chain
+   *  counts as one. On a narrow bar only the first shows. `Infinity` never folds. */
+  collapseAfter?: number;
   /** Por default la hereda de la superficie que la envuelve. */
   surface?: Surface;
 };
@@ -306,6 +310,7 @@ export function SearchBar({
   onFavoriteSelect,
   onOpenBuilder,
   trailing,
+  collapseAfter,
   surface,
 }: SearchBarProps) {
   const copy = useUiCopy();
@@ -510,8 +515,11 @@ export function SearchBar({
 
   return (
     <div ref={box} className="relative flex min-w-0 items-center gap-2">
+      {/* Three columns: the magnifier, what is set plus the input (the only part that wraps),
+          and the buttons. The two ends sit on the FIRST line: when the middle wraps they
+          stay where the eye starts reading, instead of floating to its middle. */}
       <div
-        className={`flex min-h-(--size-control-md) w-full min-w-0 items-stretch rounded-box border transition-colors duration-(--duration-instant) ${bySurface(
+        className={`@container/bar flex min-h-(--size-control-md) w-full min-w-0 items-start rounded-box border transition-colors duration-(--duration-instant) ${bySurface(
           sup,
           "border-line-strong bg-surface focus-within:border-primary/60",
           /* Sobre el cromo lo que define al campo es el BORDE, no el relleno. El
@@ -523,13 +531,14 @@ export function SearchBar({
           "border-chrome-ink/45 bg-chrome-ink/8 focus-within:border-chrome-link",
         )}`}
       >
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1.5 py-1 pl-2.5">
+        <span className="mt-0.75 flex h-7 shrink-0 items-center pr-1.5 pl-2.5">
           <Search
             className="size-(--size-icon-md) shrink-0 text-muted"
             strokeWidth={2}
             aria-hidden
           />
-
+        </span>
+        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1 py-0.75">
           {/* LO PUESTO. Una sola pieza para las dos clases: los de grupo a la
               izquierda, encadenados; los de filtro después, con su anidado y su
               conjunción tocable. Todo abre el constructor parado sobre lo que se
@@ -539,6 +548,17 @@ export function SearchBar({
             surface={sup}
             {...(openGroup === null ? {} : { open: openGroup })}
             {...(onOpenBuilder === undefined ? {} : { onOpen: onOpenBuilder })}
+            {...(collapseAfter === undefined ? {} : { collapseAfter })}
+            onRemoveMany={(paths) => {
+              /* From the deepest index up, so each removal leaves the next path valid. */
+              const sorted = [...paths].sort((a, b) => (b[0] ?? 0) - (a[0] ?? 0));
+              onCriteriaChange(
+                sorted.reduce<SearchCriteria[]>(
+                  (left, path) => removeAt(left, path),
+                  [...criteria],
+                ),
+              );
+            }}
             onJoin={(path, join) => {
               const node = at(criteria, path);
               if (node?.kind !== "join") return;
@@ -712,7 +732,7 @@ export function SearchBar({
             style={step.field === undefined ? undefined : { fieldSizing: "content" }}
             className={
               step.field === undefined
-                ? `min-w-24 flex-1 bg-transparent text-meta outline-none ${bySurface(sup, "text-ink placeholder:text-muted", "text-chrome-ink placeholder:text-chrome-muted")}`
+                ? `h-7 ${criteria.length === 0 ? "min-w-24" : "min-w-16"} flex-1 bg-transparent text-meta outline-none ${bySurface(sup, "text-ink placeholder:text-muted", "text-chrome-ink placeholder:text-chrome-muted")}`
                 : `min-w-16 rounded-pill px-2 py-0.5 text-micro outline-none ${bySurface(
                     sup,
                     "bg-accent/18 text-ink placeholder:text-muted",
@@ -722,6 +742,26 @@ export function SearchBar({
           />
         </div>
 
+        {puestos === 0 ? null : (
+          <button
+            type="button"
+            onClick={() => {
+              onCriteriaChange([]);
+              setOpenGroup(null);
+              input.current?.focus();
+            }}
+            aria-label={copy.search.clearAll}
+            title={copy.search.clearAll}
+            className={`my-0.5 inline-flex h-(--size-control-sm) shrink-0 items-center rounded-control px-1.5 transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${bySurface(
+              sup,
+              "text-muted hover:bg-ink/5 hover:text-ink",
+              "text-chrome-muted hover:bg-chrome-ink/10 hover:text-chrome-ink",
+            )}`}
+          >
+            <X className="size-(--size-icon-sm)" strokeWidth={2} aria-hidden />
+          </button>
+        )}
+
         {columns.length === 0 && onOpenBuilder === undefined ? null : (
           <button
             type="button"
@@ -729,7 +769,7 @@ export function SearchBar({
             aria-expanded={panel}
             aria-controls={panel ? id : undefined}
             title={copy.search.tools}
-            className={`my-0.5 mr-0.5 inline-flex h-(--size-control-sm) shrink-0 items-center gap-1 self-center rounded-control border px-2 text-micro transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${
+            className={`my-0.5 mr-0.5 inline-flex h-(--size-control-sm) shrink-0 items-center gap-1 rounded-control border px-2 text-micro transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${
               puestos > 0 || panel
                 ? bySurface(
                     sup,

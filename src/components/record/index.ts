@@ -6,6 +6,8 @@ export {
   type DirtyState,
 } from "@sincpro/web-ui/components/record/DirtyActions";
 export { Pager } from "@sincpro/web-ui/components/record/Pager";
+export { RecordAudit, type RecordStamp } from "@sincpro/web-ui/components/record/RecordAudit";
+export { RecordRibbon } from "@sincpro/web-ui/components/record/RecordRibbon";
 export { RecordSkeleton } from "@sincpro/web-ui/components/record/RecordSkeleton";
 export { SmartButton, SmartButtons } from "@sincpro/web-ui/components/record/SmartButtons";
 export { type Stage, StatusBar } from "@sincpro/web-ui/components/record/StatusBar";

@@ -3,6 +3,7 @@
 import { currentCopyLocale, fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { stickyTop, useScrollBox } from "@sincpro/web-ui/foundations/sticky";
+import { HEADER_TEXT } from "@sincpro/web-ui/primitives/table/Table";
 import { ChevronRight, Info } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
@@ -325,7 +326,7 @@ export function ReportTable({
               <th
                 key={c.id}
                 scope="col"
-                className={`text-right text-meta font-medium whitespace-nowrap text-muted ${compact ? "px-2 py-1.5" : "px-3 py-2"}`}
+                className={`text-right ${HEADER_TEXT} ${compact ? "px-2 py-1.5" : "px-3 py-2"}`}
               >
                 {c.header}
               </th>

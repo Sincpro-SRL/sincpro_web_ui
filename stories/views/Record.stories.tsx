@@ -110,7 +110,7 @@ export const Completo: Story = {
     const [page, setPage] = useState("lineas");
 
     return (
-      <div className="bg-ground p-8">
+      <div className="min-h-dvh bg-ground">
         <Record
           identity={{
             icon: ShoppingCart,
@@ -226,7 +226,7 @@ export const Completo: Story = {
 export const RielOscuro: Story = {
   render: function Render() {
     return (
-      <div className="bg-ground p-8">
+      <div className="min-h-dvh bg-ground">
         <Record
           identity={{
             icon: ShoppingCart,
@@ -261,6 +261,57 @@ export const RielOscuro: Story = {
                 { label: "NIT", value: "3214569870" },
                 { label: "Total", value: "Bs. 58.000,00" },
               ]}
+            />
+          </Record.Paper>
+        </Record>
+      </div>
+    );
+  },
+};
+
+/**
+ * **Archivado.** Lo que el registro ES ahora va cruzado en la esquina del papel —una palabra
+ * con su tono, nunca solo color— y antes de leer un campo ya se sabe que este cliente no está
+ * activo. Al pie, quién lo creó y quién lo tocó por última vez: la primera pregunta frente a
+ * un dato que parece mal.
+ */
+export const Archivado: Story = {
+  render: function Render() {
+    return (
+      <div className="min-h-dvh bg-ground">
+        <Record
+          identity={{
+            icon: ShoppingCart,
+            title: `S00098 · ${CLIENTE}`,
+            tag: { label: "cancelado", tone: "neutral" },
+          }}
+        >
+          <Record.Rail>
+            <Record.Crumbs
+              crumbs={[
+                { label: "Ventas", onClick: () => {} },
+                { label: "Pedidos", onClick: () => {} },
+                { label: "S00098" },
+              ]}
+            />
+            <Record.Actions>
+              <Button role="secondary" size="sm">
+                Restaurar
+              </Button>
+            </Record.Actions>
+          </Record.Rail>
+          <Record.Paper layout="horizontal">
+            <Record.Ribbon label="Archivado" tone="neutral" />
+            <Record.Facts
+              fields={[
+                { label: "Cliente", value: CLIENTE },
+                { label: "NIT", value: "3214569870" },
+                { label: "Total", value: "Bs. 58.000,00" },
+              ]}
+            />
+            <Record.Audit
+              created={{ by: "Josefa Muñoz", at: "02/09/2026 11:40" }}
+              updated={{ by: "Andrés Gutiérrez", at: "28/10/2026 17:05" }}
             />
           </Record.Paper>
         </Record>

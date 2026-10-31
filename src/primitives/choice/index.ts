@@ -6,6 +6,7 @@ export {
   type ChoiceOption,
   type SegmentOption,
 } from "@sincpro/web-ui/primitives/choice/options";
+export { Priority, type PriorityProps } from "@sincpro/web-ui/primitives/choice/Priority";
 export {
   RadioGroup,
   type RadioGroupProps,

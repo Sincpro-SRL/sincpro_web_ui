@@ -9,6 +9,7 @@ import {
 import type { Crumb } from "@sincpro/web-ui/components/record/Breadcrumb";
 import type { DirtyState } from "@sincpro/web-ui/components/record/DirtyActions";
 import { Pager as PagerControl } from "@sincpro/web-ui/components/record/Pager";
+import { RecordAudit, type RecordStamp } from "@sincpro/web-ui/components/record/RecordAudit";
 import { RecordHeader } from "@sincpro/web-ui/components/record/RecordHeader";
 import {
   RecordBlocking,
@@ -16,6 +17,7 @@ import {
   type RecordNoticeSpec,
   splitNotices,
 } from "@sincpro/web-ui/components/record/RecordNotices";
+import { RecordRibbon } from "@sincpro/web-ui/components/record/RecordRibbon";
 import { RecordSkeleton } from "@sincpro/web-ui/components/record/RecordSkeleton";
 import { SmartButton, SmartButtons } from "@sincpro/web-ui/components/record/SmartButtons";
 import { type Stage, StatusBar } from "@sincpro/web-ui/components/record/StatusBar";
@@ -98,7 +100,9 @@ type SlotName =
   | "facts"
   | "pages"
   | "page"
-  | "notice";
+  | "notice"
+  | "ribbon"
+  | "audit";
 
 const pick = (nodes: readonly ReactNode[], name: SlotName) => pickSlot(nodes, name);
 
@@ -200,6 +204,9 @@ type PaperProps = {
    *  valor, que es la forma de Odoo. */
   layout?: SheetLayout;
   columns?: 1 | 2 | 3 | 4;
+  /** `reading` (default): the sheet stops at a reading width, centred, with the rail lined
+   *  up to it. `full`: the whole page, for a record whose body is mostly a wide table. */
+  width?: "reading" | "full";
   children?: ReactNode;
 };
 type FactsProps = { fields: readonly SheetField[] };
@@ -240,6 +247,19 @@ type PageProps = {
  *  notice that was already true when the record opened interrupts nothing (`Callout`
  *  is `role="status"`). */
 const NoticeSlot = slot("notice", (_props: RecordNoticeSpec): ReactNode => null);
+
+/** What the record IS now, across the paper's corner: «PAGADA», «ARCHIVADA». A word with its
+ *  tone, written as a child of `Record` or `Record.Paper`; see `RecordRibbon`. */
+const RibbonSlot = slot(
+  "ribbon",
+  (_props: { label: string; tone?: Tone }): ReactNode => null,
+);
+
+/** Who created the record and who changed it last, on the paper's last line. */
+const AuditSlot = slot(
+  "audit",
+  (_props: { created?: RecordStamp; updated?: RecordStamp }): ReactNode => null,
+);
 
 /** El papel: el registro. El `<sheet>` blanco sobre el piso. */
 const Paper = slot("paper", (_props: PaperProps): ReactNode => null);
@@ -345,6 +365,10 @@ export function Record({ identity, error = null, dirty, children }: RecordProps)
   const paper = propsOf<PaperProps>(paperNode);
   const inPaper = [...flatten(paper?.children), ...loose];
   const fields = propsOf<FactsProps>(pick(inPaper, "facts"))?.fields;
+  const ribbon = propsOf<{ label: string; tone?: Tone }>(pick(inPaper, "ribbon"));
+  const audit = propsOf<{ created?: RecordStamp; updated?: RecordStamp }>(
+    pick(inPaper, "audit"),
+  );
   /* Written at the top of the record or inside the paper: both are «on the record». */
   const notices = pickAll(inPaper, "notice")
     .map((node) => propsOf<RecordNoticeSpec>(node))
@@ -428,6 +452,17 @@ export function Record({ identity, error = null, dirty, children }: RecordProps)
       <article className="flex min-w-0 flex-1 flex-col">
         <RecordHeader
           railSurface={surface}
+          {...(ribbon === undefined
+            ? {}
+            : {
+                ribbon: (
+                  <RecordRibbon
+                    label={ribbon.label}
+                    {...(ribbon.tone === undefined ? {} : { tone: ribbon.tone })}
+                  />
+                ),
+              })}
+          {...(paper?.width === undefined ? {} : { width: paper.width })}
           {...(dirty === undefined ? {} : { dirty })}
           {...(crumbs === undefined ? {} : { crumbs })}
           {...(pager === undefined
@@ -555,6 +590,7 @@ export function Record({ identity, error = null, dirty, children }: RecordProps)
                 {below}
               </Sheet>
             </div>
+            {audit === undefined ? null : <RecordAudit {...audit} />}
           </div>
         </RecordHeader>
       </article>
@@ -575,3 +611,5 @@ Record.Facts = Facts;
 Record.Pages = Pages;
 Record.Page = Page;
 Record.Notice = NoticeSlot;
+Record.Ribbon = RibbonSlot;
+Record.Audit = AuditSlot;

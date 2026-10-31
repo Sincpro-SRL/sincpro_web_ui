@@ -8,10 +8,11 @@ import {
   type SearchCriteria,
 } from "@sincpro/web-ui/components/search/criteria";
 import { JoinWord } from "@sincpro/web-ui/components/search/JoinWord";
-import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
-import { ChevronRight, Layers, ListFilter, X } from "lucide-react";
+import { ChevronRight, Layers, X } from "lucide-react";
+import { Fragment, type ReactNode, useState } from "react";
 
 /* ==================================================================== *
  *  LO PUESTO, DIBUJADO EN LA BARRA.
@@ -49,6 +50,8 @@ export type CriteriaChipsProps = {
   onJoin?: (path: CriteriaPath, join: CriteriaJoin) => void;
   /** Sacar una instancia, o una rama entera. */
   onRemove?: (path: CriteriaPath) => void;
+  /** Sacar varias de una vez: the × of the grouping chain drops every level. */
+  onRemoveMany?: (paths: readonly CriteriaPath[]) => void;
   /**
    * Cuál nodo está ABIERTO: dónde va a caer lo próximo que se escriba.
    *
@@ -57,6 +60,9 @@ export type CriteriaChipsProps = {
    * único que sabía dónde era el que la escribió.
    */
   open?: CriteriaPath;
+  /** How many facets show before the rest fold into «+N» (the grouping chain counts as one).
+   *  Below `@md` of the bar only the first one shows. `Infinity` never folds. */
+  collapseAfter?: number;
   surface?: Surface;
 };
 
@@ -65,11 +71,14 @@ export function CriteriaChips({
   onOpen,
   onJoin,
   onRemove,
+  onRemoveMany,
   open,
+  collapseAfter = 4,
   surface,
 }: CriteriaChipsProps) {
   const sup = useSurface(surface);
   const copy = useUiCopy();
+  const [expanded, setExpanded] = useState(false);
   const groups = groupsOf(criteria);
   const filters = filtersOf(criteria);
   /* La ruta se cuenta sobre la lista ENTERA y no sobre la mitad dibujada: es la
@@ -79,48 +88,213 @@ export function CriteriaChips({
     criteria.findIndex((each) => each.id === one.id),
   ];
 
-  return (
-    <>
-      {groups.length === 0 ? null : (
-        <Zone lead={copy.search.groupedBy} icon={Layers} surface={sup}>
-          {groups.map((one, at) => (
-            <span key={one.id} className="flex min-w-0 items-center gap-1">
-              {at === 0 ? null : (
-                <ChevronRight
-                  className="size-3 shrink-0 text-muted"
-                  strokeWidth={2}
-                  aria-hidden
-                />
-              )}
-              <Chip
-                label={one.label}
-                path={pathOf(one)}
+  const facets: { key: string; label: string; node: ReactNode }[] = [
+    ...(groups.length === 0
+      ? []
+      : [
+          {
+            key: "grouping",
+            label: `${copy.search.groupedBy} ${groups.map((one) => one.label).join(" › ")}`,
+            node: (
+              <GroupChain
+                groups={groups.map((one) => ({ label: one.label, path: pathOf(one) }))}
                 {...(onOpen === undefined ? {} : { onOpen })}
-                {...(onRemove === undefined ? {} : { onRemove })}
+                {...(onRemoveMany === undefined ? {} : { onRemoveMany })}
                 surface={sup}
               />
-            </span>
-          ))}
-        </Zone>
-      )}
+            ),
+          },
+        ]),
+    ...filters.map((one) => ({
+      key: one.id,
+      label: labelOf(one, copy.search.joins),
+      node: (
+        <Node
+          node={one}
+          path={pathOf(one)}
+          {...(onOpen === undefined ? {} : { onOpen })}
+          {...(onJoin === undefined ? {} : { onJoin })}
+          {...(onRemove === undefined ? {} : { onRemove })}
+          {...(open === undefined ? {} : { open })}
+          surface={sup}
+        />
+      ),
+    })),
+  ];
 
+  /* Folding hides, it does not remove: the open node is where the next one lands, so while
+     there is one everything shows. */
+  const unfolded = expanded || open !== undefined || !Number.isFinite(collapseAfter);
+  const beyondWide = Math.max(0, facets.length - collapseAfter);
+  const beyondNarrow = Math.max(0, facets.length - 1);
+  const more = (count: number, hidden: string, className: string) => (
+    <button
+      type="button"
+      onClick={() => setExpanded(true)}
+      title={hidden}
+      aria-label={`${fillCopy(copy.search.moreFacets, { count })}: ${hidden}`}
+      className={`${className} shrink-0 items-center rounded-pill border px-2 py-0.5 text-micro font-medium tabular-nums transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${bySurface(
+        sup,
+        "border-line-strong text-muted hover:bg-ink/5 hover:text-ink",
+        "border-chrome-ink/30 text-chrome-muted hover:bg-chrome-ink/10 hover:text-chrome-ink",
+      )}`}
+    >
+      {fillCopy(copy.search.moreFacets, { count })}
+    </button>
+  );
+  const hiddenFrom = (from: number) =>
+    facets
+      .slice(from)
+      .map((one) => one.label)
+      .join(" · ");
+
+  const drawn = (facet: (typeof facets)[number], index: number) => (
+    <span
+      key={facet.key}
+      className={`min-w-0 max-w-full ${
+        unfolded
+          ? "inline-flex"
+          : index >= collapseAfter
+            ? "hidden"
+            : index >= 1
+              ? "inline-flex @max-md/bar:hidden"
+              : "inline-flex"
+      }`}
+    >
+      {facet.node}
+    </span>
+  );
+  const offset = groups.length === 0 ? 0 : 1;
+
+  return (
+    <>
+      {offset === 0 ? null : drawn(facets[0]!, 0)}
+      {/* The lead word is no longer drawn — the chain has its icon, the filters are the rest —
+          but a screen reader still hears what the chips are. `contents`, so they keep wrapping
+          in the bar's line. */}
       {filters.length === 0 ? null : (
-        <Zone lead={copy.search.narrowedBy} icon={ListFilter} surface={sup}>
-          {filters.map((one) => (
-            <Node
-              key={one.id}
-              node={one}
-              path={pathOf(one)}
-              {...(onOpen === undefined ? {} : { onOpen })}
-              {...(onJoin === undefined ? {} : { onJoin })}
-              {...(onRemove === undefined ? {} : { onRemove })}
-              {...(open === undefined ? {} : { open })}
-              surface={sup}
-            />
-          ))}
-        </Zone>
+        <span role="group" aria-label={copy.search.narrowedBy} className="contents">
+          {facets.slice(offset).map((facet, at) => drawn(facet, at + offset))}
+        </span>
+      )}
+      {unfolded ? (
+        expanded && facets.length > 1 ? (
+          <button
+            type="button"
+            onClick={() => setExpanded(false)}
+            className={`shrink-0 rounded-control px-1 text-micro underline decoration-dotted underline-offset-4 transition-colors focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${bySurface(
+              sup,
+              "text-muted hover:text-ink",
+              "text-chrome-muted hover:text-chrome-ink",
+            )}`}
+          >
+            {copy.search.fewerFacets}
+          </button>
+        ) : null
+      ) : (
+        <>
+          {beyondWide === 0
+            ? null
+            : more(beyondWide, hiddenFrom(collapseAfter), "inline-flex @max-md/bar:hidden")}
+          {beyondNarrow === 0
+            ? null
+            : more(beyondNarrow, hiddenFrom(1), "hidden @max-md/bar:inline-flex")}
+        </>
       )}
     </>
+  );
+}
+
+/** How a facet reads when it is folded away: in the «+N» title and for a screen reader. */
+function labelOf(
+  node: SearchCriteria,
+  joins: { all: string; any: string; none: string },
+): string {
+  if (node.kind !== "join") return node.label;
+  const word = joins[node.join === "not" ? "none" : node.join];
+  return `${word} (${node.of.map((child) => labelOf(child, joins)).join(", ")})`;
+}
+
+/**
+ * THE GROUPING, as ONE chip: «⧉ vendedor › trimestre › mes ×».
+ *
+ * Context: N chips with N crosses read as N filters, and the levels are not N things — they
+ * are one shape, nested in order. Neutral and not gold: the grouping changes how the rows
+ * are laid out, not which rows there are, and it must not read as one more filter. Each level
+ * still opens the builder on itself; the × drops the whole chain.
+ */
+function GroupChain({
+  groups,
+  onOpen,
+  onRemoveMany,
+  surface,
+}: {
+  groups: readonly { label: string; path: CriteriaPath }[];
+  onOpen?: (path: CriteriaPath) => void;
+  onRemoveMany?: (paths: readonly CriteriaPath[]) => void;
+  surface: Surface;
+}) {
+  const copy = useUiCopy();
+  const chain = groups.map((one) => one.label).join(" › ");
+  return (
+    <span
+      role="group"
+      aria-label={`${copy.search.groupedBy} ${chain}`}
+      title={`${copy.search.groupedBy} ${chain}`}
+      className={`inline-flex min-w-0 max-w-(--container-chain) items-center gap-1 rounded-pill border py-0.5 pl-1.5 text-micro ${bySurface(
+        surface,
+        "border-line-strong bg-surface text-ink",
+        "border-chrome-ink/30 bg-chrome-ink/8 text-chrome-ink",
+      )} ${onRemoveMany === undefined ? "pr-2" : "pr-0.5"}`}
+    >
+      <Layers
+        className={`size-3 shrink-0 ${bySurface(surface, "text-muted", "text-chrome-muted")}`}
+        strokeWidth={2}
+        aria-hidden
+      />
+      {/* Inline, not flex: the chain truncates at its END as one sentence. As flex items each
+          level shrank on its own and a narrow bar read «v… › Fech… › Fech…». */}
+      <span className="min-w-0 truncate">
+        {groups.map((one, at) => (
+          <Fragment key={one.path.join(".")}>
+            {at === 0 ? null : (
+              <ChevronRight
+                className={`mx-0.5 inline size-3 align-middle ${bySurface(surface, "text-muted", "text-chrome-muted")}`}
+                strokeWidth={2}
+                aria-hidden
+              />
+            )}
+            {onOpen === undefined ? (
+              <span>{one.label}</span>
+            ) : (
+              <button
+                type="button"
+                onClick={() => onOpen(one.path)}
+                title={copy.search.openBuilderHere}
+                className="inline rounded-control hover:underline hover:underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+              >
+                {one.label}
+              </button>
+            )}
+          </Fragment>
+        ))}
+      </span>
+      {onRemoveMany === undefined ? null : (
+        <button
+          type="button"
+          onClick={() => onRemoveMany(groups.map((one) => one.path))}
+          aria-label={copy.search.removeGrouping}
+          title={copy.search.removeGrouping}
+          className={`inline-flex size-4 shrink-0 items-center justify-center rounded-pill transition-colors duration-(--duration-instant) ${bySurface(
+            surface,
+            "hover:bg-ink/10",
+            "hover:bg-chrome-ink/20",
+          )}`}
+        >
+          <X className="size-3" strokeWidth={2.5} />
+        </button>
+      )}
+    </span>
   );
 }
 
@@ -201,36 +375,6 @@ function Node({
   );
 }
 
-/** El contexto, con su palabra adelante. Sin la palabra, las fichas no dicen de
- *  qué son. No lleva caja: una caja adentro del campo las separa de él. */
-function Zone({
-  lead,
-  icon: Icon,
-  surface,
-  children,
-}: {
-  lead: string;
-  icon: typeof Layers;
-  surface: Surface;
-  children: React.ReactNode;
-}) {
-  return (
-    <span className="inline-flex min-w-0 shrink items-center gap-1">
-      <Icon
-        className={`size-3 shrink-0 ${bySurface(surface, "text-muted", "text-chrome-muted")}`}
-        strokeWidth={2}
-        aria-hidden
-      />
-      <span
-        className={`shrink-0 text-micro ${bySurface(surface, "text-muted", "text-chrome-muted")}`}
-      >
-        {lead}
-      </span>
-      <span className="flex min-w-0 flex-wrap items-center gap-1">{children}</span>
-    </span>
-  );
-}
-
 function Chip({
   label,
   path,
@@ -245,7 +389,7 @@ function Chip({
   surface: Surface;
 }) {
   const copy = useUiCopy();
-  const shell = `inline-flex min-w-0 shrink-0 items-center gap-1 rounded-pill border py-0.5 text-micro ${bySurface(
+  const shell = `inline-flex min-w-0 max-w-(--container-facet) items-center gap-1 rounded-pill border py-0.5 text-micro ${bySurface(
     surface,
     "border-accent/40 bg-accent/18 text-ink",
     "border-chrome-link/35 bg-chrome-link/18 text-chrome-link",

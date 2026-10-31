@@ -249,6 +249,78 @@ export const Angosta: Story = {
   },
 };
 
+/** The search Odoo users end up with: four grouping levels and four filters, one of them an
+ *  «any». The grouping reads as ONE chain, each chip stops at its width, and past the fourth
+ *  facet the rest fold into «+N» until somebody asks to see them. */
+function muchos(): SearchCriteria[] {
+  return [
+    ...withLevels(
+      [],
+      [
+        { field: "salesperson" },
+        { field: "invoice_date", grain: "quarter" },
+        { field: "invoice_date", grain: "month" },
+        { field: "invoice_date", grain: "week" },
+      ],
+      nombreDelNivel,
+    ),
+    filterCriteria({ field: "move_type", operator: "=", value: "out_invoice" }, "Facturas"),
+    {
+      id: "estado",
+      kind: "join",
+      join: "any",
+      of: [
+        filterCriteria(ESTADO("publicada"), "Publicado"),
+        filterCriteria(ESTADO("cancelada"), "Cancelado"),
+      ],
+    },
+    filterCriteria({ field: "protected", operator: "=", value: false }, "No protegido"),
+    filterCriteria(
+      { field: "sin_state", operator: "in", value: ["sent", "unsent"] },
+      "Facturado (SIN) o Facturado (SIN) — no enviado",
+    ),
+    filterCriteria(
+      { field: "customer_name", operator: "like", value: "importadora" },
+      "cliente contiene Importadora y Exportadora del Oriente Boliviano",
+    ),
+  ];
+}
+
+export const MuchosRecortes: Story = {
+  args: { facets: FACETAS, criteria: [], onCriteriaChange: () => {} },
+  render: () => {
+    const [ancho, setAncho] = useState<SearchCriteria[]>(muchos);
+    const [angosto, setAngosto] = useState<SearchCriteria[]>(muchos);
+    const nivelesAncho = useGroupingControl();
+    const nivelesAngosto = useGroupingControl();
+    return (
+      <div className="flex flex-col gap-6">
+        <Caja>
+          <SearchBar
+            facets={FACETAS}
+            criteria={ancho}
+            onCriteriaChange={setAncho}
+            filters={FILTROS}
+            grouping={<GroupingLevels fields={AGRUPABLES} control={nivelesAncho} />}
+            onOpenBuilder={() => {}}
+          />
+        </Caja>
+        <div style={{ width: 380 }}>
+          <Caja>
+            <SearchBar
+              facets={FACETAS}
+              criteria={angosto}
+              onCriteriaChange={setAngosto}
+              filters={FILTROS}
+              grouping={<GroupingLevels fields={AGRUPABLES} control={nivelesAngosto} />}
+            />
+          </Caja>
+        </div>
+      </div>
+    );
+  },
+};
+
 /* ================================================================== *
  *  CON EL MODELO PUESTO: la barra deja de buscar texto y PREGUNTA.
  * ================================================================== */

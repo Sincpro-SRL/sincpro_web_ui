@@ -68,6 +68,10 @@ export function Table({
   );
 }
 
+/** The text of a column header, shared by every table of the family. Ink and semibold, not
+ *  muted: in grey at the cells' weight the names of the columns read as one more row. */
+export const HEADER_TEXT = "text-meta font-semibold whitespace-nowrap text-ink";
+
 export function THead({ children }: { children: ReactNode }) {
   return (
     /* Se pega DEBAJO de lo que ya esté pegado —la barra de la aplicación y la
@@ -128,7 +132,7 @@ export function Th({
       scope="col"
       style={width === undefined ? undefined : { width }}
       aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
-      className={`border-b border-line-strong px-3 py-2 text-meta font-medium whitespace-nowrap text-muted ${
+      className={`border-b border-line-strong px-3 py-2 ${HEADER_TEXT} ${
         (align ?? (numeric ? "right" : "left")) === "right" ? "text-right" : "text-left"
       }`}
     >
@@ -157,13 +161,15 @@ export function Th({
 /** The wash of a row lives on the cells, not on the `<tr>`. A background on the
  *  row paints edge to edge; on the cells the ends can round and the table's
  *  padding keeps the mark off the card. */
-const RowMark = createContext(false);
+const RowMark = createContext({ selected: false, interactive: false });
 
 const ROW_WASH = "group-hover/row:bg-ink/4";
 const ROW_ON = "bg-primary/8";
 
-function rowWash(selected: boolean): string {
-  return selected ? ROW_ON : ROW_WASH;
+/* The hover wash only where a click does something: on a read-only row it promised a click
+   that did nothing. */
+function rowWash({ selected, interactive }: { selected: boolean; interactive: boolean }) {
+  return selected ? ROW_ON : interactive ? ROW_WASH : "";
 }
 
 export function Tr({
@@ -176,7 +182,7 @@ export function Tr({
   selected?: boolean;
 }) {
   return (
-    <RowMark.Provider value={selected}>
+    <RowMark.Provider value={{ selected, interactive: onClick !== undefined }}>
       <tr
         onClick={onClick}
         className={`group/row ${onClick === undefined ? "" : "cursor-pointer"}`}
@@ -220,11 +226,11 @@ export function TrDetail({
 }) {
   const id = useId();
   return (
-    <RowMark.Provider value={selected}>
+    <RowMark.Provider value={{ selected, interactive: true }}>
       <>
         <tr onClick={onToggle} className="group/row cursor-pointer">
           <td
-            className={`border-b border-line py-1.5 pr-0 pl-2.5 align-middle first:rounded-l-control ${rowWash(selected)}`}
+            className={`border-b border-line py-1.5 pr-0 pl-2.5 align-middle first:rounded-l-control ${rowWash({ selected, interactive: true })}`}
           >
             <button
               type="button"
@@ -273,6 +279,11 @@ export const CELL_TONE: Record<Tone, string> = {
   accent: "bg-accent/20",
 };
 
+/** The wash of the row a cell sits in: for cells drawn outside `Td`, like the row's actions. */
+export function useRowWash(): string {
+  return rowWash(useContext(RowMark));
+}
+
 export function Td({
   children,
   numeric = false,
@@ -300,14 +311,14 @@ export function Td({
   /** Why it is painted. A colored cell with no explanation is a question. */
   title?: string;
 }) {
-  const selected = useContext(RowMark);
+  const mark = useContext(RowMark);
   return (
     <td
       title={title}
       className={`border-b border-line px-3 py-1.5 text-meta text-ink first:rounded-l-control last:rounded-r-control ${
         (align ?? (numeric ? "right" : "left")) === "right" ? "text-right" : "text-left"
       } ${mono ? "font-mono tabular-nums" : numeric ? "tabular-nums" : ""} ${
-        tone === undefined ? rowWash(selected) : CELL_TONE[tone]
+        tone === undefined ? rowWash(mark) : CELL_TONE[tone]
       }`}
     >
       {children}

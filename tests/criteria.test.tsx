@@ -153,7 +153,36 @@ test("el nodo dice cómo junta lo que tiene adentro", () => {
 /* Todo se toca y todo abre lo mismo: los dos niveles y los dos filtros. */
 test("cada instancia es una puerta al constructor", () => {
   const out = draw(<CriteriaChips criteria={PUESTO} onOpen={() => {}} />);
-  assert.equal(out.split('role="button"').length - 1, 4);
+  assert.equal(out.split('title="Open this condition in the builder"').length - 1, 4);
+});
+
+/* The levels are one shape, not N filters: one chip, one ×, neutral and not gold. */
+test("el agrupado es UNA ficha, con una sola × para todos sus niveles", () => {
+  const out = draw(
+    <CriteriaChips criteria={PUESTO} onRemove={() => {}} onRemoveMany={() => {}} />,
+  );
+  assert.equal(out.split('aria-label="Stop grouping"').length - 1, 1);
+  assert.ok(!out.includes("Stop grouping by"), "no level carries its own ×");
+  assert.equal(out.split('role="group" aria-label="grouped by').length - 1, 1);
+});
+
+test("pasado el tope, lo demás se pliega en «+N» y lo nombra", () => {
+  const seis = Array.from({ length: 6 }, (_, n) =>
+    filterCriteria({ field: "n", operator: "=", value: n }, `filtro ${n}`),
+  );
+  const out = draw(<CriteriaChips criteria={seis} collapseAfter={4} />);
+  /* Wide: 4 show and «+2» names the two folded; narrow: 1 shows and «+5». */
+  assert.ok(out.includes(">+2<"));
+  assert.ok(out.includes(">+5<"));
+  assert.ok(out.includes('title="filtro 4 · filtro 5"'));
+});
+
+test("con `Infinity` no se pliega nada", () => {
+  const seis = Array.from({ length: 6 }, (_, n) =>
+    filterCriteria({ field: "n", operator: "=", value: n }, `filtro ${n}`),
+  );
+  const out = draw(<CriteriaChips criteria={seis} collapseAfter={Infinity} />);
+  assert.ok(!out.includes(">+"));
 });
 
 /* El constructor edita lo que VIAJA. Una ficha sin expresión se ve y se saca

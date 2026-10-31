@@ -1,3 +1,4 @@
+import type { BoardStages } from "@sincpro/web-ui/components/listing/BoardColumns";
 import type { ListIdentity } from "@sincpro/web-ui/components/listing/ListingBar";
 import type { SortField } from "@sincpro/web-ui/components/listing/SortMenu";
 import {
@@ -189,7 +190,11 @@ type TableProps<T extends object> = {
 /** El tablero. Sin `card`, la tarjeta sale de lo que ya dice `List.Rows`: el
  *  nombre, el `meta` y las fichas. Escribirla igual es declarar que ESTA lista
  *  se puede ver como tablero. */
-type BoardProps<T> = { card?: (item: T) => ReactNode };
+type BoardProps<T> = {
+  card?: (item: T) => ReactNode;
+  /** One column per stage, with drag (and Alt + ← / →) to move a card between them. */
+  stages?: BoardStages<T>;
+};
 
 /** La planilla. Sin columnas propias, sale de las que declaró `List.Table` — la
  *  de datos CRUDOS sí las trae, porque ahí salen del archivo y el código no sabe
@@ -259,6 +264,8 @@ export type ListProps<T extends object> = {
     count: number;
     clear: () => void;
     actions?: ReactNode;
+    /** Every record that matches, not just the page — see `ListViewProps`. */
+    matching?: { total: number; onSelect: () => void };
   };
 
   /** El orden, que también es del conjunto. */
@@ -275,6 +282,14 @@ export type ListProps<T extends object> = {
   onOpen?: (item: T) => void;
   onPeek?: (item: T) => void;
   isPeeked?: (item: T) => boolean;
+  /** What a press on the row's body does when both ways in exist. `peek` (the default) looks
+   *  without leaving the list; `open` goes to the record — a workspace whose rule is «a row
+   *  opens the page» (the composer's) says `open`, and 👁 stays for the look. */
+  rowClick?: "peek" | "open";
+  /** Nothing in it can be acted on: no opening, peeking, selecting, creating nor row
+   *  actions — a list to read, like the lines of a record in view mode. One switch, so whoever
+   *  passes the handlers generically does not have to strip them one by one. */
+  readOnly?: boolean;
 
   /** Los tres estados, en un solo lugar. */
   state?: { loading?: boolean; error?: string | null };
@@ -292,21 +307,26 @@ export function List<T extends object>({
   embedded,
   surface,
   group,
-  selection,
+  selection: selectWith,
   sort,
   onSortChange,
   sortable,
   present,
   onPresentChange,
-  onOpen,
-  onPeek,
+  onOpen: openWith,
+  onPeek: peekWith,
   isPeeked,
+  readOnly = false,
+  rowClick,
   state,
   filtered,
   empty,
   children,
 }: ListProps<T>) {
   const top = flatten(children);
+  const onOpen = readOnly ? undefined : openWith;
+  const onPeek = readOnly ? undefined : peekWith;
+  const selection = readOnly ? undefined : selectWith;
 
   const bar = flatten(propsOf<BarProps>(pick(top, "bar"))?.children);
   const crumbs = propsOf<CrumbsProps>(pick(bar, "crumbs"))?.crumbs;
@@ -340,7 +360,16 @@ export function List<T extends object>({
     <ListView<T>
       items={items}
       keyOf={keyOf}
-      row={rows?.row ?? (() => ({ name: "" }))}
+      row={
+        rows === undefined
+          ? () => ({ name: "" })
+          : readOnly
+            ? (item: T) => {
+                const { actions: _actions, ...rest } = rows.row(item);
+                return rest;
+              }
+            : rows.row
+      }
       {...(rows?.header === undefined ? {} : { rowHeader: rows.header })}
       {...(identity === undefined ? {} : { identity })}
       {...(crumbs === undefined ? {} : { crumbs })}
@@ -354,10 +383,15 @@ export function List<T extends object>({
       {...(table === undefined
         ? {}
         : {
-            columns: table.columns,
+            /* Read-only: a cell that opens an editor is an action too. */
+            columns: readOnly
+              ? table.columns.map(({ edit: _edit, ...c }) => c)
+              : table.columns,
             ...(table.totals === undefined ? {} : { totals: table.totals }),
-            ...(table.rowActions === undefined ? {} : { rowActions: table.rowActions }),
-            ...(table.create === undefined ? {} : { create: table.create }),
+            ...(table.rowActions === undefined || readOnly
+              ? {}
+              : { rowActions: table.rowActions }),
+            ...(table.create === undefined || readOnly ? {} : { create: table.create }),
             ...(table.visibleColumnIds === undefined
               ? {}
               : { visibleColumnIds: table.visibleColumnIds }),
@@ -366,6 +400,7 @@ export function List<T extends object>({
               : { onVisibleColumnIdsChange: table.onVisibleColumnIdsChange }),
           })}
       {...(board?.card === undefined ? {} : { card: board.card })}
+      {...(board?.stages === undefined ? {} : { boardStages: board.stages })}
       {...(sheet?.columns === undefined || sheet.cell === undefined
         ? {}
         : { sheet: sheet as ListSheet<T> })}
@@ -382,6 +417,7 @@ export function List<T extends object>({
       {...(onOpen === undefined ? {} : { onOpen })}
       {...(onPeek === undefined ? {} : { onPeek })}
       {...(isPeeked === undefined ? {} : { isPeeked })}
+      {...(rowClick === undefined ? {} : { rowClick })}
       {...(state === undefined ? {} : { state })}
       {...(filtered === undefined ? {} : { filtered })}
       {...(empty === undefined ? {} : { empty })}

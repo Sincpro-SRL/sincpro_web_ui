@@ -97,7 +97,13 @@ export function ListingBar({
    *  are; these say what they are made of, which is another question. */
   counters?: readonly { label: string; value: number | string }[];
   /** When there are selected rows. It replaces the identity, in the same place. */
-  selection?: { count: number; onClear?: () => void; actions?: ReactNode };
+  selection?: {
+    count: number;
+    onClear?: () => void;
+    actions?: ReactNode;
+    /** More match than are chosen: offer to choose them all. */
+    matching?: { total: number; onSelect: () => void };
+  };
   search?: ReactNode;
   pagination?: ReactNode;
   /** Columns menu and presentation switcher. They sit on the actions row, on
@@ -158,6 +164,22 @@ export function ListingBar({
           <X className="size-3" strokeWidth={2.5} />
         </button>
       </span>
+      {/* Ticking the header box chose THIS page; the bulk action may be meant for all that
+          match. Said with the number, Gmail's way, and only while it is not already so. */}
+      {selection?.matching === undefined ||
+      selection.matching.total <= selection.count ? null : (
+        <button
+          type="button"
+          onClick={selection.matching.onSelect}
+          className={`shrink-0 rounded-control px-1 text-meta font-medium underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${
+            isChrome ? "text-chrome-link" : "text-primary"
+          }`}
+        >
+          {fillCopy(copy.selection.allMatching, {
+            count: selection.matching.total.toLocaleString(copy.locale),
+          })}
+        </button>
+      )}
       {/* The bulk actions do NOT exist outside the selection: they appear here,
           in the center, and they go away when it gets deselected. */}
       {selection?.actions === undefined ? null : (
@@ -186,6 +208,14 @@ export function ListingBar({
         <div
           className={`flex min-w-0 flex-wrap items-center gap-y-1.5 ${byDensity(d, "gap-x-3", "gap-x-2")}`}
         >
+          {/* Its name, when it has one to say: inside a tab the tab names it and nothing is
+              written; standing alone among the record's sections it needs one, at the level of
+              a group title — a heading of the record, not of a screen. */}
+          {title === undefined ? null : (
+            <h3 className="min-w-0 shrink-0 truncate text-body font-semibold text-ink">
+              {title}
+            </h3>
+          )}
           {/* `basis` is what the search asks for before the line breaks; `flex-1` is what
               makes it fill once it has its line. `overflow-x-clip` for the reason given
               on the two-row bar below: the filter panel hangs out of this box. */}

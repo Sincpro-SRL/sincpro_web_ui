@@ -491,6 +491,17 @@
      earlier. */
   --container-name: 12rem;
 
+  /* The widest a chip of the search bar gets before it truncates. A filter written by hand
+     («cliente contiene Importadora y Exportadora…») would otherwise take a whole line of the
+     bar and push the rest down; the full text stays in the chip's title. */
+  /* One stage of a board by stages: a card with its name, a tag and a figure, without
+     wrapping the name into three lines. Five stages fit a desk; more scroll sideways. */
+  --container-lane: 18rem;
+  --container-facet: 16rem;
+  /* The grouping chain is several levels in one chip, so it asks for more before it
+     truncates — at its end, as one sentence, never level by level. */
+  --container-chain: 28rem;
+
   /* The minimum width of a metric. It belongs to the system and not to the
      component: three metrics of different widths read as three different
      things, and what they have to let you compare is precisely the number. */

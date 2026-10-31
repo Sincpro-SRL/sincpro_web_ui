@@ -15,8 +15,10 @@ import { stickyTop, useScrollBox } from "@sincpro/web-ui/foundations/sticky";
 import { IconButton } from "@sincpro/web-ui/primitives/button/Button";
 import { NoteCard } from "@sincpro/web-ui/primitives/field/note";
 import { Flag, type FlagProps } from "@sincpro/web-ui/primitives/notice/Flag";
-import { Plus, Trash2 } from "lucide-react";
+import { HEADER_TEXT } from "@sincpro/web-ui/primitives/table/Table";
+import { GripVertical, Plus, Trash2 } from "lucide-react";
 import {
+  type DragEvent,
   Fragment,
   type HTMLAttributes,
   type ReactNode,
@@ -530,6 +532,7 @@ export function EditableTable<T>({
   bands,
   adds,
   flag,
+  onReorder,
 }: {
   rows: readonly T[];
   columns: readonly EditColumn<T>[];
@@ -582,6 +585,11 @@ export function EditableTable<T>({
   flag?: (
     row: T,
   ) => (Omit<FlagProps, "children"> & { detail?: ReactNode; owner?: string }) | null;
+  /** The rows have an order of their own — the lines of an order, Odoo's `sequence` — and it
+   *  is changed by dragging the grip at the start of a row, or with Alt + ↑ / ↓ on it. `before`
+   *  is the row it lands in front of; `null`, the end. Off while grouped (the piles decide the
+   *  order) and in the stacked layout. */
+  onReorder?: (id: string, before: string | null) => void;
 }) {
   const copy = useUiCopy();
   const bandOf = (row: T) => bands?.kind(row) ?? null;
@@ -698,6 +706,64 @@ export function EditableTable<T>({
     entry.row === undefined ? [] : [getRowId(entry.row)],
   );
   const stop = active !== null && order.includes(active) ? active : (order[0] ?? null);
+
+  /* REORDER — a grip at the start of each row. Dragged, the row shows where it would land (a
+     line over the row it goes in front of); Alt + ↑ / ↓ on the grip does the same by keyboard. */
+  const reorderable = onReorder !== undefined && grouping === undefined && !stacked;
+  /* A ref and not state: `dragover` can arrive before React re-renders after `dragstart`. */
+  const dragged = useRef<string | null>(null);
+  const [landing, setLanding] = useState<string | null | undefined>(undefined);
+  const after = (id: string) => order[order.indexOf(id) + 1] ?? null;
+  const land = (id: string, before: string | null) => {
+    if (before === id || before === after(id)) return;
+    onReorder?.(id, before);
+  };
+  const overRow = (event: DragEvent<HTMLElement>) => {
+    if (dragged.current === null) return;
+    const tr = (event.target as HTMLElement).closest<HTMLElement>("tr[data-row-id]");
+    if (tr === null) return;
+    event.preventDefault();
+    const id = tr.dataset["rowId"] ?? "";
+    const box = tr.getBoundingClientRect();
+    setLanding(event.clientY < box.top + box.height / 2 ? id : after(id));
+  };
+  const lineOver = (id: string) => (landing === id ? "border-t-2 border-t-primary" : "");
+  const grip = (id: string, mark: string) => (
+    <td className={`w-0 py-1 pr-0 pl-1 align-middle ${mark} ${lineOver(id)}`}>
+      <button
+        type="button"
+        draggable
+        aria-label={copy.editable.reorder}
+        title={copy.editable.reorderHint}
+        aria-keyshortcuts="Alt+ArrowUp Alt+ArrowDown"
+        {...(editable && stop !== id ? { tabIndex: -1 } : {})}
+        onClick={(event) => event.stopPropagation()}
+        onKeyDown={(event) => {
+          if (!event.altKey || (event.key !== "ArrowUp" && event.key !== "ArrowDown")) return;
+          event.preventDefault();
+          event.stopPropagation();
+          const at = order.indexOf(id);
+          if (event.key === "ArrowUp" && at > 0) land(id, order[at - 1] ?? null);
+          if (event.key === "ArrowDown" && at < order.length - 1)
+            land(id, order[at + 2] ?? null);
+        }}
+        onDragStart={(event) => {
+          event.dataTransfer.setData("text/plain", id);
+          event.dataTransfer.effectAllowed = "move";
+          const tr = event.currentTarget.closest("tr");
+          if (tr !== null) event.dataTransfer.setDragImage(tr, 16, 16);
+          dragged.current = id;
+        }}
+        onDragEnd={() => {
+          dragged.current = null;
+          setLanding(undefined);
+        }}
+        className="flex cursor-grab items-center rounded-control p-0.5 text-muted opacity-40 transition-opacity duration-(--duration-instant) group-hover/row:opacity-100 hover:text-ink focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-primary active:cursor-grabbing"
+      >
+        <GripVertical aria-hidden className="size-(--size-icon-sm)" strokeWidth={2} />
+      </button>
+    </td>
+  );
 
   useEffect(() => {
     const target = focusOnOpen.current;
@@ -1077,12 +1143,13 @@ export function EditableTable<T>({
           <table className="w-full border-separate border-spacing-0 px-1 text-left">
             <thead className="sticky z-10 bg-ground" style={stickyTop}>
               <tr>
+                {reorderable ? <th className="w-0 border-b border-line-strong" /> : null}
                 {columns.map((c) => (
                   <th
                     key={c.id}
                     scope="col"
                     style={c.width === undefined ? undefined : { width: c.width }}
-                    className={`border-b border-line-strong text-meta font-medium whitespace-nowrap text-muted ${cell} ${
+                    className={`border-b border-line-strong ${HEADER_TEXT} ${cell} ${
                       c.numeric === true ? "text-right" : "text-left"
                     }`}
                   >
@@ -1095,11 +1162,28 @@ export function EditableTable<T>({
               </tr>
             </thead>
 
-            <tbody>
+            <tbody
+              {...(reorderable
+                ? {
+                    onDragOver: overRow,
+                    onDrop: (event: DragEvent<HTMLElement>) => {
+                      event.preventDefault();
+                      if (dragged.current !== null && landing !== undefined)
+                        land(dragged.current, landing);
+                      dragged.current = null;
+                      setLanding(undefined);
+                    },
+                  }
+                : {})}
+            >
               {rows.length === 0 ? (
                 <tr>
                   <td
-                    colSpan={columns.length + (onRemove === undefined ? 0 : 1)}
+                    colSpan={
+                      columns.length +
+                      (onRemove === undefined ? 0 : 1) +
+                      (reorderable ? 1 : 0)
+                    }
                     className={`text-meta text-muted italic ${cell}`}
                   >
                     {emptyText}
@@ -1117,6 +1201,7 @@ export function EditableTable<T>({
                        obliga a buscar de qué columna es; alineado no hay nada que
                        buscar. */
                       <tr key={`pile:${pathKey(pile.path)}`}>
+                        {reorderable ? <td className="w-0 bg-ground" /> : null}
                         {columns.map((c, ci) => (
                           <td
                             key={c.id}
@@ -1162,10 +1247,11 @@ export function EditableTable<T>({
                           editable && !isEditing ? "cursor-text" : ""
                         }`}
                       >
+                        {reorderable ? grip(id, bandMark) : null}
                         <td
                           colSpan={span}
                           {...(control ? { "data-edit": "" } : {})}
-                          className={`text-meta ${bandMark} ${cell} ${
+                          className={`text-meta ${bandMark} ${lineOver(id)} ${cell} ${
                             band === "section"
                               ? "font-semibold text-ink"
                               : "text-muted italic"
@@ -1221,18 +1307,21 @@ export function EditableTable<T>({
                         editable && !isEditing ? "cursor-text" : ""
                       }`}
                     >
+                      {reorderable ? grip(id, mark) : null}
                       {columns.map((c, ci) => {
                         const control = isEditing && c.edit !== undefined && editable;
-                        const mark = ci === 0 ? flagOf(row, true) : null;
+                        /* Not `mark`: that name is the row's border and wash, above. Shadowed,
+                           the cells were drawn with the class «null» — no hairline, no hover. */
+                        const flagged = ci === 0 ? flagOf(row, true) : null;
                         return (
                           <td
                             key={c.id}
                             {...(control ? { "data-edit": "" } : {})}
-                            className={`text-meta text-ink ${mark} ${cell} ${
+                            className={`text-meta text-ink ${mark} ${lineOver(id)} ${cell} ${
                               c.numeric === true ? "text-right tabular-nums" : ""
                             }`}
                           >
-                            {mark === null ? (
+                            {flagged === null ? (
                               control ? (
                                 c.edit?.(row, set)
                               ) : (
@@ -1240,7 +1329,7 @@ export function EditableTable<T>({
                               )
                             ) : (
                               <span className="flex min-w-0 items-start gap-1.5">
-                                {mark}
+                                {flagged}
                                 <span className="min-w-0 flex-1">
                                   {control ? c.edit?.(row, set) : c.render(row)}
                                 </span>
@@ -1281,6 +1370,7 @@ export function EditableTable<T>({
             {totals === undefined ? null : (
               <tfoot>
                 <tr>
+                  {reorderable ? <td className="border-t border-line-strong" /> : null}
                   {columns.map((c, i) => (
                     <td
                       key={c.id}
