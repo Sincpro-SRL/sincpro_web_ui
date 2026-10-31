@@ -5,10 +5,96 @@ import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { stickyTop } from "@sincpro/web-ui/foundations/sticky";
 import { Menu, type MenuGroup } from "@sincpro/web-ui/primitives/menu/Menu";
+import { HEADER_TEXT } from "@sincpro/web-ui/primitives/table/Table";
 import { CopyButton } from "@sincpro/web-ui/primitives/value/Copyable";
 import type { LucideIcon } from "lucide-react";
-import { ChevronRight, MoreHorizontal, SquareArrowOutUpRight } from "lucide-react";
+import { ChevronRight, Eye, MoreHorizontal, SquareArrowOutUpRight } from "lucide-react";
 import type { ReactNode } from "react";
+
+const ICON_BUTTON =
+  "inline-flex size-(--size-control-sm) items-center justify-center rounded-pill text-muted transition-colors duration-(--duration-instant) hover:bg-ink/6 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+
+/** The buttons at the end of a row. Its own piece so `RowHeader` can draw the same one,
+ *  invisible, and reserve exactly its width — a spacer of a guessed width drifted every time
+ *  a button was added. */
+function Trail({
+  name,
+  openAs,
+  actions,
+  copy: copyAs,
+  onPeek,
+  onOpen,
+  more,
+  onMoreSelect,
+}: {
+  name: string;
+  openAs: string;
+  actions?: ReactNode;
+  copy?: string | false;
+  onPeek?: () => void;
+  onOpen?: () => void;
+  more?: readonly MenuGroup[];
+  onMoreSelect?: (id: string) => void;
+}) {
+  const copy = useUiCopy();
+  return (
+    <>
+      {actions}
+      {copyAs === false ? null : (
+        <CopyButton
+          value={copyAs ?? name}
+          label={fillCopy(copy.copyable.field, { label: name })}
+        />
+      )}
+      {/* The two ways in, said with their icon: 👁 looks without leaving the list, ↗ goes to
+              the record. The row's body already peeks, but a click nobody announces is a
+              click nobody makes. */}
+      {onPeek === undefined ? null : (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onPeek();
+          }}
+          title={copy.list.peek}
+          aria-label={`${copy.list.peek}: ${name}`}
+          className={ICON_BUTTON}
+        >
+          <Eye className="size-(--size-icon-sm)" strokeWidth={2} />
+        </button>
+      )}
+      {onOpen === undefined ? null : (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onOpen();
+          }}
+          title={openAs}
+          aria-label={`${openAs}: ${name}`}
+          className={ICON_BUTTON}
+        >
+          <SquareArrowOutUpRight className="size-(--size-icon-sm)" strokeWidth={2} />
+        </button>
+      )}
+      {more === undefined || more.length === 0 ? null : (
+        <span onClick={(e) => e.stopPropagation()} role="presentation">
+          <Menu
+            label={fillCopy(copy.selection.moreOf, { name })}
+            groups={more}
+            icon={MoreHorizontal}
+            iconOnly
+            chevron={false}
+            align="end"
+            width="sm"
+            variant="text"
+            {...(onMoreSelect === undefined ? {} : { onSelect: onMoreSelect })}
+          />
+        </span>
+      )}
+    </>
+  );
+}
 
 /* ---------------------------------------------------------------- *
  *  THE RICH ROW — the other density
@@ -36,6 +122,7 @@ export function Row({
   name,
   onOpen,
   onPeek,
+  click = "peek",
   tags,
   meta,
   selected,
@@ -55,6 +142,8 @@ export function Row({
   copy?: string | false;
   onOpen?: () => void;
   onPeek?: () => void;
+  /** What a press on the body does when both exist: the look (default) or the record. */
+  click?: "peek" | "open";
   tags?: ReactNode;
   /** The secondary data, already formatted. In mono: it aligns across rows. */
   meta?: string;
@@ -78,7 +167,10 @@ export function Row({
 }) {
   const d = useDensity();
   const copy = useUiCopy();
-  const openAs = openHint ?? copy.shell.openAsPanel;
+  const openAs = openHint ?? copy.list.open;
+  /* A read-only row (nothing to peek, nothing to open) does not light up on hover: a wash
+     and a hand promise a click that does nothing. */
+  const interactive = (onPeek ?? onOpen) !== undefined;
 
   const row = (
     /* A `div` and not an `li`: whoever composes decides whether this is a list,
@@ -95,17 +187,15 @@ export function Row({
          no rule between them read as a paragraph. The wash is the inner row,
          inset and rounded, so the hover is a mark and not a stripe. The inner
          padding is shorter by exactly that inset, so the text does not move. */
-        className={`group/row flex min-w-0 items-center rounded-control transition-colors duration-(--duration-instant) hover:bg-ink/4 ${byDensity(
-          d,
-          "gap-3 px-2 py-2",
-          "gap-2 px-1.5 py-1",
-        )}`}
+        className={`group/row flex min-w-0 items-center rounded-control transition-colors duration-(--duration-instant) ${
+          interactive ? "cursor-pointer hover:bg-ink/4" : ""
+        } ${byDensity(d, "gap-3 px-2 py-2", "gap-2 px-1.5 py-1")}`}
         /* `onPeek` con `onOpen` de reserva: quien sólo declara `onOpen` —lo
          natural si nunca oyó hablar de la vista previa— tiene que poder abrir
          igual haciendo click en cualquier parte de la fila, no sólo en el
          nombre. Con la vista previa apagada (`PeekLayer.tsx`) esto es hoy el
          caso de todos: un click en la fila abre, sin más. */
-        onClick={onPeek ?? onOpen}
+        onClick={click === "open" ? (onOpen ?? onPeek) : (onPeek ?? onOpen)}
         role="presentation"
       >
         {onSelectedChange === undefined ? null : (
@@ -191,42 +281,16 @@ export function Row({
         {/* The gesture, made visible. It shows up on hover and always occupies its
           place, so nothing shifts when it appears. */}
         <span className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-(--duration-instant) group-hover/row:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
-          {actions}
-          {copyAs === false ? null : (
-            <CopyButton
-              value={copyAs ?? name}
-              label={fillCopy(copy.copyable.field, { label: name })}
-            />
-          )}
-          {onOpen === undefined ? null : (
-            <button
-              type="button"
-              onClick={(e) => {
-                e.stopPropagation();
-                onOpen();
-              }}
-              title={openAs}
-              aria-label={`${openAs}: ${name}`}
-              className="inline-flex size-(--size-control-sm) items-center justify-center rounded-pill text-muted transition-colors duration-(--duration-instant) hover:bg-ink/6 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-            >
-              <SquareArrowOutUpRight className="size-(--size-icon-sm)" strokeWidth={2} />
-            </button>
-          )}
-          {more === undefined || more.length === 0 ? null : (
-            <span onClick={(e) => e.stopPropagation()} role="presentation">
-              <Menu
-                label={fillCopy(copy.selection.moreOf, { name })}
-                groups={more}
-                icon={MoreHorizontal}
-                iconOnly
-                chevron={false}
-                align="end"
-                width="sm"
-                variant="text"
-                {...(onMoreSelect === undefined ? {} : { onSelect: onMoreSelect })}
-              />
-            </span>
-          )}
+          <Trail
+            name={name}
+            openAs={openAs}
+            {...(actions === undefined ? {} : { actions })}
+            copy={copyAs}
+            {...(onPeek === undefined ? {} : { onPeek })}
+            {...(onOpen === undefined ? {} : { onOpen })}
+            {...(more === undefined ? {} : { more })}
+            {...(onMoreSelect === undefined ? {} : { onMoreSelect })}
+          />
         </span>
       </div>
     </div>
@@ -289,6 +353,7 @@ export function RowHeader({
   withSelection = false,
   withIcon = false,
   withActions = false,
+  trail,
 }: {
   name: string;
   meta?: string;
@@ -301,9 +366,12 @@ export function RowHeader({
    *  —así nada se corre al pasar el puntero—, así que el rótulo de las fichas
    *  queda desalineado si acá no se reserva lo mismo. */
   withActions?: boolean;
+  /** What the rows have at their end — the same flags `Row` gets — drawn invisible here so
+   *  the header reserves exactly that width. Takes over from `withActions`. */
+  trail?: { actions?: ReactNode; peek?: boolean; open?: boolean; copy?: boolean };
 }) {
   const d = useDensity();
-  const rotulo = "truncate text-micro font-medium text-muted";
+  const rotulo = `truncate ${HEADER_TEXT}`;
 
   return (
     <div
@@ -339,7 +407,18 @@ export function RowHeader({
           <span className={rotulo}>{tags}</span>
         </span>
       )}
-      {!withActions ? null : (
+      {trail !== undefined ? (
+        <span inert aria-hidden className="invisible flex shrink-0 items-center gap-1">
+          <Trail
+            name=""
+            openAs=""
+            {...(trail.actions === undefined ? {} : { actions: trail.actions })}
+            {...(trail.copy === false ? { copy: false as const } : {})}
+            {...(trail.peek === true ? { onPeek: () => {} } : {})}
+            {...(trail.open === true ? { onOpen: () => {} } : {})}
+          />
+        </span>
+      ) : !withActions ? null : (
         <span className="size-(--size-control-sm) shrink-0" aria-hidden />
       )}
     </div>

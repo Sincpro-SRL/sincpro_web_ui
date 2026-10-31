@@ -15,7 +15,7 @@ import {
   withTag,
 } from "@sincpro/web-ui/primitives/tag/choices";
 import { type TagItem, Tags } from "@sincpro/web-ui/primitives/tag/Tags";
-import { Plus } from "lucide-react";
+import { Plus, Search } from "lucide-react";
 import {
   type CSSProperties,
   type KeyboardEvent,
@@ -69,6 +69,8 @@ import {
 
 /** The key of the «create» row. Not an id: it cannot collide with one. */
 const CREATE = "\u0000create";
+/** The key of the «Buscar más…» row. */
+const BROWSE = "\u0000browse";
 
 export type TagsFieldProps = {
   /** The ids of the chosen tags, in the order they were added. */
@@ -84,6 +86,9 @@ export type TagsFieldProps = {
    * backend (Odoo's `name_create`); the consumer also appends the new option to `options`.
    */
   onCreate?: (label: string) => string | Promise<string>;
+  /** «Buscar más…» at the end of the list: the tags to add chosen from a table
+   *  (`LookupDialog` with `pick="many"`). It gets what was typed. */
+  onBrowseAll?: (query: string) => void;
   /** The input's placeholder while no tag is chosen. Defaults to the copy table's «Add…». */
   placeholder?: string;
   disabled?: boolean;
@@ -140,6 +145,7 @@ function EditableTagsField({
   onChange,
   options,
   onCreate,
+  onBrowseAll,
   placeholder,
   disabled = false,
   id: ownId,
@@ -175,18 +181,25 @@ function EditableTagsField({
     { contains, same: (a, b) => collator.compare(a.trim(), b) === 0 },
     onCreate !== undefined && !disabled,
   );
-  const listed: TagOption[] =
-    create === null
-      ? available
-      : [
-          ...available,
-          { value: CREATE, label: fillCopy(copy.inlineEdit.createTag, { name: create }) },
-        ];
+  const listed: TagOption[] = [
+    ...available,
+    ...(create === null
+      ? []
+      : [{ value: CREATE, label: fillCopy(copy.inlineEdit.createTag, { name: create }) }]),
+    ...(onBrowseAll === undefined || disabled
+      ? []
+      : [{ value: BROWSE, label: copy.picker.browseAll }]),
+  ];
 
   const commit = (key: Key | null) => {
     if (key === null) return;
     const chosen = String(key);
+    const typed = text;
     setText("");
+    if (chosen === BROWSE) {
+      onBrowseAll?.(typed);
+      return;
+    }
     if (chosen !== CREATE) {
       onChange?.(withTag(latest.current, chosen));
       return;
@@ -290,12 +303,24 @@ function EditableTagsField({
                 id={item.value}
                 textValue={item.label}
                 className={(state) =>
-                  cn(listOptionStyles(state), item.value === CREATE ? "text-primary" : "")
+                  cn(
+                    listOptionStyles(state),
+                    item.value === CREATE || item.value === BROWSE ? "text-primary" : "",
+                  )
                 }
               >
                 {item.value === CREATE ? (
                   <>
                     <Plus
+                      aria-hidden
+                      className="size-(--size-icon-sm) shrink-0"
+                      strokeWidth={2}
+                    />
+                    <span className="truncate font-medium">{item.label}</span>
+                  </>
+                ) : item.value === BROWSE ? (
+                  <>
+                    <Search
                       aria-hidden
                       className="size-(--size-icon-sm) shrink-0"
                       strokeWidth={2}

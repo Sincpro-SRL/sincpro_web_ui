@@ -2,9 +2,11 @@
 
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { type DataColumn, DataTable } from "@sincpro/web-ui/primitives/table/DataTable";
+import type { RowAction } from "@sincpro/web-ui/primitives/table/RowActions";
 import { type SheetColumn, SheetTable } from "@sincpro/web-ui/primitives/table/SheetTable";
 import type { SheetEntry } from "@sincpro/web-ui/views/list/derive";
 import type { ListGroup, ListSheet, ListViewProps } from "@sincpro/web-ui/views/list/types";
+import { Eye, SquareArrowOutUpRight } from "lucide-react";
 
 /**
  * Context: the two presentations whose body is an adapter between the list's vocabulary
@@ -24,7 +26,7 @@ type TableProps<T extends object> = {
 } & Pick<
   ListViewProps<T>,
   "sort" | "onSortChange" | "selection" | "rowActions" | "create" | "onPeek" | "onOpen"
->;
+> & { rowClick?: "peek" | "open" };
 
 /** The table receives EVERYTHING that belongs to the set —sorting, selection, grouping,
  *  which columns are on screen— and not a trimmed down version: that was exactly the trap
@@ -43,7 +45,38 @@ export function TablePresentation<T extends object>({
   create,
   onPeek,
   onOpen,
+  rowClick = "peek",
 }: TableProps<T>) {
+  const copy = useUiCopy();
+  const press = rowClick === "open" ? (onOpen ?? onPeek) : (onPeek ?? onOpen);
+  /* The row's ways in go FIRST among its actions, so they are always the inline ones and
+     always in the same place; the domain's actions follow (and fold into ⋯ past two). */
+  const withOpeners =
+    onPeek === undefined && onOpen === undefined
+      ? rowActions
+      : (item: T): readonly RowAction[] => [
+          ...(onPeek === undefined
+            ? []
+            : [
+                {
+                  id: "peek",
+                  label: copy.list.peek,
+                  icon: Eye,
+                  onSelect: () => onPeek(item),
+                },
+              ]),
+          ...(onOpen === undefined
+            ? []
+            : [
+                {
+                  id: "open",
+                  label: copy.list.open,
+                  icon: SquareArrowOutUpRight,
+                  onSelect: () => onOpen(item),
+                },
+              ]),
+          ...(rowActions?.(item) ?? []),
+        ];
   return (
     <DataTable
       data={items}
@@ -70,12 +103,12 @@ export function TablePresentation<T extends object>({
             },
           })}
       {...(totals ? { totals: true } : {})}
-      {...(rowActions === undefined ? {} : { rowActions })}
+      {...(withOpeners === undefined ? {} : { rowActions: withOpeners })}
       {...(create === undefined ? {} : { create })}
       /* `onPeek` con `onOpen` de reserva — ver el mismo comentario en
          `Listing.tsx`: sin vista previa encendida, un click en la fila
          tiene que abrir cuando es lo único que declararon. */
-      {...((onPeek ?? onOpen) === undefined ? {} : { onRowClick: onPeek ?? onOpen })}
+      {...(press === undefined ? {} : { onRowClick: press })}
     />
   );
 }

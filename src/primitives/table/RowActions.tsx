@@ -3,6 +3,7 @@
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { IconButton } from "@sincpro/web-ui/primitives/button/Button";
 import { Menu } from "@sincpro/web-ui/primitives/menu/Menu";
+import { useRowWash } from "@sincpro/web-ui/primitives/table/Table";
 import type { LucideIcon } from "lucide-react";
 import { MoreHorizontal } from "lucide-react";
 
@@ -51,7 +52,8 @@ export function RowActions({
   inline?: number;
 }) {
   const copy = useUiCopy();
-  if (actions.length === 0) return <td className="w-0" />;
+  const wash = useRowWash();
+  if (actions.length === 0) return <td className={`w-0 border-b border-line ${wash}`} />;
 
   /* With only one left over there is no `⋯`: a menu with a single item is one
      extra click to reach the same button. */
@@ -60,10 +62,14 @@ export function RowActions({
   const byId = new Map(actions.map((a) => [a.id, a]));
 
   return (
-    <td className="w-0 py-1 pr-2 pl-1 align-middle whitespace-nowrap">
+    /* The row's hairline runs under its actions too: without it the separators stopped one
+       column short and the actions read as outside the table. */
+    <td
+      className={`w-0 border-b border-line py-1 pr-2 pl-1 align-middle whitespace-nowrap last:rounded-r-control ${wash}`}
+    >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity duration-(--duration-instant) group-hover/row:opacity-100 focus-within:opacity-100"
+        className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity duration-(--duration-instant) group-hover/row:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100"
       >
         {inlineActions.map((a) => (
           <IconButton

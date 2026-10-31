@@ -190,6 +190,7 @@ function Rama({ delivery }: { delivery: Delivery }) {
 function useLista() {
   const [criteria, setCriteria] = useState<SearchCriteria[]>([]);
   const [elegidas, setElegidas] = useState<string[]>([]);
+  const [todas, setTodas] = useState(false);
   const [present, setPresent] = useState<ListPresent>("rows");
   const grouping = useGroupingControl();
   const tree = useTreeControl();
@@ -205,11 +206,18 @@ function useLista() {
     sort,
     setSort,
     selection: {
-      has: (id: string) => elegidas.includes(id),
-      toggle: (id: string) =>
-        setElegidas((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id])),
-      count: elegidas.length,
-      clear: () => setElegidas([]),
+      has: (id: string) => todas || elegidas.includes(id),
+      toggle: (id: string) => {
+        setTodas(false);
+        setElegidas((e) => (e.includes(id) ? e.filter((x) => x !== id) : [...e, id]));
+      },
+      /* The page shows 12 of 187: «Elegir los 187» makes the selection mean all of them. */
+      count: todas ? 187 : elegidas.length,
+      clear: () => {
+        setTodas(false);
+        setElegidas([]);
+      },
+      matching: { total: 187, onSelect: () => setTodas(true) },
     },
   };
 }
@@ -343,6 +351,11 @@ export const Catalogo: Story = {
                 conmutador las muestra en este orden. No hay una lista aparte que
                 las declare: el nodo que las ofrece es el que las dibuja. */}
             <List.Rows<Item>
+              header={{
+                name: "pedido · cliente",
+                meta: "líneas · fecha · total",
+                tags: "estado",
+              }}
               row={(d) => ({
                 ...filaDe(d),
                 children:
@@ -704,6 +717,91 @@ function Presentacion({ present }: { present: ListPresent }) {
     </div>
   );
 }
+
+/**
+ * **Leer o abrir.** La misma lista, dos contratos.
+ *
+ * A la izquierda `readOnly`: nada se toca — ni la fila se ilumina, ni hay casillas, ni
+ * acciones. A la derecha, con `onPeek` y `onOpen`: la fila se ilumina, el clic en el cuerpo
+ * da un VISTAZO sin salir de la lista, y al final de la fila los dos caminos están escritos
+ * con su ícono — 👁 vistazo, ↗ abrir el registro. El azul del nombre queda para lo que
+ * lleva a OTRO registro.
+ */
+export const LeerOAbrir: Story = {
+  render: function Render() {
+    const [visto, setVisto] = useState<string | null>(null);
+    const seis = ITEMS.slice(0, 6);
+    const lista = (readOnly: boolean) => (
+      <div className="@container min-w-0 flex-1 overflow-clip rounded-box border border-line-strong bg-surface p-4">
+        <List<Item>
+          embedded
+          items={seis}
+          keyOf={(d) => d.id}
+          readOnly={readOnly}
+          onPeek={(d) => setVisto(`vistazo · ${orderName(d)}`)}
+          onOpen={(d) => setVisto(`abrir · ${orderName(d)}`)}
+          present="table"
+        >
+          <List.Bar>
+            <List.Identity title={readOnly ? "Solo lectura" : "Se abre"} />
+          </List.Bar>
+          <List.Table<Item> columns={COLUMNAS} />
+        </List>
+      </div>
+    );
+    return (
+      <div className="flex flex-col gap-3 bg-ground p-8">
+        <div className="flex flex-wrap gap-4">
+          {lista(true)}
+          {lista(false)}
+        </div>
+        <p className="text-meta text-muted">
+          último gesto: <span className="text-ink">{visto ?? "ninguno"}</span>
+        </p>
+      </div>
+    );
+  },
+};
+
+/**
+ * **Tablero por etapas.** Una columna por etapa con cuántos tiene, y la tarjeta se ARRASTRA a
+ * otra columna — el gesto es el cambio de etapa. Con el teclado: enfocar la tarjeta y
+ * Alt + ← / →; el movimiento se anuncia. Sin `onMove` el tablero es de solo lectura.
+ */
+export const TableroPorEtapas: Story = {
+  render: function Render() {
+    const [items, setItems] = useState<Item[]>(() => ITEMS.map((d) => ({ ...d })));
+    return (
+      <div className="bg-ground p-8">
+        <div className="@container overflow-clip rounded-box border border-line-strong bg-surface">
+          <List<Item> items={items} keyOf={(d) => d.id} present="board" onOpen={() => {}}>
+            <List.Bar>
+              <List.Identity title="Pedidos por etapa" />
+            </List.Bar>
+            <List.Rows<Item> row={filaDe} />
+            <List.Board<Item>
+              stages={{
+                of: (d) => d.stage,
+                columns: [
+                  { id: "quotation", label: "cotización", tone: "neutral" },
+                  { id: "order", label: "pedido", tone: "info" },
+                  { id: "invoiced", label: "facturado", tone: "good" },
+                ],
+                nameOf: (d) => d.number,
+                onMove: (d, to) =>
+                  setItems((all) =>
+                    all.map((one) =>
+                      one.id === d.id ? { ...one, stage: to as Item["stage"] } : one,
+                    ),
+                  ),
+              }}
+            />
+          </List>
+        </div>
+      </div>
+    );
+  },
+};
 
 /** Filas: dos líneas por registro. Es la presentación estrecha.
  *
@@ -1508,6 +1606,8 @@ export const DentroDeUnRegistro: Story = {
                   present={present}
                   onPresentChange={setPresent}
                   filtered={q !== ""}
+                  onPeek={() => {}}
+                  onOpen={() => {}}
                   empty={{ sentence: "Este equipo todavía no vendió nada." }}
                 >
                   <List.Bar>

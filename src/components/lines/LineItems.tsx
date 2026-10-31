@@ -217,6 +217,9 @@ export type LineItemsProps<T> = {
   ) => { tone: FlagTone; label: string; detail?: ReactNode; owner?: string } | null;
   /** Sections and notes among the lines. See the file's header. */
   structure?: LineStructure<T>;
+  /** The lines' order is the document's (Odoo's `sequence`): a grip at the start of each line
+   *  drags it, Alt + ↑ / ↓ moves it. `EditableTable`'s `onReorder`, passed through. */
+  onReorder?: (id: string, before: string | null) => void;
   /** Which columns are on screen, when the owner remembers it (a preference). */
   visibleColumnIds?: readonly string[];
   onVisibleColumnIdsChange?: (ids: readonly string[]) => void;
@@ -269,6 +272,7 @@ export function LineItems<T>({
   onOpenLine,
   flag,
   structure,
+  onReorder,
   visibleColumnIds,
   onVisibleColumnIdsChange,
 }: LineItemsProps<T>) {
@@ -640,6 +644,7 @@ export function LineItems<T>({
             {...(bandAdds.length === 0 ? {} : { adds: bandAdds })}
             {...(bands === undefined ? {} : { bands })}
             {...(flag === undefined ? {} : { flag })}
+            {...(onReorder === undefined || read ? {} : { onReorder })}
             {...(inPlace && onRemove !== undefined
               ? /* A blank row nobody wrote in is taken back without a notice: nobody
                    removed anything, so there is nothing to undo. */

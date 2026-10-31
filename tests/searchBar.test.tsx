@@ -66,6 +66,15 @@ test("el embudo dice cuántas cosas hay puestas", () => {
   assert.ok(out.includes(">2<"));
 });
 
+test("con algo puesto hay una × que limpia todo, y sin nada no", () => {
+  const con = draw(
+    <SearchBar facets={[]} criteria={[AÑO, FILAS]} onCriteriaChange={() => {}} />,
+  );
+  const sin = draw(<SearchBar facets={[]} criteria={[]} onCriteriaChange={() => {}} />);
+  assert.ok(con.includes('aria-label="Clear every filter and grouping"'));
+  assert.ok(!sin.includes('aria-label="Clear every filter and grouping"'));
+});
+
 test("sin nada puesto no hay corchetes que dibujar", () => {
   const out = draw(
     <SearchBar facets={[]} model={MODEL} criteria={[]} onCriteriaChange={() => {}} />,

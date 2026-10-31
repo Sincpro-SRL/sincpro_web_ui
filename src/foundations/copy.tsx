@@ -52,6 +52,8 @@ export type UiCopy = {
     named: string;
     more: string;
     moreOf: string;
+    /** «Elegir los 187 que coinciden»: the whole result, not the page. */
+    allMatching: string;
   };
   pager: {
     size: string;
@@ -80,6 +82,9 @@ export type UiCopy = {
     noticeMany: string;
     /** The accessible name of the band of what is wrong with the record. */
     blocking: string;
+    /** The paper's last line (`Record.Audit`): «{by}» and «{at}» are already written. */
+    created: string;
+    updated: string;
   };
   shell: {
     modules: string;
@@ -135,6 +140,14 @@ export type UiCopy = {
     groupedBy: string;
     /** Lo que encabeza el corchete de los recortes. */
     narrowedBy: string;
+    /** The «+N» chip that unfolds the facets the bar folded away. */
+    moreFacets: string;
+    /** Folds them back. */
+    fewerFacets: string;
+    /** The × of the grouping chain: drops every level at once. */
+    removeGrouping: string;
+    /** The × at the end of the bar: drops every filter and level. */
+    clearAll: string;
     /** Cambiar la conjunción entre búsquedas: todas a la vez, o cualquiera. */
     switchJoin: string;
     /**
@@ -229,6 +242,10 @@ export type UiCopy = {
      *  one: «1 records» is wrong in every language this ships in. */
     countOne: string;
     count: string;
+    /** A row's two ways in, named on their buttons: a look without leaving the list, and the
+     *  record itself. */
+    peek: string;
+    open: string;
   };
   /** La historia de un registro: eventos y mensajes. */
   /** The panel of everything around a record: its notices, its conversation and its
@@ -372,6 +389,9 @@ export type UiCopy = {
     addRow: string;
     empty: string;
     remove: string;
+    /** The grip that changes a row's place (`EditableTable onReorder`). */
+    reorder: string;
+    reorderHint: string;
   };
   picker: {
     placeholder: string;
@@ -545,6 +565,26 @@ export type UiCopy = {
     table: string;
   };
   /** A field that points to another record: going there, and pointing nowhere. */
+  /** The stars of `Priority`. */
+  priority: {
+    label: string;
+    level: string;
+    none: string;
+  };
+  /** The board by stages (`BoardColumns`). */
+  board: {
+    emptyLane: string;
+    moveHint: string;
+    moved: string;
+  };
+  /** «Buscar más…»: a field's record chosen from a table (`LookupDialog`). */
+  lookup: {
+    search: string;
+    pick: string;
+    pickCount: string;
+    create: string;
+    none: string;
+  };
   relation: {
     open: string;
     /** No record chosen. It is an answer, not a hole. */
@@ -675,6 +715,7 @@ export const ENGLISH_COPY: UiCopy = {
     named: "Select {name}",
     more: "More actions",
     moreOf: "More actions for {name}",
+    allMatching: "Select all {count} that match",
   },
   pager: {
     size: "Rows per page",
@@ -697,6 +738,8 @@ export const ENGLISH_COPY: UiCopy = {
     noticeOne: "{count} notice",
     noticeMany: "{count} notices",
     blocking: "What is wrong with this record",
+    created: "Created by {by} · {at}",
+    updated: "Last changed by {by} · {at}",
   },
   shell: {
     modules: "All modules",
@@ -738,6 +781,10 @@ export const ENGLISH_COPY: UiCopy = {
     or: "or",
     groupedBy: "grouped by",
     narrowedBy: "showing",
+    moreFacets: "+{count}",
+    fewerFacets: "show less",
+    removeGrouping: "Stop grouping",
+    clearAll: "Clear every filter and grouping",
     switchJoin: "All of them, or any of them",
     joins: { all: "all", any: "any", none: "none" },
     notWord: "not",
@@ -787,6 +834,8 @@ export const ENGLISH_COPY: UiCopy = {
     emptyFiltered: "Nothing matches what is on.",
     countOne: "1 record",
     count: "{count} records",
+    peek: "Quick look",
+    open: "Open",
   },
   activity: {
     bySystem: "the system",
@@ -888,6 +937,8 @@ export const ENGLISH_COPY: UiCopy = {
     addRow: "Add a row",
     empty: "No lines yet.",
     remove: "Remove the line",
+    reorder: "Move the row",
+    reorderHint: "Drag it, or Alt + ↑ / ↓",
   },
   picker: {
     placeholder: "pick one…",
@@ -897,7 +948,7 @@ export const ENGLISH_COPY: UiCopy = {
     more: "{count} more",
     refine: "— narrow the filter",
     open: "Open",
-    browseAll: "see all…",
+    browseAll: "Search more…",
     loadingMore: "loading more…",
   },
   cell: {
@@ -1013,6 +1064,23 @@ export const ENGLISH_COPY: UiCopy = {
     removed: "Removed «{name}».",
     undo: "Undo",
     table: "Lines",
+  },
+  priority: {
+    label: "Priority",
+    level: "{value} of {max}",
+    none: "no priority",
+  },
+  board: {
+    emptyLane: "Nothing in this stage.",
+    moveHint: "Drag it, or Alt + ← / → to move it to another stage",
+    moved: "{name} moved to {column}",
+  },
+  lookup: {
+    search: "Search…",
+    pick: "Pick",
+    pickCount: "Pick {count}",
+    create: "Create «{name}»",
+    none: "Nothing matches «{query}».",
   },
   relation: {
     open: "Open",
@@ -1138,6 +1206,9 @@ export type UiCopyOverride = {
   person?: Partial<UiCopy["person"]>;
   lines?: Partial<UiCopy["lines"]>;
   lineItems?: Partial<UiCopy["lineItems"]>;
+  priority?: Partial<UiCopy["priority"]>;
+  board?: Partial<UiCopy["board"]>;
+  lookup?: Partial<UiCopy["lookup"]>;
   relation?: Partial<UiCopy["relation"]>;
   relationCard?: Partial<UiCopy["relationCard"]>;
   totals?: Partial<UiCopy["totals"]>;
@@ -1183,6 +1254,9 @@ export function mergeCopy(over?: UiCopyOverride): UiCopy {
     person: { ...ENGLISH_COPY.person, ...over.person },
     lines: { ...ENGLISH_COPY.lines, ...over.lines },
     lineItems: { ...ENGLISH_COPY.lineItems, ...over.lineItems },
+    priority: { ...ENGLISH_COPY.priority, ...over.priority },
+    board: { ...ENGLISH_COPY.board, ...over.board },
+    lookup: { ...ENGLISH_COPY.lookup, ...over.lookup },
     relation: { ...ENGLISH_COPY.relation, ...over.relation },
     relationCard: { ...ENGLISH_COPY.relationCard, ...over.relationCard },
     totals: { ...ENGLISH_COPY.totals, ...over.totals },

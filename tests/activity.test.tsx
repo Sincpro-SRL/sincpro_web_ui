@@ -134,9 +134,35 @@ test("on a wide page it is the column at the RIGHT of the sheet, joined to it", 
   assert.ok(at(html, "FAC/2026/0115</h1>") < at(html, 'data-activity="open"'));
   assert.match(html, /class="@container\/page"/);
   /* The pair, at most the sheet and the column wide. */
-  assert.match(html, /class="mx-auto flex[^"]*max-w-\(--container-record\)/);
+  assert.match(
+    html,
+    /class="flex [^"]*max-w-\(--container-record\)[^"]*@beside\/page:flex-row/,
+  );
   assert.match(html, /@beside\/page:rounded-r-none/);
   assert.match(html, /@beside\/page:w-\(--container-activity\) @beside\/page:rounded-l-none/);
+});
+
+/* One column for the rail and the page: the buttons sit over the paper they act on, not at
+   the screen's edge 250 px away from it. */
+test("the rail lines up with the page column, and `full` frees both", () => {
+  const reading = renderToStaticMarkup(
+    <Record identity={{ title: "S00142" }}>
+      {RAIL}
+      <Record.Paper>body</Record.Paper>
+    </Record>,
+  );
+  assert.equal(
+    reading.split("mx-auto w-full max-w-(--container-sheet)").length - 1,
+    2,
+    "the rail's row and the page share the sheet's column",
+  );
+  const full = renderToStaticMarkup(
+    <Record identity={{ title: "S00142" }}>
+      {RAIL}
+      <Record.Paper width="full">body</Record.Paper>
+    </Record>,
+  );
+  assert.doesNotMatch(full, /max-w-\(--container-sheet\)/);
 });
 
 test("`below` keeps it under the sheet, at the sheet's width, on every width", () => {

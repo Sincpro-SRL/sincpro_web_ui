@@ -73,7 +73,15 @@ function Apuntes({
   );
 }
 
-test("embedded, the bar is one line: no identity, no crumbs, and it does not stick", () => {
+function BareApuntes() {
+  return (
+    <List<Apunte> embedded items={APUNTES} keyOf={(a) => a.id}>
+      <List.Rows<Apunte> row={(a) => ({ name: a.cuenta })} />
+    </List>
+  );
+}
+
+test("embedded, the bar is one line: no crumbs, and it does not stick", () => {
   const page = draw(<Apuntes />);
   const inside = draw(<Apuntes embedded />);
 
@@ -83,7 +91,6 @@ test("embedded, the bar is one line: no identity, no crumbs, and it does not sti
   assert.ok(page.includes("Contabilidad"));
 
   assert.doesNotMatch(inside, /sticky z-30/);
-  assert.ok(!inside.includes("Apuntes contables"), "the record's tab already names it");
   assert.ok(!inside.includes("Contabilidad"), "the record's crumbs already say where");
   assert.ok(!inside.includes("border-b border-line pb-2"), "no rule between two rows");
 });
@@ -96,8 +103,18 @@ test("embedded, the line says how many there are, as a live region", () => {
   assert.ok(inside.includes(SPANISH_COPY.present?.table ?? "Tabla"));
 });
 
+/* Written is drawn: inside a tab nobody writes it (the tab names it); standing alone among a
+   record's sections it is the only thing that says what the table is. */
+test("embedded, a written title heads the line at the level of a group title", () => {
+  const inside = draw(<Apuntes embedded />);
+  assert.match(
+    inside,
+    /<h3 class="[^"]*text-body font-semibold[^"]*">Apuntes contables<\/h3>/,
+  );
+});
+
 test("embedded with nothing to offer draws no bar at all", () => {
-  const bare = draw(<Apuntes embedded search={false} faces={1} />);
+  const bare = draw(<BareApuntes />);
   assert.doesNotMatch(bare, /role="status"/, "a count alone repeats the rows");
   /* The controls alone are enough for a line. */
   const controls = draw(<Apuntes embedded search={false} />);

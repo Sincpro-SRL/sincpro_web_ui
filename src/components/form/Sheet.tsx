@@ -251,7 +251,10 @@ export function SheetGroup({
   return (
     <section className={`flex min-w-0 flex-col ${byDensity(d, "gap-2.5", "gap-2")}`}>
       {withHeader ? (
-        <header className="flex min-w-0 items-center gap-2">
+        /* A group title is ABOVE its labels, not one of them: at the labels' size and weight
+           «Cliente» the group read like «Cliente» the field. One step up in size and weight,
+           and a hairline that says where the group starts. */
+        <header className="flex min-w-0 items-center gap-2 border-b border-line pb-1.5">
           {Icon === undefined ? null : (
             <Icon
               className="size-(--size-icon-sm) shrink-0 text-muted"
@@ -259,7 +262,7 @@ export function SheetGroup({
               aria-hidden
             />
           )}
-          <h3 className="min-w-0 truncate text-meta font-medium text-ink">{title}</h3>
+          <h3 className="min-w-0 truncate text-body font-semibold text-ink">{title}</h3>
           {hint === undefined ? null : <Hint>{hint}</Hint>}
         </header>
       ) : hint === undefined ? null : (

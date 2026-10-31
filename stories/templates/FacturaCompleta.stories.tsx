@@ -691,6 +691,10 @@ function FullInvoice({ draft = false }: { draft?: boolean }) {
       </Record.Rail>
 
       <Record.Paper layout="horizontal">
+        <Record.Audit
+          created={{ by: "Carla Rojas", at: "12/10/2026 09:14" }}
+          updated={{ by: "Tesorería", at: "hace 3 días" }}
+        />
         {/* The dense header of a real invoice: who it is for, and on what terms — two groups,
             twelve fields, each group answering one question. */}
         <SheetGroups columns={2}>

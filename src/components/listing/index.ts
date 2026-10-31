@@ -48,6 +48,11 @@ export {
 
 /* El control de los niveles. El vocabulario está en `system/grouping.ts`. */
 export {
+  type BoardColumn,
+  BoardColumns,
+  type BoardStages,
+} from "@sincpro/web-ui/components/listing/BoardColumns";
+export {
   type GroupingControl,
   useGroupingControl,
 } from "@sincpro/web-ui/components/listing/grouping";

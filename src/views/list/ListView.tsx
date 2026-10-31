@@ -1,5 +1,6 @@
 "use client";
 
+import { BoardColumns } from "@sincpro/web-ui/components/listing/BoardColumns";
 import { useColumnControl, visibleColumns } from "@sincpro/web-ui/components/listing/columns";
 import {
   ColumnsMenu,
@@ -103,6 +104,7 @@ export function ListView<T extends object>({
   visibleColumnIds,
   onVisibleColumnIdsChange,
   card,
+  boardStages,
   sheet,
   report,
   pivot,
@@ -119,6 +121,7 @@ export function ListView<T extends object>({
   selection,
   onOpen,
   onPeek,
+  rowClick = "peek",
   state,
   filtered = false,
   empty,
@@ -236,6 +239,7 @@ export function ListView<T extends object>({
      what the rows (and the footer) already say. */
   const barHasControls =
     !embedded ||
+    identity?.title !== undefined ||
     search !== undefined ||
     viewsSlot !== undefined ||
     actions !== undefined ||
@@ -264,6 +268,7 @@ export function ListView<T extends object>({
               count: selection.count,
               onClear: selection.clear,
               ...(selection.actions === undefined ? {} : { actions: selection.actions }),
+              ...(selection.matching === undefined ? {} : { matching: selection.matching }),
             },
           })}
       {...(search === undefined ? {} : { search })}
@@ -271,6 +276,9 @@ export function ListView<T extends object>({
       {...(viewsSlot === undefined ? {} : { views: viewsSlot })}
     />
   );
+
+  /* The body of a row, a card: the look first unless the list says the page. */
+  const press = rowClick === "open" ? (onOpen ?? onPeek) : (onPeek ?? onOpen);
 
   const renderRow = (item: T) => {
     const d = row(item);
@@ -285,6 +293,7 @@ export function ListView<T extends object>({
         {...(d.actions === undefined ? {} : { actions: d.actions })}
         {...(onOpen === undefined ? {} : { onOpen: () => onOpen(item) })}
         {...(onPeek === undefined ? {} : { onPeek: () => onPeek(item) })}
+        click={rowClick}
         {...(selection === undefined
           ? {}
           : { selected: selection.has(id), onSelectedChange: () => selection.toggle(id) })}
@@ -405,7 +414,8 @@ export function ListView<T extends object>({
         title={d.name}
         {...(d.tags === undefined ? {} : { tags: d.tags })}
         {...(d.meta === undefined ? {} : { meta: d.meta })}
-        {...(onOpen === undefined ? {} : { onOpen: () => onOpen(item) })}
+        /* A card answers a click like a row does: a look first when there is one. */
+        {...(press === undefined ? {} : { onOpen: () => press(item) })}
       />
     );
   };
@@ -427,6 +437,7 @@ export function ListView<T extends object>({
         {...(create === undefined ? {} : { create })}
         {...(onPeek === undefined ? {} : { onPeek })}
         {...(onOpen === undefined ? {} : { onOpen })}
+        rowClick={rowClick}
       />
     ) : present === "sheet" && sheetSpec !== undefined ? (
       /* La planilla recibe el conjunto por ÍNDICE y no una matriz ya armada: ver `SheetPresentation`. */
@@ -465,6 +476,8 @@ export function ListView<T extends object>({
         {...(pivot?.onCell === undefined ? {} : { onCell: pivot.onCell })}
         {...(pivot?.height === undefined ? {} : { height: pivot.height })}
       />
+    ) : present === "board" && boardStages !== undefined ? (
+      <BoardColumns items={ordered} keyOf={keyOf} stages={boardStages} card={renderCard} />
     ) : present === "board" ? (
       <div className="flex flex-col">
         {wrapGroups((inside) => (
@@ -487,7 +500,11 @@ export function ListView<T extends object>({
                acciones son de la lista entera, no de una fila — si la primera no
                tiene ícono, ninguna lo tiene. */
             withIcon={firstRow?.icon !== undefined}
-            withActions={onOpen !== undefined || firstRow?.actions !== undefined}
+            trail={{
+              ...(firstRow?.actions === undefined ? {} : { actions: firstRow.actions }),
+              peek: onPeek !== undefined,
+              open: onOpen !== undefined,
+            }}
           />
         )}
         {wrapGroups((inside) => inside.map(renderRow))}

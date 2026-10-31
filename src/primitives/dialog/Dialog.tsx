@@ -1,10 +1,11 @@
 "use client";
 
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { HANDHELD_WIDTH } from "@sincpro/web-ui/foundations/layout";
 import { cn, tv } from "@sincpro/web-ui/foundations/variants";
 import { Button, IconButton } from "@sincpro/web-ui/primitives/button/Button";
 import { Maximize2, X } from "lucide-react";
-import { type ReactNode, useId } from "react";
+import { type PointerEvent, type ReactNode, useEffect, useId, useState } from "react";
 import { Dialog as AriaDialog, Heading, Modal, ModalOverlay } from "react-aria-components";
 
 /* ==================================================================== *
@@ -129,6 +130,9 @@ export interface DialogProps {
    *  It is the tooltip and the accessible name, and it is not drawn. */
   expandLabel?: string;
   footer?: ReactNode;
+  /** The window can be dragged by its header, to see what is behind it — the form a «search
+   *  more» was opened from. Off on a phone, where the window is a bottom sheet. */
+  movable?: boolean;
   children: ReactNode;
 }
 
@@ -145,7 +149,11 @@ export function DialogSurface({
   expandLabel,
   footer,
   children,
-}: Omit<DialogProps, "open" | "width">) {
+  onDragStart,
+}: Omit<DialogProps, "open" | "width" | "movable"> & {
+  /** Set by a movable `Dialog`: the header is the handle. */
+  onDragStart?: (event: PointerEvent<HTMLElement>) => void;
+}) {
   const copy = useUiCopy();
   const subtitleId = useId();
   const expand = expandLabel ?? copy.dialog.expand;
@@ -155,7 +163,13 @@ export function DialogSurface({
       aria-describedby={subtitle === undefined ? undefined : subtitleId}
       className="flex max-h-[inherit] min-h-0 flex-1 flex-col outline-0"
     >
-      <header className="flex shrink-0 items-start gap-3 border-b border-line px-4 py-3">
+      <header
+        onPointerDown={onDragStart}
+        className={cn(
+          "flex shrink-0 items-start gap-3 border-b border-line px-4 py-3",
+          onDragStart !== undefined && "cursor-grab select-none active:cursor-grabbing",
+        )}
+      >
         <div className="min-w-0 flex-1">
           {context === undefined ? null : (
             /* The context, on top and small. It is what keeps the first field
@@ -219,7 +233,45 @@ export function DialogSurface({
  * stays mounted for the exit transition after `open` turns `false`, so the window fades
  * out instead of vanishing.
  */
-export function Dialog({ open, width = "md", onClose, ...surface }: DialogProps) {
+export function Dialog({
+  open,
+  width = "md",
+  onClose,
+  movable = false,
+  ...surface
+}: DialogProps) {
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
+  /* Every opening starts centred: where it was dragged last time is not where it belongs. */
+  useEffect(() => {
+    if (open) setOffset({ x: 0, y: 0 });
+  }, [open]);
+
+  /* `transform` and not `translate`: the window enters and leaves on `translate`, which is
+     transitioned — a drag on it would trail the pointer by the panel's duration. */
+  const drag = (event: PointerEvent<HTMLElement>) => {
+    if (event.button !== 0 || event.pointerType === "touch") return;
+    if ((event.target as HTMLElement).closest("button, a, input") !== null) return;
+    /* Below it the window is a bottom sheet, and a sheet is not dragged around. */
+    if (window.innerWidth < HANDHELD_WIDTH) return;
+    const from = { x: event.clientX - offset.x, y: event.clientY - offset.y };
+    /* Never further than half the screen from the centre: the header — the only handle — has
+       to stay where a pointer can reach it. */
+    const halfW = window.innerWidth / 2;
+    const halfH = window.innerHeight / 2;
+    const clamp = (value: number, half: number) => Math.max(-half, Math.min(half, value));
+    const move = (next: globalThis.PointerEvent) =>
+      setOffset({
+        x: clamp(next.clientX - from.x, halfW),
+        y: clamp(next.clientY - from.y, halfH),
+      });
+    const stop = () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", stop);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", stop);
+  };
+
   return (
     <ModalOverlay
       isOpen={open}
@@ -229,8 +281,17 @@ export function Dialog({ open, width = "md", onClose, ...surface }: DialogProps)
       isDismissable
       className={overlay}
     >
-      <Modal className={(state) => modal({ ...state, width })}>
-        <DialogSurface onClose={onClose} {...surface} />
+      <Modal
+        className={(state) => modal({ ...state, width })}
+        {...(movable
+          ? { style: { transform: `translate(${offset.x}px, ${offset.y}px)` } }
+          : {})}
+      >
+        <DialogSurface
+          onClose={onClose}
+          {...surface}
+          {...(movable ? { onDragStart: drag } : {})}
+        />
       </Modal>
     </ModalOverlay>
   );

@@ -48,7 +48,9 @@ export function RecordCard({
           {...(media.icon === undefined ? {} : { icon: media.icon })}
         />
       )}
-      {tags}
+      {/* In a row of their own and at their own width: as a flex child of the card a tag
+          stretched to the card's width. */}
+      {tags === undefined ? null : <div className="flex flex-wrap gap-1.5">{tags}</div>}
       <div className="flex min-w-0 items-baseline justify-between gap-3">
         <p className="min-w-0 truncate text-lead font-medium text-ink">{title}</p>
         {figure === undefined ? null : (
@@ -61,7 +63,7 @@ export function RecordCard({
     </>
   );
   const box =
-    "flex min-w-0 flex-col gap-2 rounded-box border border-line bg-surface p-4 text-left";
+    "flex w-full min-w-0 flex-col gap-2 rounded-box border border-line bg-surface p-4 text-left";
   if (onOpen === undefined) return <div className={box}>{body}</div>;
   return (
     <button

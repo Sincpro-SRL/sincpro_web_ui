@@ -71,6 +71,8 @@ export function RecordHeader({
   dirty,
   activity,
   activityLayout = "auto",
+  width = "reading",
+  ribbon,
   blocking,
   indicator,
   children,
@@ -98,6 +100,12 @@ export function RecordHeader({
    * itself out breaks the next time someone wraps the panel in something else.
    */
   activityLayout?: "auto" | "below";
+  /** How wide the page column gets. `reading` (the default) stops the sheet at
+   *  `--container-sheet`, centred, and lines the rail up with it; `full` takes the whole page
+   *  — a record whose body is a wide table. */
+  width?: "reading" | "full";
+  /** The band across the paper's corner (`RecordRibbon`): what the record IS now. */
+  ribbon?: ReactNode;
   /** `StatusBar` (where is it at?), the activity's `Timeline` (what happened to get
    *  here?), or both: they are different questions and many records only have one. */
   status?: ReactNode;
@@ -185,6 +193,16 @@ export function RecordHeader({
       actions !== undefined ||
       dirty !== undefined);
 
+  /* ONE column for the rail and the page: the rail used to span the screen while the sheet
+     stopped at 72rem, so on a wide desk the buttons sat 250 px left of the paper they act on
+     and the record read as two things. */
+  const column =
+    width === "full"
+      ? ""
+      : beside
+        ? "mx-auto w-full max-w-(--container-record)"
+        : "mx-auto w-full max-w-(--container-sheet)";
+
   const identity = (
     <div
       className={`flex flex-col ${byDensity(d, "gap-2.5 px-4 pt-3.5", "gap-2 px-0 pt-0")}`}
@@ -265,11 +283,12 @@ export function RecordHeader({
               rail that asks an unnamed `@container` finds this one. */}
           <div className="@container/record">
             <div
-              className={`flex flex-col gap-2 px-3.5 py-2.5 ${
+              className={`px-3 py-2.5 ${
                 railSurface === "chrome" ? "bg-chrome" : "border-b border-line bg-surface"
               }`}
             >
-              {/* Row 1 — WHERE I AM: where I come from, what hangs off this, and
+              <div className={`flex flex-col gap-2 ${paper ? column : ""}`}>
+                {/* Row 1 — WHERE I AM: where I come from, what hangs off this, and
               which of eighty I am on. The counters go in the center because they
               are the bridge between the two: they hang off the record but they
               take you somewhere else.
@@ -280,65 +299,68 @@ export function RecordHeader({
               contadores contra el borde. Lo que no entra en su mitad se recorta
               adentro de su mitad; lo que no entra en la línea baja al renglón
               siguiente. Ver `primitives/block/Line.tsx`. */}
-              <Line
-                start={
-                  crumbs === undefined || crumbs.length === 0 ? null : (
-                    <Breadcrumb crumbs={crumbs} surface={railSurface} />
-                  )
-                }
-                center={
-                  /* The notices' indicator rides with the counters: both are about the
+                <Line
+                  start={
+                    crumbs === undefined || crumbs.length === 0 ? null : (
+                      <Breadcrumb crumbs={crumbs} surface={railSurface} />
+                    )
+                  }
+                  center={
+                    /* The notices' indicator rides with the counters: both are about the
                      record and both open something; neither is my position in front of
                      it. The line wraps on a phone, so it is never pushed out of reach. */
-                  smart === undefined && indicator === undefined ? undefined : (
-                    <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
-                      {smart}
-                      {indicator}
-                    </div>
-                  )
-                }
-                end={pager}
-              />
+                    smart === undefined && indicator === undefined ? undefined : (
+                      <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
+                        {smart}
+                        {indicator}
+                      </div>
+                    )
+                  }
+                  end={pager}
+                />
 
-              {actions === undefined && status === undefined && dirty === undefined ? null : (
-                /* Row 2 — WHAT I CAN DO and WHERE IT IS AT: actions stuck to the
+                {actions === undefined &&
+                status === undefined &&
+                dirty === undefined ? null : (
+                  /* Row 2 — WHAT I CAN DO and WHERE IT IS AT: actions stuck to the
                left edge, the history and the state stuck to the right one. No
                `flex-wrap`: wrapping split the row in two and the state ended up
                below the actions, which is another hierarchy. */
-                <div className="flex min-w-0 items-start gap-x-4">
-                  {/* The actions are NEVER clipped: they are the only thing in this
+                  <div className="flex min-w-0 items-start gap-x-4">
+                    {/* The actions are NEVER clipped: they are the only thing in this
                   row that produces something, and a button cut in half is a
                   button that does not get pressed. What gives way is the state. */}
-                  {dirty !== undefined ? (
-                    <div className="flex shrink-0 items-center gap-1.5 @max-handheld/record:hidden">
-                      <DirtyActions {...dirty} />
-                    </div>
-                  ) : actions === undefined ? null : (
-                    <div className="flex shrink-0 items-center gap-1.5">
-                      {primaries.length === 0
-                        ? actions
-                        : railActions.map((node) =>
-                            isPrimary(node) ? (
-                              <span
-                                key={node.key}
-                                data-thumb-moves=""
-                                className="contents @max-handheld/record:hidden"
-                              >
-                                {node}
-                              </span>
-                            ) : (
-                              node
-                            ),
-                          )}
-                    </div>
-                  )}
-                  {status === undefined ? null : (
-                    <div className="ml-auto flex min-w-0 flex-col items-end gap-1.5">
-                      {status}
-                    </div>
-                  )}
-                </div>
-              )}
+                    {dirty !== undefined ? (
+                      <div className="flex shrink-0 items-center gap-1.5 @max-handheld/record:hidden">
+                        <DirtyActions {...dirty} />
+                      </div>
+                    ) : actions === undefined ? null : (
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {primaries.length === 0
+                          ? actions
+                          : railActions.map((node) =>
+                              isPrimary(node) ? (
+                                <span
+                                  key={node.key}
+                                  data-thumb-moves=""
+                                  className="contents @max-handheld/record:hidden"
+                                >
+                                  {node}
+                                </span>
+                              ) : (
+                                node
+                              ),
+                            )}
+                      </div>
+                    )}
+                    {status === undefined ? null : (
+                      <div className="ml-auto flex min-w-0 flex-col items-end gap-1.5">
+                        {status}
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </SurfaceProvider>
@@ -374,25 +396,28 @@ export function RecordHeader({
         <div className="bg-ground px-3 pt-3 pb-3">
           <div className="@container/page">
             <div
-              className={`mx-auto flex min-w-0 flex-col gap-3 ${
+              className={`flex min-w-0 flex-col gap-3 ${column} ${
                 beside
-                  ? "max-w-(--container-record) @beside/page:flex-row @beside/page:items-stretch @beside/page:justify-center @beside/page:gap-0"
-                  : "max-w-(--container-sheet)"
+                  ? "@beside/page:flex-row @beside/page:items-stretch @beside/page:justify-center @beside/page:gap-0"
+                  : ""
               }`}
             >
               <div
                 className={`flex min-w-0 flex-1 flex-col gap-3 ${
-                  beside ? "mx-auto w-full max-w-(--container-sheet) @beside/page:mx-0" : ""
+                  beside && width === "reading"
+                    ? "mx-auto w-full max-w-(--container-sheet) @beside/page:mx-0"
+                    : ""
                 }`}
               >
                 {/* What is wrong sits OUTSIDE the sheet, between the rail and the
                     paper, at the paper's width: always seen, never read as a field. */}
                 {blocking}
                 <div
-                  className={`flex min-w-0 flex-col overflow-clip rounded-box border border-line bg-surface ${
+                  className={`relative flex min-w-0 flex-col overflow-clip rounded-box border border-line bg-surface ${
                     beside ? "@beside/page:rounded-r-none" : ""
                   }`}
                 >
+                  {ribbon}
                   {identity}
                   {children}
                 </div>
@@ -411,7 +436,8 @@ export function RecordHeader({
       ) : (
         /* No paper (a dialog, a drawer, a `Drill` context): one surface, no ground beside
            it — the band first, the record, and the activity below. */
-        <div className="flex min-w-0 flex-1 flex-col bg-surface">
+        <div className="relative flex min-w-0 flex-1 flex-col overflow-clip bg-surface">
+          {ribbon}
           {blocking === undefined ? null : (
             <div className={byDensity(d, "px-4 pt-3.5", "pb-2")}>{blocking}</div>
           )}

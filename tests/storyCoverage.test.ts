@@ -23,6 +23,10 @@ const SHOWN_THROUGH: Readonly<Record<string, string>> = {
   RowActions: "DataTable rows — 3 · Componentes/Datos/Tabla",
   SectionHeader: "Block — 2 · Primitivas/Block",
   RecordLink: "the rows of Listing — 4 · Vistas/Lista",
+  BoardColumns: "List.Board stages — 4 · Vistas/Lista · Tablero por etapas",
+  RecordRibbon: "Record.Ribbon — 4 · Vistas/Registro · Archivado",
+  RecordAudit:
+    "Record.Audit — 4 · Vistas/Registro · Archivado, 5 · Plantillas · Factura completa",
   FieldLayoutProvider: "Sheet — the two layouts of a form",
   ReadValue: "the read mode of every control — Fechas · Lectura, Elecciones · Lectura",
   Popover: "DatePicker, ComboBox and PopoverTrigger",
@@ -48,7 +52,8 @@ const stories = files(join(ROOT, "stories"))
   .map((f) => readFileSync(f, "utf8"))
   .join("\n");
 
-const drawn = (name: string) => new RegExp(`<${name}(?:[\\s>/.]|$)`, "m").test(stories);
+/* `<` too: a generic component is written `<LookupDialog<Cliente>`. */
+const drawn = (name: string) => new RegExp(`<${name}(?:[\\s>/.<]|$)`, "m").test(stories);
 
 const components = Object.entries(pkg)
   .filter(

@@ -1,3 +1,4 @@
+import type { BoardStages } from "@sincpro/web-ui/components/listing/BoardColumns";
 import type { ListIdentity } from "@sincpro/web-ui/components/listing/ListingBar";
 import type { ListPresent } from "@sincpro/web-ui/components/listing/set";
 import type { SortField } from "@sincpro/web-ui/components/listing/SortMenu";
@@ -228,6 +229,8 @@ export type ListViewProps<T extends object> = {
   create?: DataTableCreate<T>;
   /** The board presentation. */
   card?: (item: T) => ReactNode;
+  /** The board by stages: one column each, cards moved between them. */
+  boardStages?: BoardStages<T>;
 
   /**
    * La PLANILLA. Con esto, `present="sheet"` dibuja un `SheetTable`.
@@ -272,11 +275,18 @@ export type ListViewProps<T extends object> = {
     count: number;
     clear: () => void;
     actions?: ReactNode;
+    /** Every record that matches, not just the page: «Elegir los 187 que coinciden». The total
+     *  is the server's; `onSelect` makes the selection mean «all of them». */
+    matching?: { total: number; onSelect: () => void };
   };
 
   onOpen?: (item: T) => void;
   onPeek?: (item: T) => void;
   isPeeked?: (item: T) => boolean;
+  /** What a press on the row's body does when both ways in exist. `peek` (the default) looks
+   *  without leaving the list; `open` goes to the record — a workspace whose rule is «a row
+   *  opens the page» (the composer's) says `open`, and 👁 stays for the look. */
+  rowClick?: "peek" | "open";
 
   /** The three states, in a single place. Every view used to re-assemble them
    *  with three nested ternaries, and that is why «empty because of a filter»

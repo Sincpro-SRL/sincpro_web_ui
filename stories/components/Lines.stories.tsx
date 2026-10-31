@@ -68,6 +68,15 @@ function useLines(initial: readonly InvoiceLine[]) {
     onRemove: (id: string) => setLines((all) => all.filter((l) => l.id !== id)),
     onRestore: (line: InvoiceLine, index: number) =>
       setLines((all) => restoreAt(all, line, index)),
+    /* The line goes in front of `before`, or to the end: the document's own order. */
+    onReorder: (id: string, before: string | null) =>
+      setLines((all) => {
+        const moving = all.find((l) => l.id === id);
+        if (moving === undefined) return all;
+        const rest = all.filter((l) => l.id !== id);
+        const at = before === null ? rest.length : rest.findIndex((l) => l.id === before);
+        return [...rest.slice(0, at), moving, ...rest.slice(at)];
+      }),
   };
 }
 
@@ -75,7 +84,8 @@ function useLines(initial: readonly InvoiceLine[]) {
  * **Un borrador.** Tocá una fila para cambiar la cantidad o el descuento ahí mismo; el lápiz
  * («Editar la línea») abre la línea entera en un editor: producto, cantidad, precio y
  * descuento. Con el teclado: Tab hasta el lápiz, Enter, editá, Enter guarda y el foco vuelve
- * a la fila. La papelera quita la línea al instante, y el aviso ofrece deshacer.
+ * a la fila. La papelera quita la línea al instante, y el aviso ofrece deshacer. El agarre al
+ * principio de cada línea la cambia de lugar: arrastrándolo, o con Alt + ↑ / ↓.
  */
 export const Borrador: Story = {
   render: function Render() {
