@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   AppFrame,
@@ -8,19 +7,13 @@ import {
   SPANISH_COPY,
   UiCopyProvider,
 } from "@sincpro/web-ui";
-import { CommandSearch } from "@sincpro/web-ui/components/navigation/CommandPalette";
-import {
-  commandMatches,
-  groupCommands,
-  type PaletteCommand,
-} from "@sincpro/web-ui/components/navigation/commands";
-import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
- * Context: the keyboard of the tree and of the palette is React Aria's to test. What is ours
+ * Context: the keyboard of the tree is React Aria's to test. What is ours
  * is the contract around it — ids in and out, the current row marked, the path to it open,
- * the locale's match — and that adding a sidebar to `AppFrame` did not move a pixel of the
+ * the locale's numbers — and that adding a sidebar to `AppFrame` did not move a pixel of the
  * frames that do not use one.
  */
 
@@ -110,79 +103,6 @@ test("counts are drawn in the copy's locale, and zero is not drawn", () => {
   assert.match(rowOf(html, "ventas.facturas"), />1\.234</);
   assert.match(rowOf(html, "ventas.cotizaciones"), />7</);
   assert.doesNotMatch(rowOf(html, "ventas.notas"), />0</);
-});
-
-/* ---------------------------------------------------------------- *
- *  THE PALETTE
- * ---------------------------------------------------------------- */
-
-const COMMANDS: PaletteCommand[] = [
-  { id: "ir.facturacion", label: "Facturación", section: "Ir a…" },
-  { id: "ir.pedidos", label: "Pedidos", section: "Ir a…" },
-  { id: "crear.venta", label: "Nueva venta", section: "Crear…", keywords: ["factura"] },
-  { id: "ayuda", label: "Ayuda" },
-  { id: "crear.cliente", label: "Nuevo cliente", section: "Crear…", shortcut: "Alt+C" },
-];
-
-function search(query: string): string {
-  return renderToStaticMarkup(
-    <UiCopyProvider copy={SPANISH_COPY}>
-      <AriaLocale>
-        <CommandSearch commands={COMMANDS} onRun={() => {}} query={query} />
-      </AriaLocale>
-    </UiCopyProvider>,
-  );
-}
-
-test("commands are grouped by section, the unsectioned ones first", () => {
-  const groups = groupCommands(COMMANDS);
-  assert.deepEqual(
-    groups.map((g) => [g.section, g.commands.map((c) => c.id)]),
-    [
-      [undefined, ["ayuda"]],
-      ["Ir a…", ["ir.facturacion", "ir.pedidos"]],
-      ["Crear…", ["crear.venta", "crear.cliente"]],
-    ],
-  );
-});
-
-test("a match takes every word, in any order, in the label or the keywords", () => {
-  const contains = (text: string, part: string) =>
-    text.toLowerCase().includes(part.toLowerCase());
-  const venta = COMMANDS[2]!;
-  assert.ok(commandMatches(venta, "nueva venta", contains));
-  assert.ok(commandMatches(venta, "venta nueva", contains));
-  assert.ok(commandMatches(venta, "factura", contains), "a keyword finds it");
-  assert.ok(commandMatches(venta, "   ", contains), "an empty query keeps everything");
-  assert.ok(!commandMatches(venta, "nueva compra", contains));
-});
-
-test("the palette lists every command, under its heading, when nothing is typed", () => {
-  const html = search("");
-  for (const c of COMMANDS) assert.match(html, new RegExp(`>${c.label}<`));
-  assert.match(html, /<header[^>]*>Ir a…<\/header>/);
-  assert.match(html, /<header[^>]*>Crear…<\/header>/);
-  assert.match(html, /<kbd[^>]*>Alt\+C<\/kbd>/);
-  assert.equal(html.match(/role="menuitem"/g)?.length, COMMANDS.length);
-});
-
-test("the palette filters with the locale: no accent, any case, keywords count", () => {
-  const html = search("FACTURACION");
-  assert.match(html, />Facturación</);
-  assert.doesNotMatch(html, />Pedidos</);
-  assert.doesNotMatch(html, />Nueva venta</, "«factura» is a keyword, not «facturacion»");
-  assert.doesNotMatch(html, /Crear…/, "a section left empty is not drawn");
-
-  const byKeyword = search("factura");
-  assert.match(byKeyword, />Nueva venta</);
-  assert.match(byKeyword, />Facturación</);
-});
-
-test("nothing matches: the copy table says so", () => {
-  const html = search("inexistente");
-  assert.match(html, /role="menu"[^>]*data-empty="true"/);
-  assert.doesNotMatch(html, /data-key=/);
-  assert.match(html, /Nada coincide\./);
 });
 
 /* ---------------------------------------------------------------- *

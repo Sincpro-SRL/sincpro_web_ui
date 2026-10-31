@@ -7,6 +7,7 @@ import { stickyTop } from "@sincpro/web-ui/foundations/sticky";
 import { Menu, type MenuGroup } from "@sincpro/web-ui/primitives/menu/Menu";
 import { HEADER_TEXT } from "@sincpro/web-ui/primitives/table/Table";
 import { CopyButton } from "@sincpro/web-ui/primitives/value/Copyable";
+import { Avatar } from "@sincpro/web-ui/primitives/value/Person";
 import type { LucideIcon } from "lucide-react";
 import { ChevronRight, Eye, MoreHorizontal, SquareArrowOutUpRight } from "lucide-react";
 import type { ReactNode } from "react";
@@ -119,10 +120,12 @@ function Trail({
  *  whether `FAC/2026/0118` was paid or overdue you had to open it. */
 export function Row({
   icon: Icon,
+  avatar,
   name,
   onOpen,
   onPeek,
   click = "peek",
+  openers = true,
   tags,
   meta,
   selected,
@@ -135,6 +138,8 @@ export function Row({
   copy: copyAs,
 }: {
   icon?: LucideIcon;
+  /** A person or a company in the icon's place: who the row is, recognised before it is read. */
+  avatar?: { name: string; src?: string };
   name: string;
   /** The copy button among the row's actions: on by default, copying the row's name — the
    *  number of an invoice, a customer — without opening it. A string copies that instead;
@@ -144,6 +149,8 @@ export function Row({
   onPeek?: () => void;
   /** What a press on the body does when both exist: the look (default) or the record. */
   click?: "peek" | "open";
+  /** The 👁 / ↗ buttons. Off in a list that chooses: there the row answers, it does not open. */
+  openers?: boolean;
   tags?: ReactNode;
   /** The secondary data, already formatted. In mono: it aligns across rows. */
   meta?: string;
@@ -209,7 +216,13 @@ export function Row({
           />
         )}
 
-        {Icon === undefined ? null : (
+        {avatar !== undefined ? (
+          <Avatar
+            name={avatar.name}
+            size="sm"
+            {...(avatar.src === undefined ? {} : { src: avatar.src })}
+          />
+        ) : Icon === undefined ? null : (
           <Icon
             className="size-(--size-icon-md) shrink-0 text-muted"
             strokeWidth={1.75}
@@ -286,8 +299,8 @@ export function Row({
             openAs={openAs}
             {...(actions === undefined ? {} : { actions })}
             copy={copyAs}
-            {...(onPeek === undefined ? {} : { onPeek })}
-            {...(onOpen === undefined ? {} : { onOpen })}
+            {...(onPeek === undefined || !openers ? {} : { onPeek })}
+            {...(onOpen === undefined || !openers ? {} : { onOpen })}
             {...(more === undefined ? {} : { more })}
             {...(onMoreSelect === undefined ? {} : { onMoreSelect })}
           />
@@ -352,6 +365,7 @@ export function RowHeader({
   tags,
   withSelection = false,
   withIcon = false,
+  withAvatar = false,
   withActions = false,
   trail,
 }: {
@@ -362,6 +376,8 @@ export function RowHeader({
    *  es el único que sabe si esta lista elige y si sus filas tienen ícono. */
   withSelection?: boolean;
   withIcon?: boolean;
+  /** The rows carry a face instead of an icon: a wider spacer, so the labels stay aligned. */
+  withAvatar?: boolean;
   /** La zona de acciones de la derecha ocupa su lugar aunque esté invisible
    *  —así nada se corre al pasar el puntero—, así que el rótulo de las fichas
    *  queda desalineado si acá no se reserva lo mismo. */
@@ -387,7 +403,11 @@ export function RowHeader({
       role="presentation"
     >
       {!withSelection ? null : <span className="size-3.5 shrink-0" aria-hidden />}
-      {!withIcon ? null : <span className="size-(--size-icon-md) shrink-0" aria-hidden />}
+      {withAvatar ? (
+        <span className="size-5 shrink-0" aria-hidden />
+      ) : !withIcon ? null : (
+        <span className="size-(--size-icon-md) shrink-0" aria-hidden />
+      )}
       {/* La misma caja que arma `Row`, con los mismos pedidos: cuando la fila
           parte su renglón, el rótulo del `meta` cae al segundo igual que el
           `meta` que rotula. Calcar la caja es lo único que mantiene alineadas

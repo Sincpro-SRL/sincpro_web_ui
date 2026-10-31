@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   Button,
@@ -11,6 +10,7 @@ import {
 import type { ReactNode } from "react";
 import { Link } from "react-aria-components";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the opening — hover, focus, long press, the safe area — is React Aria's to test,
@@ -66,10 +66,22 @@ test("RelationValue with a preview keeps its link and draws no info button", () 
   assert.doesNotMatch(html, /<button/, "one way to the summary, not two");
 });
 
-test("without a preview the summary still opens from the info button", () => {
+test("a summary floats from the name, and there is no info button beside it", () => {
   const html = es(<RelationValue name={NAME} href="/clientes/7" summary={{ facts: [] }} />);
-  assert.doesNotMatch(html, /<a[^>]*aria-haspopup/);
+  assert.match(html, /<a[^>]*aria-haspopup="dialog"/);
+  assert.doesNotMatch(html, /<button[^>]*aria-label="Resumen de/);
+});
+
+test("a name that goes nowhere keeps the info button: it is the only way to the summary", () => {
+  const html = es(<RelationValue name={NAME} summary={{ facts: [] }} />);
   assert.match(html, /<button[^>]*aria-label="Resumen de Distribuidora Andina S.R.L."/);
+});
+
+test("preview={false} floats nothing", () => {
+  const html = es(
+    <RelationValue name={NAME} href="/clientes/7" summary={{ facts: [] }} preview={false} />,
+  );
+  assert.doesNotMatch(html, /aria-haspopup/);
 });
 
 test("with no link to ride on, the preview's content opens from the info button", () => {

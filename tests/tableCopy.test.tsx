@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   type DataColumn,
@@ -10,6 +9,7 @@ import {
 } from "@sincpro/web-ui";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: in a list and in a table a value is copied without opening its row — the number

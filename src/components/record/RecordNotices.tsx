@@ -28,7 +28,7 @@ import { Button, Dialog, DialogTrigger, Heading } from "react-aria-components";
  *                 indicator — the count, toned by the most urgent. Pressing it
  *                 opens the panel and moves the focus to the notices (beside
  *                 the sheet on a wide record; below it, scrolled to, on a narrow
- *                 one). A record WITHOUT a panel (a `Drill` context, a dialog)
+ *                 one). A record WITHOUT a panel (a modal, a drawer)
  *                 keeps the older answer: the indicator opens them in a popover
  *                 on PRESS (like `Flag` and `Hint`; a hover card does not exist
  *                 on a tablet and is gone before the sentence is read).
@@ -54,7 +54,7 @@ import { Button, Dialog, DialogTrigger, Heading } from "react-aria-components";
  *  The indicator is in the rail's first line with the counters, and that line
  *  wraps instead of clipping (`Line`): it is never pushed out of reach, and it
  *  does not compete with the primary for the thumb bar. Without a rail (a
- *  dialog, a `Drill` context, a drawer) it goes first in the record, next to
+ *  modal, a drawer) it goes first in the record, next to
  *  the counters — where `RecordHeader` puts what the missing rail would have
  *  said. The blocking band is the paper's width, the action under the sentence
  *  when they do not fit side by side (`Callout`).

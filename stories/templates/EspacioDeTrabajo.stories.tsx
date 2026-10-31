@@ -3,6 +3,7 @@ import {
   RecordLink as WorkspaceLink,
   type ResourceRef,
   useCrumbs,
+  useViewTool,
   type ViewProps,
   type ViewSpec,
 } from "@sincpro/web-composer";
@@ -11,10 +12,11 @@ import {
   type DataColumn,
   Field,
   List,
-  Lookup,
   Picker,
   type PickerItem,
   Record,
+  RecordCard,
+  SearchField,
   SheetGroup,
   SheetGroups,
   Tag,
@@ -22,6 +24,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { ShoppingCart, User } from "lucide-react";
 import { useEffect, useState } from "react";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { Workspace } from "../support/composer";
 import {
@@ -44,8 +47,8 @@ import { CUSTOMER_CARDS, type CustomerCard } from "../support/erp-people";
  *   - a row of the list           → `api.open(ref)`: the PAGE, and the breadcrumb remembers
  *   - its 👁                      → `api.open(ref, { to: "peek" })`: a drawer, the list stays
  *   - a customer in a column      → the composer's link: peek, side panel or window
- *   - «Buscar más…» of a field    → `api.pick(chooser, onPick)`: a WINDOW that answers, drawn
- *                                    with web-ui's `Lookup`, that moves and docks
+ *   - «Buscar más…» of a field    → `api.pick(chooser, onPick, { to: "modal" })`: a modal over
+ *                                    this surface only, drawn with web-ui's `Lookup`, answering
  *   - the record's crumbs         → `useCrumbs(api)` into `Record.Crumbs`
  *
  * The adapter (skin, colours, registry) is `stories/support/composer.tsx`; in an app it is
@@ -94,15 +97,18 @@ const CUSTOMER_COLUMNS: DataColumn<CustomerCard>[] = [
 
 function Pedidos({ api }: ViewProps) {
   const crumbs = useCrumbs(api);
+  const [orders, setOrders] = useState<SalesOrder[]>(SALES_ORDERS);
+  const [present, setPresent] = useState<"table" | "board">("table");
   return (
     <List<SalesOrder>
-      items={SALES_ORDERS}
+      items={orders}
       keyOf={(o) => o.id}
       /* The workspace's rule: a row opens the PAGE. The look is the 👁. */
       rowClick="open"
       onOpen={(o) => api.open(orderRef(o))}
       onPeek={(o) => api.open(orderRef(o), { to: Destination.Peek })}
-      present="table"
+      present={present}
+      onPresentChange={(next) => setPresent(next as "table" | "board")}
     >
       <List.Bar>
         <List.Crumbs crumbs={crumbs} />
@@ -138,6 +144,40 @@ function Pedidos({ api }: ViewProps) {
           },
         ]}
       />
+      {/* The same orders by stage. The customer in a card is a link to ANOTHER record, inside a
+          card that drags: `draggable={false}` lets the card drag and the name only click
+          (composer 1.4). */}
+      <List.Board<SalesOrder>
+        card={(o) => (
+          <RecordCard
+            title={o.number}
+            subtitle={
+              <WorkspaceLink api={api} resource={customerRef(o.taxId)} draggable={false}>
+                {o.customer}
+              </WorkspaceLink>
+            }
+            figure={`Bs. ${o.total.toLocaleString("es-BO")}`}
+            onOpen={() => api.open(orderRef(o))}
+          />
+        )}
+        stages={{
+          of: (o) => o.stage,
+          columns: [
+            { id: "quotation", label: STAGE_LABEL.quotation },
+            { id: "order", label: STAGE_LABEL.order, tone: "info" },
+            { id: "invoiced", label: STAGE_LABEL.invoiced, tone: "good" },
+          ],
+          nameOf: (o) => o.number,
+          total: (inside) =>
+            `Bs. ${inside.reduce((sum, o) => sum + o.total, 0).toLocaleString("es-BO")}`,
+          onMove: (o, to) =>
+            setOrders((all) =>
+              all.map((one) =>
+                one.id === o.id ? { ...one, stage: to as SalesOrder["stage"] } : one,
+              ),
+            ),
+        }}
+      />
     </List>
   );
 }
@@ -147,6 +187,13 @@ function Pedido({ resource, api }: ViewProps) {
   const crumbs = useCrumbs(api);
   const [customer, setCustomer] = useState(order.taxId);
   useEffect(() => api.setTitle(order.number), [api, order.number]);
+  /* What THIS screen can do, offered to the browser's agent (WebMCP) while the view is open —
+     named after the record it acts on, so with two orders open the agent tells them apart. */
+  useViewTool(api, {
+    name: `confirmar_pedido.${order.number}`,
+    description: `Confirmar el pedido ${order.number} de ${order.customer}`,
+    execute: () => `Pedido ${order.number} confirmado`,
+  });
   const card = CUSTOMER_CARDS.find((c) => c.taxId === customer);
   return (
     <Record
@@ -177,12 +224,18 @@ function Pedido({ resource, api }: ViewProps) {
                 items={CUSTOMER_ITEMS}
                 value={customer}
                 onChange={setCustomer}
-                /* «Buscar más…» asks the WORKSPACE: a window that answers, not a modal over
-                   the form — it moves, docks, and the order stays readable behind it. */
+                /* «Buscar más…» asks the WORKSPACE: a modal over THIS surface only (the rest of
+                   the workspace keeps answering) that moves by its title and answers the field. */
                 onBrowseAll={(query) =>
-                  api.pick(chooser(query), (picked) => {
-                    if (picked.id !== undefined) setCustomer(picked.id);
-                  })
+                  api.pick(
+                    chooser(query),
+                    (picked) => {
+                      if (picked.id !== undefined) setCustomer(picked.id);
+                    },
+                    /* Wide enough for the customer's columns: a chooser at the default size
+                       cut the state column off. */
+                    { to: Destination.Modal, size: { w: 760, h: 520 } },
+                  )
                 }
                 onOpen={(id) => api.open(customerRef(id), { to: Destination.Window })}
               />
@@ -233,19 +286,29 @@ function Cliente({ resource, api }: ViewProps) {
   );
 }
 
-/** The chooser a field asks for with `api.pick`: web-ui's `Lookup`, answering the workspace. */
+/** The chooser a field asks for with `api.pick`: web-ui's `List` in choosing mode — its row
+ *  ANSWERS the field (`api.answer`), it does not open nor peek (the composer's rule). */
 function ElegirCliente({ resource, api }: ViewProps) {
   const [query, setQuery] = useState(resource.params?.["q"] ?? "");
+  const wanted = query.trim().toLocaleLowerCase("es");
+  const shown = CUSTOMER_CARDS.filter((c) =>
+    `${c.name} ${c.taxId} ${c.city}`.toLocaleLowerCase("es").includes(wanted),
+  );
   return (
-    <Lookup<CustomerCard>
-      items={CUSTOMER_CARDS}
+    <List<CustomerCard>
+      embedded
+      items={shown}
       keyOf={(c) => c.taxId}
-      columns={CUSTOMER_COLUMNS}
-      query={query}
-      onQueryChange={setQuery}
-      onPick={(id) => api.answer(customerRef(id))}
-      inset
-    />
+      present="table"
+      onChoose={(c) => api.answer(customerRef(c.taxId))}
+    >
+      <List.Bar>
+        <List.Search>
+          <SearchField value={query} onChange={setQuery} placeholder="Buscar un cliente…" />
+        </List.Search>
+      </List.Bar>
+      <List.Table<CustomerCard> columns={CUSTOMER_COLUMNS} />
+    </List>
   );
 }
 
@@ -286,13 +349,15 @@ const VIEWS: readonly ViewSpec[] = [
 ];
 
 const meta: Meta = {
+  /* A screen a person works on: one primary action, and a second pass in dark (vitest). */
+  tags: ["screen"],
   title: "5 · Plantillas/Espacio de trabajo · web-ui dentro del composer",
   parameters: {
     layout: "fullscreen",
     docs: {
       description: {
         component:
-          "Las vistas son web-ui; DÓNDE se abre cada cosa lo decide el composer. Una fila abre la página con su miga, el 👁 abre un vistazo, un cliente en la columna se abre al costado o en ventana, y «Buscar más…» de un campo pide una ventana que contesta (`api.pick`), dibujada con `Lookup`. El composer es dependencia SOLO del Storybook; en una app, el adaptador es `<SincproApp>` de web-framework.",
+          "Las vistas son web-ui; DÓNDE se abre cada cosa lo decide el composer. Una fila abre la página con su miga, el 👁 abre una vista previa, un cliente en la columna se abre al costado o en ventana, y «Buscar más…» de un campo pide un modal que contesta (`api.pick` hacia el modal), dibujada con `Lookup`. El composer es dependencia SOLO del Storybook; en una app, el adaptador es `<SincproApp>` de web-framework.",
       },
     },
   },
@@ -301,14 +366,24 @@ const meta: Meta = {
 export default meta;
 type Story = StoryObj;
 
-/** Empieza en la lista. Probá: una fila (página y miga), su 👁 (vistazo), un cliente
- *  (vistazo, panel o ventana con los íconos del enlace), ⌘K. */
+/** Empieza en la lista. Probá: una fila (página y miga), su 👁 (vista previa), un cliente
+ *  (vista previa, panel o ventana con los íconos del enlace), ⌘K. */
 export const DesdeLaLista: Story = {
   render: () => <Workspace views={VIEWS} start={ORDERS} />,
 };
 
-/** Empieza en un pedido. «Cliente» → «Buscar más…» abre una ventana del espacio de trabajo
- *  que se mueve y se acopla; elegir una fila contesta al campo y cierra la ventana. */
-export const BuscarMasEnVentana: Story = {
+/** Empieza en un pedido. «Cliente» → «Buscar más…» abre un modal SOBRE el pedido (el resto
+ *  del espacio de trabajo sigue respondiendo); elegir una fila contesta al campo y lo cierra. */
+export const BuscarMasEnModal: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(document.body);
+    const [field] = await canvas.findAllByRole("combobox");
+    await userEvent.click(field!);
+    await userEvent.click(await page.findByRole("option", { name: /Buscar más/ }));
+    /* A modal of the workspace answers the field. */
+    await userEvent.click(await page.findByText("Panadería Doña Julia"));
+    await waitFor(() => expect(field).toHaveValue("Panadería Doña Julia"));
+  },
   render: () => <Workspace views={VIEWS} start={orderRef(SALES_ORDERS[0]!)} />,
 };

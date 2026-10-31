@@ -641,6 +641,9 @@ export function SearchBar({
 
           <input
             ref={input}
+            /* Named even when a placeholder shows: a placeholder is not a label, and once
+               chips are set there is none at all. */
+            aria-label={copy.choice.search}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {

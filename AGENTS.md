@@ -10,6 +10,11 @@ idea; this file is how to keep it.
   the component that applies it and the check that enforces it. A screen that breaks one of
   them is a bug, not a matter of taste.
 
+- Read `stories/Estilo.mdx` («Nuestro estilo»): how things OPEN — a row goes to the page, 👁 to
+  the peek, a many2one to a modal by default with «Abrir en…» for the rest, never a modal over a
+  modal, choosers are `List onChoose`. Inside the composer workspace every modal is a composer
+  view, never a web-ui `Dialog`; templates follow it.
+
 - Run `make dev` and read the existing stories (Storybook serves an MCP endpoint at `/mcp`).
   The piece you are about to write probably exists, or its sibling does.
 - Find the level first. Every file belongs to exactly one, and that decides where it goes and
@@ -57,9 +62,13 @@ idea; this file is how to keep it.
 
 - Code and comments in English. Comments explain _why_ — a comment that repeats the code is
   noise. The `Context:` blocks at the top of files are the design record; keep them true.
-- Tests go in `tests/` with `node:test` + `node:assert/strict`; render with
-  `renderToStaticMarkup` when markup matters. A change ships with a test that fails without it.
+- One runner, vitest (`vitest.config.ts`), as in web-composer and web-framework. Logic and
+  static markup go in `tests/` (`model` project, `node:assert/strict`, `renderToStaticMarkup`).
+  Behaviour that needs a browser — a click, a key, a drag — is the story's `play`: the story IS
+  the test (`storybook` and `storybook-dark` projects). A change ships with a test that fails
+  without it.
 - Every new piece gets a story in the folder of its level, and `make smoke` must stay green.
+  Views and templates are tagged `screen`: one primary action, and a second pass in dark.
 - Form controls take their wiring from `Field`: write `<Field label="…"><TextInput … /></Field>`.
   A new control reads `useFieldIds({ id, describedBy, invalid })` so it works the same way.
 - Compound pieces are written as a tree with `slot()` (`foundations/slots.ts`), the way

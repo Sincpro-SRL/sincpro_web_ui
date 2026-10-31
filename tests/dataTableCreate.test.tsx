@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { type DataColumn, DataTable, type DataTableCreate } from "@sincpro/web-ui";
 import { ListView } from "@sincpro/web-ui/views/list/ListView";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: a new record written as one more row of the list — Odoo's editable list. The keys

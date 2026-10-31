@@ -1,17 +1,20 @@
 "use client";
 
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import type { Tone } from "@sincpro/web-ui/foundations/types";
+import type { OpenTarget, Tone } from "@sincpro/web-ui/foundations/types";
 import { cn, focusRing } from "@sincpro/web-ui/foundations/variants";
 import { Button, ButtonLink, IconButton } from "@sincpro/web-ui/primitives/button/Button";
 import { CellStack, Thumb } from "@sincpro/web-ui/primitives/cell/CellStack";
 import { FieldIdsContext } from "@sincpro/web-ui/primitives/field/context";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
+import { Menu } from "@sincpro/web-ui/primitives/menu/Menu";
 import { PopoverTrigger } from "@sincpro/web-ui/primitives/overlay/PopoverTrigger";
 import { Preview } from "@sincpro/web-ui/primitives/overlay/Preview";
 import { Tag } from "@sincpro/web-ui/primitives/tag/Tag";
+import { Avatar } from "@sincpro/web-ui/primitives/value/Avatar";
+import { ContactRows, type PersonContact } from "@sincpro/web-ui/primitives/value/contact";
 import type { LucideIcon } from "lucide-react";
-import { ArrowRight, Info } from "lucide-react";
+import { ArrowRight, Ellipsis, Info } from "lucide-react";
 import { type ReactNode, useContext } from "react";
 import { Link } from "react-aria-components";
 
@@ -25,30 +28,19 @@ import { Link } from "react-aria-components";
  *  it apart below (the NIT) and its picture on the left — the same hierarchy
  *  as `CellStack` — and, when there is one, a SUMMARY that floats next to it.
  *
- *  ── Why the summary opens from an info button, and not on hover ─────
+ *  ── The summary floats from the NAME — one way to it, not two ───────
  *
- *  A tooltip (`TooltipTrigger`) is for a few words that are never interactive:
- *  React Aria makes it a `role="tooltip"` that the keyboard cannot enter. The
- *  summary holds facts AND an «Abrir» action, so it is a dialog in a popover
- *  (`DialogTrigger`, through `PopoverTrigger`): focus goes into it, Escape and a
- *  click outside close it, focus comes back. A hover card would open on the
- *  pointer's way across a table, never on touch, and could not be reached with
- *  Tab without a second, invisible mechanism. One visible affordance — the `i`
- *  next to the name — opens it the same way for the mouse, the keyboard and the
- *  finger, and leaves the name free to do the one thing a link does: go.
+ *  It holds facts AND an «Abrir» action, so it is not a tooltip (a `role="tooltip"` the
+ *  keyboard cannot enter) but a non-modal card (`Preview`, React Aria's `PreviewTrigger`):
+ *  resting the pointer on the name, stopping on it with Tab (Tab goes into the card, Escape
+ *  closes it) or a long press on touch. It waits to be rested on (600 ms), so crossing a
+ *  column of thirty customers opens nothing.
  *
- *  ── …unless the place asks for a preview on the name (`preview`) ────
- *
- *  In a column of thirty customers an `i` per row is thirty marks that say the
- *  same thing. There, `preview` floats the card from the NAME itself (`Preview`,
- *  React Aria's `PreviewTrigger`): resting the pointer on it, stopping on it with
- *  Tab, or a long press. It is not the hover card refused above: it waits to be
- *  rested on, the keyboard reaches it through the link it rides on (Tab goes
- *  into it, Escape closes it), and touch has its long press. The `i` is then not
- *  drawn — one way to the summary, not two side by side. It is opt-in because the
- *  `i` is the discoverable one; the preview is for where the marks cost more.
- *  It rides on the LINK: a name with nowhere to go is not focusable, so without
- *  `href`/`onOpen` the same content opens from the `i`, which every input reaches.
+ *  There used to be an `i` beside the name opening the same card, and a `preview` switch to
+ *  float it from the name instead: two ways to one thing, and the `i` drawn thirty times down a
+ *  column. Now the name is the way. The `i` remains only where the name goes NOWHERE (no
+ *  `href`/`onOpen`): a name that is not a link is not focusable, and the card has to be
+ *  reachable by every input.
  *
  *  ── The read face of a field; the `Picker` is the edit face ─────────
  *
@@ -69,13 +61,18 @@ export type RelationSummary = {
   facts?: readonly { label: string; value: ReactNode }[];
 };
 
-type RelationMedia = { src?: string; alt?: string; icon?: LucideIcon };
+/** The picture of the related record: a photo or an icon on a square tile — or, for a person
+ *  (`person`), the round face: the photo, or the initials in the color that person has
+ *  everywhere. */
+type RelationMedia = { src?: string; alt?: string; icon?: LucideIcon; person?: true };
 
 export type RelationCardProps = {
   name: string;
   secondary?: ReactNode;
   media?: RelationMedia;
   summary?: RelationSummary;
+  /** How to reach it — a person, a company: one row per way (write, call, WhatsApp). */
+  contact?: PersonContact;
   /** «Abrir»: go to the related record. */
   onOpen?: () => void;
   /** The record's address, when it has one: «Abrir» becomes a real link. */
@@ -88,13 +85,15 @@ export type RelationCardProps = {
  * Context: it answers the question a person has about the customer of an invoice without
  * leaving the invoice — «does it owe us?», «what is its NIT?» — and, when the answer is
  * «I need more», one press takes them to the record. It is what floats from a
- * `RelationValue`, and it is exported on its own for a side panel.
+ * `RelationValue` and what opens from a `UserChip` (a person is a related record too: round
+ * face, role, the ways to reach them), and it is exported on its own for a side panel.
  */
 export function RelationCard({
   name,
   secondary,
   media,
   summary = {},
+  contact,
   onOpen,
   href,
 }: RelationCardProps) {
@@ -105,7 +104,16 @@ export function RelationCard({
        a table row that opens on click among them. A click inside the card stays here. */
     <div className="flex w-72 max-w-full flex-col gap-3" onClick={(e) => e.stopPropagation()}>
       <div className="flex min-w-0 items-start gap-3">
-        {media === undefined ? null : (
+        {media === undefined ? null : media.person === true ? (
+          /* The name is written beside it: the photo's `alt` would say it twice. */
+          <span aria-hidden className="flex shrink-0">
+            <Avatar
+              name={name}
+              size="xl"
+              {...(media.src === undefined ? {} : { src: media.src })}
+            />
+          </span>
+        ) : (
           <Thumb
             size="lg"
             {...(media.src === undefined ? {} : { src: media.src })}
@@ -136,6 +144,8 @@ export function RelationCard({
           ))}
         </dl>
       )}
+
+      {contact === undefined ? null : <ContactRows contact={contact} />}
 
       {href !== undefined ? (
         <div className="flex justify-end border-t border-line pt-2">
@@ -169,14 +179,18 @@ export type RelationValueProps = {
   media?: RelationMedia;
   /** Go to the related record. The name becomes a link. */
   onOpen?: () => void;
+  /** Go to it in the place the person chose (`OpenTarget`): the name opens in the first of
+   *  `openTargets` — a modal by default, the form stays behind — and «Abrir en…» beside it offers
+   *  the rest. Takes over from `onOpen`. */
+  onOpenIn?: (to: OpenTarget) => void;
+  openTargets?: readonly OpenTarget[];
   /** The related record's address: the name becomes a real `<a>` (middle-click, copy). */
   href?: string;
-  /** Present = an info button next to the name opens the `RelationCard`. */
+  /** The facts of the related record. Present = its `RelationCard` floats from the name
+   *  (hover, focus, long press); from an info button when the name is not a link. */
   summary?: RelationSummary;
-  /** Floats the summary from the NAME on hover, focus or long press, instead of from the
-   *  info button. `true` = the `RelationCard` (with `summary` when given); a node = that
-   *  content instead — the product of a line, a consumer's own card. Needs the name to be a
-   *  link (`href` or `onOpen`); without one the content opens from the info button. */
+  /** What floats instead of the `RelationCard` — the product of a line, a consumer's own
+   *  card. `true` floats the card even without `summary`; `false` floats nothing. */
   preview?: boolean | ReactNode;
   /** The control that EDITS this relation — a `Picker` — drawn instead in edit mode. */
   editor?: ReactNode;
@@ -193,13 +207,18 @@ export function RelationValue({
   name,
   secondary,
   media,
-  onOpen,
+  onOpen: onOpenOwn,
+  onOpenIn,
+  openTargets = ["modal", "peek", "side", "page"],
   href,
   summary,
   preview,
   editor,
   mode,
 }: RelationValueProps) {
+  const first = openTargets[0];
+  const onOpen =
+    onOpenIn !== undefined && first !== undefined ? () => onOpenIn(first) : onOpenOwn;
   const copy = useUiCopy();
   const formMode = useFormMode(mode);
   /* Inside a `Field` the value takes the control's height, so a form that goes from
@@ -233,11 +252,15 @@ export function RelationValue({
   );
   /* What floats from the name: the card, or the consumer's own content. */
   const previewed: ReactNode =
-    preview === undefined || preview === null || preview === false
+    preview === false || preview === null
       ? undefined
-      : preview === true
-        ? card(onOpen)
-        : preview;
+      : preview === undefined
+        ? summary === undefined
+          ? undefined
+          : card(onOpen)
+        : preview === true
+          ? card(onOpen)
+          : preview;
 
   const link = goes ? (
     <Link
@@ -265,32 +288,39 @@ export function RelationValue({
       </Preview>
     );
 
-  /* The `i`: the summary when there is no preview on the name; the preview's content when
-     there is no link for it to ride on. */
-  const info: ((close: () => void) => ReactNode) | undefined =
-    previewed !== undefined
-      ? goes
-        ? undefined
-        : () => previewed
-      : summary === undefined
-        ? undefined
-        : (close) =>
-            card(
-              onOpen === undefined
-                ? undefined
-                : () => {
-                    close();
-                    onOpen();
-                  },
-            );
+  /* The `i` only when the name is not a link: there is nothing for the card to ride on. */
+  const info: (() => ReactNode) | undefined =
+    previewed === undefined || goes ? undefined : () => previewed;
 
   return frame(
     <span className="inline-flex max-w-full min-w-0 items-center gap-1">
       <CellStack
         primary={primary}
         {...(secondary === undefined ? {} : { secondary })}
-        {...(media === undefined ? {} : { media })}
+        {...(media === undefined
+          ? {}
+          : media.person === true
+            ? { avatar: { name, ...(media.src === undefined ? {} : { src: media.src }) } }
+            : { media })}
       />
+      {onOpenIn === undefined || openTargets.length < 2 ? null : (
+        <Menu
+          label={copy.picker.openMore}
+          icon={Ellipsis}
+          iconOnly
+          chevron={false}
+          variant="text"
+          groups={[
+            {
+              options: openTargets.slice(1).map((to) => ({
+                id: to,
+                label: copy.picker.openIn[to],
+              })),
+            },
+          ]}
+          onSelect={(to) => onOpenIn(to as OpenTarget)}
+        />
+      )}
       {info === undefined ? null : (
         <PopoverTrigger
           label={summaryLabel}

@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import type { ModelDefinition } from "@sincpro/web-ui/components/search/model";
 import {
@@ -13,6 +12,7 @@ import {
   valueFor,
 } from "@sincpro/web-ui/components/search/query";
 import { installCopy } from "@sincpro/web-ui/foundations/copy";
+import { test } from "vitest";
 
 /**
  * LO QUE LA BARRA PUEDE PREGUNTAR, y por qué no ofrece lo que no.

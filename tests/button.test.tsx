@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   Button,
@@ -14,6 +13,7 @@ import {
 import { Download } from "lucide-react";
 import { createRef, isValidElement, type ReactElement, type ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: React Aria's triggers (tooltip, dialog, toolbar) talk to a control by handing it a

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { type TabItem, Tabs } from "@sincpro/web-ui";
 import { FileText } from "lucide-react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Las dos marcas de una pestaña dicen cosas distintas, y la prueba está para que

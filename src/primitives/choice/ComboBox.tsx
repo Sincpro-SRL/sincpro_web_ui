@@ -22,7 +22,7 @@ import {
 } from "react-aria-components";
 
 /**
- * One of many, found by typing: the customer of an invoice, the product of a line.
+ * One of a closed list, found by typing: a country, a currency, a tax regime, a unit.
  *
  * Context: a `Select` makes you scroll a list you already know the name in; here you type
  * three letters of it. The filter is React Aria's `contains` in the locale of the copy table
@@ -30,9 +30,13 @@ import {
  * The value is the option's `value` string — what the backend stores — never React Aria's
  * `Key`.
  *
- * It is not `Picker`: that one chooses a RECORD among thousands, with metadata rows, a cap
- * and a "see more". This is a closed list already in memory — tens to a few hundred — where
- * one muted line under the name (a tax id, a city) is enough to tell two apart.
+ * The four ways to choose, and which is which:
+ *   - `Select`    a short closed list (a handful): open it and read it.
+ *   - `ComboBox`  a long closed list already in memory (tens to a few hundred): type three
+ *                 letters; one muted line under the name is enough to tell two apart.
+ *   - `Picker`    a RECORD — a customer, a product — among thousands: rows with face, facts
+ *                 and widgets, «Buscar más…», create, and opening the chosen one.
+ *   - `Suggest`   free text that proposes what already exists without forbidding a new one.
  *
  * When nothing matches, the list simply closes: an empty floating box tells nothing the
  * unchanged field does not, and the system has no "no results" sentence of its own here.

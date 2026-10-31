@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   axisLabels,
@@ -11,6 +10,7 @@ import {
   pivotIsEmpty,
   pivotOf,
 } from "@sincpro/web-ui";
+import { test } from "vitest";
 
 type Row = { id: string; origin: string; month: string; rows: number };
 

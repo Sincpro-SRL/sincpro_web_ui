@@ -1,15 +1,21 @@
 import {
+  Destination,
+  type ResourceRef,
+  useCrumbs,
+  type ViewProps,
+  type ViewSpec,
+} from "@sincpro/web-composer";
+import {
   type ActivityEvent,
   type AppEntry,
-  AppFrame,
   Button,
   Copyable,
   type DataColumn,
   DataField,
   DatePicker,
   DateValue,
-  Drill,
   Field,
+  FormActions,
   FormSection,
   LineItems,
   List,
@@ -18,6 +24,7 @@ import {
   type Message,
   MessageComposer,
   NumberInput,
+  type OpenTarget,
   Picker,
   Record,
   RelationValue,
@@ -31,11 +38,9 @@ import {
   Tags,
   TagsField,
   TextInput,
-  ToastProvider,
   TopBar,
   type TopMenu,
   type TotalsProps,
-  useDrill,
   useToast,
   writeANote,
 } from "@sincpro/web-ui";
@@ -59,8 +64,17 @@ import {
   Undo2,
   User,
 } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import {
+  createContext,
+  type ReactNode,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { expect, userEvent, within } from "storybook/test";
 
+import { Workspace } from "../support/composer";
 import { money, STAGES } from "../support/erp";
 import {
   ACCOUNTS,
@@ -87,17 +101,25 @@ import { customerCard } from "../support/erp-people";
  * due, the journal entry the invoice produced, the electronic invoicing data of Bolivia's
  * SIAT, six smart buttons, seven actions, a dense header in groups and the history.
  *
- * Built ONLY from the public API, like every template: when it needs something the package
- * does not export, the package is missing it — that is what this screen is for.
+ * It lives in the WORKSPACE (composer), like every template: the invoice is a view, and what
+ * it opens — a line, its product, the customer, «Registrar pago» — is another view the
+ * workspace places. A relation opens in a MODAL by default and «Abrir en…» offers the rest
+ * (peek, beside, as the page); from inside a modal a related record opens beside or in a peek,
+ * because another modal would replace the first one and lose what was typed.
+ *
+ * Built ONLY from the public API: when it needs something the package does not export, the
+ * package is missing it — that is what this screen is for.
  */
 const meta: Meta = {
+  /* A screen a person works on: one primary action, and a second pass in dark (vitest). */
+  tags: ["screen"],
   title: "5 · Plantillas/Factura completa · un registro con todo",
   parameters: {
     layout: "fullscreen",
     docs: {
       description: {
         component:
-          "Una factura del tamaño de una real: líneas por secciones con notas, columnas opcionales, impuestos por línea, pagos aplicados, el asiento contable, la facturación electrónica del SIAT y la cabecera densa. Armada sólo con la API pública.",
+          "Una factura del tamaño de una real, en el espacio de trabajo: líneas por secciones con notas, columnas opcionales, impuestos por línea, pagos aplicados, el asiento contable, la facturación electrónica del SIAT y la cabecera densa. La línea, el producto y el cliente se abren en MODAL; «Abrir en…» ofrece vista previa, al costado o como página. «Registrar pago» es un modal sobre la factura. Armada sólo con la API pública.",
       },
     },
   },
@@ -148,25 +170,45 @@ const MENUS: TopMenu[] = [
   },
 ];
 
-function Frame({ children }: { children: ReactNode }) {
-  return (
-    <ToastProvider>
-      <AppFrame
-        menu={
-          <TopBar
-            apps={APPS}
-            currentApp="ventas"
-            menus={MENUS}
-            systray={<SystrayButton icon={Bell} label="Avisos" count={2} tone="warn" />}
-            user={{ name: "Andrés Gutiérrez", detail: "Sincpro S.R.L." }}
-          />
-        }
-      >
-        {children}
-      </AppFrame>
-    </ToastProvider>
-  );
-}
+const MENU = (
+  <TopBar
+    apps={APPS}
+    currentApp="ventas"
+    menus={MENUS}
+    systray={<SystrayButton icon={Bell} label="Avisos" count={2} tone="warn" />}
+    user={{ name: "Andrés Gutiérrez", detail: "Sincpro S.R.L." }}
+  />
+);
+
+/* ==================================================================== *
+ *  THE REFERENCES — what each view is, and where it opens
+ * ==================================================================== */
+
+const CUSTOMER_NAME = "Clínica San Gabriel S.A.";
+const CUSTOMER_TAX_ID = "1020304050";
+
+const invoiceRef = (draft: boolean): ResourceRef => ({
+  domain: "ventas",
+  kind: "factura",
+  id: draft ? "borrador" : "FAC/2026/0115",
+});
+const lineRef = (id: string): ResourceRef => ({ domain: "ventas", kind: "linea", id });
+const productRef = (name: string): ResourceRef => ({
+  domain: "ventas",
+  kind: "producto",
+  id: name,
+});
+const customerRef: ResourceRef = { domain: "ventas", kind: "cliente", id: CUSTOMER_TAX_ID };
+const paymentRef: ResourceRef = { domain: "ventas", kind: "pago", id: "FAC/2026/0115" };
+
+/** A modal over the surface, at a size that holds a record; the rest as the person chose. */
+const opened = (to: OpenTarget) =>
+  to === "modal"
+    ? { to: Destination.Modal, size: { w: 760, h: 560 } }
+    : { to: to as (typeof Destination)[keyof typeof Destination] };
+
+/** From INSIDE a modal: beside, a peek or the page — never a second modal over the first. */
+const FROM_A_MODAL: readonly OpenTarget[] = ["side", "peek", "page"];
 
 /* ==================================================================== *
  *  THE LINES — sections, notes, optional columns, taxes per line
@@ -181,7 +223,9 @@ const PRODUCTS = FULL_LINES.filter((l) => l.kind === "line").map((l) => ({
 
 const number = (v: number) => v.toLocaleString("es-BO");
 
-function lineColumns(editable: boolean, openProduct: (name: string) => void) {
+/** The product of a line is a many2one: its name opens it in a modal over the invoice, and
+ *  «Abrir en…» beside it offers a peek, beside or the page — read or being edited alike. */
+function lineColumns(editable: boolean, openProduct: (name: string, to: OpenTarget) => void) {
   const taxTags = (l: FullLine) =>
     TAXES.filter((t) => l.taxes.includes(t.value)).map((t) => ({
       id: t.value,
@@ -198,7 +242,9 @@ function lineColumns(editable: boolean, openProduct: (name: string) => void) {
         <RelationValue
           name={l.product || "—"}
           {...(l.label === "" ? {} : { secondary: l.label })}
-          {...(l.product === "" ? {} : { onOpen: () => openProduct(l.product) })}
+          {...(l.product === ""
+            ? {}
+            : { onOpenIn: (to: OpenTarget) => openProduct(l.product, to) })}
         />
       ),
       ...(editable
@@ -216,6 +262,7 @@ function lineColumns(editable: boolean, openProduct: (name: string) => void) {
                   })
                 }
                 placeholder="Buscá un producto o su código…"
+                onOpen={openProduct}
               />
             ),
           }
@@ -497,30 +544,88 @@ const HISTORY: ActivityEvent[] = [
   },
 ];
 
-function FullInvoice({ draft = false }: { draft?: boolean }) {
-  const toast = useToast();
-  const [page, setPage] = useState("lineas");
+/* ==================================================================== *
+ *  WHAT THE VIEWS SHARE — in an app, the server
+ * ==================================================================== */
+
+/** A payment registered from this screen: it lowers the balance at once and can be undone. */
+type Received = { id: string; amount: number; journal: string; date: string };
+
+const JOURNALS = [
+  { value: "bnb", label: "Banco BNB" },
+  { value: "union", label: "Banco Unión" },
+  { value: "caja", label: "Caja central" },
+];
+
+/* The invoice, its lines and its payments are read by several views at once — the line in
+   a modal reads the line the grid just changed — so they live above the workspace. */
+type Invoice = {
+  draft: boolean;
+  lines: readonly FullLine[];
+  setLines: (update: (all: readonly FullLine[]) => readonly FullLine[]) => void;
+  applied: readonly string[];
+  setApplied: (update: (ids: readonly string[]) => readonly string[]) => void;
+  received: readonly Received[];
+  receive: (payment: Received) => void;
+  unreceive: (id: string) => void;
+  /** What is still due: the total less every payment applied or registered. */
+  balance: number;
+};
+const InvoiceContext = createContext<Invoice | null>(null);
+function useInvoice(): Invoice {
+  const invoice = useContext(InvoiceContext);
+  if (invoice === null) throw new Error("useInvoice outside InvoiceProvider");
+  return invoice;
+}
+function InvoiceProvider({ draft, children }: { draft: boolean; children: ReactNode }) {
   const [lines, setLines] = useState<readonly FullLine[]>(FULL_LINES);
+  const [applied, setApplied] = useState<readonly string[]>(
+    draft ? [] : PAYMENTS.map((p) => p.id),
+  );
+  const [received, setReceived] = useState<readonly Received[]>([]);
+  const invoice = useMemo<Invoice>(() => {
+    const paid =
+      PAYMENTS.filter((p) => applied.includes(p.id)).reduce((a, p) => a + p.amount, 0) +
+      received.reduce((a, p) => a + p.amount, 0);
+    return {
+      draft,
+      lines,
+      setLines,
+      applied,
+      setApplied,
+      received,
+      receive: (payment) => setReceived((all) => [...all, payment]),
+      unreceive: (id) => setReceived((all) => all.filter((p) => p.id !== id)),
+      balance: Math.round((figuresOf(lines).total - paid) * 100) / 100,
+    };
+  }, [draft, lines, applied, received]);
+  return <InvoiceContext value={invoice}>{children}</InvoiceContext>;
+}
+
+const dated = (iso: string) => `${iso.slice(8, 10)}/${iso.slice(5, 7)}/${iso.slice(0, 4)}`;
+
+/* ==================================================================== *
+ *  THE INVOICE — the page; everything it opens is another view
+ * ==================================================================== */
+
+function FullInvoice({ api }: ViewProps) {
+  const { draft, lines, setLines, applied, setApplied, received, unreceive, balance } =
+    useInvoice();
+  const toast = useToast();
+  const crumbs = useCrumbs(api);
+  const [page, setPage] = useState("lineas");
   const [reference, setReference] = useState("OC-CSG-2026-0412");
   const f = figuresOf(lines);
-  const customer = customerCard("1020304050");
+  const customer = customerCard(CUSTOMER_TAX_ID);
   const say = (message: string) => () => toast.show({ message });
-  /* One dialog for everything opened from inside the invoice: a line, its product, the
-     customer, the payment wizard — a trail «FAC/2026/0115 › Línea › Producto», never a
-     modal over a modal. */
-  const drill = useDrill();
-  const [lineId, setLineId] = useState<string | null>(null);
-  const [productName, setProductName] = useState<string>(FULL_LINES[1]!.product);
-  const [paying, setPaying] = useState<number | "">("");
-  const openProduct = (name: string) => {
-    setProductName(name);
-    drill.open("product");
-  };
-  const openLine = lines.find((l) => l.id === lineId) ?? null;
-  const product = FULL_LINES.find((l) => l.product === productName) ?? FULL_LINES[1]!;
-  const soldOf = (name: string) =>
-    lines.filter((l) => l.product === name).reduce((a, l) => a + l.quantity, 0);
-  const [applied, setApplied] = useState<string[]>(draft ? [] : PAYMENTS.map((p) => p.id));
+  /* Every sub-context is a view of the workspace: a line, its product and the customer in a
+     modal by default (or wherever «Abrir en…» says); the payment a modal over the invoice. */
+  const openProduct = (name: string, to: OpenTarget = "modal") =>
+    api.open(productRef(name), opened(to));
+  const openCustomer = (to: OpenTarget = "modal") => api.open(customerRef, opened(to));
+  const openLine = (id: string) => api.open(lineRef(id), opened("modal"));
+  const openPayment = () =>
+    api.open(paymentRef, { to: Destination.Modal, size: { w: 640, h: 460 } });
   const payments = PAYMENTS.filter((p) => applied.includes(p.id));
   /* What the money summary says: the taxes and the total; once posted, each payment
      deducted with its detail, what is still due, and the credit note that could pay part. */
@@ -534,22 +639,28 @@ function FullInvoice({ draft = false }: { draft?: boolean }) {
     ...(draft
       ? {}
       : {
-          deductions: payments.map((p) => ({
-            label: `Pagado el ${p.date.slice(8, 10)}/${p.date.slice(5, 7)}/${p.date.slice(0, 4)}`,
-            value: money(p.amount),
-            detail: `${p.method} · ${p.journal}`,
-            facts: [
-              { label: "Diario", value: p.journal },
-              { label: "Referencia", value: p.reference },
-              { label: "Método", value: p.method },
-            ],
-            onOpen: say(`Se abriría el pago ${p.reference}`),
-            onRemove: () => setApplied((ids) => ids.filter((id) => id !== p.id)),
-          })),
-          balance: {
-            label: "Importe adeudado",
-            value: money(f.total - payments.reduce((a, p) => a + p.amount, 0)),
-          },
+          deductions: [
+            ...payments.map((p) => ({
+              label: `Pagado el ${dated(p.date)}`,
+              value: money(p.amount),
+              detail: `${p.method} · ${p.journal}`,
+              facts: [
+                { label: "Diario", value: p.journal },
+                { label: "Referencia", value: p.reference },
+                { label: "Método", value: p.method },
+              ],
+              onOpen: say(`Se abriría el pago ${p.reference}`),
+              onRemove: () => setApplied((ids) => ids.filter((id) => id !== p.id)),
+            })),
+            /* What «Registrar pago» added a moment ago — removable like the others. */
+            ...received.map((p) => ({
+              label: `Pagado el ${dated(p.date)}`,
+              value: money(p.amount),
+              detail: `registrado recién · ${p.journal}`,
+              onRemove: () => unreceive(p.id),
+            })),
+          ],
+          balance: { label: "Importe adeudado", value: money(balance) },
           credits: [
             {
               label: CREDIT_NOTE.number,
@@ -575,10 +686,7 @@ function FullInvoice({ draft = false }: { draft?: boolean }) {
         tag: draft ? { label: "Borrador" } : { label: "En proceso de pago", tone: "warn" },
         figure: draft
           ? { label: "Total", value: money(f.total) }
-          : {
-              label: "Importe adeudado",
-              value: money(f.total - payments.reduce((a, p) => a + p.amount, 0)),
-            },
+          : { label: "Importe adeudado", value: money(balance) },
       }}
     >
       {/* What is true of the whole invoice, said once, above its parts. */}
@@ -587,28 +695,23 @@ function FullInvoice({ draft = false }: { draft?: boolean }) {
           Al publicarla se envía al SIAT y ya no se puede cambiar: revisá los impuestos de
           cada línea.
         </Record.Notice>
-      ) : (
+      ) : balance > 0 ? (
         <Record.Notice
           tone="warn"
           title="Pagada en parte"
           action={
-            <Button role="secondary" size="sm" onClick={() => drill.open("payment")}>
+            <Button role="secondary" size="sm" onClick={openPayment}>
               Registrar el resto
             </Button>
           }
         >
-          Faltan {money(f.total - payments.reduce((a, p) => a + p.amount, 0))}; vence el
-          12/11/2026.
+          Faltan {money(balance)}; vence el 12/11/2026.
         </Record.Notice>
-      )}
+      ) : null}
       <Record.Rail>
-        <Record.Crumbs
-          crumbs={[
-            { label: "Ventas" },
-            { label: "Facturas" },
-            { label: draft ? "Nueva" : "FAC/2026/0115" },
-          ]}
-        />
+        {/* The application's place, then the workspace's own trail (this page, and the pages
+            it came from — each a link back). */}
+        <Record.Crumbs crumbs={[{ label: "Ventas" }, { label: "Facturas" }, ...crumbs]} />
         <Record.Pager
           index={1}
           total={32}
@@ -631,18 +734,7 @@ function FullInvoice({ draft = false }: { draft?: boolean }) {
           <Button
             role="primary"
             size="sm"
-            onClick={
-              draft
-                ? say("Se publicaría y enviaría al SIAT")
-                : () => {
-                    setPaying(
-                      Math.round(
-                        (f.total - payments.reduce((a, p) => a + p.amount, 0)) * 100,
-                      ) / 100,
-                    );
-                    drill.open("payment");
-                  }
-            }
+            onClick={draft ? say("Se publicaría y enviaría al SIAT") : openPayment}
           >
             {draft ? "Publicar" : "Registrar pago"}
           </Button>
@@ -723,8 +815,8 @@ function FullInvoice({ draft = false }: { draft?: boolean }) {
                   })}
               value={
                 <RelationValue
-                  name="Clínica San Gabriel S.A."
-                  secondary="NIT 1020304050"
+                  name={CUSTOMER_NAME}
+                  secondary={`NIT ${CUSTOMER_TAX_ID}`}
                   {...(customer === undefined
                     ? {}
                     : {
@@ -737,7 +829,7 @@ function FullInvoice({ draft = false }: { draft?: boolean }) {
                           ],
                         },
                       })}
-                  onOpen={() => drill.open("customer")}
+                  onOpenIn={openCustomer}
                 />
               }
             />
@@ -814,10 +906,8 @@ function FullInvoice({ draft = false }: { draft?: boolean }) {
                         }
                       : null
               }
-              onOpenLine={(id) => {
-                setLineId(id);
-                drill.open("line");
-              }}
+              /* The whole line is a sub-record: a modal over the invoice, like a many2one. */
+              onOpenLine={openLine}
               getLineId={(l) => l.id}
               lineLabel={(l) => l.product || "línea nueva"}
               mode={draft ? "edit" : "read"}
@@ -897,160 +987,6 @@ function FullInvoice({ draft = false }: { draft?: boolean }) {
         </Record.Pages>
       </Record.Paper>
 
-      <Drill
-        state={drill}
-        origin={{ kind: "factura", label: draft ? "Borrador" : "FAC/2026/0115" }}
-      >
-        <Drill.Context
-          id="line"
-          title={openLine?.product || "Línea"}
-          footer={
-            <Button role="secondary" size="sm" onClick={drill.back}>
-              Listo
-            </Button>
-          }
-        >
-          {openLine === null ? null : (
-            <FormSection columns={2}>
-              <Field label="Producto">
-                <RelationValue
-                  name={openLine.product}
-                  secondary={openLine.sku}
-                  onOpen={() => openProduct(openLine.product)}
-                />
-              </Field>
-              <DataField label="Etiqueta" value={openLine.label || null} />
-              <DataField label="Cuenta" value={openLine.account} />
-              <DataField label="Analítica" value={openLine.analytic} />
-              <DataField
-                label="Cantidad"
-                value={`${number(openLine.quantity)} ${openLine.uom}`}
-              />
-              <DataField label="Precio unitario" value={money(openLine.price)} />
-              <DataField
-                label="Descuento"
-                value={openLine.discount === 0 ? null : `${number(openLine.discount)} %`}
-              />
-              <DataField
-                label="Impuestos"
-                value={
-                  <Tags
-                    items={TAXES.filter((t) => openLine.taxes.includes(t.value)).map((t) => ({
-                      id: t.value,
-                      label: t.label,
-                    }))}
-                  />
-                }
-              />
-              <DataField label="Importe" value={money(amountOf(openLine))} />
-            </FormSection>
-          )}
-        </Drill.Context>
-
-        <Drill.Context id="product" title={product.product} flush>
-          <Record
-            identity={{
-              icon: Package,
-              title: product.product,
-              subtitle: `${product.sku} · ${product.label}`,
-              figure: { label: "Precio de venta", value: money(product.price) },
-            }}
-          >
-            <Record.Paper layout="horizontal">
-              <Record.Facts
-                fields={[
-                  { label: "Unidad", value: product.uom },
-                  { label: "Cuenta de ingresos", value: product.account },
-                  {
-                    label: "En esta factura",
-                    value: `${number(soldOf(product.product))} ${product.uom}`,
-                  },
-                ]}
-              />
-            </Record.Paper>
-          </Record>
-        </Drill.Context>
-
-        <Drill.Context id="customer" title="Clínica San Gabriel S.A." flush>
-          <Record
-            identity={{
-              icon: User,
-              title: "Clínica San Gabriel S.A.",
-              subtitle: "NIT 1020304050 · La Paz",
-              figure: { label: "Deuda", value: customer?.debt ?? "—" },
-            }}
-          >
-            <Record.Notice tone="info">
-              Tiene {CREDIT_NOTE.number} por {money(CREDIT_NOTE.amount)} sin aplicar.
-            </Record.Notice>
-            <Record.Paper layout="horizontal">
-              <Record.Facts
-                fields={[
-                  { label: "Límite de crédito", value: customer?.credit ?? "—" },
-                  { label: "Ciudad", value: customer?.city ?? "—" },
-                  { label: "Teléfono", value: customer?.phone ?? "—" },
-                ]}
-              />
-            </Record.Paper>
-          </Record>
-        </Drill.Context>
-
-        <Drill.Context
-          id="payment"
-          title="Registrar pago"
-          subtitle="El saldo baja en el momento; se puede deshacer."
-          footer={
-            <>
-              <Button role="ghost" size="sm" onClick={drill.back}>
-                Cancelar
-              </Button>
-              <Button
-                role="primary"
-                size="sm"
-                icon={CreditCard}
-                disabled={paying === "" || paying <= 0}
-                onClick={() => {
-                  drill.close();
-                  toast.show({
-                    message: `Se registró un pago de ${money(paying === "" ? 0 : paying)}.`,
-                    tone: "good",
-                  });
-                }}
-              >
-                Registrar pago
-              </Button>
-            </>
-          }
-        >
-          <FormSection columns={2}>
-            <Field label="Cliente">
-              <RelationValue
-                name="Clínica San Gabriel S.A."
-                secondary={`deuda ${customer?.debt ?? "—"}`}
-                onOpen={() => drill.open("customer")}
-              />
-            </Field>
-            <Field label="Monto" required>
-              <NumberInput value={paying} onChange={setPaying} min={0} unit="Bs." />
-            </Field>
-            <Field label="Diario">
-              <Select
-                value="bnb"
-                options={[
-                  { value: "bnb", label: "Banco BNB" },
-                  { value: "union", label: "Banco Unión" },
-                  { value: "caja", label: "Caja central" },
-                ]}
-                onChange={() => {}}
-              />
-            </Field>
-            <Field label="Fecha del pago">
-              <DatePicker value="2026-10-30" onChange={() => {}} />
-            </Field>
-          </FormSection>
-        </Drill.Context>
-      </Drill>
-
       <Record.Activity
         events={HISTORY}
         messages={MESSAGES}
@@ -1060,30 +996,291 @@ function FullInvoice({ draft = false }: { draft?: boolean }) {
   );
 }
 
+/* ==================================================================== *
+ *  WHAT THE INVOICE OPENS — each one a view
+ * ==================================================================== */
+
+/** One line, whole — the ten fields the grid shows five of. A modal over the invoice; its
+ *  product opens BESIDE or in a peek, so the line stays where it was. */
+function Line({ api, resource }: ViewProps) {
+  const { lines } = useInvoice();
+  const line = lines.find((l) => l.id === resource.id) ?? null;
+  const title = line?.product || "Línea";
+  useEffect(() => api.setTitle(title), [api, title]);
+  if (line === null) return null;
+  return (
+    <Record identity={{ icon: ListTree, title, subtitle: line.label || line.sku }}>
+      <Record.Paper>
+        <FormSection columns={2}>
+          <Field label="Producto">
+            <RelationValue
+              name={line.product}
+              secondary={line.sku}
+              openTargets={FROM_A_MODAL}
+              onOpenIn={(to) => api.open(productRef(line.product), opened(to))}
+            />
+          </Field>
+          <DataField label="Etiqueta" value={line.label || null} />
+          <DataField label="Cuenta" value={line.account} />
+          <DataField label="Analítica" value={line.analytic} />
+          <DataField label="Cantidad" value={`${number(line.quantity)} ${line.uom}`} />
+          <DataField label="Precio unitario" value={money(line.price)} />
+          <DataField
+            label="Descuento"
+            value={line.discount === 0 ? null : `${number(line.discount)} %`}
+          />
+          <DataField
+            label="Impuestos"
+            value={
+              <Tags
+                items={TAXES.filter((t) => line.taxes.includes(t.value)).map((t) => ({
+                  id: t.value,
+                  label: t.label,
+                }))}
+              />
+            }
+          />
+          <DataField label="Importe" value={money(amountOf(line))} />
+        </FormSection>
+        <FormActions
+          primary={
+            <Button role="secondary" size="sm" onClick={() => api.close()}>
+              Listo
+            </Button>
+          }
+        />
+      </Record.Paper>
+    </Record>
+  );
+}
+
+function Product({ api, resource }: ViewProps) {
+  const { lines } = useInvoice();
+  const product = FULL_LINES.find((l) => l.product === resource.id) ?? FULL_LINES[1]!;
+  useEffect(() => api.setTitle(product.product), [api, product.product]);
+  /* What THIS invoice sells of it — read from the lines as they are now, draft edits too. */
+  const sold = lines
+    .filter((l) => l.product === product.product)
+    .reduce((a, l) => a + l.quantity, 0);
+  return (
+    <Record
+      identity={{
+        icon: Package,
+        title: product.product,
+        subtitle: `${product.sku} · ${product.label}`,
+        figure: { label: "Precio de venta", value: money(product.price) },
+      }}
+    >
+      <Record.Paper layout="horizontal">
+        <Record.Facts
+          fields={[
+            { label: "Unidad", value: product.uom },
+            { label: "Cuenta de ingresos", value: product.account },
+            { label: "En esta factura", value: `${number(sold)} ${product.uom}` },
+          ]}
+        />
+      </Record.Paper>
+    </Record>
+  );
+}
+
+function Customer({ api }: ViewProps) {
+  const customer = customerCard(CUSTOMER_TAX_ID);
+  useEffect(() => api.setTitle(CUSTOMER_NAME), [api]);
+  return (
+    <Record
+      identity={{
+        icon: User,
+        title: CUSTOMER_NAME,
+        subtitle: `NIT ${CUSTOMER_TAX_ID} · La Paz`,
+        figure: { label: "Deuda", value: customer?.debt ?? "—" },
+      }}
+    >
+      <Record.Notice tone="info">
+        Tiene {CREDIT_NOTE.number} por {money(CREDIT_NOTE.amount)} sin aplicar.
+      </Record.Notice>
+      <Record.Paper layout="horizontal">
+        <Record.Facts
+          fields={[
+            { label: "Límite de crédito", value: customer?.credit ?? "—" },
+            { label: "Ciudad", value: customer?.city ?? "—" },
+            { label: "Teléfono", value: customer?.phone ?? "—" },
+          ]}
+        />
+      </Record.Paper>
+    </Record>
+  );
+}
+
+let receipts = 0;
+
+/** «Registrar pago» — a short task, a MODAL over the invoice. Its draft lives in the view, so
+ *  it survives a look at the customer BESIDE (another modal would replace this one); while
+ *  the amount differs from the balance, leaving it asks first. */
+function Payment({ api }: ViewProps) {
+  const { balance, receive, unreceive } = useInvoice();
+  const toast = useToast();
+  const customer = customerCard(CUSTOMER_TAX_ID);
+  const [due] = useState(balance);
+  const [amount, setAmount] = useState<number | "">(due);
+  const [journal, setJournal] = useState(JOURNALS[0]!.value);
+  const [date, setDate] = useState<string | null>("2026-10-30");
+  useEffect(() => api.setTitle("Registrar pago"), [api]);
+  useEffect(() => api.setDirty(amount !== due), [api, amount, due]);
+  const register = () => {
+    const paid = amount === "" ? 0 : amount;
+    receipts += 1;
+    const id = `r${receipts}`;
+    receive({
+      id,
+      amount: paid,
+      journal: JOURNALS.find((j) => j.value === journal)?.label ?? journal,
+      date: date ?? "2026-10-30",
+    });
+    api.setDirty(false);
+    api.close();
+    toast.show({
+      message: `Se registró un pago de ${money(paid)}.`,
+      tone: "good",
+      action: { label: "Deshacer", onSelect: () => unreceive(id) },
+    });
+  };
+  return (
+    <Record
+      identity={{
+        icon: CreditCard,
+        title: "Registrar pago",
+        subtitle: "El saldo baja en el momento; se puede deshacer.",
+      }}
+    >
+      <Record.Paper>
+        <FormSection columns={2}>
+          <Field label="Cliente">
+            <RelationValue
+              name={CUSTOMER_NAME}
+              secondary={`deuda ${customer?.debt ?? "—"}`}
+              openTargets={FROM_A_MODAL}
+              onOpenIn={(to) => api.open(customerRef, opened(to))}
+            />
+          </Field>
+          <Field label="Monto" required>
+            <NumberInput value={amount} onChange={setAmount} min={0} unit="Bs." />
+          </Field>
+          <Field label="Diario">
+            <Select value={journal} options={JOURNALS} onChange={setJournal} />
+          </Field>
+          <Field label="Fecha del pago">
+            <DatePicker value={date} onChange={setDate} />
+          </Field>
+        </FormSection>
+        <FormActions
+          secondary={
+            <Button role="ghost" size="sm" onClick={() => api.close()}>
+              Cancelar
+            </Button>
+          }
+          primary={
+            <Button
+              role="primary"
+              size="sm"
+              icon={CreditCard}
+              disabled={amount === "" || amount <= 0}
+              onClick={register}
+            >
+              Registrar pago
+            </Button>
+          }
+        />
+      </Record.Paper>
+    </Record>
+  );
+}
+
+const VIEWS: readonly ViewSpec[] = [
+  {
+    domain: "ventas",
+    kind: "factura",
+    title: (ref) => (ref.id === "borrador" ? "Borrador" : (ref.id ?? "Factura")),
+    icon: Receipt,
+    load: async () => FullInvoice,
+  },
+  {
+    domain: "ventas",
+    kind: "linea",
+    title: () => "Línea",
+    icon: ListTree,
+    load: async () => Line,
+  },
+  {
+    domain: "ventas",
+    kind: "producto",
+    title: (ref) => ref.id ?? "Producto",
+    icon: Package,
+    load: async () => Product,
+  },
+  {
+    domain: "ventas",
+    kind: "cliente",
+    title: () => CUSTOMER_NAME,
+    icon: User,
+    load: async () => Customer,
+  },
+  {
+    domain: "ventas",
+    kind: "pago",
+    title: () => "Registrar pago",
+    icon: CreditCard,
+    load: async () => Payment,
+  },
+];
+
+function Page({ draft = false }: { draft?: boolean }) {
+  return (
+    <InvoiceProvider draft={draft}>
+      <Workspace views={VIEWS} start={invoiceRef(draft)} menu={MENU} />
+    </InvoiceProvider>
+  );
+}
+
 /**
  * **Publicada, con un pago aplicado y el resto adeudado.** Catorce líneas en tres secciones
  * con notas; la cuenta, la analítica y la unidad esperan en el menú «columnas». Debajo, el
  * desglose de impuestos, el total, cada pago y lo que falta cobrar. En «apuntes contables», el
  * asiento que la factura escribió —debe igual a haber—; en «facturación electrónica», lo que
- * contestó el SIAT.
+ * contestó el SIAT. El cliente se abre en un MODAL sobre la factura; «Registrar pago» también,
+ * y desde él el cliente va al costado.
  */
 export const Publicada: Story = {
-  render: () => (
-    <Frame>
-      <FullInvoice />
-    </Frame>
-  ),
+  render: () => <Page />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(document.body);
+    /* The customer, a many2one, opens in a composer modal over the invoice. */
+    const [customer] = await canvas.findAllByRole("link", { name: CUSTOMER_NAME });
+    await userEvent.click(customer!);
+    const dialog = await page.findByRole("dialog", { name: CUSTOMER_NAME });
+    await expect(
+      await within(dialog).findByText(`NIT ${CUSTOMER_TAX_ID} · La Paz`),
+    ).toBeVisible();
+  },
 };
 
 /**
  * **El borrador, para escribirla.** Las mismas catorce líneas, ahora editables: el producto se
  * busca en la celda, los impuestos son fichas, «Agregar una sección» y «Agregar una nota» van
- * abajo de la grilla, y `Tab` pasado el último campo empieza la línea siguiente.
+ * abajo de la grilla, y `Tab` pasado el último campo empieza la línea siguiente. El lápiz de
+ * una línea la abre entera en un MODAL; su producto, desde ahí, al costado.
  */
 export const Borrador: Story = {
-  render: () => (
-    <Frame>
-      <FullInvoice draft />
-    </Frame>
-  ),
+  render: () => <Page draft />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(document.body);
+    const first = FULL_LINES.find((l) => l.kind === "line")!;
+    /* The pencil of a line opens the whole line in a composer modal. */
+    const [edit] = await canvas.findAllByRole("button", { name: "Editar la línea" });
+    await userEvent.click(edit!);
+    const dialog = await page.findByRole("dialog", { name: first.product });
+    await expect(await within(dialog).findByText("Precio unitario")).toBeVisible();
+  },
 };

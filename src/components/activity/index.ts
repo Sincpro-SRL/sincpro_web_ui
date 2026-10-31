@@ -8,6 +8,10 @@ export {
   useActivity,
 } from "@sincpro/web-ui/components/activity/Activity";
 export {
+  ActivityBadge,
+  type ActivityState,
+} from "@sincpro/web-ui/components/activity/ActivityBadge";
+export {
   type Message,
   MessageComposer,
   type MessageComposerProps,

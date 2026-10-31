@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   Breadcrumb,
@@ -13,6 +12,7 @@ import {
 } from "@sincpro/web-ui";
 import { Columns3, Database, Play } from "lucide-react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Lo que la banda de un registro puede tener mal sin que el tipo se queje: que

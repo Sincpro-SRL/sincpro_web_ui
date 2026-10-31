@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { ENGLISH_COPY, mergeCopy } from "@sincpro/web-ui/foundations/copy";
 import { SPANISH_COPY } from "@sincpro/web-ui/foundations/copy.es";
+import { test } from "vitest";
 
 /**
  * EL CASTELLANO DEL SISTEMA, entero.

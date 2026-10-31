@@ -1,10 +1,10 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { CriteriaBuilder } from "@sincpro/web-ui";
 import type { ModelDefinition } from "@sincpro/web-ui/components/search/model";
 import { installCopy } from "@sincpro/web-ui/foundations/copy";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * EL CONSTRUCTOR: el orden y el agrupado se arman como en la barra.

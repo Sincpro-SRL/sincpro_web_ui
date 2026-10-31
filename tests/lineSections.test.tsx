@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   EditableTable,
@@ -12,6 +11,7 @@ import {
 } from "@sincpro/web-ui";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: a long document is read in parts. Odoo's `display_type` rows — a SECTION that heads

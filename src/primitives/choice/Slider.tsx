@@ -55,6 +55,11 @@ export type SliderProps = {
   describedBy?: string;
   /** Forces the mode. By default it inherits the form's: in read mode it draws the figure. */
   mode?: FormMode;
+  /** The name when it is NOT inside a `Field` — a toolbar's zoom. Inside a field, the
+   *  field's label names it. */
+  "aria-label"?: string;
+  /** The figure beside the track. Off for a control whose number means nothing — a zoom. */
+  output?: boolean;
 };
 
 export function Slider({
@@ -68,6 +73,8 @@ export function Slider({
   id: ownId,
   describedBy: ownDescribedBy,
   mode,
+  "aria-label": ariaLabel,
+  output = true,
 }: SliderProps) {
   const copy = useUiCopy();
   const { id, labelledBy, describedBy } = useFieldIds({
@@ -82,6 +89,7 @@ export function Slider({
       <AriaSlider
         id={id}
         aria-labelledby={labelledBy}
+        aria-label={ariaLabel}
         aria-describedby={describedBy}
         value={value}
         onChange={(next) => onChange?.(next)}
@@ -103,13 +111,16 @@ export function Slider({
               a `<Label>` this system does not render — the field's label goes on it too. */}
           <SliderThumb
             aria-labelledby={labelledBy}
+            aria-label={ariaLabel}
             aria-describedby={describedBy}
             className={thumb}
           />
         </SliderTrack>
         {/* A fixed column for the figure, so the track does not change length while the
             number grows from one digit to three under the drag. */}
-        <SliderOutput className="w-14 shrink-0 text-right text-meta text-ink tabular-nums" />
+        {output ? (
+          <SliderOutput className="w-14 shrink-0 text-right text-meta text-ink tabular-nums" />
+        ) : null}
       </AriaSlider>
     </AriaLocale>
   );

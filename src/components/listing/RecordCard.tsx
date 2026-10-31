@@ -18,28 +18,39 @@ import type { ReactNode } from "react";
  */
 export function RecordCard({
   title,
+  subtitle,
   tags,
   meta,
   figure,
   media,
+  footer,
   onOpen,
 }: {
-  /** The record's name — the entry point of the card. */
   title: ReactNode;
-  /** The state, as a `Tag`: read before the name, the way a board is scanned. */
+  /** Who or what it is about, under the title: the customer of an opportunity. */
+  subtitle?: ReactNode;
   tags?: ReactNode;
-  /** The facts that tell two cards apart — a number, a date. */
   meta?: ReactNode;
-  /** The record's key figure, on the right of the name — an amount. */
   figure?: ReactNode;
-  /** The record's picture — a product photo, a customer's logo — or its icon. A board of
-   *  products is recognised by the pictures before a single name is read. */
   media?: { src?: string; alt?: string; icon?: LucideIcon };
-  /** Opens the record. Without it the card is not pressable. */
+  /** The card's last line, its controls: priority, kanban state, next activity, the owner's
+   *  avatar — each its own button, pressable without opening the card. */
+  footer?: ReactNode;
   onOpen?: () => void;
 }) {
-  const body = (
-    <>
+  /* The card is a box, and the TITLE is the button that opens it, stretched over the whole
+     card (`after:inset-0`). It used to be a `<button>` around everything: a priority star or a
+     kanban state inside it would be a control inside a control, which is invalid and which a
+     screen reader announces as one thing. The footer's controls sit above the stretch. */
+  const titleText = <span className="min-w-0 truncate">{title}</span>;
+  return (
+    <div
+      className={`relative flex w-full min-w-0 flex-col gap-2 rounded-box border border-line bg-surface p-4 text-left ${
+        onOpen === undefined
+          ? ""
+          : "transition-colors duration-(--duration-instant) focus-within:border-line-strong hover:border-line-strong"
+      }`}
+    >
       {media === undefined ? null : (
         <Thumb
           size="lg"
@@ -52,26 +63,34 @@ export function RecordCard({
           stretched to the card's width. */}
       {tags === undefined ? null : <div className="flex flex-wrap gap-1.5">{tags}</div>}
       <div className="flex min-w-0 items-baseline justify-between gap-3">
-        <p className="min-w-0 truncate text-lead font-medium text-ink">{title}</p>
+        {onOpen === undefined ? (
+          <p className="flex min-w-0 text-lead font-medium text-ink">{titleText}</p>
+        ) : (
+          <button
+            type="button"
+            onClick={onOpen}
+            className="flex min-w-0 text-left text-lead font-medium text-ink outline-none after:absolute after:inset-0 after:rounded-box focus-visible:after:outline-2 focus-visible:after:outline-primary"
+          >
+            {titleText}
+          </button>
+        )}
         {figure === undefined ? null : (
           <p className="shrink-0 text-lead font-semibold tabular-nums text-ink">{figure}</p>
         )}
       </div>
+      {subtitle === undefined ? null : (
+        /* Above the stretched title, at its own width: the subtitle may be a link to ANOTHER
+           record (the customer), which must open that one and not the card. */
+        <p className="relative z-10 -mt-1.5 w-fit max-w-full min-w-0 truncate text-meta text-muted">
+          {subtitle}
+        </p>
+      )}
       {meta === undefined ? null : (
         <p className="text-micro tabular-nums text-muted">{meta}</p>
       )}
-    </>
-  );
-  const box =
-    "flex w-full min-w-0 flex-col gap-2 rounded-box border border-line bg-surface p-4 text-left";
-  if (onOpen === undefined) return <div className={box}>{body}</div>;
-  return (
-    <button
-      type="button"
-      onClick={onOpen}
-      className={`${box} transition-colors duration-(--duration-instant) hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary`}
-    >
-      {body}
-    </button>
+      {footer === undefined ? null : (
+        <div className="relative z-10 flex min-w-0 items-center gap-1.5">{footer}</div>
+      )}
+    </div>
   );
 }

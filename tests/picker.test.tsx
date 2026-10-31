@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { Field, FormModeProvider, Picker, type PickerItem } from "@sincpro/web-ui";
 import { PickerOptions, shownRows } from "@sincpro/web-ui/primitives/picker/Picker";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the Picker is React Aria's combobox, so arrows, Enter and Escape are React Aria's

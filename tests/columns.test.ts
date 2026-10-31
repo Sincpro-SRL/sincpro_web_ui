@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   type ColumnSpec,
@@ -8,6 +7,7 @@ import {
   toggleColumn,
 } from "@sincpro/web-ui/components/listing/columns";
 import { toggleCollapsed } from "@sincpro/web-ui/components/listing/tree";
+import { test } from "vitest";
 
 const COLUMNS: ColumnSpec[] = [
   { id: "name", label: "name" },

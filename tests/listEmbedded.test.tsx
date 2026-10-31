@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   type DataColumn,
@@ -11,6 +10,7 @@ import {
 import { HeaderSlotContext } from "@sincpro/web-ui/components/shell/headerSlot";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * A LIST INSIDE A RECORD — a one2many shown as a collection — is the same `List` as a

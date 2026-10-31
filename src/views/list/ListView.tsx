@@ -1,5 +1,7 @@
 "use client";
 
+import { RecordCalendar } from "@sincpro/web-ui/components/calendar/RecordCalendar";
+import { RecordGantt } from "@sincpro/web-ui/components/gantt/RecordGantt";
 import { BoardColumns } from "@sincpro/web-ui/components/listing/BoardColumns";
 import { useColumnControl, visibleColumns } from "@sincpro/web-ui/components/listing/columns";
 import {
@@ -8,6 +10,7 @@ import {
 } from "@sincpro/web-ui/components/listing/ColumnsMenu";
 import { Listing } from "@sincpro/web-ui/components/listing/Listing";
 import { ListingBar } from "@sincpro/web-ui/components/listing/ListingBar";
+import { PivotExplorer } from "@sincpro/web-ui/components/listing/PivotExplorer";
 import { RecordCard } from "@sincpro/web-ui/components/listing/RecordCard";
 import { GroupHeader, Row, RowHeader } from "@sincpro/web-ui/components/listing/Row";
 import type { ListPresent } from "@sincpro/web-ui/components/listing/set";
@@ -18,6 +21,7 @@ import {
 } from "@sincpro/web-ui/components/listing/SortMenu";
 import { ViewSwitcher } from "@sincpro/web-ui/components/listing/ViewSwitcher";
 import { Breadcrumb } from "@sincpro/web-ui/components/record/Breadcrumb";
+import { RecordTimeline } from "@sincpro/web-ui/components/timeline/RecordTimeline";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { useDensity } from "@sincpro/web-ui/foundations/density";
 import {
@@ -46,7 +50,17 @@ import {
 import type { ListViewProps } from "@sincpro/web-ui/views/list/types";
 import { useNarrowList } from "@sincpro/web-ui/views/list/useNarrowList";
 import type { LucideIcon } from "lucide-react";
-import { Grid3x3, LayoutGrid, List, Sheet, Sigma, Table2 } from "lucide-react";
+import {
+  CalendarDays,
+  CalendarRange,
+  ChartGantt,
+  Grid3x3,
+  LayoutGrid,
+  List,
+  Sheet,
+  Sigma,
+  Table2,
+} from "lucide-react";
 import { Fragment, type ReactNode, useCallback, useMemo } from "react";
 
 /**
@@ -84,6 +98,9 @@ const PRESENT_ICONS: readonly { id: ListPresent; icon: LucideIcon }[] = [
   { id: "report", icon: Sigma },
   /* La cuadrícula: dos ejes, y lo que importa está adentro. */
   { id: "pivot", icon: Grid3x3 },
+  { id: "calendar", icon: CalendarDays },
+  { id: "gantt", icon: ChartGantt },
+  { id: "timeline", icon: CalendarRange },
 ];
 
 export function ListView<T extends object>({
@@ -105,6 +122,9 @@ export function ListView<T extends object>({
   onVisibleColumnIdsChange,
   card,
   boardStages,
+  calendar,
+  gantt,
+  timeline,
   sheet,
   report,
   pivot,
@@ -122,6 +142,7 @@ export function ListView<T extends object>({
   onOpen,
   onPeek,
   rowClick = "peek",
+  onChoose,
   state,
   filtered = false,
   empty,
@@ -278,7 +299,13 @@ export function ListView<T extends object>({
   );
 
   /* The body of a row, a card: the look first unless the list says the page. */
-  const press = rowClick === "open" ? (onOpen ?? onPeek) : (onPeek ?? onOpen);
+  /* Choosing, the press chooses and the ways in (👁 ↗) are not offered: a chooser's row answers. */
+  const choosing = onChoose !== undefined;
+  const press = choosing
+    ? onChoose
+    : rowClick === "open"
+      ? (onOpen ?? onPeek)
+      : (onPeek ?? onOpen);
 
   const renderRow = (item: T) => {
     const d = row(item);
@@ -287,12 +314,17 @@ export function ListView<T extends object>({
       <Row
         key={id}
         {...(d.icon === undefined ? {} : { icon: d.icon })}
+        {...(d.avatar === undefined ? {} : { avatar: d.avatar })}
         name={d.name}
         {...(d.tags === undefined ? {} : { tags: d.tags })}
         {...(d.meta === undefined ? {} : { meta: d.meta })}
         {...(d.actions === undefined ? {} : { actions: d.actions })}
-        {...(onOpen === undefined ? {} : { onOpen: () => onOpen(item) })}
-        {...(onPeek === undefined ? {} : { onPeek: () => onPeek(item) })}
+        {...(choosing
+          ? { onOpen: () => onChoose(item), openers: false }
+          : {
+              ...(onOpen === undefined ? {} : { onOpen: () => onOpen(item) }),
+              ...(onPeek === undefined ? {} : { onPeek: () => onPeek(item) }),
+            })}
         click={rowClick}
         {...(selection === undefined
           ? {}
@@ -435,8 +467,9 @@ export function ListView<T extends object>({
         totals={totals}
         {...(rowActions === undefined ? {} : { rowActions })}
         {...(create === undefined ? {} : { create })}
-        {...(onPeek === undefined ? {} : { onPeek })}
-        {...(onOpen === undefined ? {} : { onOpen })}
+        {...(onPeek === undefined || choosing ? {} : { onPeek })}
+        {...(onOpen === undefined || choosing ? {} : { onOpen })}
+        {...(choosing ? { onChoose } : {})}
         rowClick={rowClick}
       />
     ) : present === "sheet" && sheetSpec !== undefined ? (
@@ -465,6 +498,24 @@ export function ListView<T extends object>({
         {...(report.defaultOpen === undefined ? {} : { defaultOpen: report.defaultOpen })}
         {...(report.height === undefined ? {} : { height: report.height })}
       />
+    ) : present === "pivot" && pivot?.spec !== undefined && pivot.fields !== undefined ? (
+      /* Explored: the person moves the axes. Its rows follow the search bar's grouping. */
+      <div className="p-3">
+        <PivotExplorer
+          items={ordered}
+          of={pivot.spec.of}
+          fields={pivot.fields}
+          measures={pivot.spec.measures}
+          {...(pivot.defaultMeasures === undefined
+            ? {}
+            : { defaultMeasures: pivot.defaultMeasures })}
+          {...((group?.levels.length ?? 0) > 0 ? { rows: group!.levels } : {})}
+          defaultRows={pivot.spec.rows}
+          defaultColumns={pivot.spec.columns}
+          {...(pivot.onCell === undefined ? {} : { onCell: pivot.onCell })}
+          {...(pivot.height === undefined ? {} : { height: pivot.height })}
+        />
+      </div>
     ) : present === "pivot" && pivotShown !== undefined ? (
       /* El pivote recibe la grilla y nada más: no hay selección que pasarle
          —una casilla por montón elegiría cosas que no son registros—, no hay
@@ -476,6 +527,33 @@ export function ListView<T extends object>({
         {...(pivot?.onCell === undefined ? {} : { onCell: pivot.onCell })}
         {...(pivot?.height === undefined ? {} : { height: pivot.height })}
       />
+    ) : present === "calendar" && calendar !== undefined ? (
+      <div className="p-3">
+        <RecordCalendar
+          {...calendar}
+          items={ordered}
+          keyOf={keyOf}
+          {...(press === undefined ? {} : { onOpen: press })}
+        />
+      </div>
+    ) : present === "gantt" && gantt !== undefined ? (
+      <div className="p-3">
+        <RecordGantt
+          {...gantt}
+          items={ordered}
+          keyOf={keyOf}
+          {...(press === undefined ? {} : { onOpen: press })}
+        />
+      </div>
+    ) : present === "timeline" && timeline !== undefined ? (
+      <div className="p-3">
+        <RecordTimeline
+          {...timeline}
+          items={ordered}
+          keyOf={keyOf}
+          {...(press === undefined ? {} : { onOpen: press })}
+        />
+      </div>
     ) : present === "board" && boardStages !== undefined ? (
       <BoardColumns items={ordered} keyOf={keyOf} stages={boardStages} card={renderCard} />
     ) : present === "board" ? (
@@ -500,10 +578,11 @@ export function ListView<T extends object>({
                acciones son de la lista entera, no de una fila — si la primera no
                tiene ícono, ninguna lo tiene. */
             withIcon={firstRow?.icon !== undefined}
+            withAvatar={firstRow?.avatar !== undefined}
             trail={{
               ...(firstRow?.actions === undefined ? {} : { actions: firstRow.actions }),
-              peek: onPeek !== undefined,
-              open: onOpen !== undefined,
+              peek: onPeek !== undefined && !choosing,
+              open: onOpen !== undefined && !choosing,
             }}
           />
         )}

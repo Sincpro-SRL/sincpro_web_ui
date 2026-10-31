@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { BoardColumns, SPANISH_COPY, UiCopyProvider } from "@sincpro/web-ui";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: a pipeline is read across — one column per stage with how many it holds — and a
@@ -57,5 +57,5 @@ test("with onMove the cards drag and take the keyboard; without it they only sho
     3,
   );
   assert.doesNotMatch(still, /draggable/);
-  assert.doesNotMatch(still, /tabindex/);
+  assert.doesNotMatch(still, /<li[^>]*tabindex/, "a read-only card is not a stop of its own");
 });

@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { List } from "@sincpro/web-ui";
 import {
@@ -13,6 +12,7 @@ import {
 } from "@sincpro/web-ui/foundations/slots";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * EL MECANISMO DE LAS RANURAS, y lo que garantiza.

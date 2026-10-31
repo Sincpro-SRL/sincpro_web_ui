@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   claimedFields,
@@ -8,6 +7,7 @@ import {
 } from "@sincpro/web-ui/components/listing/modelColumns";
 import type { ModelDefinition } from "@sincpro/web-ui/components/search/model";
 import type { DataColumn } from "@sincpro/web-ui/primitives/table/DataTable";
+import { test } from "vitest";
 
 /* Lo que el servidor manda bajo `model_meta_data`, recortado: dos campos que la
    vista dibuja a mano y dos que nadie declaró. */

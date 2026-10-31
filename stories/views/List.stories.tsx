@@ -30,6 +30,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Users } from "lucide-react";
 import { useMemo, useState } from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import { money } from "../support/erp";
 import {
@@ -55,6 +56,8 @@ type Item = SalesOrder;
 const ITEMS = SALES_ORDERS;
 
 const meta_: Meta<typeof List<Item>> = {
+  /* A screen a person works on: one primary action, and a second pass in dark (vitest). */
+  tags: ["screen"],
   title: "4 · Vistas/Lista · N registros",
   parameters: {
     layout: "fullscreen",
@@ -251,6 +254,15 @@ function Tarjeta({ d }: { d: Item }) {
  * lugar** — una barra que aparece corre las filas justo cuando estás tildando.
  */
 export const Catalogo: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("checkbox", { name: /^Elegir S00142/ }));
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Elegir los 187 que coinciden" }),
+    );
+    await expect(canvas.getByText("elegidos")).toHaveTextContent("187");
+    await expect(canvas.queryByRole("button", { name: /que coinciden/ })).toBeNull();
+  },
   name: "Pedidos de venta",
   render: () => {
     const l = useLista();
@@ -724,10 +736,22 @@ function Presentacion({ present }: { present: ListPresent }) {
  * A la izquierda `readOnly`: nada se toca — ni la fila se ilumina, ni hay casillas, ni
  * acciones. A la derecha, con `onPeek` y `onOpen`: la fila se ilumina, el clic en el cuerpo
  * da un VISTAZO sin salir de la lista, y al final de la fila los dos caminos están escritos
- * con su ícono — 👁 vistazo, ↗ abrir el registro. El azul del nombre queda para lo que
+ * con su ícono — 👁 vista previa, ↗ abrir el registro. El azul del nombre queda para lo que
  * lleva a OTRO registro.
  */
 export const LeerOAbrir: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const gesture = () => canvas.getByText(/^último gesto:/).parentElement!;
+    const [readOnly, open] = canvas.getAllByText("S00140 · Ferretería El Progreso");
+    await userEvent.click(readOnly!);
+    await expect(gesture()).toHaveTextContent("ninguno");
+    await userEvent.click(open!);
+    await expect(gesture()).toHaveTextContent("vista previa · S00140");
+    /* The ↗ of a row opens the record itself. */
+    await userEvent.click(canvas.getAllByRole("button", { name: "Abrir" })[2]!);
+    await expect(gesture()).toHaveTextContent("abrir · S00140");
+  },
   render: function Render() {
     const [visto, setVisto] = useState<string | null>(null);
     const seis = ITEMS.slice(0, 6);
@@ -738,7 +762,7 @@ export const LeerOAbrir: Story = {
           items={seis}
           keyOf={(d) => d.id}
           readOnly={readOnly}
-          onPeek={(d) => setVisto(`vistazo · ${orderName(d)}`)}
+          onPeek={(d) => setVisto(`vista previa · ${orderName(d)}`)}
           onOpen={(d) => setVisto(`abrir · ${orderName(d)}`)}
           present="table"
         >
@@ -769,6 +793,14 @@ export const LeerOAbrir: Story = {
  * Alt + ← / →; el movimiento se anuncia. Sin `onMove` el tablero es de solo lectura.
  */
 export const TableroPorEtapas: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const lane = (name: string) => within(canvas.getByRole("region", { name }));
+    lane("cotización").getAllByRole("listitem")[0]!.focus();
+    await userEvent.keyboard("{Alt>}{ArrowRight}{/Alt}");
+    await expect(lane("pedido").getAllByRole("listitem")).toHaveLength(6);
+    await expect(canvasElement).toHaveTextContent("S00140 pasó a pedido");
+  },
   render: function Render() {
     const [items, setItems] = useState<Item[]>(() => ITEMS.map((d) => ({ ...d })));
     return (
@@ -1041,6 +1073,100 @@ export const Informe: Story = {
       </div>
     </div>
   ),
+};
+
+/**
+ * **El pivote que se PIVOTEA.** Las filas siguen el agrupado del buscador —agregá «sucursal» o
+ * «forma de pago» desde su panel—, las columnas y las medidas se eligen sobre la grilla («+»
+ * agrega un campo, la × de un nivel lo saca, «Medidas» tilda cuáles), y el buscador recorta
+ * las ventas que se pliegan: el pivote contesta la misma pregunta que la lista.
+ */
+export const PivoteExplorado: StoryObj<typeof List<Sale>> = {
+  render: function Render() {
+    const CAMPOS = [
+      { field: "branch", label: "sucursal" },
+      { field: "payment", label: "forma de pago" },
+      { field: "year", label: "año" },
+      { field: "quarter", label: "trimestre" },
+    ];
+    const [criteria, setCriteria] = useState<SearchCriteria[]>([]);
+    const grouping = useGroupingControl({ levels: [{ field: "branch" }] });
+    const wanted = criteria
+      .flatMap((one) =>
+        one.kind === "filter" && one.where !== undefined && "value" in one.where
+          ? [String(one.where.value)]
+          : [],
+      )
+      .map((v) => v.toLocaleLowerCase("es"));
+    const ventas = SALES.filter((v) =>
+      wanted.every((w) => v.branch.toLocaleLowerCase("es").includes(w)),
+    );
+    const de = (sale: Sale, level: GroupLevel): string =>
+      level.field === "payment" ? sale.payment : PIVOTE_DE(sale, level);
+    const CANTIDAD: PivotFold<Sale> = {
+      id: "count",
+      header: "ventas",
+      fold: (all) => all.length,
+    };
+    const PROMEDIO: PivotFold<Sale> = {
+      id: "average",
+      header: "ticket promedio",
+      fold: (all) =>
+        all.length === 0 ? null : all.reduce((a, b) => a + b.amount, 0) / all.length,
+      format: (n) => `Bs. ${n.toLocaleString("es-BO", { maximumFractionDigits: 0 })}`,
+    };
+    return (
+      <div className="bg-ground p-8">
+        <div className="@container overflow-hidden rounded-box border border-line-strong bg-surface">
+          <List<Sale>
+            items={ventas}
+            keyOf={(m) => m.id}
+            present="pivot"
+            group={{ levels: grouping.levels, of: de }}
+            empty={{ sentence: "El período no tiene ventas." }}
+          >
+            <List.Bar>
+              <List.Identity
+                title="Análisis de ventas"
+                description="pivoteá por sucursal, forma de pago, año y trimestre"
+              />
+              <List.Search>
+                <SearchBar
+                  facets={[{ id: "branch", label: "en la sucursal" }]}
+                  criteria={criteria}
+                  onCriteriaChange={setCriteria}
+                  placeholder="buscar una sucursal…"
+                  grouping={<GroupingLevels fields={CAMPOS} control={grouping} />}
+                />
+              </List.Search>
+            </List.Bar>
+            <List.Pivot<Sale>
+              spec={{
+                rows: [],
+                columns: [{ field: "year" }],
+                of: de,
+                measures: [IMPORTE, CANTIDAD, PROMEDIO],
+              }}
+              fields={CAMPOS}
+              defaultMeasures={["amount"]}
+            />
+          </List>
+        </div>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    /* Rows follow the search bar's grouping: «sucursal», and the pivot says so. */
+    await expect(canvas.getByText("del agrupado del buscador")).toBeVisible();
+    await expect(canvas.getAllByText("La Paz").length).toBeGreaterThan(0);
+    /* A second measure, ticked on the grid. */
+    await userEvent.click(canvas.getByRole("button", { name: "Medidas" }));
+    await userEvent.click(
+      await within(document.body).findByRole("menuitem", { name: /^ventas/ }),
+    );
+    await expect(canvas.getAllByText("ventas").length).toBeGreaterThan(0);
+  },
 };
 
 /**

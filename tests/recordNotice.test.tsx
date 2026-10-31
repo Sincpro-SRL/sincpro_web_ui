@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { Record, SPANISH_COPY, UiCopyProvider } from "@sincpro/web-ui";
 import { orderNotices, splitNotices } from "@sincpro/web-ui/components/record/RecordNotices";
 import { tagTone } from "@sincpro/web-ui/primitives/tag/Tag";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup as render } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: a record's notices are what has to be known about it before acting — and NONE of

@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { type DataColumn, DataTable, SPANISH_COPY, UiCopyProvider } from "@sincpro/web-ui";
 import { pilesOf } from "@sincpro/web-ui/foundations/grouping";
 import { reportColumnsOf, sheetRowsOf } from "@sincpro/web-ui/views/list/derive";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * AN AGGREGATE IS WRITTEN LIKE ITS COLUMN.

@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { SPANISH_COPY, Tree, type TreeItem, UiCopyProvider } from "@sincpro/web-ui";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the keys of the tree — arrows, folding, type-ahead — are React Aria's to test. What

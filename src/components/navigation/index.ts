@@ -1,9 +1,5 @@
-/* LA NAVEGACIÓN — el árbol lateral de una aplicación y la paleta de comandos. */
-export {
-  CommandPalette,
-  useCommandPaletteShortcut,
-} from "@sincpro/web-ui/components/navigation/CommandPalette";
-export { type PaletteCommand } from "@sincpro/web-ui/components/navigation/commands";
+/* LA NAVEGACIÓN — el árbol lateral de una aplicación. La paleta de comandos (⌘K) es del
+   espacio de trabajo (composer), no de acá. */
 export {
   NavigationTree,
   type NavItem,

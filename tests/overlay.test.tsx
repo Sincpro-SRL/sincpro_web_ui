@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   Accordion,
@@ -19,6 +18,7 @@ import {
 } from "@sincpro/web-ui";
 import { Copy } from "lucide-react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: keyboard, focus and announcements are React Aria's to test. What is ours is the

@@ -20,8 +20,6 @@ export { Metric, type MetricProps, Metrics } from "@sincpro/web-ui/primitives/va
 export {
   Avatar,
   type AvatarSize,
-  ContactCard,
-  type ContactCardProps,
   type PersonContact,
   UserChip,
   type UserChipProps,

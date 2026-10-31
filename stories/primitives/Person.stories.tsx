@@ -1,8 +1,8 @@
 import {
-  ContactCard,
   type DataColumn,
   DataField,
   DataTable,
+  RelationCard,
   Tag,
   UserChip,
 } from "@sincpro/web-ui";
@@ -20,7 +20,7 @@ import { SALES_TEAM, type Salesperson, salesperson } from "../support/erp-people
  * cobra un Tab de más a quien usa el teclado en cada fila.
  */
 const meta: Meta = {
-  title: "2 · Primitivas/Personas · tarjeta de contacto",
+  title: "2 · Primitivas/Personas · chip, pila y tarjeta",
   parameters: { layout: "padded" },
 };
 
@@ -139,8 +139,9 @@ export const EnUnaTabla: Story = {
 };
 
 /** **Leída en un formulario, y la tarjeta suelta.** En la ficha de un cliente, «Vendedor
- *  asignado» es una persona: el chip va como valor de un `DataField`. `ContactCard` es la
- *  misma tarjeta sin chip, para el panel lateral de un registro. */
+ *  asignado» es una persona: el chip va como valor de un `DataField`. `RelationCard` es la
+ *  misma tarjeta sin chip, para el panel lateral de un registro: una persona es un registro
+ *  relacionado más, con su cara redonda y cómo ubicarla. */
 export const EnUnFormulario: Story = {
   render: () => {
     const josefa = SALES_TEAM[1]!;
@@ -174,10 +175,10 @@ export const EnUnFormulario: Story = {
         </div>
         <aside className="rounded-box border border-line bg-surface p-4">
           <p className="mb-3 text-micro font-medium text-muted">Su vendedora</p>
-          <ContactCard
+          <RelationCard
             name={josefa.name}
-            role={josefa.role}
-            src={josefa.photo!}
+            secondary={josefa.role}
+            media={{ person: true, src: josefa.photo! }}
             contact={{
               email: josefa.email!,
               phone: josefa.phone!,
@@ -192,7 +193,7 @@ export const EnUnFormulario: Story = {
 };
 
 /** **Con a dónde ir, y sin.** Arriba un chip sin contacto ni ficha: es texto, no se enfoca.
- *  Abajo el mismo nombre con su ficha: es un botón y abre la tarjeta solo con «Ver ficha». */
+ *  Abajo el mismo nombre con su ficha: es un botón y abre la tarjeta solo con «Abrir». */
 export const ConYSinDestino: Story = {
   render: () => (
     <div className="flex flex-col items-start gap-3 rounded-box border border-line bg-surface p-4">

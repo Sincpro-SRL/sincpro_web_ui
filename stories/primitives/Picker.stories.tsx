@@ -2,6 +2,9 @@ import { Field, Picker, type PickerItem, Tag } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Building2, Package, PackageX, Truck, Warehouse, Wrench } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
+import { expect, userEvent, waitFor, within } from "storybook/test";
+
+import { CUSTOMER_CARDS } from "../support/erp-people";
 
 /* Products the way a sales line needs to see them: the name, what kind of thing it is, and
    the specs that decide — stock on hand, the price, the unit. The internal code and the
@@ -127,7 +130,7 @@ const ALMACENES: PickerItem[] = [
 ];
 
 const meta = {
-  title: "2 · Primitivas/Picker",
+  title: "2 · Primitivas/Relacional a uno/Editar · Picker",
   component: Picker,
   parameters: {
     layout: "padded",
@@ -142,6 +145,82 @@ const meta = {
 
 export default meta;
 type Story = StoryObj<typeof meta>;
+
+/** Customers the way an invoice needs to choose one: the face, where they are, what state
+   their account is in, and the debt lined up on the right to compare. The NIT is searched,
+   not drawn. */
+const CLIENTES: PickerItem[] = CUSTOMER_CARDS.map((c) => ({
+  id: c.taxId,
+  name: c.name,
+  avatar: true,
+  meta: `${c.city} · ${c.phone}`,
+  tags: <Tag tone={c.state.tone}>{c.state.label}</Tag>,
+  aside: c.debt,
+  haystack: c.taxId,
+}));
+
+/** **Personas, con sus widgets, y la búsqueda literal.** Cada cliente con su cara, su ciudad,
+ *  el estado de su cuenta y la deuda alineada a la derecha. Lo escrito se MARCA en cada fila
+ *  —sin importar tildes ni mayúsculas—, y si una fila está por su NIT (que no se dibuja) lo
+ *  dice: «coincide 4587123018». Si nadie se llama así, «Crear «…»» lo crea con ese nombre y
+ *  «Crear y editar…» abre su ficha. Elegido, el campo ofrece abrirlo: modal, y «Abrir en…». */
+export const PersonasConWidgets: Story = {
+  args: { items: CLIENTES },
+  render: function Render() {
+    const [clientes, setClientes] = useState(CLIENTES);
+    const [cliente, setCliente] = useState<string>();
+    const [dicho, setDicho] = useState<string | null>(null);
+    return (
+      <div className="max-w-xl rounded-box border border-line bg-surface p-4">
+        <Field label="Cliente">
+          <Picker
+            items={clientes}
+            {...(cliente === undefined ? {} : { value: cliente })}
+            onChange={setCliente}
+            onCreate={(name) => {
+              const id = `nuevo-${clientes.length}`;
+              setClientes((all) => [...all, { id, name, avatar: true, meta: "nuevo" }]);
+              return id;
+            }}
+            onCreateAndEdit={(name) =>
+              setDicho(`Se abriría la ficha de «${name}» en un modal`)
+            }
+            onBrowseAll={() => setDicho("Se abriría «Buscar más…»")}
+            onOpen={(id, to) => setDicho(`Se abriría ${id} en: ${to}`)}
+          />
+        </Field>
+        {dicho === null ? null : (
+          <p role="status" className="mt-2 text-meta text-muted">
+            {dicho}
+          </p>
+        )}
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(document.body);
+    const field = canvas.getByRole("combobox");
+    await userEvent.click(field);
+    /* Accents do not matter, and what was typed is marked in the row. */
+    await userEvent.type(field, "ferreteria");
+    const row = await page.findByRole("option", { name: /Ferretería El Progreso/ });
+    await expect(row.querySelector("mark")).toHaveTextContent("Ferretería");
+    /* Found by the NIT, which is not drawn: the row says so. */
+    await userEvent.clear(field);
+    await userEvent.type(field, "4587123");
+    await expect(await page.findByText("4587123", { selector: "mark" })).toBeVisible();
+    /* Nobody is called that: create it, and it is chosen. */
+    await userEvent.clear(field);
+    await userEvent.type(field, "Panadería Sucre");
+    await userEvent.click(
+      await page.findByRole("option", { name: "Crear «Panadería Sucre»" }),
+    );
+    await waitFor(() => expect(field).toHaveValue("Panadería Sucre"));
+    await userEvent.click(canvas.getByRole("button", { name: "Abrir en un modal" }));
+    await expect(canvas.getByText(/en: modal$/)).toBeVisible();
+  },
+};
 
 /** Abierto, con el tope de 8 y el pie que dice cuántos quedan. El campo es el buscador: no
  *  hay una fila extra de «filtrar…». Escribí «7771» y aparece por el código de barras, que

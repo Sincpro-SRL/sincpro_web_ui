@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   Checkbox,
@@ -13,6 +12,7 @@ import {
 } from "@sincpro/web-ui";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: a control written directly inside a `Field` takes its wiring from the field —

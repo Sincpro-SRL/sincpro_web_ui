@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { installCopy } from "@sincpro/web-ui/foundations/copy";
 import { SPANISH_COPY } from "@sincpro/web-ui/foundations/copy.es";
@@ -14,6 +13,7 @@ import {
 } from "@sincpro/web-ui/foundations/theme";
 import { ThemeSwitcher } from "@sincpro/web-ui/primitives/choice/ThemeSwitcher";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the palettes are CSS, so what can break in TypeScript is small and specific: the

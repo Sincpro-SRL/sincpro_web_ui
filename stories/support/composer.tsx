@@ -8,7 +8,7 @@ import {
   type ViewSpec,
 } from "@sincpro/web-composer";
 import { createRegistry } from "@sincpro/web-composer/domain";
-import { Button, Dialog, Missing, Peek } from "@sincpro/web-ui";
+import { AppFrame, Button, Dialog, Missing, Peek, ToastProvider } from "@sincpro/web-ui";
 import {
   AppWindow,
   ArrowLeft,
@@ -24,7 +24,7 @@ import {
   SquareArrowOutUpRight,
   X,
 } from "lucide-react";
-import { type CSSProperties, useEffect, useMemo, useState } from "react";
+import { type ReactNode, useEffect, useMemo, useState } from "react";
 
 /**
  * Context: the composer is NOT a dependency of web-ui — it is a devDependency of its Storybook
@@ -32,8 +32,7 @@ import { type CSSProperties, useEffect, useMemo, useState } from "react";
  * file is the adapter an app (or `@sincpro/web-framework`'s `<SincproApp>`) writes once:
  *
  * - `webUiSkin` — the composer's pieces drawn with web-ui (the same as web-framework's).
- * - `SC_TOKENS` — the composer's `--sc-*` colours read from web-ui's tokens, so frames, tabs
- *   and windows take the theme (light and dark) of the rest of the screen.
+ * - (the composer's `--sc-*` colours come from web-ui's `tokens.css` itself: nothing to wire.)
  * - `Workspace` — a composer over a registry, started on a reference.
  */
 
@@ -82,30 +81,25 @@ export const webUiSkin: ComposerSkin = {
   ),
 };
 
-export const SC_TOKENS = {
-  "--sc-ground": "var(--color-ground)",
-  "--sc-surface": "var(--color-surface)",
-  "--sc-line": "var(--color-line)",
-  "--sc-line-strong": "var(--color-line-strong)",
-  "--sc-ink": "var(--color-ink)",
-  "--sc-muted": "var(--color-muted)",
-  "--sc-accent": "var(--color-primary)",
-  "--sc-danger": "var(--color-danger)",
-  "--sc-on-danger": "var(--color-surface)",
-  "--sc-scrim": "var(--color-scrim)",
-  "--sc-shadow": "var(--shadow-window)",
-  "--sc-radius": "var(--radius-panel)",
-  "--sc-radius-control": "var(--radius-control)",
-  "--sc-text": "var(--text-meta)",
-  "--sc-text-small": "var(--text-micro)",
-} as CSSProperties;
-
+/**
+ * A composer over a registry, started on a reference — inside the application's frame when a
+ * `menu` (the `TopBar`) is given, alone and full height otherwise. Toasts are mounted here:
+ * every template's views may say «Pago registrado · Deshacer».
+ */
 export function Workspace({
   views,
   start,
+  menu,
+  sidebar,
+  phoneBelow,
 }: {
   views: readonly ViewSpec[];
   start: ResourceRef;
+  menu?: ReactNode;
+  /** The module's map beside the workspace (`AppFrame sidebar`); only with a `menu`. */
+  sidebar?: ReactNode;
+  /** Below this width the workspace is a phone (composer's default: 640). */
+  phoneBelow?: number;
 }) {
   useState(() => {
     installComposerCopy(SPANISH_COMPOSER_COPY);
@@ -118,9 +112,26 @@ export function Workspace({
     // The first screen only: a re-render must not push it again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspace]);
+  /* `agentTools`: the browser's agent (WebMCP) can see where the person is, open and search,
+     through the same api a view uses. Feature-detected: without WebMCP nothing happens. */
+  const composer = (
+    <Composer
+      workspace={workspace}
+      registry={registry}
+      skin={webUiSkin}
+      agentTools
+      {...(phoneBelow === undefined ? {} : { phoneBelow })}
+    />
+  );
   return (
-    <div style={SC_TOKENS} className="flex h-dvh min-h-0 flex-col bg-ground">
-      <Composer workspace={workspace} registry={registry} skin={webUiSkin} />
-    </div>
+    <ToastProvider>
+      {menu === undefined ? (
+        <div className="flex h-dvh min-h-0 flex-col bg-ground">{composer}</div>
+      ) : (
+        <AppFrame menu={menu} {...(sidebar === undefined ? {} : { sidebar })}>
+          <div className="flex min-h-0 flex-1 flex-col">{composer}</div>
+        </AppFrame>
+      )}
+    </ToastProvider>
   );
 }

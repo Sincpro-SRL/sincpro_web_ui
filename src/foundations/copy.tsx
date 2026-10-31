@@ -31,6 +31,9 @@ export type UiCopy = {
     report: string;
     /** Dos preguntas a la vez: montones cruzados por montones. */
     pivot: string;
+    calendar: string;
+    gantt: string;
+    timeline: string;
     chart: string;
     group: string;
   };
@@ -97,8 +100,6 @@ export type UiCopy = {
     closePreview: string;
     account: string;
     openAsPanel: string;
-    /** The accessible name of the command palette's dialog. */
-    commandPalette: string;
   };
   field: {
     drop: string;
@@ -402,8 +403,17 @@ export type UiCopy = {
     refine: string;
     open: string;
     browseAll: string;
+    /** The option that creates a record from the typed text. `{name}` is that text. */
+    create: string;
+    /** The option that opens the full form of a new record, with the typed text as its name. */
+    createAndEdit: string;
+    /** Why an option whose name does not match is listed: the hidden code it matched. */
+    matched: string;
     /** The quiet row at the end of a list that is fetching its next page. */
     loadingMore: string;
+    /** Where a many2one's record opens (`OpenTarget`), on its buttons and its menu. */
+    openIn: { modal: string; peek: string; page: string; side: string; window: string };
+    openMore: string;
   };
   cell: {
     missing: string;
@@ -414,13 +424,6 @@ export type UiCopy = {
     justNow: string;
     invalid: string;
     noDate: string;
-  };
-  /** The dialog that holds a stack of contexts opened from a record (`Drill`). */
-  drill: {
-    /** Up one level. `{name}` is the context it goes back to. */
-    back: string;
-    /** The accessible name of the trail of contexts this one was opened from. */
-    trail: string;
   };
   dialog: {
     expand: string;
@@ -518,17 +521,22 @@ export type UiCopy = {
     rows: string;
     /** Abrir un cruce: qué filas cayeron ahí. */
     open: string;
+    /** The pivot's own controls (`PivotExplorer`). */
+    measures: string;
+    rowsAxis: string;
+    columnsAxis: string;
+    addLevel: string;
+    removeLevel: string;
+    swap: string;
+    download: string;
+    fromSearch: string;
   };
   /** A person as a value: who is not there, and the ways to reach who is. */
   person: {
     unassigned: string;
-    /** The title of the contact card that opens from a person. */
-    contact: string;
     email: string;
     call: string;
     whatsapp: string;
-    /** Go to the person's own record. */
-    open: string;
   };
   /** The sub-list of lines inside a record: the lines of an order, of an entry. */
   lines: {
@@ -576,14 +584,43 @@ export type UiCopy = {
     emptyLane: string;
     moveHint: string;
     moved: string;
+    quickCreate: string;
+    quickPlaceholder: string;
+    fold: string;
+    unfold: string;
+    addColumn: string;
+    addColumnPlaceholder: string;
   };
-  /** «Buscar más…»: a field's record chosen from a table (`LookupDialog`). */
-  lookup: {
-    search: string;
-    pick: string;
-    pickCount: string;
+  /** A timeline of records and its toolbar (`RecordTimeline`, `TimelineToolbar`). */
+  timeline: {
+    prev: string;
+    next: string;
+    today: string;
+    goTo: string;
+    zoom: string;
+    zoomIn: string;
+    zoomOut: string;
+    fullscreen: string;
+    exitFullscreen: string;
+    scale: string;
+    scales: { day: string; week: string; month: string; year: string };
+    moveHint: string;
+    moved: string;
     create: string;
+  };
+  /** Odoo's kanban state — the traffic light on a card (`KanbanState`). */
+  kanbanState: {
+    label: string;
+    normal: string;
+    done: string;
+    blocked: string;
+  };
+  /** The planned activities of a record, on its card (`ActivityBadge`). */
+  activityState: {
     none: string;
+    overdue: string;
+    today: string;
+    planned: string;
   };
   relation: {
     open: string;
@@ -694,6 +731,9 @@ export const ENGLISH_COPY: UiCopy = {
     sheet: "Sheet",
     report: "Report",
     pivot: "Pivot",
+    calendar: "Calendar",
+    gantt: "Gantt",
+    timeline: "Planning",
     chart: "Chart",
     group: "How to view",
   },
@@ -752,7 +792,6 @@ export const ENGLISH_COPY: UiCopy = {
     closePreview: "Close preview",
     account: "My account",
     openAsPanel: "Open as panel",
-    commandPalette: "Command palette",
   },
   field: {
     drop: "Drop a file here, or choose one.",
@@ -949,7 +988,18 @@ export const ENGLISH_COPY: UiCopy = {
     refine: "— narrow the filter",
     open: "Open",
     browseAll: "Search more…",
+    create: "Create «{name}»",
+    createAndEdit: "Create and edit…",
+    matched: "matches",
     loadingMore: "loading more…",
+    openIn: {
+      modal: "Open in a modal",
+      peek: "Quick look",
+      page: "Open as the page",
+      side: "Open beside",
+      window: "Open in a window",
+    },
+    openMore: "Open in…",
   },
   cell: {
     missing: "missing",
@@ -960,10 +1010,6 @@ export const ENGLISH_COPY: UiCopy = {
     justNow: "just now",
     invalid: "invalid date",
     noDate: "no date",
-  },
-  drill: {
-    back: "Back to {name}",
-    trail: "Opened from",
   },
   dialog: {
     expand: "Expand to a panel",
@@ -1034,14 +1080,20 @@ export const ENGLISH_COPY: UiCopy = {
     total: "Total",
     rows: "rows",
     open: "Open {row} × {column}",
+    measures: "Measures",
+    rowsAxis: "Rows",
+    columnsAxis: "Columns",
+    addLevel: "Add to {axis}",
+    removeLevel: "Remove {level}",
+    swap: "Swap rows and columns",
+    download: "Download",
+    fromSearch: "from the search's grouping",
   },
   person: {
     unassigned: "unassigned",
-    contact: "Contact",
     email: "Write an email",
     call: "Call",
     whatsapp: "WhatsApp",
-    open: "Open profile",
   },
   lines: {
     add: "Add a line",
@@ -1074,13 +1126,41 @@ export const ENGLISH_COPY: UiCopy = {
     emptyLane: "Nothing in this stage.",
     moveHint: "Drag it, or Alt + ← / → to move it to another stage",
     moved: "{name} moved to {column}",
+    quickCreate: "Quick create in {column}",
+    quickPlaceholder: "Name… (Enter creates)",
+    fold: "Fold {column}",
+    unfold: "Unfold {column}",
+    addColumn: "Add a stage",
+    addColumnPlaceholder: "Stage name… (Enter adds)",
   },
-  lookup: {
-    search: "Search…",
-    pick: "Pick",
-    pickCount: "Pick {count}",
-    create: "Create «{name}»",
-    none: "Nothing matches «{query}».",
+  timeline: {
+    prev: "Previous",
+    next: "Next",
+    today: "Today",
+    goTo: "Go to a date",
+    zoom: "Zoom",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    fullscreen: "Full screen",
+    exitFullscreen: "Exit full screen",
+    scale: "Scale",
+    scales: { day: "Day", week: "Week", month: "Month", year: "Year" },
+    moveHint:
+      "Drag it to move it, its right edge to stretch it; Alt + arrows from the keyboard",
+    moved: "{name}: {range}",
+    create: "Create in {row} · {at}",
+  },
+  kanbanState: {
+    label: "State",
+    normal: "In progress",
+    done: "Ready for the next stage",
+    blocked: "Blocked",
+  },
+  activityState: {
+    none: "No activities",
+    overdue: "Overdue",
+    today: "Due today",
+    planned: "Planned",
   },
   relation: {
     open: "Open",
@@ -1198,7 +1278,6 @@ export type UiCopyOverride = {
   picker?: Partial<UiCopy["picker"]>;
   cell?: Partial<UiCopy["cell"]>;
   time?: Partial<UiCopy["time"]>;
-  drill?: Partial<UiCopy["drill"]>;
   dialog?: Partial<UiCopy["dialog"]>;
   report?: Partial<UiCopy["report"]>;
   builder?: Partial<UiCopy["builder"]>;
@@ -1208,7 +1287,9 @@ export type UiCopyOverride = {
   lineItems?: Partial<UiCopy["lineItems"]>;
   priority?: Partial<UiCopy["priority"]>;
   board?: Partial<UiCopy["board"]>;
-  lookup?: Partial<UiCopy["lookup"]>;
+  kanbanState?: Partial<UiCopy["kanbanState"]>;
+  timeline?: Partial<UiCopy["timeline"]>;
+  activityState?: Partial<UiCopy["activityState"]>;
   relation?: Partial<UiCopy["relation"]>;
   relationCard?: Partial<UiCopy["relationCard"]>;
   totals?: Partial<UiCopy["totals"]>;
@@ -1246,7 +1327,6 @@ export function mergeCopy(over?: UiCopyOverride): UiCopy {
     picker: { ...ENGLISH_COPY.picker, ...over.picker },
     cell: { ...ENGLISH_COPY.cell, ...over.cell },
     time: { ...ENGLISH_COPY.time, ...over.time },
-    drill: { ...ENGLISH_COPY.drill, ...over.drill },
     dialog: { ...ENGLISH_COPY.dialog, ...over.dialog },
     report: { ...ENGLISH_COPY.report, ...over.report },
     builder: { ...ENGLISH_COPY.builder, ...over.builder },
@@ -1256,7 +1336,9 @@ export function mergeCopy(over?: UiCopyOverride): UiCopy {
     lineItems: { ...ENGLISH_COPY.lineItems, ...over.lineItems },
     priority: { ...ENGLISH_COPY.priority, ...over.priority },
     board: { ...ENGLISH_COPY.board, ...over.board },
-    lookup: { ...ENGLISH_COPY.lookup, ...over.lookup },
+    kanbanState: { ...ENGLISH_COPY.kanbanState, ...over.kanbanState },
+    timeline: { ...ENGLISH_COPY.timeline, ...over.timeline },
+    activityState: { ...ENGLISH_COPY.activityState, ...over.activityState },
     relation: { ...ENGLISH_COPY.relation, ...over.relation },
     relationCard: { ...ENGLISH_COPY.relationCard, ...over.relationCard },
     totals: { ...ENGLISH_COPY.totals, ...over.totals },

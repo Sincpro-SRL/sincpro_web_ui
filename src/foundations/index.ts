@@ -32,7 +32,7 @@ export {
   THEMES,
   useTheme,
 } from "@sincpro/web-ui/foundations/theme";
-export type { Size, Surface, Tone } from "@sincpro/web-ui/foundations/types";
+export type { OpenTarget, Size, Surface, Tone } from "@sincpro/web-ui/foundations/types";
 /** El castellano del sistema, para quien lo quiera instalar entero. */
 export { SPANISH_COPY } from "@sincpro/web-ui/foundations/copy.es";
 /* LAS RANURAS — cómo un arquetipo se escribe como ÁRBOL. Vive acá y no adentro

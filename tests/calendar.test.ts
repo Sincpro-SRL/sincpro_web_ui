@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { afterEach, test } from "node:test";
 
 import {
   dateKey,
@@ -8,6 +7,7 @@ import {
   monthName,
 } from "@sincpro/web-ui/foundations/calendar";
 import { installCopy } from "@sincpro/web-ui/foundations/copy";
+import { afterEach, test } from "vitest";
 
 /* El español, como lo pone la aplicación: el `locale` y las dos palabras que
    ningún calendario nombra. Los doce meses y los siete días NO están acá — los

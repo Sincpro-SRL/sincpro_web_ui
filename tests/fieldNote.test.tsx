@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { DataField, Field, Record, TextInput, UiCopyProvider } from "@sincpro/web-ui";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup as render } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: a note that belongs to ONE field — «vence en 3 días» next to «Vencimiento» — is a

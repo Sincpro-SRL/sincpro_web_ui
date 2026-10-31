@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   filterCriteria,
@@ -13,6 +12,7 @@ import {
 } from "@sincpro/web-ui/components/search/criteria";
 import { CriteriaChips } from "@sincpro/web-ui/components/search/CriteriaChips";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * LO QUE LA BARRA TIENE PUESTO.
@@ -191,7 +191,7 @@ test("la que no viaja se dibuja igual, pero no abre el constructor", () => {
   const propio = filterCriteria(undefined, "con corridas", "with-runs");
   const out = draw(<CriteriaChips criteria={[propio, GRANDES]} onOpen={() => {}} />);
   assert.ok(out.includes("con corridas"));
-  assert.equal(out.split('role="button"').length - 1, 1);
+  assert.equal(out.split('title="Open this condition in the builder"').length - 1, 1);
 });
 
 test("la conjunción se cambia en la barra, sin abrir nada", () => {
@@ -229,4 +229,13 @@ test("la marca va en la rama abierta y no en otra", () => {
 test("un nodo vacío dice que está esperando", () => {
   const vacío: SearchCriteria[] = [{ id: "n", kind: "join", join: "all", of: [] }];
   assert.ok(draw(<CriteriaChips criteria={vacío} open={[0]} />).includes("lands here"));
+});
+
+/* Open and remove are two sibling buttons, never one inside the other (axe: nested-interactive). */
+test("una ficha que se abre y se saca no anida un control dentro de otro", () => {
+  const out = draw(
+    <CriteriaChips criteria={[GRANDES]} onOpen={() => {}} onRemove={() => {}} />,
+  );
+  assert.doesNotMatch(out, /role="button"/);
+  assert.doesNotMatch(out, /<button[^>]*>(?:(?!<\/button>).)*<button/s);
 });

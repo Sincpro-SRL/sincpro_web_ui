@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { type SortField, sortItems } from "@sincpro/web-ui/components/listing/SortMenu";
+import { test } from "vitest";
 
 type Row = { id: string; name: string; rows: number | null };
 

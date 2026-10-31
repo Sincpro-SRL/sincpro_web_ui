@@ -1,7 +1,11 @@
+import type { RecordCalendarProps } from "@sincpro/web-ui/components/calendar/RecordCalendar";
+import type { RecordGanttProps } from "@sincpro/web-ui/components/gantt/RecordGantt";
 import type { BoardStages } from "@sincpro/web-ui/components/listing/BoardColumns";
 import type { ListIdentity } from "@sincpro/web-ui/components/listing/ListingBar";
 import type { ListPresent } from "@sincpro/web-ui/components/listing/set";
 import type { SortField } from "@sincpro/web-ui/components/listing/SortMenu";
+import type { RecordTimelineProps } from "@sincpro/web-ui/components/timeline/RecordTimeline";
+import type { GroupableField } from "@sincpro/web-ui/foundations/grouping";
 import type { Grouping, GroupLevel } from "@sincpro/web-ui/foundations/grouping";
 import type { Pivot, PivotKey, PivotSpec } from "@sincpro/web-ui/foundations/pivot";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
@@ -26,6 +30,8 @@ export type { ListPresent };
 /** What an item looks like when the presentation is rows. */
 export type RowOf = {
   icon?: LucideIcon;
+  /** A person or a company: its face in the icon's place — the photo or the initials. */
+  avatar?: { name: string; src?: string };
   name: string;
   tags?: ReactNode;
   meta?: string;
@@ -156,6 +162,12 @@ export type ListPivot<T> = {
   /** Qué pasa al tocar un cruce: abrir las filas que cayeron ahí. */
   onCell?: (row: PivotKey, column: PivotKey) => void;
   height?: number | string;
+  /** The fields the person may pivot by. With them (and `spec`) the pivot is EXPLORED — axes,
+   *  measures and download on the grid (`PivotExplorer`) — and its rows follow the search
+   *  bar's grouping while there is one; `spec.rows` / `spec.columns` are where it starts. */
+  fields?: readonly GroupableField[];
+  /** Which of `spec.measures` start on. The first one by default. */
+  defaultMeasures?: readonly string[];
 };
 
 export type ListViewProps<T extends object> = {
@@ -231,6 +243,12 @@ export type ListViewProps<T extends object> = {
   card?: (item: T) => ReactNode;
   /** The board by stages: one column each, cards moved between them. */
   boardStages?: BoardStages<T>;
+  /** The calendar presentation: when each record happens. */
+  calendar?: ListCalendar<T>;
+  /** The Gantt presentation: each record as a span on a timeline. */
+  gantt?: ListGantt<T>;
+  /** The planning presentation: records grouped in rows across time (Odoo's Gantt). */
+  timeline?: ListTimeline<T>;
 
   /**
    * La PLANILLA. Con esto, `present="sheet"` dibuja un `SheetTable`.
@@ -287,6 +305,10 @@ export type ListViewProps<T extends object> = {
    *  without leaving the list; `open` goes to the record — a workspace whose rule is «a row
    *  opens the page» (the composer's) says `open`, and 👁 stays for the look. */
   rowClick?: "peek" | "open";
+  /** The list CHOOSES instead of opening — a «Buscar más…», a chooser a workspace asked for:
+   *  a press on a row (its body, its name, a card) calls this, and the row offers no 👁 / ↗.
+   *  For several at once, give `selection` too and toggle it here. */
+  onChoose?: (item: T) => void;
 
   /** The three states, in a single place. Every view used to re-assemble them
    *  with three nested ternaries, and that is why «empty because of a filter»
@@ -298,3 +320,12 @@ export type ListViewProps<T extends object> = {
   /** The escape hatch. */
   children?: ReactNode;
 };
+
+/** `List.Calendar`: the calendar's own props; the records, their key and «open» are the list's. */
+export type ListCalendar<T> = Omit<RecordCalendarProps<T>, "items" | "keyOf" | "onOpen">;
+
+/** `List.Gantt`: the chart's own props; the records, their key and «open» are the list's. */
+export type ListGantt<T> = Omit<RecordGanttProps<T>, "items" | "keyOf" | "onOpen">;
+
+/** `List.Timeline`: the planning's own props; the records, their key and «open» are the list's. */
+export type ListTimeline<T> = Omit<RecordTimelineProps<T>, "items" | "keyOf" | "onOpen">;

@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   type GroupLevel,
@@ -9,6 +8,7 @@ import {
   PivotTable,
 } from "@sincpro/web-ui";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Lo que una grilla puede tener mal sin que el tipo se queje: que las celdas de
