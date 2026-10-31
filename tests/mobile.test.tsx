@@ -1,7 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { test } from "node:test";
 
 import {
   Button,
@@ -19,6 +18,7 @@ import {
 import { dialogStyles } from "@sincpro/web-ui/primitives/dialog/Dialog";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the phone layer is CSS — container and window queries — so a browser is what

@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   SPANISH_COPY,
@@ -10,6 +9,7 @@ import {
 } from "@sincpro/web-ui";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the money summary of a document once it starts being settled. What is ours: a

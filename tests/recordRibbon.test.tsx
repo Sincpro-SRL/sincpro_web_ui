@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { Record, SPANISH_COPY, UiCopyProvider } from "@sincpro/web-ui";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: what a record IS now (archived, paid, cancelled) is seen before any field — a word

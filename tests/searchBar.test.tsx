@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { filterCriteria, groupCriteria, SearchBar } from "@sincpro/web-ui";
 import type { ModelDefinition } from "@sincpro/web-ui/components/search/model";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * LA BARRA, de afuera.

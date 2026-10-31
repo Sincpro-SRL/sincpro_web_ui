@@ -83,7 +83,7 @@ export function Priority({ value, max = 3, onChange, label }: PriorityProps) {
           tabIndex={n === Math.max(value, 1) ? 0 : -1}
           onClick={() => onChange(n === value ? 0 : n)}
           onKeyDown={(event) => step(event, n)}
-          className="rounded-control p-0.5 transition-colors duration-(--duration-instant) hover:bg-ink/6 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+          className="relative z-10 rounded-control p-0.5 transition-colors duration-(--duration-instant) hover:bg-ink/6 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
         >
           {icon(n)}
         </button>

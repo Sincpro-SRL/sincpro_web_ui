@@ -10,13 +10,14 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Building2, Package, Truck } from "lucide-react";
 import { useState } from "react";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { type Invoice, INVOICES, shortDate, subtotalOf } from "../support/erp";
 import { PRODUCTS } from "../support/erp-catalog";
 import { CUSTOMER_CARDS, type CustomerCard, customerCard } from "../support/erp-people";
 
 /**
- * Context: **el vistazo a un registro sin salir de la pantalla.** El cliente de una factura,
+ * Context: **la vista previa de un registro sin salir de la pantalla.** El cliente de una factura,
  * el producto de una línea: quién o qué es, al dejar el mouse sobre su nombre, al llegar con
  * Tab o con una pulsación larga en el celular. Es el `PreviewTrigger` de React Aria: un
  * popover NO modal que puede tener acciones adentro —a diferencia del tooltip, que es un
@@ -29,7 +30,7 @@ import { CUSTOMER_CARDS, type CustomerCard, customerCard } from "../support/erp-
  * columna, no esperar seis veces.
  */
 const meta: Meta = {
-  title: "2 · Primitivas/Vistazo de un registro",
+  title: "2 · Primitivas/Relacional a uno/Resumen al pasar el mouse",
   parameters: { layout: "padded" },
 };
 
@@ -54,7 +55,7 @@ const bs = new Intl.NumberFormat("es-BO", {
 });
 const units = new Intl.NumberFormat("es-BO");
 
-/** **El cliente de la factura, con vistazo.** Dejá el mouse sobre el nombre —o llegá con Tab—
+/** **El cliente de la factura, con vista previa.** Dejá el mouse sobre el nombre —o llegá con Tab—
  *  y aparece su resumen: deuda, crédito, ciudad, teléfono y «Abrir». No hay `i` al lado: un
  *  solo camino al resumen, no dos. Apretar el nombre sigue llevando a la ficha. */
 export const ClienteDeLaFactura: Story = {
@@ -70,7 +71,6 @@ export const ClienteDeLaFactura: Story = {
             secondary={`NIT ${c.taxId}`}
             media={{ icon: Building2 }}
             summary={summaryOf(c)}
-            preview
             onOpen={() => setOpened(c.name)}
           />
         </div>
@@ -82,11 +82,20 @@ export const ClienteDeLaFactura: Story = {
       </div>
     );
   },
+  play: async ({ canvasElement }) => {
+    /* Resting the mouse on the name opens the card — on a page just loaded, before any click
+       (React Aria only opened it once a press had said «pointer»). */
+    await userEvent.hover(within(canvasElement).getByRole("link", { name: /Ferretería/ }));
+    const card = await within(document.body).findByRole("dialog", {}, { timeout: 3000 });
+    await waitFor(() =>
+      expect(within(card).getByRole("button", { name: /Abrir/ })).toBeVisible(),
+    );
+  },
 };
 
-/** **Una columna de clientes.** Acá es donde el vistazo paga: treinta `i`, una por fila,
+/** **Una columna de clientes.** Acá es donde la vista previa paga: treinta `i`, una por fila,
  *  dicen treinta veces lo mismo. Bajá con el mouse por la columna: el primero espera, los
- *  siguientes se abren al instante. El vistazo no abre la fila; la fila tiene su clic. */
+ *  siguientes se abren al instante. La vista previa no abre la fila; la fila tiene su clic. */
 export const EnUnaTabla: Story = {
   render: function Render() {
     const [last, setLast] = useState<string | null>(null);
@@ -104,7 +113,6 @@ export const EnUnaTabla: Story = {
               name={i.customer}
               secondary={`NIT ${i.taxId}`}
               {...(c === undefined ? {} : { summary: summaryOf(c) })}
-              preview
               onOpen={() => setLast(`el cliente «${i.customer}»`)}
             />
           );
@@ -164,7 +172,7 @@ export const ProductoDeUnaLinea: Story = {
 };
 
 /** **`Preview` a mano.** Cualquier botón o enlace del sistema puede ser el disparador —sin
- *  adaptadores—. Acá, el remito de una entrega: el enlace lleva al documento; el vistazo dice
+ *  adaptadores—. Acá, el remito de una entrega: el enlace lleva al documento; la vista previa dice
  *  lo que casi siempre se quiere saber antes de abrirlo. */
 export const AMano: Story = {
   render: () => (

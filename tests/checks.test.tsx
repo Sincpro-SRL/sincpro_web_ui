@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { Checkbox, CheckList } from "@sincpro/web-ui";
 import { FormModeProvider } from "@sincpro/web-ui/primitives/field/mode";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: `Checkbox` and `CheckList` are React Aria's — a native checkbox and a

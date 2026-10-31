@@ -39,6 +39,8 @@ import { ORDER_EVENTS, ORDER_MESSAGES, ORDER_STAGES as STAGES } from "../support
  * árbol.
  */
 const meta: Meta = {
+  /* A screen a person works on: one primary action, and a second pass in dark (vitest). */
+  tags: ["screen"],
   title: "4 · Vistas/Registro · UN registro",
   parameters: {
     layout: "fullscreen",
@@ -520,7 +522,7 @@ export const SoloLaHistoria: Story = {
  * - **El resto** vive en la sección «Avisos» de la ACTIVIDAD, cada uno con su título, su
  *   frase y su acción; el riel guarda UN indicador —«⚠ 2 avisos», con el tono del más
  *   urgente— que abre la actividad y lleva el foco a esos avisos. Un registro sin
- *   actividad (un `Drill`, un diálogo) los abre en un popover desde el mismo indicador.
+ *   actividad (un modal, un cajón) los abre en un popover desde el mismo indicador.
  * - **Lo que es de UN campo** no es un aviso del registro: es la `note` del campo. Una
  *   marca (`Flag`) al lado del rótulo dice DÓNDE y abre la frase; en la actividad, la nota
  *   se lista con los avisos y lleva de vuelta al campo. Un lector de pantalla la oye con el

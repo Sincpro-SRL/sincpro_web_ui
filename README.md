@@ -143,8 +143,8 @@ theme switch, or open a story with `&globals=theme:dark`.
 ```bash
 make init        # pre-commit + yarn install
 make dev         # Storybook on :6006 — the living documentation
-make test        # node --test: behaviour, tokens, contrast, client boundaries
-make smoke       # every story opened in headless Chrome: no console errors, no blanks
+make test        # vitest: logic in Node + every story in Chrome (play, a11y), light and dark
+make smoke       # only the stories: their play, a11y and screen rules, light and dark
 make build       # dist/ (JS + .d.ts + tokens.css)
 ```
 
@@ -160,7 +160,7 @@ src/
 ├── components/    one folder per family: listing, record, search, form, activity, frame, shell
 └── views/         list (N records) · record (one record)
 stories/           Storybook, by level — and templates/: whole pages built from the public API
-tests/             node --test over the TypeScript sources
+tests/             vitest, `model` project: logic and static markup in Node
 ```
 
 `make doctor` rejects an import that climbs a level (a primitive importing a component, a

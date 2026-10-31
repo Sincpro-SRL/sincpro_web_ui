@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { cn, tv } from "@sincpro/web-ui/foundations/variants";
+import { test } from "vitest";
 
 /**
  * Context: each pair here is a size and a color (or a radius and a border) that an

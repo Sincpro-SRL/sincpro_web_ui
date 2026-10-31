@@ -1,6 +1,7 @@
 import { LineItems, NumberInput, TextInput, ToastProvider } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { type ReactNode, useState } from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import { type InvoiceLine, money } from "../support/erp";
 import {
@@ -88,6 +89,17 @@ function useLines(initial: readonly InvoiceLine[]) {
  * principio de cada línea la cambia de lugar: arrastrándolo, o con Alt + ↑ / ↓.
  */
 export const Borrador: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const order = () =>
+      [...canvasElement.querySelectorAll("tbody tr[data-row-id]")].map((row) =>
+        row.getAttribute("data-row-id"),
+      );
+    const before = order();
+    canvas.getAllByRole("button", { name: "Mover la fila" })[0]!.focus();
+    await userEvent.keyboard("{Alt>}{ArrowDown}{/Alt}");
+    await expect(order()).toEqual([before[1], before[0], ...before.slice(2)]);
+  },
   render: function Render() {
     const state = useLines(DRAFT_LINES);
     return (

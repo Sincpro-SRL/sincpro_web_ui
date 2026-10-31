@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   AssistedValue,
@@ -30,6 +29,7 @@ import {
 import { mergeCopy } from "@sincpro/web-ui/foundations/copy";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the assistant's patterns are trusted for three answers — where it came from, what

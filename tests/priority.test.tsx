@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { Priority, SPANISH_COPY, UiCopyProvider } from "@sincpro/web-ui";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /** Context: stars are counted without reading, and named so they are not colour alone. */
 

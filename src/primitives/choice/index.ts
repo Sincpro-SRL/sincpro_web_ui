@@ -3,6 +3,10 @@
    y buscar un texto suelto (SearchField). El valor es siempre un dato plano. */
 export { ComboBox, type ComboBoxProps } from "@sincpro/web-ui/primitives/choice/ComboBox";
 export {
+  KanbanState,
+  type KanbanStateValue,
+} from "@sincpro/web-ui/primitives/choice/KanbanState";
+export {
   type ChoiceOption,
   type SegmentOption,
 } from "@sincpro/web-ui/primitives/choice/options";

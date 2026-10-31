@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   FormModeProvider,
@@ -16,6 +15,7 @@ import {
 } from "@sincpro/web-ui/components/lines/lines";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the presses —the editor's focus trap, Escape, the toast's «Deshacer»— are React

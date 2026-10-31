@@ -15,13 +15,16 @@ import type { RowAction } from "@sincpro/web-ui/primitives/table/RowActions";
 import type { SortState } from "@sincpro/web-ui/primitives/table/Table";
 import { ListView } from "@sincpro/web-ui/views/list/ListView";
 import {
+  type ListCalendar,
   type ListCrumb,
   type ListEmpty,
+  type ListGantt,
   type ListGroup,
   type ListPivot,
   type ListPresent,
   type ListReport,
   type ListSheet,
+  type ListTimeline,
   type RowOf,
 } from "@sincpro/web-ui/views/list/types";
 import type { ReactNode } from "react";
@@ -118,7 +121,10 @@ type SlotName =
   | "board"
   | "sheet"
   | "report"
-  | "pivot";
+  | "pivot"
+  | "calendar"
+  | "gantt"
+  | "timeline";
 
 /* ---------------------------------------------------------------- *
  *  Las piezas de la barra
@@ -237,9 +243,41 @@ const PRESENT_OF: Readonly<Record<string, ListPresent>> = {
   sheet: "sheet",
   report: "report",
   pivot: "pivot",
+  calendar: "calendar",
+  gantt: "gantt",
+  timeline: "timeline",
 };
 
-const FACES: readonly SlotName[] = ["rows", "table", "board", "sheet", "report", "pivot"];
+const FACES: readonly SlotName[] = [
+  "rows",
+  "table",
+  "board",
+  "sheet",
+  "report",
+  "pivot",
+  "calendar",
+  "gantt",
+  "timeline",
+];
+
+/** Records grouped in rows across time, N per row — a planning (`RecordTimeline`). */
+const TimelineSlot = slot("timeline", (_props: ListTimeline<never>): ReactNode => null) as <
+  T,
+>(
+  props: ListTimeline<T>,
+) => ReactNode;
+
+/** When each record happens, on a month, a week, a day or an agenda (`RecordCalendar`). */
+const CalendarSlot = slot("calendar", (_props: ListCalendar<never>): ReactNode => null) as <
+  T,
+>(
+  props: ListCalendar<T>,
+) => ReactNode;
+
+/** Each record as a span on a timeline, with its dependencies (`RecordGantt`). */
+const GanttSlot = slot("gantt", (_props: ListGantt<never>): ReactNode => null) as <T>(
+  props: ListGantt<T>,
+) => ReactNode;
 
 export type ListProps<T extends object> = {
   items: readonly T[];
@@ -286,6 +324,11 @@ export type ListProps<T extends object> = {
    *  without leaving the list; `open` goes to the record — a workspace whose rule is «a row
    *  opens the page» (the composer's) says `open`, and 👁 stays for the look. */
   rowClick?: "peek" | "open";
+  /** The list CHOOSES instead of opening — a «Buscar más…», a chooser a workspace asked for:
+   *  a press on a row (its body, its name, a card) calls this, and the row offers no 👁 / ↗.
+   *  For several at once, give `selection` too and toggle it here. */
+  onChoose?: (item: T) => void;
+
   /** Nothing in it can be acted on: no opening, peeking, selecting, creating nor row
    *  actions — a list to read, like the lines of a record in view mode. One switch, so whoever
    *  passes the handlers generically does not have to strip them one by one. */
@@ -318,6 +361,7 @@ export function List<T extends object>({
   isPeeked,
   readOnly = false,
   rowClick,
+  onChoose,
   state,
   filtered,
   empty,
@@ -343,6 +387,9 @@ export function List<T extends object>({
   const sheet = propsOf<SheetProps<T>>(pick(top, "sheet"));
   const report = propsOf<ListReport>(pick(top, "report"));
   const pivot = propsOf<ListPivot<T>>(pick(top, "pivot"));
+  const calendar = propsOf<ListCalendar<T>>(pick(top, "calendar"));
+  const gantt = propsOf<ListGantt<T>>(pick(top, "gantt"));
+  const timeline = propsOf<ListTimeline<T>>(pick(top, "timeline"));
 
   /* Las caras que hay son las que están escritas, EN ESE ORDEN. El conmutador
      no puede ofrecer una que no se pueda dibujar, porque la que se dibuja y la
@@ -406,6 +453,9 @@ export function List<T extends object>({
         : { sheet: sheet as ListSheet<T> })}
       {...(report === undefined ? {} : { report })}
       {...(pivot === undefined ? {} : { pivot })}
+      {...(calendar === undefined ? {} : { calendar })}
+      {...(gantt === undefined ? {} : { gantt })}
+      {...(timeline === undefined ? {} : { timeline })}
       {...(presents.length === 0 ? {} : { presents })}
       {...(present === undefined ? {} : { present })}
       {...(onPresentChange === undefined ? {} : { onPresentChange })}
@@ -418,6 +468,7 @@ export function List<T extends object>({
       {...(onPeek === undefined ? {} : { onPeek })}
       {...(isPeeked === undefined ? {} : { isPeeked })}
       {...(rowClick === undefined ? {} : { rowClick })}
+      {...(onChoose === undefined || readOnly ? {} : { onChoose })}
       {...(state === undefined ? {} : { state })}
       {...(filtered === undefined ? {} : { filtered })}
       {...(empty === undefined ? {} : { empty })}
@@ -441,3 +492,6 @@ List.Board = Board;
 List.Sheet = SheetSlot;
 List.Report = Report;
 List.Pivot = Pivot;
+List.Calendar = CalendarSlot;
+List.Gantt = GanttSlot;
+List.Timeline = TimelineSlot;

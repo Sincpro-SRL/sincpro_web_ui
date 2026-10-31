@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   DateTimePicker,
@@ -10,6 +9,7 @@ import {
   UiCopyProvider,
 } from "@sincpro/web-ui";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the segments, the arrows and the hour cycle are React Aria's. What is ours is the

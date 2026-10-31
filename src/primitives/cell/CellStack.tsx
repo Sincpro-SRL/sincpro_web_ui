@@ -1,3 +1,4 @@
+import { Avatar } from "@sincpro/web-ui/primitives/value/Avatar";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -67,6 +68,7 @@ export function CellStack({
   primary,
   secondary,
   media,
+  avatar,
   wrap = false,
 }: {
   /** What the row is — the name. In ink, one line. */
@@ -75,12 +77,24 @@ export function CellStack({
   secondary?: ReactNode;
   /** A picture or icon on the left: `{ src, alt }` or `{ icon }`. */
   media?: { src?: string; alt?: string; icon?: LucideIcon };
+  /** A person or a company instead of `media`: its round face — the photo, or the initials in
+   *  the color it has everywhere. The same contract as a list row's `avatar`. */
+  avatar?: { name: string; src?: string };
   /** Let the second line wrap (a description) instead of truncating (a code). */
   wrap?: boolean;
 }) {
   return (
     <span className="flex min-w-0 items-center gap-2.5">
-      {media === undefined ? null : (
+      {avatar !== undefined ? (
+        /* The name is written beside it: the photo's `alt` would say it twice. */
+        <span aria-hidden className="flex shrink-0">
+          <Avatar
+            name={avatar.name}
+            size="lg"
+            {...(avatar.src === undefined ? {} : { src: avatar.src })}
+          />
+        </span>
+      ) : media === undefined ? null : (
         <Thumb
           size="md"
           {...(media.src === undefined ? {} : { src: media.src })}

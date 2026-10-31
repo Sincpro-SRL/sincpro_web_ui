@@ -1,0 +1,131 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Nuestro estilo" />
+
+# Nuestro estilo · cómo abrimos las cosas
+
+Los componentes son la mitad. La otra mitad es **cómo los usamos**: qué pasa cuando alguien
+toca una fila, el nombre de un cliente, «Registrar pago» o «Buscar más…». Esta página es esa
+mitad, escrita. Cada regla tiene una plantilla en `5 · Plantillas` que la muestra funcionando,
+y una prueba que la sostiene.
+
+## Quién decide qué
+
+Tres paquetes, una sola dirección:
+
+- **`@sincpro/web-ui` dibuja y avisa**: «abrieron esto, y pidieron un modal». Nunca importa
+  composer ni sabe dónde se abre nada.
+- **`@sincpro/web-composer` decide dónde**: página, modal, vista previa, panel, ventana; las migas y
+  el teléfono. Nunca dibuja un registro.
+- **`web-framework` conecta**: un `onOpenIn` de web-ui se vuelve un `api.open` de composer.
+  Nunca inventa piezas que web-ui no tiene: si falta una, va a web-ui.
+
+Por eso web-ui no tiene «abrir»: tiene `onOpen`, `onPeek`, `onOpenIn(to)`, `onChoose`. Avisa
+el gesto y el destino que pidió la persona, y el espacio de trabajo hace lo suyo. En Storybook
+composer es sólo una dependencia de desarrollo: las plantillas lo usan para que se vea cómo
+encaja, y el paquete no lo importa nunca.
+
+## Los cinco destinos
+
+- **Modal** — sobre la superficie de la que salió, que espera. Para mirar o corregir un
+  relacionado sin perder el lugar. **Es el de siempre.**
+- **Vista previa** — un cajón al costado, de solo mirar: «¿quién era este cliente?» sin salir.
+- **Al costado** — un panel que se queda junto al registro: comparar, seguir trabajando con los
+  dos a la vista.
+- **Página** — reemplaza la página y la miga vuelve: ir a trabajar a ESE registro.
+- **Ventana** — flotante, se mueve y se redimensiona: herramientas que acompañan (un elegidor,
+  una calculadora).
+
+En el teléfono composer traduce solo: panel y ventana son la página, el modal es una hoja que
+sube. Ninguna pantalla pregunta en qué dispositivo está.
+
+## El gesto elige el destino
+
+- **Tocar una fila de una lista → página.** `List onOpen`.
+- **El 👁 de una fila → vista previa.** `List onPeek`; con `rowClick="peek"` si la fila sólo se mira.
+- **El nombre de un relacional (many2one) → modal**, y «Abrir en…» a su lado ofrece vista previa, al
+  costado y página. `RelationValue onOpenIn`, `Picker onOpen(id, to)`.
+- **Un relacional adentro de un modal → al costado o en vista previa, nunca otro modal.** `openTargets`
+  sin `"modal"`.
+- **Una tarea corta (registrar pago, programar actividad) → modal del tamaño de la tarea.**
+  `api.open(ref, …)` con destino modal y `size`; `api.close()` al terminar.
+- **«Buscar más…» de un many2one o many2many → modal con la misma lista que los registros.**
+  `api.pick(…, modal)` con `List onChoose` → `api.answer` (many2many: `selection` y «Agregar N»).
+
+Por qué el modal es el de siempre para un relacional: la persona estaba **haciendo algo** en
+este registro. Ir a otra página le hace perder el hilo; un modal le deja ver el cliente,
+corregirle el teléfono y volver exactamente donde estaba. Si quería ir a trabajar al cliente,
+«Abrir en… → como página» está a un toque, y la miga la trae de vuelta.
+
+Por qué nunca un modal sobre otro: un modal reemplaza al anterior en su superficie, y lo que
+la persona escribió en el primero se pierde. Desde adentro de un modal, lo relacionado se abre
+al costado o en vista previa.
+
+```tsx
+/* web-ui avisa el destino; quien conecta lo traduce. Nada más. */
+<RelationValue
+  value={pedido.cliente}
+  onOpenIn={(to) => api.open(clienteRef, abierto(to))}
+/>
+
+/* adentro del modal «Registrar pago»: el cliente, al costado */
+<RelationValue
+  value={pago.cliente}
+  openTargets={["side", "peek", "page"]}
+  onOpenIn={(to) => api.open(clienteRef, abierto(to))}
+/>
+```
+
+## Modal de composer, no `Dialog`
+
+Adentro de un espacio de trabajo, **todo lo que se abre es una vista de composer**: el modal
+bloquea sólo su superficie (el panel de al lado sigue vivo), el título y lo pendiente
+(`api.setTitle`, `api.setDirty`) los lleva composer, y en el teléfono se vuelve una hoja. Un `Dialog` de web-ui bloquea la pantalla entera,
+así que no se usa para abrir registros ni tareas dentro de composer.
+
+`Dialog` queda para lo que no es una vista: la confirmación de algo que no se puede deshacer —
+y aun eso es raro, porque preferimos **deshacer antes que confirmar**: se hace, y un aviso
+ofrece «Deshacer». No hay versión «sin composer» de abrir, elegir ni ⌘K: el espacio de trabajo
+es obligatorio, y así hay una sola manera de hacer cada cosa.
+
+## Un registro, en cada tamaño
+
+El mismo registro se dibuja de siete maneras según el lugar — enlace (`RelationValue`),
+etiqueta (`Tags`), fila (`Row`), tarjeta (`RecordCard`), resumen (`RelationCard`, también al
+pasar el mouse por el nombre), vista previa (`Peek`) y página (`Record`). Cambia cuánto se dice,
+nunca cómo se abre. Está en «3 · Componentes / Un registro, en cada tamaño».
+
+Cada campo, en dos caras: **editar** (`Picker`) y **leer** (`RelationValue`). Están juntas en
+«2 · Primitivas / Relacional a uno».
+
+## Listas: mirar o abrir, y el link azul
+
+- Una lista de **solo lectura** (`List readOnly`) no se enciende al pasar: no promete nada que
+  no hace.
+- Una fila que se abre muestra 👁 «Vista previa» y ↗ «Abrir». El resto de la fila abre lo mismo que
+  ↗.
+- El **azul es para ir a OTRO registro** (el cliente de la factura), nunca para el registro de
+  la propia fila: la fila ya se abre entera.
+- Una lista que **elige** (`onChoose`) no tiene 👁 ni ↗: tocar la fila es elegirla. Para un
+  many2many **agrega**: lo que el campo ya tiene no aparece, y el botón dice «Agregar N».
+- «Buscar más…» es la **misma lista** que la de los registros — barra de búsqueda, orden,
+  paginación, filas o tabla — no una tabla aparte con otras reglas.
+
+## Personas con cara
+
+Un cliente, un vendedor, un seguidor: siempre con su avatar (`avatar` en `PickerItem`,
+`TagItem`, en las filas y en el calendario). Se reconoce una cara antes que un nombre.
+
+## Dónde verlo
+
+- **Subcontextos · abrir desde el registro** — los cuatro destinos desde un pedido; el modal
+  por defecto, «Abrir en…», el pago como modal y el cliente al costado desde adentro.
+- **CRM · pipeline y conversación** — tablero → página, vista previa, «Programar actividad» como
+  modal.
+- **Buscar más · elegir de la lista** — el many2one que elige uno y el many2many que agrega
+  varios, con la misma lista de siempre en un modal que contesta.
+- **Espacio de trabajo · web-ui dentro del composer** — lista → página con migas, 👁 → vista previa.
+- **Facturas · un módulo de ERP** y **Factura completa** — un módulo entero con estas reglas.
+
+Antes de entregar una pantalla, pasá la lista de chequeo de `docs/PRINCIPLES.md`: una sola
+acción primaria, color que significa algo, revelar de a poco, deshacer antes que confirmar.

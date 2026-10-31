@@ -166,6 +166,8 @@ type StatusProps = {
   /** Cuál de las etapas es la de ahora. Sin esto, la primera. */
   current?: string;
   failed?: boolean;
+  /** The stages can be chosen: pressing one moves the record there (a CRM's pipeline). */
+  onSelect?: (id: string) => void;
   /** La escotilla del estado, para lo que no es ninguna de las dos. */
   children?: ReactNode;
 };
@@ -356,6 +358,7 @@ export function Record({ identity, error = null, dirty, children }: RecordProps)
             current={status.current ?? status.stages[0]?.id ?? ""}
             failed={status.failed ?? false}
             surface={surface}
+            {...(status.onSelect === undefined ? {} : { onSelect: status.onSelect })}
           />
         )}
         {status.children}

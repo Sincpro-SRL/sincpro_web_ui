@@ -74,3 +74,11 @@ export type Size = "sm" | "md" | "lg";
  *  Put another way: if it makes sense to send it to a colleague over chat so
  *  they see the same thing, it is controlled.
  * ==================================================================== */
+
+/**
+ * WHERE a record opens, in the words a workspace (the composer) uses: the page (with its crumb
+ * back), a modal over the surface that asked, a peek (a drawer, reading without leaving), a
+ * side panel, a floating window; web-ui only SAYS which one the person chose — opening is the
+ * app's (`api.open(ref, { to })`). See the guide «Cómo abrimos las cosas».
+ */
+export type OpenTarget = "modal" | "peek" | "page" | "side" | "window";

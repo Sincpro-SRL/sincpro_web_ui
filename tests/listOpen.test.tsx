@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { type DataColumn, List, SPANISH_COPY, UiCopyProvider } from "@sincpro/web-ui";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: a row has two ways in — a look without leaving the list (👁) and the record itself
@@ -51,13 +51,13 @@ const count = (html: string, needle: string) => html.split(needle).length - 1;
 for (const present of ["rows", "table"] as const) {
   test(`${present}: each row says its two ways in, look and open`, () => {
     const html = draw(<Pedidos present={present} />);
-    assert.equal(count(html, 'aria-label="Vistazo'), 2);
+    assert.equal(count(html, 'aria-label="Vista previa'), 2);
     assert.equal(count(html, 'aria-label="Abrir'), 2);
   });
 
   test(`${present}: readOnly drops opening, peeking and selecting at once`, () => {
     const html = draw(<Pedidos present={present} readOnly />);
-    assert.equal(count(html, 'aria-label="Vistazo'), 0);
+    assert.equal(count(html, 'aria-label="Vista previa'), 0);
     assert.equal(count(html, 'aria-label="Abrir'), 0);
     assert.equal(count(html, 'type="checkbox"'), 0);
     assert.doesNotMatch(html, /cursor-pointer/);

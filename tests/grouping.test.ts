@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { dateKey } from "@sincpro/web-ui/foundations/calendar";
 import { installCopy } from "@sincpro/web-ui/foundations/copy";
@@ -17,6 +16,7 @@ import {
   pilesFrom,
   pilesOf,
 } from "@sincpro/web-ui/foundations/grouping";
+import { test } from "vitest";
 
 type Row = { id: string; origin: string; month: string };
 

@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   columnName,
@@ -11,6 +10,7 @@ import {
   writeXlsx,
   type XlsxSheet,
 } from "@sincpro/web-ui";
+import { test } from "vitest";
 
 /**
  * Un `.xlsx` mal armado no falla: abre con un aviso de «contenido ilegible» y

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
-import { ContactCard, SPANISH_COPY, UiCopyProvider, UserChip } from "@sincpro/web-ui";
+import { RelationCard, SPANISH_COPY, UiCopyProvider, UserChip } from "@sincpro/web-ui";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: opening, focus and Escape are React Aria's `DialogTrigger` (driven in a browser).
@@ -35,9 +35,10 @@ test("a chip with contact or a record is a button that opens a dialog", () => {
 
 test("the contact card's rows are mailto, tel and wa.me links, digits only for WhatsApp", () => {
   const html = es(
-    <ContactCard
+    <RelationCard
       name="Josefa Muñoz"
-      role="Vendedora · Sucursal La Paz"
+      secondary="Vendedora · Sucursal La Paz"
+      media={{ person: true }}
       contact={{
         email: "josefa.munoz@sincpro.com.bo",
         phone: "+591 72 045-118",
@@ -52,27 +53,31 @@ test("the contact card's rows are mailto, tel and wa.me links, digits only for W
   assert.match(html, /Llamar/);
   assert.match(html, /WhatsApp/);
   assert.match(html, /Vendedora · Sucursal La Paz/);
-  /* Without `onOpen` there is no «Ver ficha». */
-  assert.doesNotMatch(html, /Ver ficha/);
+  /* Without `onOpen` there is no «Abrir». */
+  assert.doesNotMatch(html, />Abrir</);
 });
 
-test("the card draws only the ways that exist, and «Ver ficha» with a record", () => {
+test("the card draws only the ways that exist, and «Abrir» with a record", () => {
   const html = es(
-    <ContactCard
+    <RelationCard
       name="Carla Rojas"
+      media={{ person: true }}
       contact={{ email: "carla@sincpro.com.bo" }}
       onOpen={() => {}}
     />,
   );
   assert.equal(html.match(/data-contact=/g)?.length, 1);
   assert.doesNotMatch(html, /tel:|wa\.me/);
-  assert.match(html, /<button[^>]*>.*Ver ficha<\/button>/);
+  assert.match(html, /<button[^>]*>.*Abrir<\/button>/);
 });
 
 test("the card shows the photo when there is one, the initials when not", () => {
-  assert.match(es(<ContactCard name="Ana María Gutiérrez" />), />AG</);
   assert.match(
-    es(<ContactCard name="Ana María Gutiérrez" src="/ana.png" />),
+    es(<RelationCard name="Ana María Gutiérrez" media={{ person: true }} />),
+    />AG</,
+  );
+  assert.match(
+    es(<RelationCard name="Ana María Gutiérrez" media={{ person: true, src: "/ana.png" }} />),
     /<img[^>]*src="\/ana.png"/,
   );
 });

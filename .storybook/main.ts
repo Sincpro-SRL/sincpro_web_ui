@@ -50,6 +50,7 @@ const config: StorybookConfig = {
      decir por dónde empezar a leer. */
   stories: [
     "../stories/Introduction.mdx",
+    "../stories/Estilo.mdx",
     "../stories/foundations/*.stories.@(ts|tsx)",
     "../stories/primitives/*.stories.@(ts|tsx)",
     "../stories/components/*.stories.@(ts|tsx)",
@@ -59,6 +60,8 @@ const config: StorybookConfig = {
   addons: [
     "@storybook/addon-docs",
     "@storybook/addon-a11y",
+    // The stories ARE the tests (vitest.config.ts): «Run tests» in the sidebar runs them.
+    "@storybook/addon-vitest",
     // An MCP server at /mcp while the dev server runs: it lets an agent read
     // the stories that ALREADY exist instead of guessing them.
     "@storybook/addon-mcp",

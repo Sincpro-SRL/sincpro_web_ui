@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   ComboBox,
@@ -11,6 +10,7 @@ import {
   TagsField,
 } from "@sincpro/web-ui";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: a cell of an editable table has no `Field` around its control, so the column's

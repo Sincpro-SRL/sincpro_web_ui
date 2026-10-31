@@ -28,7 +28,7 @@ import { CUSTOMER_CARDS, type CustomerCard, customerCard } from "../support/erp-
  * picker como `editor` y el campo dibuja uno u otro según el modo.
  */
 const meta: Meta = {
-  title: "2 · Primitivas/Relaciones · a uno",
+  title: "2 · Primitivas/Relacional a uno/Leer · el nombre y sus destinos",
   parameters: { layout: "padded" },
 };
 

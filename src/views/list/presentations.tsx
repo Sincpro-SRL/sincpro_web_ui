@@ -26,7 +26,7 @@ type TableProps<T extends object> = {
 } & Pick<
   ListViewProps<T>,
   "sort" | "onSortChange" | "selection" | "rowActions" | "create" | "onPeek" | "onOpen"
-> & { rowClick?: "peek" | "open" };
+> & { rowClick?: "peek" | "open"; onChoose?: (item: T) => void };
 
 /** The table receives EVERYTHING that belongs to the set —sorting, selection, grouping,
  *  which columns are on screen— and not a trimmed down version: that was exactly the trap
@@ -46,9 +46,10 @@ export function TablePresentation<T extends object>({
   onPeek,
   onOpen,
   rowClick = "peek",
+  onChoose,
 }: TableProps<T>) {
   const copy = useUiCopy();
-  const press = rowClick === "open" ? (onOpen ?? onPeek) : (onPeek ?? onOpen);
+  const press = onChoose ?? (rowClick === "open" ? (onOpen ?? onPeek) : (onPeek ?? onOpen));
   /* The row's ways in go FIRST among its actions, so they are always the inline ones and
      always in the same place; the domain's actions follow (and fold into ⋯ past two). */
   const withOpeners =

@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   EditableTable,
@@ -14,6 +13,7 @@ import {
 } from "@sincpro/web-ui";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: two contracts of `EditableTable` that broke inside a record.

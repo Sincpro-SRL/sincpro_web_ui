@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   ComboBox,
@@ -14,6 +13,7 @@ import {
   UiCopyProvider,
 } from "@sincpro/web-ui";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the choice controls are React Aria's, so their keyboard behaviour is React Aria's

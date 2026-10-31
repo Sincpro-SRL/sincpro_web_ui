@@ -1,266 +1,25 @@
 "use client";
 
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import { useSurface } from "@sincpro/web-ui/foundations/surface";
-import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { PopoverTrigger } from "@sincpro/web-ui/primitives/overlay/PopoverTrigger";
-import type { LucideIcon } from "lucide-react";
-import { ArrowRight, Mail, MessageCircle, Phone } from "lucide-react";
+import {
+  Avatar,
+  type AvatarSize,
+  OVERLAP,
+  SIZE,
+} from "@sincpro/web-ui/primitives/value/Avatar";
+import type { PersonContact } from "@sincpro/web-ui/primitives/value/contact";
+import { RelationCard } from "@sincpro/web-ui/primitives/value/Relation";
 import type { ComponentPropsWithRef, ReactNode } from "react";
 
 /* ==================================================================== *
- *  WHO — the person as a datum, not as a string of text.
- *
- *  «andres.g@sincpro.com.bo» in a cell is a correct and unreadable datum: twelve
- *  rows of emails get read letter by letter. An initial in a circle is
- *  recognized without reading, which is what is needed when the question is «who
- *  does this belong to?» and not «what is their email?».
- *
- *  ── The color comes out of the name and nobody picks it ──────────────
- *
- *  A hash of the name against the tone palette. It is deterministic —the same
- *  person always has the same color, on every screen— and that is why the color
- *  gets to mean something. If the consumer picked it, the same person would be
- *  green in one list and blue in another, and recognition without reading is lost
- *  entirely.
- *
- *  The color here is NOT a state: it is identity. That is why it uses the tone
- *  palette but never `bad` nor `warn` — a person is not «in error».
+ *  WHO — a person as a chip and as a stack. The face itself is `Avatar`; what a person's
+ *  card says (the face, the role, the ways to reach them, «Abrir») is the `RelationCard` of
+ *  that person: a person IS a related record, and one card answers for all of them.
  * ==================================================================== */
 
-const PALETTE = [
-  "bg-info/15 text-info",
-  "bg-good/15 text-good",
-  "bg-accent/25 text-ink",
-  "bg-primary/12 text-primary",
-  "bg-ink/10 text-ink",
-] as const;
-
-/** The initials: two, and from the first two WORDS. «Ana María Gutiérrez» gives
- *  `AG` and not `AM` — the surname distinguishes more than the middle name. */
-function initials(name: string): string {
-  const parts = name
-    .trim()
-    .split(/\s+/)
-    .filter((p) => p.length > 0);
-  const first = parts[0]?.[0] ?? "?";
-  const last = parts.length > 1 ? parts[parts.length - 1]?.[0] : undefined;
-  return `${first}${last ?? ""}`.toUpperCase();
-}
-
-/* The same five identities on the dark chrome. The canvas palette there composed its tints
-   over the navy and left ink letters on a dark disc — 1.61:1, unreadable (measured on the
-   application bar). Same index, so a person keeps their color across the two surfaces. */
-const CHROME_PALETTE = [
-  "bg-chrome-link/20 text-chrome-link",
-  "bg-chrome-good/20 text-chrome-good",
-  "bg-chrome-accent/12 text-chrome-accent",
-  "bg-chrome-link/14 text-chrome-ink",
-  "bg-chrome-ink/14 text-chrome-ink",
-] as const;
-
-function toneOf(name: string, surface: "canvas" | "chrome" = "canvas"): string {
-  let h = 0;
-  for (const ch of name) h = (h * 31 + ch.codePointAt(0)!) % 100000;
-  const palette = surface === "chrome" ? CHROME_PALETTE : PALETTE;
-  return palette[h % palette.length]!;
-}
-
-/* The text doesn't go below `micro`: two initials at 10 px can't be read, and an
-   unreadable initial is a colored circle — which is exactly what we don't want.
-   What changes between sizes is the circle. */
-const SIZE = {
-  sm: "size-5 text-micro",
-  md: "size-6 text-micro",
-  lg: "size-8 text-meta",
-  /* The head of a contact card: the face is what the card is about. */
-  xl: "size-12 text-body",
-} as const;
-
-/* Two initials, so the overlap stays short of the second letter. The ring is
-   1px: a 2px ring of the surface color reads as a gap between people, which
-   is the thing a stack is not. */
-const OVERLAP: Record<AvatarSize, string> = {
-  sm: "-ml-1.5",
-  md: "-ml-2",
-  lg: "-ml-2.5",
-  xl: "-ml-3.5",
-};
-
-export type AvatarSize = keyof typeof SIZE;
-
-export function Avatar({
-  name,
-  size = "md",
-  /** The photo, if there is one. Without it the initials go, which is the normal
-   *  case here. */
-  src,
-}: {
-  name: string;
-  size?: AvatarSize;
-  src?: string;
-}) {
-  const surface = useSurface();
-  if (src !== undefined) {
-    return (
-      /* The photo lies over the initials, drawn invisible: an image has no text baseline, so
-         a chip with a photo sat on the image's bottom edge in a row aligned by baseline (a
-         `DataField`), higher than the label next to it. The hidden initials give the photo
-         the same baseline the initials disc has. */
-      <span
-        title={name}
-        className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-pill ${SIZE[size]}`}
-      >
-        <span aria-hidden className="invisible">
-          {initials(name)}
-        </span>
-        <img src={src} alt={name} className="absolute inset-0 size-full object-cover" />
-      </span>
-    );
-  }
-
-  return (
-    <span
-      title={name}
-      aria-hidden
-      className={`inline-flex shrink-0 items-center justify-center rounded-pill font-medium select-none ${SIZE[size]} ${toneOf(name, surface)}`}
-    >
-      {initials(name)}
-    </span>
-  );
-}
-
-/** The ways to reach a person. Each one that is present becomes a row of the contact card. */
-export type PersonContact = {
-  email?: string;
-  /** As people write it — «+591 7 123-4567». The `tel:` link keeps only the digits and `+`. */
-  phone?: string;
-  /** The WhatsApp number with its country code, written any way; `wa.me` gets the digits. */
-  whatsapp?: string;
-};
-
-/** The three contact links, built from what people type. `wa.me` takes digits only — a `+`,
- *  a space or a dash breaks it — and `tel:` takes digits and the leading `+`. */
-function contactRows(
-  contact: PersonContact,
-  copy: ReturnType<typeof useUiCopy>["person"],
-): { key: string; icon: LucideIcon; label: string; value: string; href: string }[] {
-  const rows = [];
-  if (contact.email !== undefined && contact.email !== "") {
-    rows.push({
-      key: "email",
-      icon: Mail,
-      label: copy.email,
-      value: contact.email,
-      href: `mailto:${contact.email}`,
-    });
-  }
-  if (contact.phone !== undefined && contact.phone !== "") {
-    rows.push({
-      key: "call",
-      icon: Phone,
-      label: copy.call,
-      value: contact.phone,
-      href: `tel:${contact.phone.replace(/[^\d+]/g, "")}`,
-    });
-  }
-  if (contact.whatsapp !== undefined && contact.whatsapp !== "") {
-    rows.push({
-      key: "whatsapp",
-      icon: MessageCircle,
-      label: copy.whatsapp,
-      value: contact.whatsapp,
-      href: `https://wa.me/${contact.whatsapp.replace(/\D/g, "")}`,
-    });
-  }
-  return rows;
-}
-
-export type ContactCardProps = {
-  name: string;
-  /** The photo. Without it, the initials — in the same color the person has everywhere. */
-  src?: string;
-  /** What the person is here: «Vendedora · Sucursal La Paz». */
-  role?: string;
-  contact?: PersonContact;
-  /** Go to the person's own record — «Ver ficha». Without it the card only reaches them. */
-  onOpen?: () => void;
-};
-
-/**
- * Who a person is and how to reach them: the face, the name, the role, and one row per way
- * of contact — write, call, WhatsApp — then their record.
- *
- * Context: in an ERP the question after «who is the salesperson of this invoice?» is almost
- * always «how do I reach her?». Copying an email out of another screen to paste it into the
- * mail client is the detour this card removes. Each way of contact is a ROW and not a bare
- * icon: the address and the number are drawn, because often what the person wants is to read
- * the number aloud, not to dial it from the browser. Every row is a real link (`mailto:`,
- * `tel:`, `wa.me`), so middle-click, «copy address» and the phone's own dialer work.
- *
- * It is what opens from a `UserChip` with `contact`, and it is exported on its own for the
- * side panel of a record, where the same person is shown without a chip to open.
- */
-export function ContactCard({ name, src, role, contact = {}, onOpen }: ContactCardProps) {
-  const copy = useUiCopy().person;
-  const rows = contactRows(contact, copy);
-  return (
-    /* React events bubble through the popover's portal to the React parents of the chip —
-       a table row that opens on click among them. A click inside the card is not a click
-       on the row. */
-    <div className="flex w-64 max-w-full flex-col gap-3" onClick={(e) => e.stopPropagation()}>
-      <div className="flex min-w-0 items-center gap-3">
-        {/* The name is written beside it: the photo's `alt` would say it twice. */}
-        <span aria-hidden className="flex shrink-0">
-          <Avatar name={name} size="xl" {...(src === undefined ? {} : { src })} />
-        </span>
-        <div className="flex min-w-0 flex-col">
-          <span className="truncate text-lead font-semibold text-ink" title={name}>
-            {name}
-          </span>
-          {role === undefined ? null : (
-            <span className="line-clamp-2 text-meta text-muted" title={role}>
-              {role}
-            </span>
-          )}
-        </div>
-      </div>
-
-      {rows.length === 0 ? null : (
-        <ul className="-mx-1 flex flex-col">
-          {rows.map(({ key, icon: Icon, label, value, href }) => (
-            <li key={key}>
-              <a
-                href={href}
-                data-contact={key}
-                {...(key === "whatsapp" ? { target: "_blank", rel: "noreferrer" } : {})}
-                className="flex min-w-0 items-center gap-2.5 rounded-control px-1 py-1.5 no-underline outline-primary outline-offset-2 hover:bg-ink/6 focus-visible:outline-2 forced-colors:outline-[Highlight]"
-              >
-                <Icon
-                  aria-hidden
-                  className="size-(--size-icon-md) shrink-0 text-primary"
-                  strokeWidth={2}
-                />
-                <span className="flex min-w-0 flex-col">
-                  <span className="text-meta font-medium text-ink">{label}</span>
-                  <span className="truncate text-micro tabular-nums text-muted">{value}</span>
-                </span>
-              </a>
-            </li>
-          ))}
-        </ul>
-      )}
-
-      {onOpen === undefined ? null : (
-        <div className="flex justify-end border-t border-line pt-2">
-          <Button role="ghost" size="sm" icon={ArrowRight} onClick={onOpen}>
-            {copy.open}
-          </Button>
-        </div>
-      )}
-    </div>
-  );
-}
+export { Avatar, type AvatarSize } from "@sincpro/web-ui/primitives/value/Avatar";
+export type { PersonContact } from "@sincpro/web-ui/primitives/value/contact";
 
 /** The chip as the opener of its card. A native button that takes what `PopoverTrigger`
  *  hands its trigger — `ref`, the press handlers, `expanded` and `haspopup` — the same
@@ -302,7 +61,7 @@ export type UserChipProps = {
   role?: string;
   /** The ways to reach them. Present = the chip opens a contact card. */
   contact?: PersonContact;
-  /** Go to the person's record. Present = the chip opens a card with «Ver ficha». */
+  /** Go to the person's record. Present = the chip opens its card with «Abrir». */
   onOpen?: () => void;
 };
 
@@ -311,7 +70,7 @@ export type UserChipProps = {
  * a fact of a record.
  *
  * Context: a chip is a button ONLY when it has somewhere to go. With `contact` or `onOpen` it
- * opens the `ContactCard` (press, Enter or Space — React Aria's `DialogTrigger` through
+ * opens the person's `RelationCard` (press, Enter or Space — React Aria's `DialogTrigger` through
  * `PopoverTrigger`: focus goes into the card, Escape and a click outside close it, and focus
  * comes back to the chip). Without them it stays text: a button that does nothing is a lie a
  * keyboard user pays for with one more Tab stop on every row.
@@ -352,10 +111,10 @@ export function UserChip({
   return (
     <PopoverTrigger label={name} trigger={<ChipButton>{face}</ChipButton>}>
       {(close) => (
-        <ContactCard
+        <RelationCard
           name={name}
-          {...(src === undefined ? {} : { src })}
-          {...(role === undefined ? {} : { role })}
+          media={{ person: true, ...(src === undefined ? {} : { src }) }}
+          {...(role === undefined ? {} : { secondary: role })}
           {...(contact === undefined ? {} : { contact })}
           {...(onOpen === undefined
             ? {}

@@ -18,6 +18,7 @@ import {
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useRef, useState } from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 const FACETAS = [
   { id: "number", label: "número" },
@@ -287,6 +288,15 @@ function muchos(): SearchCriteria[] {
 }
 
 export const MuchosRecortes: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    /* Wide: four facets show and «+2» names the two folded; pressing it unfolds them. */
+    await userEvent.click(canvas.getByRole("button", { name: /^\+2: / }));
+    await expect(canvas.getByRole("button", { name: "ver menos" })).toBeVisible();
+    /* The grouping is one chip with one ×: it drops every level at once. */
+    await userEvent.click(canvas.getAllByRole("button", { name: "Dejar de agrupar" })[0]!);
+    await expect(canvas.getAllByRole("group", { name: /^agrupado por/ })).toHaveLength(1);
+  },
   args: { facets: FACETAS, criteria: [], onCriteriaChange: () => {} },
   render: () => {
     const [ancho, setAncho] = useState<SearchCriteria[]>(muchos);

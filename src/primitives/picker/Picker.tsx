@@ -2,15 +2,29 @@
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { matchedWord, matches } from "@sincpro/web-ui/foundations/match";
+import type { OpenTarget } from "@sincpro/web-ui/foundations/types";
 import { cn, tv } from "@sincpro/web-ui/foundations/variants";
 import { IconButton } from "@sincpro/web-ui/primitives/button/Button";
 import { FieldButton, FieldGroup } from "@sincpro/web-ui/primitives/field/aria";
 import { useFieldIds } from "@sincpro/web-ui/primitives/field/context";
 import { ReadValue } from "@sincpro/web-ui/primitives/field/Field";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
+import { Menu } from "@sincpro/web-ui/primitives/menu/Menu";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
+import { MatchedText } from "@sincpro/web-ui/primitives/picker/MatchedText";
+import { Avatar } from "@sincpro/web-ui/primitives/value/Person";
 import type { LucideIcon } from "lucide-react";
-import { Check, ChevronDown, SquareArrowOutUpRight } from "lucide-react";
+import {
+  AppWindow,
+  Check,
+  ChevronDown,
+  Ellipsis,
+  Eye,
+  PanelRight,
+  PictureInPicture2,
+  SquareArrowOutUpRight,
+} from "lucide-react";
 import { type ReactNode, useContext, useMemo, useRef, useState } from "react";
 import {
   Collection,
@@ -116,6 +130,13 @@ export interface PickerItem {
   /** The header this item is listed under. Consecutive items with the same section share
    *  one header; an item without it is listed loose, outside any section. */
   section?: string;
+  /** A person or a company: its face before the name — the photo, or its initials when
+   *  `true`. Who is being chosen is recognised before it is read, in the list and in the field. */
+  avatar?: true | string;
+  /** What is read at a glance on the right, in tabular figures: the balance owed, the stock,
+   *  a state badge, a priority — a widget, not text. Where `meta` describes, this COMPARES:
+   *  lined up in one column, eight customers' debts are read top to bottom. */
+  aside?: ReactNode;
 }
 
 /** A run of consecutive items under one header, as the list draws it. */
@@ -125,8 +146,22 @@ interface PickerSection {
   items: PickerItem[];
 }
 
+/** The icon of each place a record opens — the same in every field and list. */
+const OPEN_ICON: Record<OpenTarget, LucideIcon> = {
+  modal: PictureInPicture2,
+  peek: Eye,
+  page: SquareArrowOutUpRight,
+  side: PanelRight,
+  window: AppWindow,
+};
+
 /** The id of the «Buscar más…» row. Not a record id: it cannot collide with one. */
 const BROWSE_ALL = "\u0000browse-all";
+/** The rows that create from what was typed — quick, or with the full form. */
+const CREATE = "\u0000create";
+const CREATE_EDIT = "\u0000create-edit";
+/** The rows that act instead of choosing: after the records, in this order. */
+const ACTIONS: ReadonlySet<string> = new Set([CREATE, CREATE_EDIT, BROWSE_ALL]);
 const CAP = 8;
 
 /**
@@ -197,11 +232,22 @@ export type PickerProps = {
   placeholder?: string;
   /** «Buscar más…»: the last option of the list, always there when this is — the record
    *  may not be among the eight, or two of them may need their columns to tell apart. It
-   *  gets what was typed, so the table (`LookupDialog`) opens on the same search. */
+   *  gets what was typed, so the list that chooses (`List onChoose`, in a modal of the
+   *  workspace) opens on the same search. */
   onBrowseAll?: (query: string) => void;
+  /** «Crear «…»»: a record made from the typed text alone (Odoo's `name_create`); it returns
+   *  the new id — or a promise of it — and the field chooses it. Offered while something is
+   *  typed that no option is called exactly. The consumer appends the new item to `items`. */
+  onCreate?: (name: string) => string | Promise<string>;
+  /** «Crear y editar…»: the new record needs more than a name — open its form (in a workspace,
+   *  a modal) with the typed text as the name. Choosing it there is the consumer's. */
+  onCreateAndEdit?: (name: string) => void;
   /** Open the chosen record. Drawn as a trailing affordance, the way a many2one
    *  offers "open" next to "pick". Absent when there is nothing chosen. */
-  onOpen?: (id: string) => void;
+  onOpen?: (id: string, to: OpenTarget) => void;
+  /** Where the chosen record can open, the first being the button's (a modal, by default: the
+   *  form stays behind); the rest go in «Abrir en…». `onOpen` is told which was picked. */
+  openTargets?: readonly OpenTarget[];
   emptyText?: string;
   /** Placeholder of the field while it is being typed into. It is NOT a second
    *  box — the field itself is the search. */
@@ -247,7 +293,10 @@ function EditablePicker({
   onChange,
   placeholder,
   onBrowseAll,
+  onCreate,
+  onCreateAndEdit,
   onOpen,
+  openTargets = ["modal", "peek", "side", "page"],
   emptyText,
   searchPlaceholder,
   loading = false,
@@ -304,23 +353,47 @@ function EditablePicker({
      arrows reach it like any other row. As a footer button it was out of the keyboard's
      path — Tab leaves the field and closes the list before getting there. */
   const browsable = onBrowseAll !== undefined;
-  const listed: readonly PickerItem[] = browsable
-    ? [...visible, { id: BROWSE_ALL, name: copy.picker.browseAll }]
-    : visible;
+  const typed = query.trim();
+  /* Exactly the name of an option already: creating it again would make a twin. */
+  const named =
+    typed !== "" &&
+    items.some(
+      (i) => i.name.localeCompare(typed, copy.locale, { sensitivity: "base" }) === 0,
+    );
+  const actions: PickerItem[] = loading
+    ? []
+    : [
+        ...(onCreate !== undefined && typed !== "" && !named
+          ? [{ id: CREATE, name: fillCopy(copy.picker.create, { name: typed }) }]
+          : []),
+        ...(onCreateAndEdit === undefined
+          ? []
+          : [{ id: CREATE_EDIT, name: copy.picker.createAndEdit }]),
+        ...(browsable ? [{ id: BROWSE_ALL, name: copy.picker.browseAll }] : []),
+      ];
+  const listed: readonly PickerItem[] = [...visible, ...actions];
 
   const closeList = useRef<(() => void) | null>(null);
 
   const take = (key: Key | null) => {
     if (key === null) return;
     const next = String(key);
-    if (next === BROWSE_ALL) {
-      /* The full list opens somewhere else (a dialog, a panel): this one closes and the
-         field keeps the chosen name. */
-      const typed = query;
+    if (ACTIONS.has(next)) {
+      /* The full list, or the new record's form, opens somewhere else (a dialog, a panel):
+         this one closes and the field keeps the chosen name. A quick create chooses the new
+         record once it exists. */
+      const asked = query;
       closeList.current?.();
       setText(chosenName);
       setQuery("");
-      onBrowseAll?.(typed);
+      if (next === BROWSE_ALL) onBrowseAll?.(asked);
+      if (next === CREATE_EDIT) onCreateAndEdit?.(asked.trim());
+      if (next === CREATE && onCreate !== undefined) {
+        /* The field keeps the new name from now on, not the old one until the record exists:
+           a controlled text that changes while the input has focus reopens the list. */
+        setText(asked.trim());
+        void Promise.resolve(onCreate(asked.trim())).then((created) => onChange?.(created));
+      }
       return;
     }
     setText(items.find((i) => i.id === next)?.name ?? "");
@@ -361,6 +434,16 @@ function EditablePicker({
     >
       <CloseBridge into={closeList} />
       <FieldGroup>
+        {/* The chosen one's face, while the field shows its name (not while typing a search). */}
+        {chosen?.avatar === undefined || open ? null : (
+          <span className="flex shrink-0 items-center pl-2">
+            <Avatar
+              name={chosen.name}
+              size="sm"
+              {...(typeof chosen.avatar === "string" ? { src: chosen.avatar } : {})}
+            />
+          </span>
+        )}
         <Input
           placeholder={loading ? shownLoading : open ? shownSearch : shownPlaceholder}
           title={shownSearch}
@@ -372,14 +455,40 @@ function EditablePicker({
           }}
           className="h-full min-w-0 flex-1 bg-transparent px-2.5 text-meta text-ink outline-0 placeholder:text-muted disabled:cursor-not-allowed"
         />
-        {value !== undefined && value !== "" && onOpen !== undefined ? (
-          <IconButton
-            icon={SquareArrowOutUpRight}
-            label={copy.picker.open}
-            size="sm"
-            disabled={disabled}
-            onClick={() => onOpen(value)}
-          />
+        {value !== undefined &&
+        value !== "" &&
+        onOpen !== undefined &&
+        openTargets[0] !== undefined ? (
+          <>
+            {/* The way most used, one press away; the others named in a menu. */}
+            <IconButton
+              icon={OPEN_ICON[openTargets[0]]}
+              label={copy.picker.openIn[openTargets[0]]}
+              size="sm"
+              disabled={disabled}
+              onClick={() => onOpen(value, openTargets[0]!)}
+            />
+            {openTargets.length < 2 || disabled ? null : (
+              <Menu
+                label={copy.picker.openMore}
+                icon={Ellipsis}
+                iconOnly
+                chevron={false}
+                variant="text"
+                align="end"
+                groups={[
+                  {
+                    options: openTargets.slice(1).map((to) => ({
+                      id: to,
+                      label: copy.picker.openIn[to],
+                      icon: OPEN_ICON[to],
+                    })),
+                  },
+                ]}
+                onSelect={(to) => onOpen(value, to as OpenTarget)}
+              />
+            )}
+          </>
         ) : null}
         <FieldButton className="mr-1">
           <ChevronDown aria-hidden className="size-(--size-icon-md)" strokeWidth={2} />
@@ -396,6 +505,7 @@ function EditablePicker({
           marks={hasMarks}
           hints={hasHints}
           remaining={remaining}
+          query={query}
           emptyText={loading ? shownLoading : shownEmpty}
           /* Not while the first page loads: the sentinel of an empty list is in view and
              would ask for page two before page one arrived. */
@@ -426,6 +536,7 @@ export function PickerOptions({
   marks,
   hints,
   remaining,
+  query = "",
   emptyText,
   onLoadMore,
   loadingMore = false,
@@ -435,6 +546,8 @@ export function PickerOptions({
   marks: boolean;
   hints: boolean;
   remaining: number;
+  /** What was typed: it is marked in every row, so each row says why it is there. */
+  query?: string;
   emptyText: string;
   onLoadMore?: () => void;
   loadingMore?: boolean;
@@ -443,20 +556,28 @@ export function PickerOptions({
 }) {
   const copy = useUiCopy();
   const entries = useMemo(() => sectioned(items), [items]);
+  /* The actions are one block under the records: one hairline above the first of them. */
+  const firstAction = items.find((i) => ACTIONS.has(i.id))?.id;
 
   const renderItem = (item: PickerItem) =>
-    item.id === BROWSE_ALL ? (
+    ACTIONS.has(item.id) ? (
       <ListBoxItem
-        id={BROWSE_ALL}
+        id={item.id}
         textValue={item.name}
         className={(state) =>
-          `${option({ ...state, hints: false })} mt-1 border-t border-line text-primary`
+          cn(
+            option({ ...state, hints: false }),
+            "text-primary",
+            item.id === firstAction && items[0]?.id !== item.id
+              ? "mt-1 border-t border-line"
+              : "",
+          )
         }
       >
         <span className="flex w-full items-center justify-between gap-2">
-          <span className="font-medium">{item.name}</span>
+          <span className="min-w-0 truncate font-medium">{item.name}</span>
           {/* «0 más» says nothing: the row is there to see the columns, not the rest. */}
-          {remaining === 0 ? null : (
+          {item.id !== BROWSE_ALL || remaining === 0 ? null : (
             <span className="text-micro tabular-nums text-muted">
               {fillCopy(copy.picker.more, {
                 count: remaining.toLocaleString(copy.locale),
@@ -473,7 +594,14 @@ export function PickerOptions({
         className={(state) => option({ ...state, hints })}
       >
         {({ isSelected }) => (
-          <Row item={item} selected={isSelected} marks={marks} hints={hints} />
+          <Row
+            item={item}
+            selected={isSelected}
+            marks={marks}
+            hints={hints}
+            query={query}
+            locale={copy.locale}
+          />
         )}
       </ListBoxItem>
     );
@@ -497,7 +625,9 @@ export function PickerOptions({
     >
       {/* A `Collection` and not the list's own `items`: the loading row is a static child
           after the records, and a list given `items` takes only the function. */}
-      <Collection items={entries}>
+      {/* React Aria caches each row's render by its item: what was typed is a dependency, or
+          the marks would stay those of the first render. */}
+      <Collection items={entries} dependencies={[query]}>
         {(entry) =>
           "items" in entry ? (
             <ListBoxSection
@@ -511,7 +641,9 @@ export function PickerOptions({
                 ) : null}
                 {entry.section}
               </Header>
-              <Collection items={entry.items}>{renderItem}</Collection>
+              <Collection items={entry.items} dependencies={[query]}>
+                {renderItem}
+              </Collection>
             </ListBoxSection>
           ) : (
             renderItem(entry)
@@ -536,13 +668,27 @@ function Row({
   selected,
   marks,
   hints,
+  query,
+  locale,
 }: {
   item: PickerItem;
   selected: boolean;
   marks: boolean;
   hints: boolean;
+  query: string;
+  locale: string;
 }) {
   const Icon = item.icon;
+  const copy = useUiCopy();
+  /* Listed for a code that is not drawn — the barcode, the NIT —: say which, or the row reads
+     as a wrong match. */
+  const hidden =
+    query.trim() === "" ||
+    matches(item.name, query, locale) ||
+    (item.meta !== undefined && matches(item.meta, query, locale)) ||
+    item.haystack === undefined
+      ? null
+      : matchedWord(item.haystack, query, locale);
   return (
     <>
       {marks ? (
@@ -567,6 +713,13 @@ function Row({
           ) : null}
         </span>
       ) : null}
+      {item.avatar === undefined ? null : (
+        <Avatar
+          name={item.name}
+          size="sm"
+          {...(typeof item.avatar === "string" ? { src: item.avatar } : {})}
+        />
+      )}
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex min-w-0 items-center gap-1.5">
           <Text
@@ -576,16 +729,29 @@ function Row({
               selected ? "font-medium" : "",
             )}
           >
-            {item.name}
+            <MatchedText text={item.name} query={query} locale={locale} />
           </Text>
           {item.tags}
         </span>
         {item.meta === undefined ? null : (
           <Text slot="description" className="truncate text-micro tabular-nums text-muted">
-            {item.meta}
+            <MatchedText text={item.meta} query={query} locale={locale} />
           </Text>
         )}
+        {hidden === null ? null : (
+          <span className="truncate text-micro text-muted">
+            {copy.picker.matched}{" "}
+            <span className="font-mono">
+              <MatchedText text={hidden} query={query} locale={locale} />
+            </span>
+          </span>
+        )}
       </span>
+      {item.aside === undefined ? null : (
+        <span className="flex shrink-0 items-center gap-1.5 self-center text-meta text-ink tabular-nums">
+          {item.aside}
+        </span>
+      )}
       {/* Without icons there is no mark column: the check goes at the end, so the chosen
           one is still said by something other than weight. */}
       {!marks && selected ? (

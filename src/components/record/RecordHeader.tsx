@@ -434,7 +434,7 @@ export function RecordHeader({
           </div>
         </div>
       ) : (
-        /* No paper (a dialog, a drawer, a `Drill` context): one surface, no ground beside
+        /* No paper (a modal, a drawer): one surface, no ground beside
            it — the band first, the record, and the activity below. */
         <div className="relative flex min-w-0 flex-1 flex-col overflow-clip bg-surface">
           {ribbon}

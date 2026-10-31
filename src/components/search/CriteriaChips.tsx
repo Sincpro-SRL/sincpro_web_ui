@@ -425,24 +425,20 @@ function Chip({
     );
   }
 
-  /* Un botón adentro de otro es HTML inválido —el navegador cierra el de afuera
-     antes de tiempo y el click deja de llegar—, así que la ficha que se abre Y se
-     saca es un `span` con `role`, y la × adentro es el único botón de verdad. */
+  /* Two SIBLING buttons in the chip — open and remove — and never one inside the other. It
+     used to be a `span role="button"` holding the × button: an interactive control inside
+     another one, which a screen reader announces as one thing and axe flags
+     (`nested-interactive`). Siblings, each with its own name, are both reachable. */
   return (
-    <span
-      role="button"
-      tabIndex={0}
-      onClick={() => onOpen(path)}
-      onKeyDown={(event) => {
-        if (event.key === "Enter" || event.key === " ") {
-          event.preventDefault();
-          onOpen(path);
-        }
-      }}
-      title={copy.search.openBuilderHere}
-      className={`${shell} cursor-pointer`}
-    >
-      <span className="min-w-0 truncate">{label}</span>
+    <span className={shell}>
+      <button
+        type="button"
+        onClick={() => onOpen(path)}
+        title={copy.search.openBuilderHere}
+        className="min-w-0 truncate rounded-control text-left hover:underline hover:underline-offset-4 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+      >
+        {label}
+      </button>
       {remove}
     </span>
   );

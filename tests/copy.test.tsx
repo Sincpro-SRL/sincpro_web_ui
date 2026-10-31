@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { writeANote } from "@sincpro/web-ui/components/activity/Messages";
 import {
@@ -9,6 +8,7 @@ import {
   useUiCopy,
 } from "@sincpro/web-ui/foundations/copy";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * LA COPIA, una sola.

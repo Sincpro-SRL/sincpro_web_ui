@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   type DataColumn,
@@ -11,6 +10,7 @@ import {
   levelKey,
 } from "@sincpro/web-ui";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Lo que la tabla tenía mal y ninguna prueba veía: agrupaba con OTRA máquina.

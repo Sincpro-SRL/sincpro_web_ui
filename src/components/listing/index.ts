@@ -60,6 +60,10 @@ export {
   GroupingLevels,
   type GroupingLevelsProps,
 } from "@sincpro/web-ui/components/listing/GroupingLevels";
+export {
+  PivotExplorer,
+  type PivotExplorerProps,
+} from "@sincpro/web-ui/components/listing/PivotExplorer";
 export { RecordCard } from "@sincpro/web-ui/components/listing/RecordCard";
 export {
   type SortField,

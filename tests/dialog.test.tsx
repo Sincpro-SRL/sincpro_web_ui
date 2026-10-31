@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { Dialog, Peek, SPANISH_COPY, UiCopyProvider, Wizard } from "@sincpro/web-ui";
 import { DialogSurface } from "@sincpro/web-ui/primitives/dialog/Dialog";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the focus trap, Escape, the return of focus and the scroll lock are React Aria's

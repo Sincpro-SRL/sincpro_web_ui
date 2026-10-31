@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { Record } from "@sincpro/web-ui/views/record/Record";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * CARGAR UNA FICHA NO ES DECIR QUE NO HAY NADA.

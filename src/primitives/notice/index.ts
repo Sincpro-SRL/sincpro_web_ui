@@ -10,7 +10,6 @@ export {
   Skeleton,
 } from "@sincpro/web-ui/primitives/notice/Notice";
 export {
-  ToastLayer,
   ToastProvider,
   type ToastSpec,
   useToast,

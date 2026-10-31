@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { isRecognizedFilter } from "@sincpro/web-ui/components/search/FilterBuilder";
 import { formatJson } from "@sincpro/web-ui/components/search/JsonEditor";
+import { test } from "vitest";
 
 /**
  * LO QUE SE ESCRIBE A MANO.

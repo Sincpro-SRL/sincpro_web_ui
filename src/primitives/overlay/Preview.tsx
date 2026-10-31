@@ -2,6 +2,7 @@
 
 import { Popover, type PopoverProps } from "@sincpro/web-ui/primitives/overlay/Popover";
 import { type DOMAttributes, isValidElement, type ReactElement, type ReactNode } from "react";
+import { setInteractionModality } from "react-aria";
 import { Focusable, Link, PreviewTrigger } from "react-aria-components";
 
 /**
@@ -81,17 +82,28 @@ export function Preview({
 }: PreviewProps) {
   const readsContext = isValidElement(trigger) && trigger.type === Link;
   return (
-    <PreviewTrigger delay={delay} closeDelay={closeDelay} isDisabled={disabled}>
-      {readsContext ? (
-        trigger
-      ) : (
-        /* React Aria types the child as an intrinsic element; a component that forwards
-           `ref` and spreads native props is the same thing to it at runtime. */
-        <Focusable>{trigger as ReactElement<DOMAttributes<Element>, string>}</Focusable>
-      )}
-      <Popover placement={placement} aria-label={label}>
-        <div className="max-h-[inherit] max-w-sm overflow-auto p-3">{children}</div>
-      </Popover>
-    </PreviewTrigger>
+    /* React Aria opens a preview on hover only once it KNOWS the pointer is in use — and it
+       learns that from a press, not from a move. On a page just loaded, before any click, the
+       pointer rested on a name and nothing opened. Entering the trigger with a mouse says it,
+       in the capture phase so it is said before React Aria's own hover handler asks. */
+    <span
+      className="contents"
+      onPointerOverCapture={(event) => {
+        if (event.pointerType === "mouse") setInteractionModality("pointer");
+      }}
+    >
+      <PreviewTrigger delay={delay} closeDelay={closeDelay} isDisabled={disabled}>
+        {readsContext ? (
+          trigger
+        ) : (
+          /* React Aria types the child as an intrinsic element; a component that forwards
+             `ref` and spreads native props is the same thing to it at runtime. */
+          <Focusable>{trigger as ReactElement<DOMAttributes<Element>, string>}</Focusable>
+        )}
+        <Popover placement={placement} aria-label={label}>
+          <div className="max-h-[inherit] max-w-sm overflow-auto p-3">{children}</div>
+        </Popover>
+      </PreviewTrigger>
+    </span>
   );
 }

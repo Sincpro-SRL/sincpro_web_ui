@@ -4,7 +4,6 @@ export {
   type BlockProps,
   type BlockStatus,
   Rule,
-  SectionHeader,
 } from "@sincpro/web-ui/primitives/block/Block";
 export { FullWidth, SectionGrid } from "@sincpro/web-ui/primitives/block/SectionGrid";
 /* La línea de tres zonas: lo que centra el centro contra la LÍNEA y no contra

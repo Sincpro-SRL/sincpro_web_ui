@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { narrowed } from "@sincpro/web-ui/views/list/useNarrowList";
+import { test } from "vitest";
 
 test("narrow, a list with rows folds its table into them", () => {
   assert.deepEqual(narrowed(["rows", "table", "board"], "table", true), {

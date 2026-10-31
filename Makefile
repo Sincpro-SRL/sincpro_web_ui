@@ -10,12 +10,12 @@ help:
 	@echo "  lint            eslint"
 	@echo "  typecheck       tsc --noEmit"
 	@echo "  doctor          the traps tsc does not catch"
-	@echo "  test            node --test over the TypeScript sources"
+	@echo "  test            vitest: logic in Node + every story in Chrome (light, then dark)"
 	@echo "  verify-format   format + lint + doctor, then fail if the tree is dirty (CI)"
 	@echo "  build           compile into dist/"
 	@echo "  dev             Storybook on :6006 (with its MCP server at /mcp)"
 	@echo "  storybook       static Storybook into storybook-static/"
-	@echo "  smoke           open every story in headless Chrome; fail on errors or blanks"
+	@echo "  smoke           only the stories (their play, a11y, screen rules), light and dark"
 	@echo "  update-version  VERSION=x.y.z — release pipeline only, never by hand"
 	@echo "  publish         build + publish to NPM (release pipeline)"
 	@echo "  clean           remove dist/ and node_modules/"
@@ -69,9 +69,12 @@ doctor:
 	if [ "$$found" = "1" ]; then exit 1; fi; \
 	echo "✓ no traps found"
 
+# One runner, three projects (vitest.config.ts): `model` in Node, `storybook` and
+# `storybook-dark` in a real Chrome — the stories ARE the tests, and Storybook's «Run tests»
+# runs these same ones. The same scheme as web-composer and web-framework.
 test:
 	@echo "🧪 Running tests..."
-	@node --import tsx --test "tests/**/*.test.ts" "tests/**/*.test.tsx"
+	@VITE_CONFIG_NATIVE_IGNORE_WARNING=true npx vitest run
 
 verify-format: format lint doctor
 	@if ! git diff --quiet; then \
@@ -97,9 +100,10 @@ dev:
 storybook:
 	@npx storybook build -o storybook-static
 
-# Every story opened in a headless Chrome: fails on a console error or a blank story.
+# Only the stories: each one in Chrome with its `play`, its a11y check and the screen rules
+# (drew something, one primary); the screens again in dark.
 smoke:
-	@node --import tsx .storybook/smoke.ts
+	@VITE_CONFIG_NATIVE_IGNORE_WARNING=true npx vitest run --project storybook --project storybook-dark
 
 # `--package-lock=false`: npm (unlike yarn, which manages this repo's installs) doesn't read
 # yarn.lock, so without it `npm version` rebuilds a dependency tree against the real registry

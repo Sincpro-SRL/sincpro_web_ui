@@ -11,6 +11,13 @@
 @import "@fontsource/ibm-plex-mono/latin-ext-400.css";
 @import "@fontsource/ibm-plex-mono/latin-500.css";
 @import "@fontsource/ibm-plex-mono/latin-ext-500.css";
+/* The record calendar (`RecordCalendar`, FullCalendar v7): its structure and the `forma`
+   theme. The palette that theme reads is defined below, from web-ui's tokens. */
+@import "@fullcalendar/react/skeleton.css";
+@import "@fullcalendar/react/themes/forma/theme.css";
+/* The record Gantt (`RecordGantt`, SVAR): its styles, Willow theme included. Its variables
+   are pointed at web-ui's tokens below. */
+@import "@svar-ui/react-gantt/all.css";
 
 @import "tailwindcss";
 
@@ -497,6 +504,9 @@
   /* One stage of a board by stages: a card with its name, a tag and a figure, without
      wrapping the name into three lines. Five stages fit a desk; more scroll sideways. */
   --container-lane: 18rem;
+  /* The names column of a timeline (an employee with an avatar, a room, a machine): wide enough
+     for «Ammy Shalem Aranibar Zambrana» before it truncates. */
+  --container-timeline-label: 15rem;
   --container-facet: 16rem;
   /* The grouping chain is several levels in one chip, so it asks for more before it
      truncates — at its end, as one sentence, never level by level. */
@@ -522,7 +532,7 @@
 
      `--container-beside` is how wide the record's PAGE has to be for the column to stand
      beside the sheet: the column and a sheet that keeps 54rem — two groups of fields side by
-     side still fit their labels. Narrower (a laptop with a sidebar, a phone, a `Drill`), the
+     side still fit their labels. Narrower (a laptop with a sidebar, a phone, a modal), the
      panel goes BELOW the sheet as a card. Written as a number and not a `calc()` because a container query cannot
      read a variable.
 
@@ -775,6 +785,113 @@
   --shadow-float: 0 8px 24px -12px rgba(26, 23, 20, 0.35);
   --shadow-window:
     0 2px 6px -2px rgba(26, 23, 20, 0.18), 0 18px 40px -20px rgba(26, 23, 20, 0.42);
+}
+
+/* ====================================================================
+ *  THE WORKSPACE (@sincpro/web-composer) dressed in these tokens.
+ *
+ *  Context: the composer depends on no design system and paints its frames, tabs, windows
+ *  and modals with `--sc-*` variables. Pointing them at web-ui's tokens here means a composer
+ *  on a web-ui page takes its theme — light, dark, and any brand — with nothing to wire: no
+ *  import, no dependency, only names. They are aliases, so they follow the dark theme on
+ *  their own and carry no contrast of their own to measure.
+ * ==================================================================== */
+:root {
+  --sc-ground: var(--color-ground);
+  --sc-surface: var(--color-surface);
+  --sc-line: var(--color-line);
+  --sc-line-strong: var(--color-line-strong);
+  --sc-ink: var(--color-ink);
+  --sc-muted: var(--color-muted);
+  /* The workspace's accent marks where you are (the active tab, a focused frame): the navy
+     of a link, not the gold of the one primary action. */
+  --sc-accent: var(--color-primary);
+  --sc-danger: var(--color-danger);
+  --sc-on-danger: var(--color-surface);
+  --sc-scrim: var(--color-scrim);
+  --sc-modal-scrim: color-mix(in srgb, var(--color-scrim) 40%, transparent);
+  --sc-shadow: var(--shadow-window);
+  --sc-radius: var(--radius-panel);
+  --sc-radius-control: var(--radius-control);
+  --sc-text: var(--text-meta);
+  --sc-text-small: var(--text-micro);
+  --sc-icon: var(--size-icon-md);
+}
+
+/* ====================================================================
+ *  THE RECORD CALENDAR (FullCalendar v7, `forma` theme) in these tokens.
+ *
+ *  Context: the theme reads a palette of `--fc-forma-*` variables. Pointed at web-ui's tokens it
+ *  takes the theme — light, dark, a brand — with no dark block of its own: the tokens already
+ *  flip. Aliases, so no contrast of their own to measure; the translucent washes are mixed from
+ *  the ink so they read on either theme.
+ * ==================================================================== */
+:root {
+  --fc-forma-primary: var(--color-primary);
+  --fc-forma-primary-over: var(--color-primary-hover);
+  --fc-forma-primary-down: var(--color-primary-hover);
+  --fc-forma-primary-foreground: var(--color-surface);
+  --fc-forma-event: var(--color-primary);
+  --fc-forma-event-contrast: var(--color-surface);
+  --fc-forma-background-event: var(--color-primary);
+  --fc-forma-highlight: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  --fc-forma-background: var(--color-surface);
+  --fc-forma-faint: color-mix(in srgb, var(--color-ink) 3%, transparent);
+  --fc-forma-muted: color-mix(in srgb, var(--color-ink) 7%, transparent);
+  --fc-forma-strong: color-mix(in srgb, var(--color-ink) 12%, transparent);
+  --fc-forma-stronger: color-mix(in srgb, var(--color-ink) 16%, transparent);
+  --fc-forma-strongest: color-mix(in srgb, var(--color-ink) 20%, transparent);
+  --fc-forma-foreground: var(--color-ink);
+  --fc-forma-faint-foreground: var(--color-muted);
+  --fc-forma-muted-foreground: var(--color-muted);
+  --fc-forma-border: var(--color-line);
+  --fc-forma-muted-border: var(--color-line);
+  --fc-forma-strong-border: var(--color-line-strong);
+}
+
+/* ====================================================================
+ *  THE RECORD GANTT (SVAR, Willow theme) in these tokens.
+ *
+ *  Context: Willow declares its `--wx-*` on `.wx-willow-theme`; redeclared on the same class
+ *  here, later, they win. Bars are the navy of the system, a summary the ink, a milestone the
+ *  info tone; the type is the system's. Aliases: they flip with the theme.
+ * ==================================================================== */
+.wx-willow-theme {
+  --wx-color-primary: var(--color-primary);
+  --wx-color-primary-selected: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  --wx-color-primary-font: var(--color-surface);
+  --wx-color-secondary-hover: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  --wx-color-success: var(--color-good);
+  --wx-color-warning: var(--color-warn);
+  --wx-color-info: var(--color-info);
+  --wx-color-danger: var(--color-danger);
+  --wx-color-font: var(--color-ink);
+  --wx-color-font-alt: var(--color-muted);
+  --wx-background: var(--color-surface);
+  --wx-background-alt: var(--color-ground);
+  --wx-background-hover: color-mix(in srgb, var(--color-ink) 5%, transparent);
+  --wx-font-family: inherit;
+  --wx-font-size: var(--text-meta);
+  --wx-font-size-sm: var(--text-micro);
+  --wx-icon-color: var(--color-muted);
+  --wx-border-color: var(--color-line);
+  --wx-border-radius: var(--radius-control);
+  --wx-radius-major: var(--radius-box);
+  --wx-gantt-border-color: var(--color-line);
+  --wx-gantt-task-color: var(--color-primary);
+  --wx-gantt-task-fill-color: var(--color-primary-hover);
+  --wx-gantt-task-border-color: var(--color-primary-hover);
+  --wx-gantt-task-font-color: var(--color-surface);
+  --wx-gantt-summary-color: var(--color-line-strong);
+  --wx-gantt-summary-fill-color: color-mix(in srgb, var(--color-ink) 45%, transparent);
+  --wx-gantt-summary-border-color: var(--color-line-strong);
+  --wx-gantt-summary-font-color: var(--color-ink);
+  --wx-gantt-milestone-color: var(--color-info);
+  --wx-gantt-select-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  --wx-gantt-link-color: var(--color-muted);
+  --wx-gantt-link-color-hovered: var(--color-ink);
+  --wx-gantt-holiday-background: var(--color-ground);
+  --wx-gantt-holiday-color: var(--color-muted);
 }
 
 @layer base {
@@ -1070,4 +1187,11 @@
     --size-control-md: 44px;
     --size-control-lg: 48px;
   }
+}
+
+/* A label written down a narrow strip: the name of a folded board column, read bottom-up
+   like a book's spine. Tailwind has no writing-mode utility. */
+@utility text-vertical {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
 }

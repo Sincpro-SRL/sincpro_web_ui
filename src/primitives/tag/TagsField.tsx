@@ -2,12 +2,14 @@
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import type { OpenTarget } from "@sincpro/web-ui/foundations/types";
 import { cn } from "@sincpro/web-ui/foundations/variants";
 import { fieldGroupStyles, listOptionStyles } from "@sincpro/web-ui/primitives/field/aria";
 import { useFieldIds } from "@sincpro/web-ui/primitives/field/context";
 import { ReadValue } from "@sincpro/web-ui/primitives/field/Field";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
+import { MatchedText } from "@sincpro/web-ui/primitives/picker/MatchedText";
 import {
   tagChoices,
   type TagOption,
@@ -15,6 +17,7 @@ import {
   withTag,
 } from "@sincpro/web-ui/primitives/tag/choices";
 import { type TagItem, Tags } from "@sincpro/web-ui/primitives/tag/Tags";
+import { Avatar } from "@sincpro/web-ui/primitives/value/Person";
 import { Plus, Search } from "lucide-react";
 import {
   type CSSProperties,
@@ -87,8 +90,14 @@ export type TagsFieldProps = {
    */
   onCreate?: (label: string) => string | Promise<string>;
   /** «Buscar más…» at the end of the list: the tags to add chosen from a table
-   *  (`LookupDialog` with `pick="many"`). It gets what was typed. */
+   *  (the list that chooses, `List onChoose` with `selection`, in a modal). It gets what was typed. */
   onBrowseAll?: (query: string) => void;
+  /** Open the record behind a chip — a follower, a product, a category. Pressing the chip (or
+   *  Enter on it) opens it in `openTarget`; its × still only removes. Absent, a chip is a value. */
+  onOpen?: (id: string, to: OpenTarget) => void;
+  /** Where a pressed chip opens. A peek by default: a chip is a glance at one of many — «who is
+   *  this follower?» — not a place to go and work. */
+  openTarget?: OpenTarget;
   /** The input's placeholder while no tag is chosen. Defaults to the copy table's «Add…». */
   placeholder?: string;
   disabled?: boolean;
@@ -101,6 +110,18 @@ export type TagsFieldProps = {
   /** Forces the mode. By default it inherits the form's: in read mode it draws `Tags`. */
   mode?: FormMode;
 };
+
+/** What a chip needs to open its record: the press, and the place it opens named as its title. */
+function useChipOpening(
+  onOpen: TagsFieldProps["onOpen"],
+  to: OpenTarget = "peek",
+): (id: string) => Pick<TagItem, "onSelect" | "title"> {
+  const copy = useUiCopy();
+  return (id) =>
+    onOpen === undefined
+      ? {}
+      : { onSelect: () => onOpen(id, to), title: copy.picker.openIn[to] };
+}
 
 /** The chosen tags as chips, in the order of `value`. An id missing from `options` is still
  *  drawn (as itself): hiding it would hide data the record has. */
@@ -116,6 +137,7 @@ function chosenOptions(options: readonly TagOption[], value: readonly string[]):
  * chips, and its hint and error describe the input. In read mode it is `Tags`.
  */
 export function TagsField({ mode, ...props }: TagsFieldProps) {
+  const opening = useChipOpening(props.onOpen, props.openTarget);
   if (useFormMode(mode) === "read") {
     const chosen = chosenOptions(props.options, props.value);
     if (chosen.length === 0) return <ReadValue value={null} />;
@@ -126,6 +148,8 @@ export function TagsField({ mode, ...props }: TagsFieldProps) {
             id: option.value,
             label: option.label,
             ...(option.tone === undefined ? {} : { tone: option.tone }),
+            ...(option.avatar === undefined ? {} : { avatar: option.avatar }),
+            ...opening(option.value),
           }))}
         />
       </span>
@@ -146,6 +170,8 @@ function EditableTagsField({
   options,
   onCreate,
   onBrowseAll,
+  onOpen,
+  openTarget,
   placeholder,
   disabled = false,
   id: ownId,
@@ -159,6 +185,7 @@ function EditableTagsField({
     invalid: ownInvalid,
   });
   const copy = useUiCopy();
+  const opening = useChipOpening(onOpen, openTarget);
   const { contains } = useFilter({ sensitivity: "base" });
   const { locale } = useLocale();
   const collator = useMemo(
@@ -222,6 +249,8 @@ function EditableTagsField({
     id: option.value,
     label: option.label,
     ...(option.tone === undefined ? {} : { tone: option.tone }),
+    ...(option.avatar === undefined ? {} : { avatar: option.avatar }),
+    ...opening(option.value),
     ...(disabled ? {} : { onRemove: () => remove(option.value) }),
   }));
 
@@ -297,7 +326,11 @@ function EditableTagsField({
           placement="bottom start"
           className="w-(--trigger-width)"
         >
-          <ListBox items={listed} className="max-h-[inherit] overflow-auto p-1 outline-0">
+          <ListBox
+            items={listed}
+            dependencies={[text]}
+            className="max-h-[inherit] overflow-auto p-1 outline-0"
+          >
             {(item) => (
               <ListBoxItem
                 id={item.value}
@@ -328,7 +361,18 @@ function EditableTagsField({
                     <span className="truncate font-medium">{item.label}</span>
                   </>
                 ) : (
-                  <span className="truncate">{item.label}</span>
+                  <>
+                    {item.avatar === undefined ? null : (
+                      <Avatar
+                        name={item.label}
+                        size="sm"
+                        {...(typeof item.avatar === "string" ? { src: item.avatar } : {})}
+                      />
+                    )}
+                    <span className="truncate">
+                      <MatchedText text={item.label} query={text} locale={copy.locale} />
+                    </span>
+                  </>
                 )}
               </ListBoxItem>
             )}

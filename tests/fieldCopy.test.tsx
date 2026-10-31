@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   DataField,
@@ -12,6 +11,7 @@ import {
 } from "@sincpro/web-ui";
 import type { ReactElement } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: every field carries a small copy button by its label — in read mode and in edit

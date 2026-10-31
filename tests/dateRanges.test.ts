@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   COMMON_RANGES,
@@ -8,6 +7,7 @@ import {
   type RelativeRange,
   resolveRange,
 } from "@sincpro/web-ui/components/search/dateRanges";
+import { test } from "vitest";
 
 /* Un miércoles de septiembre, a media tarde. Se elige a propósito en el medio
    del mes, de la semana y del trimestre: los bordes se prueban aparte. */

@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   Activity,
@@ -16,6 +15,7 @@ import {
 } from "@sincpro/web-ui/primitives/field/note";
 import type { ReactNode } from "react";
 import { renderToStaticMarkup as render } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the activity is everything AROUND a record — its notices, the notes of its fields

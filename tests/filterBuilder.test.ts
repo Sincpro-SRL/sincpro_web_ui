@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   describeFilter,
@@ -11,6 +10,7 @@ import {
 import type { ModelDefinition } from "@sincpro/web-ui/components/search/model";
 import { sayCondition } from "@sincpro/web-ui/components/search/query";
 import { installCopy } from "@sincpro/web-ui/foundations/copy";
+import { test } from "vitest";
 
 /* Las palabras de una frase —los operadores, y también lo que pega dos
    condiciones— salen de la copia y no de una tabla escrita adentro del

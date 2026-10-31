@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { installCopy } from "@sincpro/web-ui/foundations/copy";
 import { ListView } from "@sincpro/web-ui/views/list/ListView";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * UNA LISTA VACÍA SIEMPRE DICE POR QUÉ.

@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { test } from "node:test";
 
 import * as pkg from "@sincpro/web-ui";
+import { test } from "vitest";
 
 /**
  * Context: Storybook is the catalogue — if a component is public and nobody can see it there,
@@ -21,8 +21,9 @@ const SHOWN_THROUGH: Readonly<Record<string, string>> = {
   CriteriaChips: "SearchBar — 3 · Componentes/Búsqueda",
   JsonEditor: "CriteriaBuilder and FilterBuilder",
   RowActions: "DataTable rows — 3 · Componentes/Datos/Tabla",
-  SectionHeader: "Block — 2 · Primitivas/Block",
   RecordLink: "the rows of Listing — 4 · Vistas/Lista",
+  PivotExplorer: "List.Pivot fields — 4 · Vistas/Lista · Pivote explorado",
+  TimelineToolbar: "RecordTimeline and RecordGantt — 3 · Componentes/Línea de tiempo, Gantt",
   BoardColumns: "List.Board stages — 4 · Vistas/Lista · Tablero por etapas",
   RecordRibbon: "Record.Ribbon — 4 · Vistas/Registro · Archivado",
   RecordAudit:
@@ -33,7 +34,6 @@ const SHOWN_THROUGH: Readonly<Record<string, string>> = {
   RangeCalendar: "DateRangePicker — 2 · Primitivas/Fechas",
   RecordSkeleton: "Record.Skeleton — 4 · Vistas/Registro · Cargando",
   DirtyActions: "Record's `dirty` — 5 · Plantillas · Factura (edit a field)",
-  ToastLayer: "ToastProvider — 5 · Plantillas · Factura (register a payment)",
   AssistLabel: "AssistSuggestion, AssistPending and ChangeReview — 3 · Componentes/Asistente",
   AssistSourceLink:
     "AssistSuggestion, ChangeReview and AssistMark — 3 · Componentes/Asistente",
@@ -52,7 +52,7 @@ const stories = files(join(ROOT, "stories"))
   .map((f) => readFileSync(f, "utf8"))
   .join("\n");
 
-/* `<` too: a generic component is written `<LookupDialog<Cliente>`. */
+/* `<` too: a generic component is written `<List<Cliente>`. */
 const drawn = (name: string) => new RegExp(`<${name}(?:[\\s>/.<]|$)`, "m").test(stories);
 
 const components = Object.entries(pkg)

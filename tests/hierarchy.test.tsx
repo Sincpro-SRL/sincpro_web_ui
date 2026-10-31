@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { DataTable, SheetGroup, SheetGroups } from "@sincpro/web-ui";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the levels of a record must read as levels — a group title above its labels, a

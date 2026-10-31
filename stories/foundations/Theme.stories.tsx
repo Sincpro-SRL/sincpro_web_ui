@@ -22,6 +22,8 @@ import { useState } from "react";
  *  a palette is judged with a gold button, a tag and a line of muted text on top of it.
  * ==================================================================== */
 const meta: Meta = {
+  /* Also run in dark by the `storybook-dark` test project. */
+  tags: ["theme"],
   title: "1 · Fundamentos/Tema",
   parameters: {
     layout: "padded",

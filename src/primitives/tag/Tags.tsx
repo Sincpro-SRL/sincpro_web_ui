@@ -5,6 +5,7 @@ import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
 import { cn, focusRing } from "@sincpro/web-ui/foundations/variants";
 import { tagTone } from "@sincpro/web-ui/primitives/tag/Tag";
+import { Avatar } from "@sincpro/web-ui/primitives/value/Person";
 import type { LucideIcon } from "lucide-react";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
@@ -56,6 +57,8 @@ export type TagItem = {
    *  comes from, which symbol a comparison is. It goes muted and inside. */
   note?: string;
   icon?: LucideIcon;
+  /** A person on the chip: its photo, or its initials when `true` — followers, assignees. */
+  avatar?: true | string;
   /** Choose it. Without this the chip is a value and is not pressed. */
   onSelect?: () => void;
   /** Remove it, when removing it means something. It is a separate button
@@ -317,6 +320,15 @@ function Inside({ item }: { item: TagItem }): ReactNode {
     <>
       {Icon === undefined ? null : (
         <Icon className="size-3 shrink-0 opacity-70" strokeWidth={2} aria-hidden />
+      )}
+      {item.avatar === undefined ? null : (
+        <span aria-hidden className="-my-0.5 -ml-1.5 flex shrink-0">
+          <Avatar
+            name={item.label}
+            size="sm"
+            {...(typeof item.avatar === "string" ? { src: item.avatar } : {})}
+          />
+        </span>
       )}
       <span className="min-w-0 truncate">{item.label}</span>
       {item.note === undefined ? null : (

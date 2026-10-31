@@ -42,7 +42,16 @@ import { useState } from "react";
  *                    también; lo que se lee está en el cruce. Tampoco se
  *                    ordena: el orden de cada eje es el de sus claves.
  */
-export type ListPresent = "rows" | "table" | "board" | "sheet" | "report" | "pivot";
+export type ListPresent =
+  | "rows"
+  | "table"
+  | "board"
+  | "sheet"
+  | "report"
+  | "pivot"
+  | "calendar"
+  | "gantt"
+  | "timeline";
 
 export interface SetControl<Row, Present extends string = ListPresent> extends Pages<Row> {
   present: Present;

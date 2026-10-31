@@ -1,8 +1,8 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { DropZone, Field, FormModeProvider, ToastProvider, useToast } from "@sincpro/web-ui";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the toast region and the drop zone are React Aria's. The region is a landmark

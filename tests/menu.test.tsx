@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import type { MenuGroup } from "@sincpro/web-ui";
 import { indexOptions, MenuList } from "@sincpro/web-ui/primitives/menu/Menu";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the menu is React Aria's, so opening a submenu with → or hover, closing it with ←

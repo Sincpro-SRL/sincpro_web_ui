@@ -206,7 +206,7 @@ export type LineItemsProps<T> = {
    *  `inline` puts it in the table, open, under the others (see the file's header).
    *  By default the dialog when there is an `editor`, the table when there is not. */
   adding?: "inline" | "editor";
-  /** Open the whole line somewhere else than this block's dialog — the app's `Drill`, so
+  /** Open the whole line somewhere else than this block's dialog — a modal of the workspace, so
    *  the line opens as «S00142 › Línea 3» and can go deeper (its product, its lot) without
    *  a modal over a modal. When given, it replaces `editor` for existing lines. */
   onOpenLine?: (id: string) => void;
@@ -296,7 +296,7 @@ export function LineItems<T>({
   const canAdd = !read && onAdd !== undefined && newLine !== undefined;
   const canRemove = !read && onRemove !== undefined;
   /* The whole line opens either in this block's own dialog (`editor`) or wherever the app
-     opens records (`onOpenLine`, a `Drill` context) — never both, so a line's form never
+     opens records (`onOpenLine`, a modal of the workspace) — never both, so a line's form never
      sits on top of another modal. */
   const canEdit = (canChange && editor !== undefined) || onOpenLine !== undefined;
   const openLine = (id: string, line: T) => {

@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { test } from "node:test";
+
+import { test } from "vitest";
 
 /**
  * Context: in a React Server Components app (Next.js App Router) a module that runs a hook,

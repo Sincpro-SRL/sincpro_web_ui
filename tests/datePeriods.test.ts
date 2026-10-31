@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   type DatePeriod,
@@ -12,6 +11,7 @@ import {
   recentYears,
   resolvePeriods,
 } from "@sincpro/web-ui/components/search/datePeriods";
+import { test } from "vitest";
 
 /* Un miércoles de septiembre de 2026. */
 const NOW = new Date(2026, 8, 16, 15, 30);

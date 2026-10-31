@@ -1,11 +1,11 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   columnSeries,
   frameFromRows,
   withColumns,
 } from "@sincpro/web-ui/components/frame/model";
+import { test } from "vitest";
 
 const COLUMNS = [
   { id: "ciudad", header: "ciudad" },

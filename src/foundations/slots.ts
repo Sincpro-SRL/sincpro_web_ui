@@ -1,4 +1,4 @@
-import { Children, Fragment, isValidElement, type ReactNode } from "react";
+import { Children, cloneElement, Fragment, isValidElement, type ReactNode } from "react";
 
 /**
  * LAS RANURAS — cómo un arquetipo se escribe como ÁRBOL.
@@ -66,11 +66,20 @@ export function slotOf<Name extends string>(node: ReactNode): Name | undefined {
  * medio del árbol —lo que escribe cualquiera que ponga dos ranuras bajo un
  * condicional— escondería las ranuras que tiene adentro.
  */
-export function flatten(children: ReactNode): ReactNode[] {
+export function flatten(children: ReactNode, prefix = ""): ReactNode[] {
   const out: ReactNode[] = [];
   for (const child of Children.toArray(children)) {
     if (isValidElement(child) && child.type === Fragment) {
-      out.push(...flatten((child.props as { children?: ReactNode }).children));
+      /* The fragment's children are keyed from zero again («.0», «.1»…): without the
+         fragment's own key in front they collide with their new siblings. */
+      out.push(
+        ...flatten(
+          (child.props as { children?: ReactNode }).children,
+          `${prefix}${String(child.key)}/`,
+        ),
+      );
+    } else if (prefix !== "" && isValidElement(child)) {
+      out.push(cloneElement(child, { key: `${prefix}${String(child.key)}` }));
     } else {
       out.push(child);
     }

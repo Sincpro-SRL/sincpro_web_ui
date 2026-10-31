@@ -24,7 +24,14 @@ export function groupedColumnIds<T extends object>(
 }
 
 /** The presentations that need width: a grid of columns. */
-export const WIDE_PRESENTS: readonly ListPresent[] = ["table", "sheet", "report", "pivot"];
+export const WIDE_PRESENTS: readonly ListPresent[] = [
+  "table",
+  "sheet",
+  "report",
+  "pivot",
+  "gantt",
+  "timeline",
+];
 
 /** The id of the column that answers for a model field, when there is one. */
 function columnAnswering<T extends object>(

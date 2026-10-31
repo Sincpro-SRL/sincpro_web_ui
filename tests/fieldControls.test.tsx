@@ -1,5 +1,4 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import {
   ENGLISH_COPY,
@@ -14,6 +13,7 @@ import {
 } from "@sincpro/web-ui";
 import type { ReactElement, ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the text controls are React Aria's, so typing, the arrow keys and the list's

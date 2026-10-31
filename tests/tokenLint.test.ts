@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
-import { test } from "node:test";
+
+import { test } from "vitest";
 
 /**
  * Context: un sistema de diseño no se rompe de golpe, se rompe por un `h-[26px]` apurado un

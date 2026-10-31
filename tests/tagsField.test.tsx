@@ -1,9 +1,9 @@
 import assert from "node:assert/strict";
-import { test } from "node:test";
 
 import { Field, FormModeProvider, type TagOption, TagsField } from "@sincpro/web-ui";
 import { tagChoices, withoutTag, withTag } from "@sincpro/web-ui/primitives/tag/choices";
 import { renderToStaticMarkup } from "react-dom/server";
+import { test } from "vitest";
 
 /**
  * Context: the keys of the field (typing, Enter, Backspace, the ×) are React Aria's plus two

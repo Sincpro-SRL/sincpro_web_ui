@@ -12,6 +12,8 @@ export interface TagOption {
   label: string;
   /** Neutral by default: «mayorista» classifies, it does not warn. */
   tone?: Tone;
+  /** A person: its face on the chip and in the list — `true` for initials, a URL for a photo. */
+  avatar?: true | string;
 }
 
 /** How the typed text is compared — the locale's, handed in by the component. */
