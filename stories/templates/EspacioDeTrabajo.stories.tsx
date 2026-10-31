@@ -381,8 +381,11 @@ export const BuscarMasEnModal: Story = {
     const [field] = await canvas.findAllByRole("combobox");
     await userEvent.click(field!);
     await userEvent.click(await page.findByRole("option", { name: /Buscar más/ }));
-    /* A modal of the workspace answers the field. */
-    await userEvent.click(await page.findByText("Panadería Doña Julia"));
+    /* A modal of the workspace answers the field. Looked for INSIDE the modal: the composer
+       loads its view asynchronously, and until it arrives the only «Panadería Doña Julia» on
+       the page is the closing dropdown's option — pressing that one chooses nothing. */
+    const dialog = within(await page.findByRole("dialog"));
+    await userEvent.click(await dialog.findByText("Panadería Doña Julia"));
     await waitFor(() => expect(field).toHaveValue("Panadería Doña Julia"));
   },
   render: () => <Workspace views={VIEWS} start={orderRef(SALES_ORDERS[0]!)} />,
