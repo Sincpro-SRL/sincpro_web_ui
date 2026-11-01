@@ -6,7 +6,8 @@ import {
   TextInput,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { CUSTOMER_CATEGORIES, INVOICE_LABELS } from "../support/erp-tags";
 
@@ -135,4 +136,70 @@ export const Deshabilitado: Story = {
       </Field>
     </Box>
   ),
+};
+
+const PRODUCTOS = Array.from({ length: 3000 }, (_, i) => ({
+  value: `P-${i}`,
+  label: `Producto ${i + 1}`,
+  code: `SKU-${String(i).padStart(5, "0")}`,
+}));
+
+/** Lo busca el servidor: un many2many sobre tres mil productos. Con `onSearch` el campo no
+ *  filtra lo que tiene: avisa lo que se escribe y ofrece lo que le contestan — acá, buscando
+ *  por un código que la etiqueta no muestra. Los elegidos nunca vuelven como opción. */
+export const LoBuscaElServidor: Story = {
+  render: function Render() {
+    const [elegidos, setElegidos] = useState<string[]>([]);
+    const [opciones, setOpciones] = useState<TagOption[]>([]);
+    const nombres = useRef(new Map<string, TagOption>());
+    const buscar = (texto: string) => {
+      window.setTimeout(() => {
+        const q = texto.trim().toLowerCase();
+        const hallados = PRODUCTOS.filter(
+          (p) => q === "" || `${p.label} ${p.code}`.toLowerCase().includes(q),
+        )
+          .slice(0, 10)
+          .map(({ value, label }) => ({ value, label }));
+        for (const o of hallados) nombres.current.set(o.value, o);
+        setOpciones(hallados);
+      }, 120);
+    };
+    useEffect(() => buscar(""), []);
+    // The chosen ones go along for their labels; the field never offers them again.
+    const conElegidos = [
+      ...opciones,
+      ...elegidos
+        .filter((id) => !opciones.some((o) => o.value === id))
+        .map((id) => nombres.current.get(id))
+        .filter((o): o is TagOption => o !== undefined),
+    ];
+    return (
+      <div className="max-w-xl">
+        <Field label="Productos">
+          <TagsField
+            value={elegidos}
+            onChange={setElegidos}
+            options={conElegidos}
+            onSearch={buscar}
+          />
+        </Field>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const campo = await canvas.findByRole("combobox", { name: "Productos" });
+    await userEvent.click(campo);
+    await waitFor(() => expect(page.getAllByRole("option").length).toBeGreaterThan(0));
+    // A code no label shows: only the server can match it.
+    await userEvent.type(campo, "SKU-02500");
+    await userEvent.click(await page.findByRole("option", { name: "Producto 2501" }));
+    await expect(await canvas.findByText("Producto 2501")).toBeVisible();
+    // Chosen, it is not offered again.
+    await userEvent.type(campo, "SKU-02500");
+    await waitFor(() =>
+      expect(page.queryByRole("option", { name: "Producto 2501" })).toBeNull(),
+    );
+  },
 };

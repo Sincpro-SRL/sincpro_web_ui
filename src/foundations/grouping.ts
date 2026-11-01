@@ -104,6 +104,9 @@ export type Pile<T> = {
    * montones los cuenta quien guarda los datos, este número viene de allá.
    */
   count: number;
+  /** What the pile ADDS UP TO, already written — «Total Bs 1.204.933» — summed by whoever
+   *  keeps the data over EVERY row in it, like the count. Drawn in the pile's header. */
+  detail?: string;
   /** Las filas, en el nivel MÁS PROFUNDO. Vacío en los de arriba: un montón que
    *  tiene montones adentro no tiene filas propias. */
   items: readonly T[];

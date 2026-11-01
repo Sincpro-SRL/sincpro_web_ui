@@ -11,6 +11,10 @@ import {
   type SearchCriteria,
 } from "@sincpro/web-ui/components/search/criteria";
 import { CriteriaChips } from "@sincpro/web-ui/components/search/CriteriaChips";
+import type {
+  BuiltCondition,
+  BuiltFilter,
+} from "@sincpro/web-ui/components/search/FilterBuilder";
 import type { ModelDefinition } from "@sincpro/web-ui/components/search/model";
 import {
   describeCondition,
@@ -22,7 +26,7 @@ import {
   suggest,
   withoutValue,
 } from "@sincpro/web-ui/components/search/query";
-import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
 import type { MenuGroup, MenuOption } from "@sincpro/web-ui/primitives/menu/Menu";
@@ -287,6 +291,16 @@ export type SearchBarProps = {
    * obligar a buscar la que uno venía mirando entre doce.
    */
   onOpenBuilder?: (path?: CriteriaPath) => void;
+  /**
+   * The set's own search — what a free text means when it is not a question about one field:
+   * every field the set searches, at once (sincpro_framework's `LiteralSearch`, Odoo's «Search
+   * for: …»). Given the typed text, it returns what the chip asks; `null` offers nothing.
+   *
+   * With it, «Buscar «Globex»» is offered for every text. It goes FIRST — the one Enter takes —
+   * unless the model reads the text as a question of its own (an operator, a field's name, an
+   * enum's value, a number a numeric field answers): then that goes first and this after it.
+   */
+  literal?: (text: string) => BuiltCondition | BuiltFilter | null;
   /** Lo que va pegado al campo, a su derecha. */
   trailing?: ReactNode;
   /** How many facets the bar shows before folding the rest into «+N»; the grouping chain
@@ -309,6 +323,7 @@ export function SearchBar({
   onFilterSelect,
   onFavoriteSelect,
   onOpenBuilder,
+  literal,
   trailing,
   collapseAfter,
   surface,
@@ -395,6 +410,7 @@ export function SearchBar({
       text,
     },
     fields,
+    { literal: literal !== undefined },
   );
 
   /* Lo escrito, ya leído: hace falta acá para saber si se está eligiendo un
@@ -454,14 +470,8 @@ export function SearchBar({
    * la lista si no. Es lo único que la barra decide sobre dónde van las cosas:
    * el resto lo decide quien tiene la lista.
    */
-  function commit(field: QueryField, op: string, value: string) {
-    const one = filterCriteria(
-      /* El que no lleva valor viaja con `true`, que es lo que el motor espera de
-         «está vacío»: mandarle la cadena vacía sería preguntar por el campo que
-         vale "". */
-      { field: field.field, operator: op, value: withoutValue(op) ? true : value },
-      describeCondition(field, op, value),
-    );
+  /** A finished instance, where the next one goes: the end, or the group left open. */
+  function put(one: SearchCriteria) {
     onCriteriaChange(
       openGroup === null
         ? [...criteria, one]
@@ -470,6 +480,17 @@ export function SearchBar({
     setText("");
     setStep({});
     input.current?.focus();
+  }
+
+  function commit(field: QueryField, op: string, value: string) {
+    const one = filterCriteria(
+      /* El que no lleva valor viaja con `true`, que es lo que el motor espera de
+         «está vacío»: mandarle la cadena vacía sería preguntar por el campo que
+         vale "". */
+      { field: field.field, operator: op, value: withoutValue(op) ? true : value },
+      describeCondition(field, op, value),
+    );
+    put(one);
   }
 
   /** Lo elegido en el desplegable, según de qué clase sea. */
@@ -501,6 +522,14 @@ export function SearchBar({
       onOpenGroup?.(suggestion.join);
       setText("");
       input.current?.focus();
+      return;
+    }
+    if (suggestion.kind === "literal") {
+      const where = literal?.(suggestion.text) ?? null;
+      if (where !== null)
+        put(
+          filterCriteria(where, fillCopy(copy.search.literalChip, { text: suggestion.text })),
+        );
       return;
     }
     commit(suggestion.field, suggestion.op, suggestion.value);
@@ -859,7 +888,7 @@ export function SearchBar({
                   }`}
                 >
                   <span className="shrink-0 font-medium text-ink">{one.label}</span>
-                  {one.kind === "condition" ? (
+                  {one.kind === "condition" || one.kind === "literal" ? (
                     <>
                       <span className="shrink-0 text-muted">:</span>
                       <span className="min-w-0 truncate font-mono text-micro text-ink">

@@ -474,6 +474,58 @@ export const ConModelo: Story = {
   },
 };
 
+/**
+ * La búsqueda literal: lo que un texto suelto quiere decir. Con `literal`, la barra ofrece
+ * «Buscar «andina»» — el conjunto entero buscado como lo busca el servidor (número y cliente a
+ * la vez, el `LiteralSearch` de sincpro_framework), no un campo a la vez — y es lo que Enter
+ * toma. Si el modelo lee lo escrito como pregunta suya («<= 1000», «pagada», «número»), eso va
+ * primero y la literal queda al final.
+ */
+export const BusquedaLiteral: Story = {
+  args: { facets: FACETAS, criteria: [], onCriteriaChange: () => {} },
+  render: () => {
+    const [criteria, setCriteria] = useState<SearchCriteria[]>([]);
+    return (
+      <Caja>
+        <SearchBar
+          facets={FACETAS}
+          model={MODELO}
+          criteria={criteria}
+          onCriteriaChange={setCriteria}
+          literal={(text) => ({
+            any: [
+              { field: "name", operator: "like", value: `%${text}%` },
+              { field: "customer_name", operator: "like", value: `%${text}%` },
+            ],
+          })}
+          placeholder="buscá, o preguntá…"
+        />
+        <p className="mt-3 font-mono text-micro text-muted" aria-label="lo que viaja">
+          {JSON.stringify(whereOf(criteria) ?? null)}
+        </p>
+      </Caja>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const box = canvas.getByRole("textbox");
+    // Plain text: the literal search is offered first, and Enter takes it.
+    await userEvent.type(box, "andina");
+    await expect(canvas.getAllByRole("button", { name: /^Buscar/ })[0]).toHaveTextContent(
+      /Buscar.*andina/,
+    );
+    await userEvent.keyboard("{Enter}");
+    await expect(await canvas.findByText(/Buscar «andina»/)).toBeVisible();
+    const sent = canvas.getByLabelText("lo que viaja");
+    await expect(sent).toHaveTextContent('"any"');
+    await expect(sent).toHaveTextContent('"customer_name"');
+    // A question the model reads goes first: Enter takes it, not the literal search.
+    await userEvent.type(box, "<= 1000");
+    await userEvent.keyboard("{Enter}");
+    await expect(sent).toHaveTextContent('"operator":"<="');
+  },
+};
+
 /* ================================================================== *
  *  LO QUE SI NO SE ABRE, NO SE VE.
  *

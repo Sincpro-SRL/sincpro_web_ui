@@ -58,6 +58,11 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 | Filas del elegidor con widgets (cara, estado, saldo a la derecha)                 | ✅ 10-31 | `PickerItem.avatar`, `tags`, `aside`                                            |
 | «Buscar más…» con varias presentaciones (tabla, filas, planilla, calendario)      | 🟡       | el elegidor es una `List`: tabla y filas ✅; planilla y calendario, por mostrar |
 | Búsqueda contra el servidor con facetas del modelo                                | 🟡       | web-ui da la barra; el modelo lo trae web-framework                             |
+| Un selector que busca en el SERVIDOR: no filtra ni corta lo que le dan            | ✅ 10-31 | `Picker onSearch`; el nombre del elegido fuera de la página, `valueLabel`       |
+| Un many2many que busca en el SERVIDOR (fichas sobre miles)                        | ✅ 10-31 | `TagsField onSearch`: no filtra lo que le dan; los elegidos no vuelven          |
+| Un grupo dice cuánto suma, no sólo cuántos hay                                    | ✅ 10-31 | `Pile.detail` → `GroupHeader detail` (lo suma quien guarda los datos)           |
+| Búsqueda literal en la barra («Buscar «X»» sobre todo el conjunto, con Enter)     | ✅ 10-31 | `SearchBar literal`: primero, salvo que el modelo lea lo escrito como pregunta  |
+| Un monto (`decimal`, `monetary`) se pregunta como número                          | ✅ 10-31 | `kindOf` lo leía como texto: «total <= 1000» no se podía pedir                  |
 
 ## 4. Dónde se abre (espacio de trabajo)
 

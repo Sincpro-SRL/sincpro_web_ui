@@ -512,3 +512,68 @@ test("apenas se nombra el atributo, los grupos se van", () => {
   assert.ok(!ofrecido.some((one) => one.kind === "group"));
   assert.ok(ofrecido.every((one) => one.kind === "field"));
 });
+
+/* ---------------------------------------------------------------- *
+ *  La búsqueda literal: lo que un texto suelto quiere decir
+ * ---------------------------------------------------------------- */
+
+const LITERAL = { literal: true };
+const primero = (text: string) => suggest({ text }, CAMPOS, LITERAL)[0];
+
+test("un texto suelto es la búsqueda literal del conjunto, y va primero", () => {
+  const ofrecido = suggest({ text: "Globex" }, CAMPOS, LITERAL);
+  assert.deepEqual(ofrecido[0], {
+    kind: "literal",
+    id: "l:literal",
+    label: "Search",
+    hint: "Globex",
+    text: "Globex",
+  });
+  // The questions about one field are still there, below it.
+  assert.ok(ofrecido.slice(1).some((one) => one.kind === "condition"));
+});
+
+test("lo que el modelo lee como pregunta suya va antes que la literal, que queda al final", () => {
+  // The name of a field, an operator, an enum's value, a number a numeric field answers.
+  for (const text of ["nombr", "> 100", "synthetic", "42"]) {
+    const ofrecido = suggest({ text }, CAMPOS, LITERAL);
+    assert.notEqual(ofrecido[0]?.kind, "literal", text);
+    assert.equal(ofrecido.at(-1)?.kind, "literal", text);
+  }
+});
+
+test("sin búsqueda literal declarada, la barra no la ofrece", () => {
+  assert.equal(
+    suggest({ text: "Globex" }, CAMPOS).some((one) => one.kind === "literal"),
+    false,
+  );
+});
+
+test("la literal no se ofrece sin texto, ni eligiendo un atributo o un campo", () => {
+  assert.equal(primero("")?.kind, "field");
+  assert.equal(
+    suggest({ text: "#nom" }, CAMPOS, LITERAL).some((one) => one.kind === "literal"),
+    false,
+  );
+  assert.equal(
+    suggest({ field: de("name"), text: "Glo" }, CAMPOS, LITERAL).some(
+      (one) => one.kind === "literal",
+    ),
+    false,
+  );
+});
+
+test("un monto es un número: «total <= 1000» se puede preguntar", () => {
+  for (const type of ["decimal", "monetary", "money"]) {
+    const [campo] = queryFields(
+      {
+        aggregate: "invoice",
+        identity: "id",
+        fields: { total: { type, nullable: false, sortable: true, ops: ["<="] } },
+      },
+      "default",
+    );
+    assert.equal(campo?.kind, "number", type);
+    assert.equal(suggest({ text: "<= 1000" }, [campo!])[0]?.kind, "condition", type);
+  }
+});

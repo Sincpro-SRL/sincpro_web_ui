@@ -140,3 +140,20 @@ test("an empty list waiting for its next page says only that it is loading", () 
   assert.equal([...html.matchAll(/loading more…/g)].length, 1);
   assert.doesNotMatch(html, /Nada coincide/);
 });
+
+test("a chosen record that is not among the items reads by its valueLabel", () => {
+  // A search on the server narrowed the items, or the record lies past the first page.
+  const closed = renderToStaticMarkup(
+    <Picker items={ITEMS} value="P-99" valueLabel="Producto 99" onSearch={() => {}} />,
+  );
+  assert.match(closed, /value="Producto 99"/);
+  const read = renderToStaticMarkup(
+    <FormModeProvider value="read">
+      <Picker items={ITEMS} value="P-99" valueLabel="Producto 99" />
+    </FormModeProvider>,
+  );
+  assert.match(read, /Producto 99/);
+  assert.doesNotMatch(read, /role="combobox"/, "read mode draws the name, not a control");
+  // Without it, nothing is invented: the field is empty.
+  assert.match(renderToStaticMarkup(<Picker items={ITEMS} value="P-99" />), /value=""/);
+});

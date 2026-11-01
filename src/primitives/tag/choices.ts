@@ -39,12 +39,16 @@ export function tagChoices(
   text: string,
   match: TagMatch,
   creatable: boolean,
+  /** The options are already the answer to `text` (searched by the consumer, on a server):
+   *  they are not filtered again — the server may have matched a field no label shows. */
+  searched = false,
 ): { available: TagOption[]; create: string | null } {
   const chosen = new Set(value);
   const query = text.trim();
   const available = options.filter(
     (option) =>
-      !chosen.has(option.value) && (query === "" || match.contains(option.label, query)),
+      !chosen.has(option.value) &&
+      (searched || query === "" || match.contains(option.label, query)),
   );
   const create =
     creatable && query !== "" && !options.some((option) => match.same(option.label, query))
