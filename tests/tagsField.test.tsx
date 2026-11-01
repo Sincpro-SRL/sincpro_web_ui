@@ -116,3 +116,12 @@ test("read mode draws the chosen tags as Tags, in order, and «unset» when ther
   assert.doesNotMatch(empty, /<input/);
   assert.match(empty, /italic/, "the unset value, said");
 });
+
+test("searched by its consumer, the options are its answer: not filtered again", () => {
+  // The server matched «exportación» by a code no label shows; the chosen still never return.
+  const { available } = tagChoices(CATEGORIES, ["may"], "EXP-01", match, false, true);
+  assert.deepEqual(
+    available.map((o) => o.value),
+    ["exp", "c30", "sus"],
+  );
+});

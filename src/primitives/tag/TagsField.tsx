@@ -89,6 +89,13 @@ export type TagsFieldProps = {
    * backend (Odoo's `name_create`); the consumer also appends the new option to `options`.
    */
   onCreate?: (label: string) => string | Promise<string>;
+  /**
+   * The options are SEARCHED by whoever gives them — the server's literal search over
+   * thousands of products or people — and this hears what is typed (`""` when it starts over).
+   * With it the field filters nothing itself: `options` is the answer, plus the chosen ones for
+   * their labels; the chosen still never come back as options.
+   */
+  onSearch?: (query: string) => void;
   /** «Buscar más…» at the end of the list: the tags to add chosen from a table
    *  (the list that chooses, `List onChoose` with `selection`, in a modal). It gets what was typed. */
   onBrowseAll?: (query: string) => void;
@@ -169,6 +176,7 @@ function EditableTagsField({
   onChange,
   options,
   onCreate,
+  onSearch,
   onBrowseAll,
   onOpen,
   openTarget,
@@ -192,7 +200,17 @@ function EditableTagsField({
     () => new Intl.Collator(locale, { sensitivity: "base", usage: "search" }),
     [locale],
   );
-  const [text, setText] = useState("");
+  const [text, setTextOnly] = useState("");
+  /* What the consumer last heard: an add or a reopen starts the search over, and telling it
+     `""` twice would ask the server twice for the same page. */
+  const heard = useRef("");
+  const setText = (next: string) => {
+    setTextOnly(next);
+    if (onSearch !== undefined && next !== heard.current) {
+      heard.current = next;
+      onSearch(next);
+    }
+  };
   const boxRef = useRef<HTMLDivElement>(null);
   const [width, setWidth] = useState<number | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -207,6 +225,7 @@ function EditableTagsField({
     text,
     { contains, same: (a, b) => collator.compare(a.trim(), b) === 0 },
     onCreate !== undefined && !disabled,
+    onSearch !== undefined,
   );
   const listed: TagOption[] = [
     ...available,

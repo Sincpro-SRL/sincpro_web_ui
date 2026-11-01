@@ -406,6 +406,65 @@ export const DesdeElServidor: Story = {
   },
 };
 
+/** Lo busca el servidor: con `onSearch` el picker no filtra lo que tiene — avisa lo que se
+ *  escribe y dibuja lo que le contestan. Abre con los primeros diez de dos mil; escribir el
+ *  código «C-1500» lo trae aunque nunca estuvo entre los diez, y aunque el código no se dibuja:
+ *  la búsqueda literal del servidor mira campos que la opción no muestra. `valueLabel` dice el
+ *  nombre del elegido cuando la lista vuelve a los primeros diez y él no está entre ellos. */
+export const LoBuscaElServidor: Story = {
+  args: { items: [] },
+  render: function Render() {
+    const [opciones, setOpciones] = useState<PickerItem[]>([]);
+    const [pedidos, setPedidos] = useState<string[]>([]);
+    const [elegido, setElegido] = useState("");
+    const vistos = useRef(new Map<string, string>());
+    const buscar = (texto: string) => {
+      setPedidos((ya) => [...ya, texto]);
+      window.setTimeout(() => {
+        const q = texto.trim().toLowerCase();
+        const todos = Array.from({ length: TOTAL }, (_, i) => cliente(i));
+        const hallados = todos
+          .filter(
+            (c) => q === "" || `${c.id} ${c.name} ${c.haystack}`.toLowerCase().includes(q),
+          )
+          .slice(0, 10);
+        for (const c of hallados) vistos.current.set(c.id, c.name);
+        setOpciones(hallados);
+      }, 150);
+    };
+    useEffect(() => buscar(""), []);
+    return (
+      <div className="max-w-xl rounded-box border border-line bg-surface p-4">
+        <Field label="Cliente" hint={`pedidos al servidor: ${pedidos.length}`}>
+          <Picker
+            items={opciones}
+            value={elegido}
+            onChange={setElegido}
+            onSearch={buscar}
+            {...(elegido === "" ? {} : { valueLabel: vistos.current.get(elegido) ?? "" })}
+          />
+        </Field>
+        <p className="mt-2 text-meta text-muted">elegido: {elegido || "—"}</p>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(canvasElement.ownerDocument.body);
+    const campo = await canvas.findByRole("combobox", { name: "Cliente" });
+    await userEvent.click(campo);
+    // The first ten, all of them: the consumer chose the page, the picker caps nothing.
+    await waitFor(() => expect(page.getAllByRole("option")).toHaveLength(10));
+    const lejos = cliente(1500);
+    await userEvent.type(campo, lejos.id);
+    // Found by the SERVER, by a code no option shows: filtering itself would drop it.
+    await userEvent.click(await page.findByRole("option", { name: new RegExp(lejos.name) }));
+    await expect(await canvas.findByText("elegido: C-1500")).toBeVisible();
+    // The list went back to the first ten; the field still says who was chosen.
+    await expect(campo).toHaveValue(lejos.name);
+  },
+};
+
 /** Secciones: los clientes con los que trabajaste esta semana arriba, bajo «Recientes», y el
  *  resto bajo «Todos». El orden es el que viene en `items` — el picker agrupa las seguidas
  *  con la misma `section`, no reordena. */

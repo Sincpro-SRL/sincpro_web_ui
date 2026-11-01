@@ -199,12 +199,16 @@ export function globToLike(value: string): string {
   return value.replace(/\*/g, "%");
 }
 
+const NUMERIC = new Set(["integer", "number", "float", "decimal", "monetary", "money"]);
+
 /** Qué clase de valor es un campo, leída del tipo que publica el modelo. */
 function kindOf(definition: FieldDefinition): QueryKind {
   if (definition.kind === "relation") return "relation";
   if (definition.choices !== undefined && definition.choices.length > 0) return "choice";
   const type = definition.type.toLowerCase();
-  if (type === "integer" || type === "number" || type === "float") return "number";
+  /* An amount is a number: «decimal» and «monetary» read as text made «total <= 1000»
+     impossible to ask of an invoice. */
+  if (NUMERIC.has(type)) return "number";
   if (type === "date" || type === "datetime") return "date";
   if (type === "boolean" || type === "bool") return "boolean";
   return "text";
@@ -352,7 +356,10 @@ export type QuerySuggestion =
       field: QueryField;
       op: string;
       value: string;
-    };
+    }
+  /** The set's own search over the text — every field it searches, at once. What it asks is
+   *  the consumer's (`SearchBar literal`): the bar only offers it and puts the chip. */
+  | { kind: "literal"; id: string; label: string; hint: string; text: string };
 
 /** Cómo se llama un operador para quien lo lee. Sale de la copia, así que un
  *  operador que el servidor agregue aparece con su símbolo hasta que alguien le
@@ -397,7 +404,33 @@ function matches(field: QueryField, text: string): boolean {
  * ya. Las dos intenciones se escriben igual, así que se ofrecen las dos, con los
  * campos primero: es el paso que todavía no decidió nada.
  */
-export function suggest(draft: QueryDraft, fields: readonly QueryField[]): QuerySuggestion[] {
+/**
+ * Whether the MODEL reads what was typed as a question of its own: an operator written in
+ * front («> 100»), the name of a field («estado»), a value of an enum («pagada»), or a number or
+ * a date that a field with order can answer. Plain text («Globex») is none of those — every
+ * text field «contains» it, which says nothing — so the literal search goes first for it.
+ */
+function readByModel(
+  typed: TypedValue,
+  byName: readonly QuerySuggestion[],
+  fields: readonly QueryField[],
+): boolean {
+  if (typed.op !== undefined || byName.length > 0) return true;
+  const value = typed.value.toLowerCase();
+  if (fields.some((field) => field.choices?.some((one) => one.toLowerCase() === value)))
+    return true;
+  return (
+    (typed.shape === "number" || typed.shape === "date") &&
+    fields.some((field) => ORDERED.has(field.kind) && answers(field, typed))
+  );
+}
+
+export function suggest(
+  draft: QueryDraft,
+  fields: readonly QueryField[],
+  /** The set has a literal search (`SearchBar literal`): offer it for free text. */
+  options: { literal?: boolean } = {},
+): QuerySuggestion[] {
   const typed = readTyped(draft.text);
 
   /* Paso 3 — el campo y el operador ya están: falta el valor. */
@@ -558,10 +591,22 @@ export function suggest(draft: QueryDraft, fields: readonly QueryField[]): Query
      hecha — salvo que lo tipeado sea también un valor razonable, que es
      justamente el caso de «test». */
   const named = new Set(byName.map((one) => (one.kind === "field" ? one.field.field : "")));
-  return [
+  const byModel = [
     ...byName,
     ...ready.filter((one) => one.kind !== "condition" || !named.has(one.field.field)),
   ];
+  if (options.literal !== true) return byModel;
+  /* The literal search is always offered for text: what the model reads goes first, and
+     when it reads nothing, the literal search is what Enter takes. */
+  const text = draft.text.trim();
+  const literal: QuerySuggestion = {
+    kind: "literal",
+    id: "l:literal",
+    label: currentCopy().search.literal,
+    hint: text,
+    text,
+  };
+  return readByModel(typed, byName, fields) ? [...byModel, literal] : [literal, ...byModel];
 }
 
 /**

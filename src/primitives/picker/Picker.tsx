@@ -229,6 +229,19 @@ export type PickerProps = {
   items: readonly PickerItem[];
   value?: string;
   onChange?: (id: string) => void;
+  /**
+   * The options are SEARCHED by whoever gives them — the server's literal search — and this
+   * hears what is typed (and `""` when the list starts over). With it the picker filters
+   * nothing itself and caps nothing: `items` is the answer, all of it drawn, with the typed
+   * text still marked inside it. Without it, the picker filters what it holds.
+   *
+   * Context: a picker over ten thousand customers holds the first ten. Filtering THOSE finds
+   * nothing past the tenth — the customer typed by its exact name was «not there».
+   */
+  onSearch?: (query: string) => void;
+  /** The chosen record's name when it is not among `items` — a search narrowed them, or it
+   *  lies past the first page. Without it, a chosen record that is not listed reads empty. */
+  valueLabel?: string;
   placeholder?: string;
   /** «Buscar más…»: the last option of the list, always there when this is — the record
    *  may not be among the eight, or two of them may need their columns to tell apart. It
@@ -275,7 +288,8 @@ export type PickerProps = {
 
 export function Picker({ mode, ...props }: PickerProps) {
   if (useFormMode(mode) === "read") {
-    return <ReadValue value={props.items.find((i) => i.id === props.value)?.name ?? null} />;
+    const name = props.items.find((i) => i.id === props.value)?.name ?? props.valueLabel;
+    return <ReadValue value={props.value === undefined ? null : (name ?? null)} />;
   }
   /* The filter reads the locale from React Aria's context, so the box that provides it has
      to be ABOVE the component that asks for it. */
@@ -291,6 +305,8 @@ function EditablePicker({
   items,
   value,
   onChange,
+  onSearch,
+  valueLabel,
   placeholder,
   onBrowseAll,
   onCreate,
@@ -321,7 +337,7 @@ function EditablePicker({
   const shownLoading = loadingText ?? copy.picker.loading;
 
   const chosen = items.find((i) => i.id === value);
-  const chosenName = chosen?.name ?? "";
+  const chosenName = chosen?.name ?? (value === undefined ? "" : (valueLabel ?? ""));
 
   /* Both the text and the choice are controlled, so React Aria never rewrites the field
      from its own collection — which is capped and filtered, and may not hold the chosen
@@ -329,22 +345,34 @@ function EditablePicker({
      not just the one already chosen), the typed text after that. */
   const [open, setOpen] = useState(false);
   const [text, setText] = useState(chosenName);
-  const [query, setQuery] = useState("");
+  const [query, setQueryOnly] = useState("");
+  /* What the consumer last heard: a list that opens, closes or chooses starts the search over,
+     and telling it `""` three times would ask the server three times for the same page. */
+  const heard = useRef("");
+  const setQuery = (next: string) => {
+    setQueryOnly(next);
+    if (onSearch !== undefined && next !== heard.current) {
+      heard.current = next;
+      onSearch(next);
+    }
+  };
   const [shownFor, setShownFor] = useState(chosenName);
   if (!open && shownFor !== chosenName) {
     setShownFor(chosenName);
     setText(chosenName);
   }
 
+  const searched = onSearch !== undefined;
   const filtered = useMemo(() => {
     const q = query.trim();
-    if (q === "") return items;
+    if (q === "" || searched) return items;
     return items.filter((i) => contains(`${i.name} ${i.meta ?? ""} ${i.haystack ?? ""}`, q));
-  }, [items, query, contains]);
+  }, [items, query, contains, searched]);
 
+  /* Searched by the consumer, the items ARE the page it chose to show: all of them. */
   const { visible, remaining } = shownRows(filtered, {
     loading,
-    incremental: onLoadMore !== undefined,
+    incremental: onLoadMore !== undefined || searched,
   });
   const hasMarks = items.some((i) => i.icon !== undefined);
   const hasHints = visible.some((i) => i.meta !== undefined);

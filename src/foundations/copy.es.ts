@@ -158,6 +158,8 @@ export const SPANISH_COPY: UiCopyOverride = {
     openBuilderHere: "Abrir esta condición en el constructor",
     askField: "en qué campo",
     askAttribute: "elegí un atributo",
+    literal: "Buscar",
+    literalChip: "Buscar «{text}»",
     askOp: "comparado cómo",
     askJoin: "tienen que coincidir",
     askValue: "contra qué",

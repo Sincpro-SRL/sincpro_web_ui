@@ -182,6 +182,10 @@ export type UiCopy = {
     askField: string;
     /** Cuando se escribió `#`: lo que sigue es el nombre de un campo. */
     askAttribute: string;
+    /** The set's own search over what was typed — every field it searches, at once — as it
+     *  is offered («Buscar») and as the chip reads once put («Buscar «Globex»»). */
+    literal: string;
+    literalChip: string;
     askOp: string;
     /** El encabezado de un nodo del árbol: cómo se juntan las reglas de abajo. */
     askJoin: string;
@@ -836,6 +840,8 @@ export const ENGLISH_COPY: UiCopy = {
     openBuilderHere: "Open this condition in the builder",
     askField: "ask about",
     askAttribute: "pick an attribute",
+    literal: "Search",
+    literalChip: "Search “{text}”",
     askOp: "compared how",
     askJoin: "these rules match",
     unreadable:

@@ -412,6 +412,7 @@ export function ListView<T extends object>({
             field={pile.field}
             label={pile.label}
             count={pile.count}
+            {...(pile.detail === undefined ? {} : { detail: pile.detail })}
             depth={pile.depth}
             open={open}
             {...(group?.onToggle === undefined
