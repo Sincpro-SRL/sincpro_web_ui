@@ -42,7 +42,7 @@ import { useState } from "react";
  *                    también; lo que se lee está en el cruce. Tampoco se
  *                    ordena: el orden de cada eje es el de sus claves.
  */
-export type ListPresent =
+export type BuiltInPresent =
   | "rows"
   | "table"
   | "board"
@@ -52,6 +52,10 @@ export type ListPresent =
   | "calendar"
   | "gantt"
   | "timeline";
+
+/** A presentation of a list: one the package draws, or the `id` of a `List.Present` the
+ *  application wrote. `string & {}` keeps the built-in names in autocomplete. */
+export type ListPresent = BuiltInPresent | (string & {});
 
 export interface SetControl<Row, Present extends string = ListPresent> extends Pages<Row> {
   present: Present;

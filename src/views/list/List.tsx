@@ -1,6 +1,8 @@
 import type { BoardStages } from "@sincpro/web-ui/components/listing/BoardColumns";
 import type { ListIdentity } from "@sincpro/web-ui/components/listing/ListingBar";
+import type { BuiltInPresent } from "@sincpro/web-ui/components/listing/set";
 import type { SortField } from "@sincpro/web-ui/components/listing/SortMenu";
+import type { ViewIcon } from "@sincpro/web-ui/components/listing/ViewSwitcher";
 import {
   flatten,
   loose,
@@ -18,11 +20,13 @@ import {
   type ListCalendar,
   type ListCrumb,
   type ListEmpty,
+  type ListFace,
   type ListGantt,
   type ListGroup,
   type ListPivot,
   type ListPresent,
   type ListReport,
+  type ListSet,
   type ListSheet,
   type ListTimeline,
   type RowOf,
@@ -105,6 +109,18 @@ import type { ReactNode } from "react";
  * record already has its own sticky parts. Identity and crumbs are not drawn: the
  * record's tab and crumbs already say them. The reasoning for the line is in
  * `ListingBar`'s header.
+ *
+ * ── A presentation of your own: `List.Present` ──────────────────────
+ *
+ *     <List.Present<Store> id="map" label="Mapa" icon={MapPin}>
+ *       {(set) => <StoreMap stores={set.items} pick={set.press} />}
+ *     </List.Present>
+ *
+ * The package draws nine presentations; an application needs the tenth — a map, a
+ * gallery, a floor plan. It is written in the tree like the others, takes its place in
+ * the switcher in the order it was written, and draws from the SAME set (`ListSet`):
+ * sorted by the bar, split by the search's grouping, with the selection and the rule of
+ * what a press does. What it draws is its own — the list only hands it the set.
  */
 
 type SlotName =
@@ -124,7 +140,8 @@ type SlotName =
   | "pivot"
   | "calendar"
   | "gantt"
-  | "timeline";
+  | "timeline"
+  | "present";
 
 /* ---------------------------------------------------------------- *
  *  Las piezas de la barra
@@ -236,7 +253,7 @@ const Pivot = slot("pivot", (_props: ListPivot<never>): ReactNode => null) as <T
 /* El orden en que se OFRECEN cuando están escritas de otra manera. El conmutador
    respeta el orden del árbol; esto sólo nombra a qué presentación corresponde
    cada ranura. */
-const PRESENT_OF: Readonly<Record<string, ListPresent>> = {
+const PRESENT_OF: Readonly<Record<string, BuiltInPresent>> = {
   rows: "rows",
   table: "table",
   board: "board",
@@ -278,6 +295,40 @@ const CalendarSlot = slot("calendar", (_props: ListCalendar<never>): ReactNode =
 const GanttSlot = slot("gantt", (_props: ListGantt<never>): ReactNode => null) as <T>(
   props: ListGantt<T>,
 ) => ReactNode;
+
+export type ListPresentProps<T> = {
+  /** Its own name — not one of the nine the package draws. What `present` asks for. */
+  id: string;
+  /** Its name in the switcher: the button's `title` and accessible name. */
+  label: string;
+  icon: ViewIcon;
+  /** It needs width — a grid of columns — so a narrow list (a phone, a panel) does not
+   *  offer it. A map or a gallery reflows, and stays. */
+  wide?: boolean;
+  children: (set: ListSet<T>) => ReactNode;
+};
+
+/* Through `unknown`, like `TableSlot`: the set both gives a `T` (`items`) and takes one
+   (`press`), so the props are invariant in `T`. */
+const Present = slot(
+  "present",
+  (_props: ListPresentProps<never>): ReactNode => null,
+) as unknown as <T>(props: ListPresentProps<T>) => ReactNode;
+
+/** The presentations written with `List.Present`, checked once: an id that repeats or that
+ *  shadows a built-in one would make the switcher offer two buttons for one thing. */
+function facesOf<T>(nodes: readonly ReactNode[]): ListFace<T>[] {
+  const faces = nodes
+    .filter((node) => slotOf<SlotName>(node) === "present")
+    .map((node) => propsOf<ListPresentProps<T>>(node)!)
+    .map(({ children, ...face }) => ({ ...face, render: children }));
+  for (const [at, face] of faces.entries()) {
+    if (face.id in PRESENT_OF || faces.findIndex((one) => one.id === face.id) !== at) {
+      throw new Error(`List.Present: «${face.id}» is already a presentation of this list`);
+    }
+  }
+  return faces;
+}
 
 export type ListProps<T extends object> = {
   items: readonly T[];
@@ -394,14 +445,17 @@ export function List<T extends object>({
   /* Las caras que hay son las que están escritas, EN ESE ORDEN. El conmutador
      no puede ofrecer una que no se pueda dibujar, porque la que se dibuja y la
      que se ofrece son el mismo nodo. */
-  const presents = top
-    .map((node) => FACES.find((face) => slotOf<SlotName>(node) === face))
-    .filter((face): face is SlotName => face !== undefined)
-    .map((face) => PRESENT_OF[face]!);
+  const faces = facesOf<T>(top);
+  const presents = top.flatMap((node): ListPresent[] => {
+    const name = slotOf<SlotName>(node);
+    if (name === "present") return [propsOf<ListPresentProps<T>>(node)!.id];
+    const builtIn = name === undefined ? undefined : PRESENT_OF[name];
+    return builtIn === undefined ? [] : [builtIn];
+  });
 
   /* La escotilla: lo que el arquetipo no previó se dibuja igual, debajo. Que
      aparezca algo acá es la señal de que al arquetipo le falta una pieza. */
-  const rest = loose(top, ["bar", "metrics", ...FACES]);
+  const rest = loose(top, ["bar", "metrics", "present", ...FACES]);
 
   return (
     <ListView<T>
@@ -456,6 +510,7 @@ export function List<T extends object>({
       {...(calendar === undefined ? {} : { calendar })}
       {...(gantt === undefined ? {} : { gantt })}
       {...(timeline === undefined ? {} : { timeline })}
+      {...(faces.length === 0 ? {} : { faces })}
       {...(presents.length === 0 ? {} : { presents })}
       {...(present === undefined ? {} : { present })}
       {...(onPresentChange === undefined ? {} : { onPresentChange })}
@@ -495,3 +550,4 @@ List.Pivot = Pivot;
 List.Calendar = CalendarSlot;
 List.Gantt = GanttSlot;
 List.Timeline = TimelineSlot;
+List.Present = Present;

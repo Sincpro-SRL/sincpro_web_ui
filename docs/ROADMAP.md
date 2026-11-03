@@ -26,22 +26,25 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 
 ## 2. Una colección de registros
 
-| Necesidad                                                                | Estado   | Pieza / dueño                                         |
-| ------------------------------------------------------------------------ | -------- | ----------------------------------------------------- |
-| Filas, tabla, tablero, planilla, informe, pivote                         | ✅       | `List.*`                                              |
-| Solo lectura vs. abrible; vista previa 👁 y abrir ↗                       | ✅ 10-31 | `List readOnly`, `onPeek`, `onOpen`                   |
-| Encabezado de filas alineado al píxel                                    | ✅ 10-31 | `List.Rows header`                                    |
-| Lista embebida con título cuando está suelta                             | ✅ 10-31 | `List.Identity` en `embedded`                         |
-| Tablero POR ETAPAS con arrastrar entre columnas                          | ✅ 10-31 | `List.Board stages` (`BoardColumns`), Alt + ← / →     |
-| Reordenar filas arrastrando (secuencia)                                  | ✅ 10-31 | `EditableTable` / `LineItems` `onReorder`             |
-| Elegir «los 187 que coinciden», no solo la página                        | ✅ 10-31 | `selection.matching`                                  |
-| Vista calendario de registros                                            | ✅ 10-31 | `List.Calendar` (`RecordCalendar`, FullCalendar v7)   |
-| Gantt de proyecto (tareas, dependencias, avance)                         | ✅ 10-31 | `List.Gantt` (`RecordGantt`, SVAR)                    |
-| Planificación agrupada (el «Gantt» de Odoo)                              | ✅ 10-31 | `List.Timeline` (`RecordTimeline`), `TimelineToolbar` |
-| Kanban: crear rápido, total, barra de actividades, plegar, agregar etapa | ✅ 10-31 | `List.Board stages`                                   |
-| Calendario por recurso, planificación automática, ruta crítica           | 💲       | licencia: FullCalendar scheduler / SVAR PRO           |
-| Exportar lo que se ve (xlsx)                                             | ✅       | `foundations/xlsx`                                    |
-| Miles de filas en la tabla: dibuja sólo las que se ven (desde 200)       | ✅ 11-03 | `DataTable` (`primitives/table/rowWindow`)            |
+| Necesidad                                                                         | Estado   | Pieza / dueño                                              |
+| --------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------- |
+| Filas, tabla, tablero, planilla, informe, pivote                                  | ✅       | `List.*`                                                   |
+| Solo lectura vs. abrible; vista previa 👁 y abrir ↗                                | ✅ 10-31 | `List readOnly`, `onPeek`, `onOpen`                        |
+| Encabezado de filas alineado al píxel                                             | ✅ 10-31 | `List.Rows header`                                         |
+| Lista embebida con título cuando está suelta                                      | ✅ 10-31 | `List.Identity` en `embedded`                              |
+| Tablero POR ETAPAS con arrastrar entre columnas                                   | ✅ 10-31 | `List.Board stages` (`BoardColumns`), Alt + ← / →          |
+| Reordenar filas arrastrando (secuencia)                                           | ✅ 10-31 | `EditableTable` / `LineItems` `onReorder`                  |
+| Elegir «los 187 que coinciden», no solo la página                                 | ✅ 10-31 | `selection.matching`                                       |
+| Vista calendario de registros                                                     | ✅ 10-31 | `List.Calendar` (`RecordCalendar`, FullCalendar v7)        |
+| Gantt de proyecto (tareas, dependencias, avance)                                  | ✅ 10-31 | `List.Gantt` (`RecordGantt`, SVAR)                         |
+| Planificación agrupada (el «Gantt» de Odoo)                                       | ✅ 10-31 | `List.Timeline` (`RecordTimeline`), `TimelineToolbar`      |
+| Kanban: crear rápido, total, barra de actividades, plegar, agregar etapa          | ✅ 10-31 | `List.Board stages`                                        |
+| Calendario por recurso, planificación automática, ruta crítica                    | 💲       | licencia: FullCalendar scheduler / SVAR PRO                |
+| Exportar lo que se ve (xlsx)                                                      | ✅       | `foundations/xlsx`                                         |
+| Una presentación propia (mapa, galería, plano) con el mismo conjunto              | ✅ 11-03 | `List.Present` (`ListSet`: orden, montones, selección)     |
+| Una operación sobre N registros elegidos (el «wizard» de Odoo)                    | ✅ 11-03 | `5 · Plantillas/Operación`: `Record` en modal + `api.pick` |
+| Una operación en VARIOS pasos de una sentada (importar: subir › mapear › revisar) | ❌       | web-ui: falta la pieza; `Steps` es para trabajo de días    |
+| Miles de filas en la tabla: dibuja sólo las que se ven (desde 200)                | ✅ 11-03 | `DataTable` (`primitives/table/rowWindow`)                 |
 
 ## 3. Elegir y buscar
 
