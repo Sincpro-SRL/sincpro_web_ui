@@ -22,7 +22,7 @@ export function RecordSkeleton({ label }: { label: string }) {
   const page = d === "comfortable";
 
   return (
-    <article aria-busy="true" className="flex min-w-0 flex-col">
+    <article aria-busy="true" className="flex min-w-0 animate-reveal-late flex-col">
       <span className="sr-only">{label}</span>
       {page ? (
         <div aria-hidden className="flex items-center gap-3 bg-chrome px-3.5 py-2.5">

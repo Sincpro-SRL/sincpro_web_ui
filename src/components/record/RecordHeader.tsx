@@ -4,6 +4,8 @@ import { Breadcrumb, type Crumb } from "@sincpro/web-ui/components/record/Breadc
 import {
   DirtyActions,
   type DirtyState,
+  SavedMark,
+  useJustSaved,
 } from "@sincpro/web-ui/components/record/DirtyActions";
 import { isPrimary, ThumbBar, thumbPlan } from "@sincpro/web-ui/components/record/ThumbBar";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
@@ -12,7 +14,7 @@ import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
 import { Line } from "@sincpro/web-ui/primitives/block/Line";
 import { Tag } from "@sincpro/web-ui/primitives/tag/Tag";
 import type { LucideIcon } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 
 /* ==================================================================== *
  *  THE SHAPE OF A RECORD — the rail and the sheet.
@@ -146,7 +148,20 @@ export function RecordHeader({
   children?: ReactNode;
 }) {
   const d = useDensity();
+  /* «Guardado» is said where Save was; a record whose rail exists only while it has changes
+     keeps it for that moment, or the answer would leave with the question. */
+  const saved = useJustSaved(dirty);
+  /* Save is gone the moment it has saved, and the focus that was on it fell to the page —
+     a keyboard was left at the top of the document. It comes back to the record's name:
+     where reading the record starts, and announced together with «Guardado». */
+  const nameRef = useRef<HTMLHeadingElement>(null);
+  useEffect(() => {
+    if (!saved) return;
+    const lost = document.activeElement === null || document.activeElement === document.body;
+    if (lost) nameRef.current?.focus({ preventScroll: true });
+  }, [saved]);
   const hasRail =
+    saved ||
     crumbs !== undefined ||
     pager !== undefined ||
     actions !== undefined ||
@@ -239,7 +254,11 @@ export function RecordHeader({
                 /* `display`, not `title`: the record's name is the entry point of the
                    screen. At the title size (19 px over a 13 px body, 1.46:1) nothing on
                    the sheet stood out and the eye had nowhere to start. */
-                <h1 className="min-w-0 truncate text-display font-semibold text-ink">
+                <h1
+                  ref={nameRef}
+                  tabIndex={-1}
+                  className="min-w-0 truncate text-display font-semibold text-ink outline-0"
+                >
                   {title}
                 </h1>
               )}
@@ -323,7 +342,8 @@ export function RecordHeader({
 
                 {actions === undefined &&
                 status === undefined &&
-                dirty === undefined ? null : (
+                dirty === undefined &&
+                !saved ? null : (
                   /* Row 2 — WHAT I CAN DO and WHERE IT IS AT: actions stuck to the
                left edge, the history and the state stuck to the right one. No
                `flex-wrap`: wrapping split the row in two and the state ended up
@@ -336,7 +356,9 @@ export function RecordHeader({
                       <div className="flex shrink-0 items-center gap-1.5 @max-handheld/record:hidden">
                         <DirtyActions {...dirty} />
                       </div>
-                    ) : actions === undefined ? null : (
+                    ) : actions === undefined ? (
+                      <SavedMark saved={saved} />
+                    ) : (
                       <div className="flex shrink-0 items-center gap-1.5">
                         {primaries.length === 0
                           ? actions
@@ -353,6 +375,9 @@ export function RecordHeader({
                                 node
                               ),
                             )}
+                        {/* After the actions, not before: the primary stays where the hand
+                            left it, and «Guardado» is read as the answer to it. */}
+                        <SavedMark saved={saved} />
                       </div>
                     )}
                     {status === undefined ? null : (

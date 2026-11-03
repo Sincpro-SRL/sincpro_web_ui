@@ -7,24 +7,30 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 
 ## 1. Un registro
 
-| Necesidad                                            | Estado   | Pieza / dueño                                                  |
-| ---------------------------------------------------- | -------- | -------------------------------------------------------------- |
-| Identidad, riel, migas, paginador, acciones, etapas  | ✅       | `Record`, `Record.Rail`, `StatusBar`                           |
-| Barra y hoja en una sola columna; ancho completo     | ✅ 10-31 | `Record.Paper width`                                           |
-| Jerarquía: título › grupo › etiqueta › valor         | ✅ 10-31 | `SheetGroup` (título con regla), `HEADER_TEXT`                 |
-| Lo que el registro ES (pagada, archivada, cancelada) | ✅ 10-31 | `Record.Ribbon`                                                |
-| Editar sin `Record.Actions` no pierde el foco        | ✅ 11-03 | `RecordHeader`: `dirty` ya no decide el papel                  |
-| Un hecho largo (un email) no pisa al de al lado      | ✅ 11-03 | `Sheet` (`wrap-anywhere`); la densidad la da `DensityProvider` |
-| Quién lo creó y quién lo tocó por última vez         | ✅ 10-31 | `Record.Audit`                                                 |
-| Avisos, notas de campo, actividad, historia          | ✅       | `Record.Notice`, `note`, `Record.Activity`                     |
-| Abrir un registro desde otro (sub-contexto)          | ✅       | composer (modal, vista previa, al costado, página)             |
-| Prioridad (estrellas)                                | ✅ 10-31 | `Priority`                                                     |
-| Estado kanban (semáforo) editable                    | ✅ 10-31 | `KanbanState`                                                  |
-| Próxima actividad en la tarjeta (reloj por urgencia) | ✅ 10-31 | `ActivityBadge`                                                |
-| Campo de texto enriquecido (html)                    | ❌       | web-ui (necesita decidir editor: Tiptap/Lexical)               |
-| Adjuntos del registro (lista, vista previa, bajar)   | 🟡       | `DropZone` sube; falta `Attachments` que liste                 |
-| Imagen / avatar editable                             | 🟡       | `Thumb`, `Avatar` muestran; falta subir y recortar             |
-| Firma                                                | ❌       | web-ui, baja prioridad                                         |
+| Necesidad                                                                | Estado   | Pieza / dueño                                                                 |
+| ------------------------------------------------------------------------ | -------- | ----------------------------------------------------------------------------- |
+| Identidad, riel, migas, paginador, acciones, etapas                      | ✅       | `Record`, `Record.Rail`, `StatusBar`                                          |
+| Barra y hoja en una sola columna; ancho completo                         | ✅ 10-31 | `Record.Paper width`                                                          |
+| Jerarquía: título › grupo › etiqueta › valor                             | ✅ 10-31 | `SheetGroup` (título con regla), `HEADER_TEXT`                                |
+| Lo que el registro ES (pagada, archivada, cancelada)                     | ✅ 10-31 | `Record.Ribbon`                                                               |
+| Editar sin `Record.Actions` no pierde el foco                            | ✅ 11-03 | `RecordHeader`: `dirty` ya no decide el papel                                 |
+| Qué cambió, mientras se edita: marca por campo y «2 cambios sin guardar» | ✅ 11-03 | `Field changed`, `DirtyState.changes`                                         |
+| Guardar sin perder el foco ni guardar dos veces                          | ✅ 11-03 | `Button busy` (en `DirtyActions`); al terminar, el foco vuelve al nombre      |
+| Saber que se guardó, sin que la app lo escriba                           | ✅ 11-03 | «✓ Guardado» en el riel (`useJustSaved`, región `status`)                     |
+| Por qué no se puede guardar, a la vista y no en un `title`               | ✅ 11-03 | `DirtyState.blocked` en lugar de «sin guardar», y describe el botón           |
+| El foco se ve llegar y la etiqueta lo acompaña                           | ✅ 11-03 | `focus-in` (sólo con movimiento permitido), `Field` con `focus-within`        |
+| Una carga rápida no destella un esqueleto                                | ✅ 11-03 | `animate-reveal-late` (aparece a los 200 ms) en `Skeleton` y `RecordSkeleton` |
+| Un hecho largo (un email) no pisa al de al lado                          | ✅ 11-03 | `Sheet` (`wrap-anywhere`); la densidad la da `DensityProvider`                |
+| Quién lo creó y quién lo tocó por última vez                             | ✅ 10-31 | `Record.Audit`                                                                |
+| Avisos, notas de campo, actividad, historia                              | ✅       | `Record.Notice`, `note`, `Record.Activity`                                    |
+| Abrir un registro desde otro (sub-contexto)                              | ✅       | composer (modal, vista previa, al costado, página)                            |
+| Prioridad (estrellas)                                                    | ✅ 10-31 | `Priority`                                                                    |
+| Estado kanban (semáforo) editable                                        | ✅ 10-31 | `KanbanState`                                                                 |
+| Próxima actividad en la tarjeta (reloj por urgencia)                     | ✅ 10-31 | `ActivityBadge`                                                               |
+| Campo de texto enriquecido (html)                                        | ❌       | web-ui (necesita decidir editor: Tiptap/Lexical)                              |
+| Adjuntos del registro (lista, vista previa, bajar)                       | 🟡       | `DropZone` sube; falta `Attachments` que liste                                |
+| Imagen / avatar editable                                                 | 🟡       | `Thumb`, `Avatar` muestran; falta subir y recortar                            |
+| Firma                                                                    | ❌       | web-ui, baja prioridad                                                        |
 
 ## 2. Una colección de registros
 

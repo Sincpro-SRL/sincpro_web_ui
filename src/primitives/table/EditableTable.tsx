@@ -1158,9 +1158,12 @@ export function EditableTable<T>({
                       key={c.id}
                       scope="col"
                       style={c.width === undefined ? undefined : { width: c.width }}
+                      /* A column of figures takes its figures' width (`w-0` in an auto
+                         table is «as narrow as its content») and the text takes the rest:
+                         the product name was cut while «Cantidad» had room for ten digits. */
                       className={`border-b border-line-strong ${HEADER_TEXT} ${cell} ${
                         c.numeric === true ? "text-right" : "text-left"
-                      }`}
+                      } ${c.numeric === true && c.width === undefined ? "w-0" : ""}`}
                     >
                       {c.header}
                     </th>
