@@ -800,6 +800,20 @@ export function SearchBar({
             onClick={() => setPanel((v) => !v)}
             aria-expanded={panel}
             aria-controls={panel ? id : undefined}
+            /* Named on purpose, not by its content: once something is set the count is
+               the only text inside, and it became the whole name — «1» instead of what
+               the button opens. The count stays IN the name because it is what shows. */
+            aria-label={
+              puestos === 0
+                ? copy.search.tools
+                : fillCopy(
+                    puestos === 1 ? copy.search.toolsSetOne : copy.search.toolsSetMany,
+                    {
+                      label: copy.search.tools,
+                      count: puestos.toLocaleString(copy.locale),
+                    },
+                  )
+            }
             title={copy.search.tools}
             className={`my-0.5 mr-0.5 inline-flex h-(--size-control-sm) shrink-0 items-center gap-1 rounded-control border px-2 text-micro transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${
               puestos > 0 || panel

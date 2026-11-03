@@ -130,6 +130,8 @@ export const SPANISH_COPY: UiCopyOverride = {
   },
   search: {
     tools: "Filtrar, agrupar y favoritos",
+    toolsSetOne: "{label}, {count} puesto",
+    toolsSetMany: "{label}, {count} puestos",
     editChip: "Clic para editar",
     editNamed: "Editar {label}",
     removeChip: "Quitar {label}: {value}",

@@ -129,6 +129,10 @@ export type UiCopy = {
   };
   search: {
     tools: string;
+    /** The name of the panel button once something is set: it shows the count, and what
+     *  the button SHOWS has to be inside its name (WCAG 2.5.3) — `{label}` is `tools`. */
+    toolsSetOne: string;
+    toolsSetMany: string;
     editChip: string;
     editNamed: string;
     removeChip: string;
@@ -815,6 +819,8 @@ export const ENGLISH_COPY: UiCopy = {
   },
   search: {
     tools: "Filter, group and favorites",
+    toolsSetOne: "{label}, {count} applied",
+    toolsSetMany: "{label}, {count} applied",
     editChip: "Click to edit",
     editNamed: "Edit {label}",
     removeChip: "Remove {label}: {value}",

@@ -2,6 +2,7 @@
 
 import { stickyTop, useScrollBox } from "@sincpro/web-ui/foundations/sticky";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
+import type { WindowedRow } from "@sincpro/web-ui/primitives/table/rowWindow";
 import { ArrowDown, ArrowUp, ChevronRight, ChevronsUpDown } from "lucide-react";
 import { createContext, type ReactNode, useContext, useId } from "react";
 
@@ -47,11 +48,16 @@ export function Table({
   /** With a height, the table scrolls on its own and the header sticks.
    *  Without a height, the page scrolls and the header goes away. */
   height,
+  rowCount,
 }: {
   children: ReactNode;
   /** A number means pixels; a string goes through as is, so `26rem` follows the
    *  system scale instead of pinning a size in pixels. */
   height?: number | string;
+  /** How many rows the table REALLY has, header and footer included, when it draws only
+   *  some of them (`useRowWindow`): a screen reader says «row 412 of 3 000» and not
+   *  «row 12 of 40». Leave it out when every row is drawn. */
+  rowCount?: number;
 }) {
   const caja = useScrollBox<HTMLDivElement>(height === undefined ? {} : { height });
 
@@ -61,7 +67,10 @@ export function Table({
        tres tablas del sistema lo resolvían con tres copias de la misma
        medición. */
     <div ref={caja.ref} className={`min-w-0 ${caja.className}`} style={caja.style}>
-      <table className="w-full border-separate border-spacing-0 px-1 text-left">
+      <table
+        aria-rowcount={rowCount}
+        className="w-full border-separate border-spacing-0 px-1 text-left"
+      >
         {children}
       </table>
     </div>
@@ -72,14 +81,21 @@ export function Table({
  *  muted: in grey at the cells' weight the names of the columns read as one more row. */
 export const HEADER_TEXT = "text-meta font-semibold whitespace-nowrap text-ink";
 
-export function THead({ children }: { children: ReactNode }) {
+export function THead({
+  children,
+  rowIndex,
+}: {
+  children: ReactNode;
+  /** Its `aria-rowindex`, set only when the table says its `rowCount`. */
+  rowIndex?: number;
+}) {
   return (
     /* Se pega DEBAJO de lo que ya esté pegado —la barra de la aplicación y la
        de la lista— y no en `top: 0`, que lo metía atrás de las dos. Sin alto en
        `Table` el que scrollea es la página, y ahí la diferencia es justamente
        la que hacía desaparecer los nombres de columna. Ver `system/sticky.tsx`. */
     <thead className="sticky z-10 bg-ground" style={stickyTop}>
-      <tr>{children}</tr>
+      <tr aria-rowindex={rowIndex}>{children}</tr>
     </thead>
   );
 }
@@ -176,14 +192,18 @@ export function Tr({
   children,
   onClick,
   selected = false,
+  windowed,
 }: {
   children: ReactNode;
   onClick?: () => void;
   selected?: boolean;
+  /** Set by a table that draws only the rows in view (`useRowWindow`). */
+  windowed?: WindowedRow;
 }) {
   return (
     <RowMark.Provider value={{ selected, interactive: onClick !== undefined }}>
       <tr
+        {...windowed}
         onClick={onClick}
         className={`group/row ${onClick === undefined ? "" : "cursor-pointer"}`}
       >
