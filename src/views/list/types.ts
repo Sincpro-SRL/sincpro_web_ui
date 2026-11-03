@@ -4,9 +4,10 @@ import type { BoardStages } from "@sincpro/web-ui/components/listing/BoardColumn
 import type { ListIdentity } from "@sincpro/web-ui/components/listing/ListingBar";
 import type { ListPresent } from "@sincpro/web-ui/components/listing/set";
 import type { SortField } from "@sincpro/web-ui/components/listing/SortMenu";
+import type { ViewIcon } from "@sincpro/web-ui/components/listing/ViewSwitcher";
 import type { RecordTimelineProps } from "@sincpro/web-ui/components/timeline/RecordTimeline";
 import type { GroupableField } from "@sincpro/web-ui/foundations/grouping";
-import type { Grouping, GroupLevel } from "@sincpro/web-ui/foundations/grouping";
+import type { Grouping, GroupLevel, Pile } from "@sincpro/web-ui/foundations/grouping";
 import type { Pivot, PivotKey, PivotSpec } from "@sincpro/web-ui/foundations/pivot";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
 import type { DataColumn, DataTableCreate } from "@sincpro/web-ui/primitives/table/DataTable";
@@ -38,6 +39,47 @@ export type RowOf = {
   /** What this resource produced, hanging underneath. */
   children?: ReactNode;
   actions?: ReactNode;
+};
+
+/**
+ * The set as a presentation receives it — what a `List.Present` draws from.
+ *
+ * Context: the built-in presentations do not each sort, group and wire selection on their
+ * own; the list does it once and hands them the result. A presentation the application
+ * writes gets the same hand-off, so a map or a gallery is one more way of looking at the
+ * SAME set: the bar's sort, the search's grouping, the selection and the rule of what a
+ * press on a record does all hold, and switching to it and back loses none of them.
+ */
+export type ListSet<T> = {
+  /** In the order the bar asks for. The page, when the list pages. */
+  items: readonly T[];
+  keyOf: (item: T) => string;
+  /** Grouped: the piles, outermost level first, each with its sub-piles or its items.
+   *  `null` when the list is not grouped — draw `items`. */
+  piles: readonly Pile<T>[] | null;
+  /** Whether a pile is open, with the same keys every presentation folds by. */
+  isOpen: (pile: Pile<T>) => boolean;
+  /** Folds or unfolds a pile — present when the list lets it. */
+  toggle?: (pile: Pile<T>) => void;
+  selection?: { has: (id: string) => boolean; toggle: (id: string) => void };
+  /** What a press on a record does in THIS list: choose it, look at it or open it, as the
+   *  list decided (`onChoose`, `rowClick`). Call this from the body of a card or a marker. */
+  press?: (item: T) => void;
+  /** The two ways in, for a presentation that offers both buttons (👁 and ↗). Absent while
+   *  the list is choosing. */
+  peek?: (item: T) => void;
+  open?: (item: T) => void;
+};
+
+/** A presentation the application writes, as the list receives it from `List.Present`. */
+export type ListFace<T> = {
+  id: string;
+  /** Its name in the switcher — the `title` and the accessible name of its button. */
+  label: string;
+  icon: ViewIcon;
+  /** It needs width (a grid of columns): a narrow list does not offer it. */
+  wide?: boolean;
+  render: (set: ListSet<T>) => ReactNode;
 };
 
 /** A crumb of the list: where I came from. */
@@ -281,6 +323,8 @@ export type ListViewProps<T extends object> = {
    * elegirlo acá sería adivinar la pregunta.
    */
   pivot?: ListPivot<T>;
+  /** The presentations the application wrote (`List.Present`), by id. */
+  faces?: readonly ListFace<T>[];
   present?: ListPresent;
   /** Which presentations this list offers. Two or more draw the switcher. */
   presents?: readonly ListPresent[];

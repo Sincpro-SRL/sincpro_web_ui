@@ -13,13 +13,16 @@ import { ListingBar } from "@sincpro/web-ui/components/listing/ListingBar";
 import { PivotExplorer } from "@sincpro/web-ui/components/listing/PivotExplorer";
 import { RecordCard } from "@sincpro/web-ui/components/listing/RecordCard";
 import { GroupHeader, Row, RowHeader } from "@sincpro/web-ui/components/listing/Row";
-import type { ListPresent } from "@sincpro/web-ui/components/listing/set";
+import type { BuiltInPresent } from "@sincpro/web-ui/components/listing/set";
 import {
   type SortField,
   sortItems,
   SortMenu,
 } from "@sincpro/web-ui/components/listing/SortMenu";
-import { ViewSwitcher } from "@sincpro/web-ui/components/listing/ViewSwitcher";
+import {
+  type ViewOption,
+  ViewSwitcher,
+} from "@sincpro/web-ui/components/listing/ViewSwitcher";
 import { Breadcrumb } from "@sincpro/web-ui/components/record/Breadcrumb";
 import { RecordTimeline } from "@sincpro/web-ui/components/timeline/RecordTimeline";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
@@ -35,7 +38,7 @@ import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { Empty, Failed, Skeleton } from "@sincpro/web-ui/primitives/notice/Notice";
 import { PivotTable } from "@sincpro/web-ui/primitives/table/PivotTable";
 import { ReportTable } from "@sincpro/web-ui/primitives/table/ReportTable";
-import { groupedColumnIds } from "@sincpro/web-ui/views/list/columns";
+import { groupedColumnIds, WIDE_PRESENTS } from "@sincpro/web-ui/views/list/columns";
 import {
   groupLevelsOf,
   reportColumnsOf,
@@ -88,7 +91,7 @@ import { Fragment, type ReactNode, useCallback, useMemo } from "react";
  * missing something.
  */
 
-const PRESENT_ICONS: readonly { id: ListPresent; icon: LucideIcon }[] = [
+const PRESENT_ICONS: readonly { id: BuiltInPresent; icon: LucideIcon }[] = [
   { id: "rows", icon: List },
   { id: "table", icon: Table2 },
   { id: "board", icon: LayoutGrid },
@@ -128,6 +131,7 @@ export function ListView<T extends object>({
   sheet,
   report,
   pivot,
+  faces,
   present: requested = "rows",
   presents,
   onPresentChange,
@@ -148,7 +152,15 @@ export function ListView<T extends object>({
   empty,
   children,
 }: ListViewProps<T>) {
-  const { frame, offered, present } = useNarrowList(presents, requested);
+  const wide = useMemo(
+    () => [
+      ...WIDE_PRESENTS,
+      ...(faces ?? []).filter((f) => f.wide === true).map((f) => f.id),
+    ],
+    [faces],
+  );
+  const { frame, offered, present } = useNarrowList(presents, requested, wide);
+  const face = faces?.find((one) => one.id === present);
   /* Embedded, the list sits on the record's paper: there is no dark band to inherit, and a
      navy switcher inside a white sheet would be a second chrome on the screen. */
   const surface = embedded ? undefined : requestedSurface;
@@ -184,21 +196,22 @@ export function ListView<T extends object>({
 
   const groupLevels = useMemo(() => groupLevelsOf(group, columns), [group, columns]);
 
+  /* In the order the tree wrote them — the application's own among the package's. */
+  const options = offered.flatMap((id): ViewOption[] => {
+    const own = faces?.find((one) => one.id === id);
+    if (own !== undefined) return [{ id, label: own.label, icon: own.icon }];
+    const builtIn = PRESENT_ICONS.find((option) => option.id === id);
+    return builtIn === undefined
+      ? []
+      : [{ id, label: copy.present[builtIn.id], icon: builtIn.icon }];
+  });
   const switcher =
     views ??
-    (offered.length > 1 ? (
+    (options.length > 1 ? (
       <ViewSwitcher
-        options={PRESENT_ICONS.filter((option) => offered.includes(option.id)).map(
-          (option) => ({
-            id: option.id,
-            label: copy.present[option.id],
-            icon: option.icon,
-          }),
-        )}
+        options={options}
         current={present}
-        {...(onPresentChange === undefined
-          ? {}
-          : { onSelect: (id: string) => onPresentChange(id as ListPresent) })}
+        {...(onPresentChange === undefined ? {} : { onSelect: onPresentChange })}
         {...(surface === undefined ? {} : { surface })}
       />
     ) : undefined);
@@ -454,7 +467,23 @@ export function ListView<T extends object>({
   };
 
   const body =
-    present === "table" && shownColumns !== undefined ? (
+    face !== undefined ? (
+      face.render({
+        items: ordered,
+        keyOf,
+        piles,
+        isOpen,
+        ...(group?.onToggle === undefined
+          ? {}
+          : { toggle: (pile: Pile<T>) => group.onToggle?.(pathKey(pile.path)) }),
+        ...(selection === undefined
+          ? {}
+          : { selection: { has: selection.has, toggle: selection.toggle } }),
+        ...(press === undefined ? {} : { press }),
+        ...(onPeek === undefined || choosing ? {} : { peek: onPeek }),
+        ...(onOpen === undefined || choosing ? {} : { open: onOpen }),
+      })
+    ) : present === "table" && shownColumns !== undefined ? (
       /* The table receives EVERYTHING that belongs to the set: see `TablePresentation`. */
       <TablePresentation
         items={items}

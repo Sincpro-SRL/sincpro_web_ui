@@ -21,6 +21,7 @@ import { type RefObject, useLayoutEffect, useRef, useState } from "react";
 export function useNarrowList(
   presents: readonly ListPresent[] | undefined,
   requested: ListPresent,
+  wide: readonly ListPresent[] = WIDE_PRESENTS,
 ): {
   frame: RefObject<HTMLDivElement | null>;
   offered: readonly ListPresent[];
@@ -39,7 +40,7 @@ export function useNarrowList(
     watch.observe(el);
     return () => watch.disconnect();
   }, []);
-  return { frame, ...narrowed(presents, requested, narrow) };
+  return { frame, ...narrowed(presents, requested, narrow, wide) };
 }
 
 /** What a list offers and draws at its width. Only a list that HAS rows folds into them: one
@@ -49,10 +50,11 @@ export function narrowed(
   presents: readonly ListPresent[] | undefined,
   requested: ListPresent,
   narrow: boolean,
+  wide: readonly ListPresent[] = WIDE_PRESENTS,
 ): { offered: readonly ListPresent[]; present: ListPresent } {
   const folds = narrow && (presents === undefined || presents.includes("rows"));
   return {
-    offered: (presents ?? []).filter((p) => !folds || !WIDE_PRESENTS.includes(p)),
-    present: folds && WIDE_PRESENTS.includes(requested) ? "rows" : requested,
+    offered: (presents ?? []).filter((p) => !folds || !wide.includes(p)),
+    present: folds && wide.includes(requested) ? "rows" : requested,
   };
 }

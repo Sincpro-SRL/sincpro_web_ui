@@ -3,7 +3,7 @@
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
-import type { LucideIcon } from "lucide-react";
+import type { ComponentType } from "react";
 
 /** How the same list is shown: table, board, timeline.
  *
@@ -18,8 +18,11 @@ import type { LucideIcon } from "lucide-react";
 export interface ViewOption {
   id: string;
   label: string;
-  icon: LucideIcon;
+  /** Any icon component — lucide's are what the package uses, not what it requires. */
+  icon: ViewIcon;
 }
+
+export type ViewIcon = ComponentType<{ className?: string; strokeWidth?: number }>;
 
 export function ViewSwitcher({
   options,

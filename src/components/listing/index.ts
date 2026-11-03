@@ -42,6 +42,7 @@ export {
   useTreeControl,
 } from "@sincpro/web-ui/components/listing/tree";
 export {
+  type ViewIcon,
   type ViewOption,
   ViewSwitcher,
 } from "@sincpro/web-ui/components/listing/ViewSwitcher";
