@@ -1,6 +1,7 @@
 "use client";
 
 import { Thumb } from "@sincpro/web-ui/primitives/cell/CellStack";
+import { Avatar } from "@sincpro/web-ui/primitives/value/Avatar";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -32,7 +33,10 @@ export function RecordCard({
   tags?: ReactNode;
   meta?: ReactNode;
   figure?: ReactNode;
-  media?: { src?: string; alt?: string; icon?: LucideIcon };
+  /** The picture of the record. A product's is a square (`Thumb`); a PERSON's is round, with
+   *  the initials when there is no photo — `person`, like `RelationCard`'s. `alt` names the
+   *  person when the title is not plain text. */
+  media?: { src?: string; alt?: string; icon?: LucideIcon; person?: true };
   /** The card's last line, its controls: priority, kanban state, next activity, the owner's
    *  avatar — each its own button, pressable without opening the card. */
   footer?: ReactNode;
@@ -51,7 +55,16 @@ export function RecordCard({
           : "transition-colors duration-(--duration-instant) focus-within:border-line-strong hover:border-line-strong"
       }`}
     >
-      {media === undefined ? null : (
+      {media === undefined ? null : media.person === true ? (
+        /* The name is written right below it: the photo's `alt` would say it twice. */
+        <span aria-hidden className="flex shrink-0">
+          <Avatar
+            name={media.alt ?? (typeof title === "string" ? title : "")}
+            size="xl"
+            {...(media.src === undefined ? {} : { src: media.src })}
+          />
+        </span>
+      ) : (
         <Thumb
           size="lg"
           {...(media.src === undefined ? {} : { src: media.src })}

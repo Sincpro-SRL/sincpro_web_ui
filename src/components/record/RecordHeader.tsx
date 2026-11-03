@@ -185,13 +185,15 @@ export function RecordHeader({
      shadow. It exists on the PAGE, where the chrome rail is a real band
      (crumbs, pager, actions). A drawer is compact so `withRail` is already
      false. A dialog is comfortable but has no crumbs or actions — and it IS
-     already a card. Status alone is not a page. */
+     already a card. Status alone is not a page.
+
+     And `dirty` does not decide it. Whether the record sits on paper is a fact of WHERE it
+     is mounted, and that does not change while someone types; `dirty` does, with the first
+     letter. Deciding by it swapped the whole tree under the paper at that letter — the field
+     being written was unmounted and lost the focus. Save and Discard still appear: in the
+     rail, which is a sibling and moves nothing. */
   const paper =
-    withRail &&
-    (crumbs !== undefined ||
-      pager !== undefined ||
-      actions !== undefined ||
-      dirty !== undefined);
+    withRail && (crumbs !== undefined || pager !== undefined || actions !== undefined);
 
   /* ONE column for the rail and the page: the rail used to span the screen while the sheet
      stopped at 72rem, so on a wide desk the buttons sat 250 px left of the paper they act on

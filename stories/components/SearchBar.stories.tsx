@@ -291,7 +291,7 @@ export const MuchosRecortes: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     /* With chips set the placeholder is gone, and the input keeps its name anyway. */
-    await expect(canvas.getAllByRole("textbox", { name: "Buscar" })).toHaveLength(2);
+    await expect(canvas.getAllByRole("combobox", { name: "Buscar" })).toHaveLength(2);
     /* The panel button says what it opens and how many are set — not a bare «8». */
     const count = String(muchos().length);
     const panels = canvas.getAllByRole("button", {
@@ -517,16 +517,25 @@ export const BusquedaLiteral: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const box = canvas.getByRole("textbox");
+    const box = canvas.getByRole("combobox", { name: "Buscar" });
     // Plain text: the literal search is offered first, and Enter takes it.
     await userEvent.type(box, "andina");
-    await expect(canvas.getAllByRole("button", { name: /^Buscar/ })[0]).toHaveTextContent(
-      /Buscar.*andina/,
+    /* The suggestions are the input's listbox, and the active one is the option it points at
+       — what a screen reader announces while the arrows move (ARIA combobox). */
+    await expect(box).toHaveAttribute("aria-expanded", "true");
+    const options = within(canvas.getByRole("listbox", { name: "Sugerencias" })).getAllByRole(
+      "option",
     );
+    await expect(options[0]).toHaveTextContent(/Buscar.*andina/);
+    await expect(box).toHaveAttribute("aria-activedescendant", options[0]!.id);
+    await userEvent.keyboard("{ArrowDown}");
+    await expect(box).toHaveAttribute("aria-activedescendant", options[1]!.id);
+    await expect(options[1]).toHaveAttribute("aria-selected", "true");
+    await userEvent.keyboard("{ArrowUp}");
     await userEvent.keyboard("{Enter}");
     await expect(await canvas.findByText(/Buscar «andina»/)).toBeVisible();
     // A chip is set and the placeholder is gone: the input is still named.
-    await expect(canvas.getByRole("textbox", { name: "Buscar" })).toHaveAttribute(
+    await expect(canvas.getByRole("combobox", { name: "Buscar" })).toHaveAttribute(
       "placeholder",
       "",
     );

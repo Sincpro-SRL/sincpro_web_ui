@@ -7,44 +7,50 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 
 ## 1. Un registro
 
-| Necesidad                                            | Estado   | Pieza / dueño                                      |
-| ---------------------------------------------------- | -------- | -------------------------------------------------- |
-| Identidad, riel, migas, paginador, acciones, etapas  | ✅       | `Record`, `Record.Rail`, `StatusBar`               |
-| Barra y hoja en una sola columna; ancho completo     | ✅ 10-31 | `Record.Paper width`                               |
-| Jerarquía: título › grupo › etiqueta › valor         | ✅ 10-31 | `SheetGroup` (título con regla), `HEADER_TEXT`     |
-| Lo que el registro ES (pagada, archivada, cancelada) | ✅ 10-31 | `Record.Ribbon`                                    |
-| Quién lo creó y quién lo tocó por última vez         | ✅ 10-31 | `Record.Audit`                                     |
-| Avisos, notas de campo, actividad, historia          | ✅       | `Record.Notice`, `note`, `Record.Activity`         |
-| Abrir un registro desde otro (sub-contexto)          | ✅       | composer (modal, vista previa, al costado, página) |
-| Prioridad (estrellas)                                | ✅ 10-31 | `Priority`                                         |
-| Estado kanban (semáforo) editable                    | ✅ 10-31 | `KanbanState`                                      |
-| Próxima actividad en la tarjeta (reloj por urgencia) | ✅ 10-31 | `ActivityBadge`                                    |
-| Campo de texto enriquecido (html)                    | ❌       | web-ui (necesita decidir editor: Tiptap/Lexical)   |
-| Adjuntos del registro (lista, vista previa, bajar)   | 🟡       | `DropZone` sube; falta `Attachments` que liste     |
-| Imagen / avatar editable                             | 🟡       | `Thumb`, `Avatar` muestran; falta subir y recortar |
-| Firma                                                | ❌       | web-ui, baja prioridad                             |
+| Necesidad                                            | Estado   | Pieza / dueño                                                  |
+| ---------------------------------------------------- | -------- | -------------------------------------------------------------- |
+| Identidad, riel, migas, paginador, acciones, etapas  | ✅       | `Record`, `Record.Rail`, `StatusBar`                           |
+| Barra y hoja en una sola columna; ancho completo     | ✅ 10-31 | `Record.Paper width`                                           |
+| Jerarquía: título › grupo › etiqueta › valor         | ✅ 10-31 | `SheetGroup` (título con regla), `HEADER_TEXT`                 |
+| Lo que el registro ES (pagada, archivada, cancelada) | ✅ 10-31 | `Record.Ribbon`                                                |
+| Editar sin `Record.Actions` no pierde el foco        | ✅ 11-03 | `RecordHeader`: `dirty` ya no decide el papel                  |
+| Un hecho largo (un email) no pisa al de al lado      | ✅ 11-03 | `Sheet` (`wrap-anywhere`); la densidad la da `DensityProvider` |
+| Quién lo creó y quién lo tocó por última vez         | ✅ 10-31 | `Record.Audit`                                                 |
+| Avisos, notas de campo, actividad, historia          | ✅       | `Record.Notice`, `note`, `Record.Activity`                     |
+| Abrir un registro desde otro (sub-contexto)          | ✅       | composer (modal, vista previa, al costado, página)             |
+| Prioridad (estrellas)                                | ✅ 10-31 | `Priority`                                                     |
+| Estado kanban (semáforo) editable                    | ✅ 10-31 | `KanbanState`                                                  |
+| Próxima actividad en la tarjeta (reloj por urgencia) | ✅ 10-31 | `ActivityBadge`                                                |
+| Campo de texto enriquecido (html)                    | ❌       | web-ui (necesita decidir editor: Tiptap/Lexical)               |
+| Adjuntos del registro (lista, vista previa, bajar)   | 🟡       | `DropZone` sube; falta `Attachments` que liste                 |
+| Imagen / avatar editable                             | 🟡       | `Thumb`, `Avatar` muestran; falta subir y recortar             |
+| Firma                                                | ❌       | web-ui, baja prioridad                                         |
 
 ## 2. Una colección de registros
 
-| Necesidad                                                                         | Estado   | Pieza / dueño                                              |
-| --------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------- |
-| Filas, tabla, tablero, planilla, informe, pivote                                  | ✅       | `List.*`                                                   |
-| Solo lectura vs. abrible; vista previa 👁 y abrir ↗                                | ✅ 10-31 | `List readOnly`, `onPeek`, `onOpen`                        |
-| Encabezado de filas alineado al píxel                                             | ✅ 10-31 | `List.Rows header`                                         |
-| Lista embebida con título cuando está suelta                                      | ✅ 10-31 | `List.Identity` en `embedded`                              |
-| Tablero POR ETAPAS con arrastrar entre columnas                                   | ✅ 10-31 | `List.Board stages` (`BoardColumns`), Alt + ← / →          |
-| Reordenar filas arrastrando (secuencia)                                           | ✅ 10-31 | `EditableTable` / `LineItems` `onReorder`                  |
-| Elegir «los 187 que coinciden», no solo la página                                 | ✅ 10-31 | `selection.matching`                                       |
-| Vista calendario de registros                                                     | ✅ 10-31 | `List.Calendar` (`RecordCalendar`, FullCalendar v7)        |
-| Gantt de proyecto (tareas, dependencias, avance)                                  | ✅ 10-31 | `List.Gantt` (`RecordGantt`, SVAR)                         |
-| Planificación agrupada (el «Gantt» de Odoo)                                       | ✅ 10-31 | `List.Timeline` (`RecordTimeline`), `TimelineToolbar`      |
-| Kanban: crear rápido, total, barra de actividades, plegar, agregar etapa          | ✅ 10-31 | `List.Board stages`                                        |
-| Calendario por recurso, planificación automática, ruta crítica                    | 💲       | licencia: FullCalendar scheduler / SVAR PRO                |
-| Exportar lo que se ve (xlsx)                                                      | ✅       | `foundations/xlsx`                                         |
-| Una presentación propia (mapa, galería, plano) con el mismo conjunto              | ✅ 11-03 | `List.Present` (`ListSet`: orden, montones, selección)     |
-| Una operación sobre N registros elegidos (el «wizard» de Odoo)                    | ✅ 11-03 | `5 · Plantillas/Operación`: `Record` en modal + `api.pick` |
-| Una operación en VARIOS pasos de una sentada (importar: subir › mapear › revisar) | ❌       | web-ui: falta la pieza; `Steps` es para trabajo de días    |
-| Miles de filas en la tabla: dibuja sólo las que se ven (desde 200)                | ✅ 11-03 | `DataTable` (`primitives/table/rowWindow`)                 |
+| Necesidad                                                                         | Estado   | Pieza / dueño                                                                |
+| --------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------- |
+| Filas, tabla, tablero, planilla, informe, pivote                                  | ✅       | `List.*`                                                                     |
+| Solo lectura vs. abrible; vista previa 👁 y abrir ↗                                | ✅ 10-31 | `List readOnly`, `onPeek`, `onOpen`                                          |
+| Encabezado de filas alineado al píxel                                             | ✅ 10-31 | `List.Rows header`                                                           |
+| Lista embebida con título cuando está suelta                                      | ✅ 10-31 | `List.Identity` en `embedded`                                                |
+| Tablero POR ETAPAS con arrastrar entre columnas                                   | ✅ 10-31 | `List.Board stages` (`BoardColumns`), Alt + ← / →                            |
+| Reordenar filas arrastrando (secuencia)                                           | ✅ 10-31 | `EditableTable` / `LineItems` `onReorder`                                    |
+| Elegir «los 187 que coinciden», no solo la página                                 | ✅ 10-31 | `selection.matching`                                                         |
+| Vista calendario de registros                                                     | ✅ 10-31 | `List.Calendar` (`RecordCalendar`, FullCalendar v7)                          |
+| Gantt de proyecto (tareas, dependencias, avance)                                  | ✅ 10-31 | `List.Gantt` (`RecordGantt`, SVAR)                                           |
+| Planificación agrupada (el «Gantt» de Odoo)                                       | ✅ 10-31 | `List.Timeline` (`RecordTimeline`), `TimelineToolbar`                        |
+| Kanban: crear rápido, total, barra de actividades, plegar, agregar etapa          | ✅ 10-31 | `List.Board stages`                                                          |
+| Calendario por recurso, planificación automática, ruta crítica                    | 💲       | licencia: FullCalendar scheduler / SVAR PRO                                  |
+| Exportar lo que se ve (xlsx)                                                      | ✅       | `foundations/xlsx`                                                           |
+| Una presentación propia (mapa, galería, plano) con el mismo conjunto              | ✅ 11-03 | `List.Present` (`ListSet`: orden, montones, selección)                       |
+| Una operación sobre N registros elegidos (el «wizard» de Odoo)                    | ✅ 11-03 | `5 · Plantillas/Operación`: `Record` en modal + `api.pick`                   |
+| Una operación en VARIOS pasos de una sentada (importar: subir › mapear › revisar) | ❌       | web-ui: falta la pieza; `Steps` es para trabajo de días                      |
+| Miles de filas en la tabla: dibuja sólo las que se ven (desde 200)                | ✅ 11-03 | `DataTable` (`primitives/table/rowWindow`)                                   |
+| La tabla dibuja los montones que contó el servidor, con «Ver N más»               | ✅ 11-03 | `DataTable piles`, `Grouping.onMore` (filas, tablero, tabla, `ListSet.more`) |
+| Volver a preguntar sin que las filas desaparezcan                                 | ✅ 11-03 | `List state.refreshing`: las filas quedan, una barra discreta y `aria-busy`  |
+| La tarjeta de una persona dibuja su cara                                          | ✅ 11-03 | `RecordCard media.person`, como `RelationCard`                               |
+| Varios conjuntos a la vez (la conciliación), cada uno con su búsqueda             | ✅ 11-03 | `Panes` / `Pane`; `5 · Plantillas/Conciliación`                              |
 
 ## 3. Elegir y buscar
 
@@ -68,6 +74,7 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 | Búsqueda literal en la barra («Buscar «X»» sobre todo el conjunto, con Enter)     | ✅ 10-31 | `SearchBar literal`: primero, salvo que el modelo lea lo escrito como pregunta  |
 | Un monto (`decimal`, `monetary`) se pregunta como número                          | ✅ 10-31 | `kindOf` lo leía como texto: «total <= 1000» no se podía pedir                  |
 | La barra con fichas puestas: el campo y el botón del panel conservan su nombre    | ✅ 11-03 | `SearchBar`: «Buscar» y «Filtrar, agrupar y favoritos, N puestos»               |
+| Las sugerencias de la barra son opciones (combobox de ARIA)                       | ✅ 11-03 | `SearchBar`: `listbox` / `option`, `aria-activedescendant`                      |
 | Las palabras de la aplicación con el mismo mecanismo que las del paquete          | ✅ 11-03 | `createCopy`; un `Provider` cambia su rama y nunca la copia instalada           |
 
 ## 4. Dónde se abre (espacio de trabajo)

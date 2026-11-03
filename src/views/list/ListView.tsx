@@ -43,6 +43,7 @@ import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { Empty, Failed, Skeleton } from "@sincpro/web-ui/primitives/notice/Notice";
 import { PivotTable } from "@sincpro/web-ui/primitives/table/PivotTable";
 import { ReportTable } from "@sincpro/web-ui/primitives/table/ReportTable";
+import { ProgressBar } from "@sincpro/web-ui/primitives/value/ProgressBar";
 import { groupedColumnIds, WIDE_PRESENTS } from "@sincpro/web-ui/views/list/columns";
 import {
   groupLevelsOf,
@@ -173,6 +174,7 @@ export function ListView<T extends object>({
   const density = useDensity();
   const copy = useUiCopy();
   const loading = state?.loading === true;
+  const refreshing = state?.refreshing === true && !loading;
   const error = state?.error ?? null;
 
   const columnSpecs = useMemo(() => specsFromColumns(columns ?? [], false), [columns]);
@@ -640,7 +642,11 @@ export function ListView<T extends object>({
     /* The list is its own container (`@container`: the presentations adapt to the width
        the LIST has, not the window) and fills the space it is given. Before, every page
        wrapped it in a `div` to get both. */
-    <div ref={frame} className="@container flex min-w-0 flex-1 flex-col bg-surface">
+    <div
+      ref={frame}
+      aria-busy={refreshing || loading}
+      className="@container flex min-w-0 flex-1 flex-col bg-surface"
+    >
       <Listing
         bar={bar}
         /* La barra se queda arriba: con 187 filas, scrollear para ver la última
@@ -679,7 +685,17 @@ export function ListView<T extends object>({
           )
         ) : null}
 
-        {loading || isEmpty ? null : body}
+        {/* ALWAYS wrapped, refreshing or not: a wrapper that came and went with the state
+            would remount the body on every question — the rows, an open editor, the focus. */}
+        <div className="relative min-w-0">
+          {refreshing ? (
+            /* Over the top edge of the rows, not above them: the rows do not move. */
+            <div className="pointer-events-none absolute inset-x-0 top-0 z-20">
+              <ProgressBar label={copy.list.refreshing} width="w-full" />
+            </div>
+          ) : null}
+          {loading || isEmpty ? null : body}
+        </div>
       </Listing>
 
       {error === null ? null : (
