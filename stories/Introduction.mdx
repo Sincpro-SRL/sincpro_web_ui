@@ -59,6 +59,15 @@ import { Field, List, Record, TextInput } from "@sincpro/web-ui";
 Cada nivel es también su propia entrada: `@sincpro/web-ui/primitives`,
 `@sincpro/web-ui/components`, `@sincpro/web-ui/views`.
 
+## Dónde está cada cosa
+
+Cuatro niveles —fundamentos, primitivas, componentes, vistas— y, dentro de las primitivas, tres
+tiers: lo que **muestra** (`Button`, `Tag`, `Avatar`, `Notice`), lo que **pregunta** (`Field`,
+`TextInput`, `DatePicker`, `Picker`, `TagsField`) y lo que **muestra muchos** (`Table`,
+`DataTable`, `Tree`). Para armar algo propio se empieza por los que muestran. Un control propio
+se conecta a su `Field` con `useFieldIds` y `useFormMode`, igual que los del paquete. El mapa
+completo y la regla de qué puede depender de qué están en `docs/ARCHITECTURE.md`.
+
 ## Las reglas que el build hace cumplir
 
 - **Tokens o nada.** Sin valores arbitrarios, sin hex, sin `px` crudos, sin la paleta cruda
@@ -67,5 +76,6 @@ Cada nivel es también su propia entrada: `@sincpro/web-ui/primitives`,
   recalcula.
 - **Los niveles no se saltean.** Una primitiva nunca importa un componente; un componente
   nunca importa una vista.
-- **Accesible por defecto.** Las pruebas de accesibilidad de Storybook fallan como error, y
-  cada historia se abre en un navegador real antes de publicar (`make smoke`).
+- **Accesible por defecto.** Cada historia se abre en un navegador real antes de publicar
+  (`make smoke`) y pasa por axe. Hoy axe reporta sin fallar (`a11y: "todo"`) mientras se
+  corrige lo que encontró en la migración; vuelve a ser error cuando la lista esté vacía.

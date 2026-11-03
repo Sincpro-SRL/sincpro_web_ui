@@ -11,12 +11,12 @@ import {
 } from "@sincpro/web-ui/components/listing/columns";
 import { ColumnsMenu } from "@sincpro/web-ui/components/listing/ColumnsMenu";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { FieldIdsContext } from "@sincpro/web-ui/foundations/form";
+import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { Button, IconButton } from "@sincpro/web-ui/primitives/button/Button";
 import { SearchField } from "@sincpro/web-ui/primitives/choice/SearchField";
 import { Dialog, type DialogContext } from "@sincpro/web-ui/primitives/dialog/Dialog";
-import { FieldIdsContext } from "@sincpro/web-ui/primitives/field/context";
 import { TextInput } from "@sincpro/web-ui/primitives/field/Field";
-import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
 import type { FlagTone } from "@sincpro/web-ui/primitives/notice/Flag";
 import { Empty } from "@sincpro/web-ui/primitives/notice/Notice";
 import { useToast } from "@sincpro/web-ui/primitives/notice/Toast";

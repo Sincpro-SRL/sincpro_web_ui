@@ -1,7 +1,7 @@
 "use client";
 
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import { shownText } from "@sincpro/web-ui/primitives/field/copy";
+import { shownText } from "@sincpro/web-ui/primitives/field/clipboard";
 import { CopyButton } from "@sincpro/web-ui/primitives/value/Copyable";
 import { type ReactNode, useRef } from "react";
 

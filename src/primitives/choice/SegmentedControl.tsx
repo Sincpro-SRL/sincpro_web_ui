@@ -1,10 +1,10 @@
 "use client";
 
+import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { tv } from "@sincpro/web-ui/foundations/variants";
 import { labelOf, type SegmentOption } from "@sincpro/web-ui/primitives/choice/options";
-import { useFieldIds } from "@sincpro/web-ui/primitives/field/context";
 import { ReadValue } from "@sincpro/web-ui/primitives/field/Field";
-import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
 import { ToggleButton, ToggleButtonGroup } from "react-aria-components";
 
 /**

@@ -1,7 +1,3 @@
-import type {
-  BuiltCondition,
-  BuiltFilter,
-} from "@sincpro/web-ui/components/search/FilterBuilder";
 import type { GroupGrain, GroupLevel } from "@sincpro/web-ui/foundations/grouping";
 
 /* ==================================================================== *
@@ -39,6 +35,24 @@ import type { GroupGrain, GroupLevel } from "@sincpro/web-ui/foundations/groupin
  *  nombre puesto porque alguien la pensó antes y la otra se describe sola. No
  *  hay dos mecanismos: hay uno, con o sin nombre.
  * ==================================================================== */
+
+/* The shapes of a filter are the MODEL's: the builder draws them, the bar stores them, the
+   engine reads them. They lived in `FilterBuilder` and the model imported them from the
+   interface — a cycle, and the dependency pointing the wrong way. */
+
+/** Una condición, tal como la declara el motor. `operator` sale del `ops` del campo, así que
+ *  lo que el constructor ofrece es exactamente lo que el modelo acepta. */
+export interface BuiltCondition {
+  field: string;
+  operator: string;
+  value: unknown;
+}
+
+/** Lo que el filtro puede ser en su forma real: una condición, un grupo `all`/`any` de más
+ *  filtros —lo que el árbol arma, a cualquier profundidad—, o un `negate` que llegó de otro
+ *  lado y que el árbol no fabrica, pero que este componente sabe mostrar y editar como JSON. */
+export type BuiltFilter =
+  BuiltCondition | { all: BuiltFilter[] } | { any: BuiltFilter[] } | { negate: BuiltFilter };
 
 /** Cómo se juntan las instancias de un nodo. `not` niega lo que tiene adentro. */
 export type CriteriaJoin = "all" | "any" | "not";

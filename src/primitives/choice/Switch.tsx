@@ -1,8 +1,8 @@
 "use client";
 
+import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { tv } from "@sincpro/web-ui/foundations/variants";
-import { useFieldIds } from "@sincpro/web-ui/primitives/field/context";
-import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
 import { Check, Minus } from "lucide-react";
 import { type ReactNode, useId } from "react";
 import { Switch as AriaSwitch } from "react-aria-components";

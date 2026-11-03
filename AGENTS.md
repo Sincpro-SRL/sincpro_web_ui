@@ -10,6 +10,10 @@ idea; this file is how to keep it.
   the component that applies it and the check that enforces it. A screen that breaks one of
   them is a bug, not a matter of taste.
 
+- Read [`docs/ARCHITECTURE.md`](./docs/ARCHITECTURE.md): where each piece goes and what it may
+  depend on — the four levels, the three tiers inside the primitives, and the plan of the
+  refactor in progress.
+
 - Read `stories/Estilo.mdx` («Nuestro estilo»): how things OPEN — a row goes to the page, 👁 to
   the peek, a many2one to a modal by default with «Abrir en…» for the rest, never a modal over a
   modal, choosers are `List onChoose`. Inside the composer workspace every modal is a composer
@@ -53,6 +57,14 @@ idea; this file is how to keep it.
   string is added to `ENGLISH_COPY` and `SPANISH_COPY` together.
 - **Levels do not climb.** Foundations import nothing above them; a primitive never imports a
   component or a view; a component never imports a view (`make doctor`).
+- **Tiers do not climb either.** Inside the primitives, `display` (what shows) never imports
+  `input` (what asks), and `input` never imports `collection` (what shows many). A new family
+  is placed in `TIER_OF` on purpose (`tests/architecture.test.ts`).
+- **No cycles, not even of types.** The shared shape goes down to the lower module — the model,
+  not the interface (`tests/architecture.test.ts`).
+- **A control speaks the contract in `foundations/form`** (`useFieldIds`, `useFormMode`), not
+  `Field`'s family: a value that reads differently in read mode, and an application's own
+  control, connect the same way.
 - **Client boundary.** A module with hooks, context, event handlers or `document`/`window`
   starts with `"use client";` (`tests/clientBoundary.test.ts`). Pure logic stays without it.
 - **Public means exported from its family `index.ts`.** The level barrel re-exports the

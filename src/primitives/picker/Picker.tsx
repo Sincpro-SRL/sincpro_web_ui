@@ -2,14 +2,14 @@
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { matchedWord, matches } from "@sincpro/web-ui/foundations/match";
 import type { OpenTarget } from "@sincpro/web-ui/foundations/types";
 import { cn, tv } from "@sincpro/web-ui/foundations/variants";
 import { IconButton } from "@sincpro/web-ui/primitives/button/Button";
 import { FieldButton, FieldGroup } from "@sincpro/web-ui/primitives/field/aria";
-import { useFieldIds } from "@sincpro/web-ui/primitives/field/context";
 import { ReadValue } from "@sincpro/web-ui/primitives/field/Field";
-import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
 import { Menu } from "@sincpro/web-ui/primitives/menu/Menu";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
 import { MatchedText } from "@sincpro/web-ui/primitives/picker/MatchedText";

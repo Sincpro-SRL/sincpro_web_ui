@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 
 import { Checkbox, CheckList } from "@sincpro/web-ui";
-import { FormModeProvider } from "@sincpro/web-ui/primitives/field/mode";
+import { FormModeProvider } from "@sincpro/web-ui/foundations/form";
 import { renderToStaticMarkup } from "react-dom/server";
 import { test } from "vitest";
 

@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 import { DEFAULT_PAGE_SIZE, PAGE_SIZES } from "@sincpro/web-ui/components/listing/pages";
 import { installCopy } from "@sincpro/web-ui/foundations/copy";
-import { formatDateTime } from "@sincpro/web-ui/primitives/value/Fecha";
+import { formatDateTime } from "@sincpro/web-ui/primitives/value/DateValue";
 import { test } from "vitest";
 
 test("exact date is numeric; locale chooses day/month order", () => {

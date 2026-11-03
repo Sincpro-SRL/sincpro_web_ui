@@ -17,6 +17,15 @@ export {
   DensityProvider,
   useDensity,
 } from "@sincpro/web-ui/foundations/density";
+/* EL CONTRATO DE UN CONTROL — los ids que le da su `Field` y si se mira o se escribe. Lo
+   hablan los controles del paquete y los de la aplicación por igual. */
+export {
+  type FieldIds,
+  type FormMode,
+  FormModeProvider,
+  useFieldIds,
+  useFormMode,
+} from "@sincpro/web-ui/foundations/form";
 /* EL TEMA — claro, oscuro o el del sistema operativo. Las paletas viven en `tokens.css`; esto
    sólo escribe `data-theme`. */
 export { bySurface, SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";

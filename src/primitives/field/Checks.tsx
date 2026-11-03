@@ -1,8 +1,8 @@
 "use client";
 
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import { useFieldIds } from "@sincpro/web-ui/primitives/field/context";
-import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
+import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { Check, Minus } from "lucide-react";
 import { useId } from "react";
 import {

@@ -1,5 +1,8 @@
 import { currentCopy, currentCopyLocale, fillCopy } from "@sincpro/web-ui/foundations/copy";
-import type { GroupGrain } from "@sincpro/web-ui/foundations/grouping";
+
+/** El grano de un nivel de fecha. Sin grano, un campo de fecha parte por
+ *  instante y cada fila termina en su propio montón, que es no agrupar. */
+export type GroupGrain = "day" | "week" | "month" | "quarter" | "year";
 
 /**
  * EL CALENDARIO: de una fecha a una CLAVE, y de una clave a un RÓTULO.
