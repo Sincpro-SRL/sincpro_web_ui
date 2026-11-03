@@ -122,7 +122,9 @@ test("un tramo repetido del eje vertical no se vuelve a escribir", () => {
       })}
     />,
   );
-  /* «La Paz» tiene dos trimestres y por lo tanto dos filas, y se escribe una
-     sola vez: la segunda deja el rótulo en blanco. */
-  assert.equal(html.split("La Paz").length - 1, 1);
+  /* «La Paz» tiene dos trimestres y por lo tanto dos filas, y se DIBUJA una sola
+     vez: en la segunda el rótulo sólo se dice (`sr-only`), para que un lector de
+     pantalla sepa en qué fila está cada cifra. */
+  assert.equal(html.split('<span class="relative">La Paz').length - 1, 1);
+  assert.equal(html.split('<span class="sr-only">La Paz').length - 1, 1);
 });

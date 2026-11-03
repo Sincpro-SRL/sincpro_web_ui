@@ -168,16 +168,23 @@ test("a blocked step turns «next» off and says why", () => {
 });
 
 test("«back» only from the second step on", () => {
+  /* In Spanish on purpose: this read the words a previous test's provider had left in
+     the global table — order-dependent, and gone now that a provider changes only its
+     branch. */
   const first = renderToStaticMarkup(
-    <Wizard steps={STEPS} current="proveedor" onBack={noop}>
-      x
-    </Wizard>,
+    <UiCopyProvider copy={SPANISH_COPY}>
+      <Wizard steps={STEPS} current="proveedor" onBack={noop}>
+        x
+      </Wizard>
+    </UiCopyProvider>,
   );
   assert.doesNotMatch(first, /Atrás/);
   const second = renderToStaticMarkup(
-    <Wizard steps={STEPS} current="revisar" onBack={noop}>
-      x
-    </Wizard>,
+    <UiCopyProvider copy={SPANISH_COPY}>
+      <Wizard steps={STEPS} current="revisar" onBack={noop}>
+        x
+      </Wizard>
+    </UiCopyProvider>,
   );
   assert.match(second, /Atrás/);
 });

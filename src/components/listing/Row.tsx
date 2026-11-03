@@ -495,7 +495,7 @@ export function GroupHeader({
         />
       )}
       {field === undefined ? null : (
-        <span className="shrink-0 text-micro text-muted/70">{field}</span>
+        <span className="shrink-0 text-micro text-muted">{field}</span>
       )}
       <span className="truncate text-micro font-medium text-ink">{label}</span>
       {count === undefined ? null : (
@@ -542,5 +542,36 @@ export function GroupHeader({
       {mark}
       {content}
     </button>
+  );
+}
+
+/** Under a pile that shows its first page: «Ver 38 más». Indented like the pile's rows. */
+export function GroupMore({
+  left,
+  depth = 0,
+  onMore,
+}: {
+  /** How many the pile counts that are not here yet. */
+  left: number;
+  depth?: number;
+  onMore: () => void;
+}) {
+  const d = useDensity();
+  const copy = useUiCopy();
+  return (
+    <div
+      className={`border-b border-line ${byDensity(d, "px-3 py-1", "px-2.5 py-0.5")}`}
+      style={
+        depth === 0 ? undefined : { paddingLeft: `calc(var(--spacing-indent) * ${depth})` }
+      }
+    >
+      <button
+        type="button"
+        onClick={onMore}
+        className="rounded-control text-meta text-primary transition-colors duration-(--duration-instant) hover:underline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+      >
+        {fillCopy(copy.table.pileMore, { count: left.toLocaleString(copy.locale) })}
+      </button>
+    </div>
   );
 }

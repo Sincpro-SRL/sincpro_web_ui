@@ -105,7 +105,7 @@ function Header({ jump }: { jump: boolean }) {
   const [Prev, Next] =
     direction === "rtl" ? [ChevronRight, ChevronLeft] : [ChevronLeft, ChevronRight];
   return (
-    <header className="mb-2 flex items-center gap-1">
+    <div className="mb-2 flex items-center gap-1">
       <AriaButton slot="previous" className={navButton}>
         <Prev aria-hidden className="size-(--size-icon-md)" strokeWidth={2} />
       </AriaButton>
@@ -124,7 +124,7 @@ function Header({ jump }: { jump: boolean }) {
       <AriaButton slot="next" className={navButton}>
         <Next aria-hidden className="size-(--size-icon-md)" strokeWidth={2} />
       </AriaButton>
-    </header>
+    </div>
   );
 }
 

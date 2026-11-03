@@ -77,5 +77,4 @@ completo y la regla de qué puede depender de qué están en `docs/ARCHITECTURE.
 - **Los niveles no se saltean.** Una primitiva nunca importa un componente; un componente
   nunca importa una vista.
 - **Accesible por defecto.** Cada historia se abre en un navegador real antes de publicar
-  (`make smoke`) y pasa por axe. Hoy axe reporta sin fallar (`a11y: "todo"`) mientras se
-  corrige lo que encontró en la migración; vuelve a ser error cuando la lista esté vacía.
+  (`make smoke`), en claro y en oscuro, y una violación de axe la hace fallar.

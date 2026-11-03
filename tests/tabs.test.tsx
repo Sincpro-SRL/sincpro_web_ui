@@ -26,7 +26,8 @@ test("el contador dibuja el cero; la notificación no", () => {
 });
 
 /* Sin número es un punto. Y un punto de color no va nunca solo: la palabra
-   viaja en el nombre accesible y en el `title`, como en `StatusDot`. */
+   viaja en el texto de la pestaña (`sr-only`, así el nombre sigue conteniendo lo
+   que se ve) y en el `title`, como en `StatusDot`. */
 test("una notificación sin número es un punto que igual dice qué es", () => {
   const out = draw([
     { id: "datos", label: "datos" },
@@ -34,7 +35,8 @@ test("una notificación sin número es un punto que igual dice qué es", () => {
   ]);
   assert.ok(out.includes("bg-accent"));
   assert.ok(out.includes('title="algo nuevo"'));
-  assert.ok(out.includes('aria-label="historial · algo nuevo"'));
+  assert.ok(out.includes('<span class="sr-only"> · algo nuevo</span>'));
+  assert.ok(!out.includes('aria-label="historial'));
 });
 
 test("con número, la notificación se cuenta y se pinta por su clase", () => {

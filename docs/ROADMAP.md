@@ -68,6 +68,7 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 | Búsqueda literal en la barra («Buscar «X»» sobre todo el conjunto, con Enter)     | ✅ 10-31 | `SearchBar literal`: primero, salvo que el modelo lea lo escrito como pregunta  |
 | Un monto (`decimal`, `monetary`) se pregunta como número                          | ✅ 10-31 | `kindOf` lo leía como texto: «total <= 1000» no se podía pedir                  |
 | La barra con fichas puestas: el campo y el botón del panel conservan su nombre    | ✅ 11-03 | `SearchBar`: «Buscar» y «Filtrar, agrupar y favoritos, N puestos»               |
+| Las palabras de la aplicación con el mismo mecanismo que las del paquete          | ✅ 11-03 | `createCopy`; un `Provider` cambia su rama y nunca la copia instalada           |
 
 ## 4. Dónde se abre (espacio de trabajo)
 
@@ -87,8 +88,8 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 
 ## 5. Pruebas
 
-| Necesidad                                                 | Estado   | Dueño                                                       |
-| --------------------------------------------------------- | -------- | ----------------------------------------------------------- |
-| Lógica y HTML estático                                    | ✅ 10-31 | `tests/`, proyecto `model` de vitest                        |
-| Interacción dentro de la historia (`play`), como composer | ✅ 10-31 | proyectos `storybook` y `storybook-dark`                    |
-| Accesibilidad (axe) como error en cada historia           | 🟡       | hoy `todo`: corregir lo que axe encontró y volver a `error` |
+| Necesidad                                                 | Estado   | Dueño                                                    |
+| --------------------------------------------------------- | -------- | -------------------------------------------------------- |
+| Lógica y HTML estático                                    | ✅ 10-31 | `tests/`, proyecto `model` de vitest                     |
+| Interacción dentro de la historia (`play`), como composer | ✅ 10-31 | proyectos `storybook` y `storybook-dark`                 |
+| Accesibilidad (axe) como error en cada historia           | ✅ 11-03 | `a11y: "error"`; lo que se excluye dice por qué, al lado |

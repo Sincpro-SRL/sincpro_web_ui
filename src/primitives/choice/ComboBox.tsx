@@ -17,7 +17,6 @@ import {
   Input,
   ListBox,
   ListBoxItem,
-  Text,
   useFilter,
 } from "react-aria-components";
 
@@ -133,17 +132,16 @@ function EditableComboBox({
             >
               {({ isSelected }) => (
                 <>
+                  {/* Named by everything it shows — label and description — like the
+                      Picker's options: a label slot left the description shown but unsaid. */}
                   <span className="flex min-w-0 flex-1 flex-col">
-                    <Text
-                      slot="label"
-                      className={`truncate ${isSelected ? "font-medium" : ""}`}
-                    >
+                    <span className={`truncate ${isSelected ? "font-medium" : ""}`}>
                       {item.label}
-                    </Text>
+                    </span>
                     {item.description === undefined ? null : (
-                      <Text slot="description" className="truncate text-micro text-muted">
+                      <span className="truncate text-micro text-muted">
                         {item.description}
-                      </Text>
+                      </span>
                     )}
                   </span>
                   <span className="flex size-(--size-icon-md) shrink-0 items-center justify-center">

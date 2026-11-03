@@ -167,6 +167,10 @@ export function RecordCalendar<T>({
         locale={copy.locale.toLowerCase().startsWith("es") ? "es" : "en"}
         initialView={VIEW[view]}
         {...(date === undefined ? {} : { initialDate: date })}
+        /* «Hoy» is what the button SAYS, and so what it is called: the locale's hint named
+           it «Este mes» — a name that hides the visible word from voice control. */
+        todayText={copy.calendar.today}
+        todayHint={() => copy.calendar.today}
         headerToolbar={{
           start: "prev,next today",
           center: "title",

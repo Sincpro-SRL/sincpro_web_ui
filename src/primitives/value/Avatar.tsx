@@ -113,13 +113,22 @@ export function Avatar({
     );
   }
 
+  /* Each identity is a tint and an ink: the tint goes on the disc, the ink on the letters. */
+  const [tint = "", ink = ""] = toneOf(name, surface).split(" ");
   return (
+    /* The tint lies over an OPAQUE disc of the surface. Laid straight over whatever is
+       behind, a translucent tint took that colour: on a calendar event the letters fell to
+       3.8:1. Over the surface it is the same disc everywhere, and the contrast is the one
+       measured for it. */
     <span
       title={name}
       aria-hidden
-      className={`inline-flex shrink-0 items-center justify-center rounded-pill font-medium select-none ${SIZE[size]} ${toneOf(name, surface)}`}
+      className={`relative inline-flex shrink-0 items-center justify-center overflow-hidden rounded-pill font-medium select-none ${SIZE[size]} ${
+        surface === "chrome" ? "bg-chrome" : "bg-surface"
+      }`}
     >
-      {initials(name)}
+      <span className={`absolute inset-0 ${tint}`} />
+      <span className={`relative ${ink}`}>{initials(name)}</span>
     </span>
   );
 }

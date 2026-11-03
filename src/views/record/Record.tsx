@@ -36,7 +36,12 @@ import {
   createNoteRegistry,
   NoteRegistryContext,
 } from "@sincpro/web-ui/primitives/field/note";
-import { type TabNotice, Tabs } from "@sincpro/web-ui/primitives/tabs/Tabs";
+import {
+  type TabNotice,
+  Tabs,
+  TabsPanel,
+  TabsScope,
+} from "@sincpro/web-ui/primitives/tabs/Tabs";
 import type { LucideIcon } from "lucide-react";
 import { type ReactNode, useEffect, useId, useState, useSyncExternalStore } from "react";
 
@@ -314,6 +319,11 @@ export type RecordProps = {
   children?: ReactNode;
 };
 
+/** The notebook's tabs and its page share an id — only when there are tabs. */
+function NotebookScope({ tabs, children }: { tabs: boolean; children: ReactNode }) {
+  return tabs ? <TabsScope>{children}</TabsScope> : children;
+}
+
 export function Record({ identity, error = null, dirty, children }: RecordProps) {
   const d = useDensity();
   const copy = useUiCopy();
@@ -453,149 +463,160 @@ export function Record({ identity, error = null, dirty, children }: RecordProps)
     /* The record knows the notes of its fields and rows: their cards register here. */
     <NoteRegistryContext value={registry}>
       <article className="flex min-w-0 flex-1 flex-col">
-        <RecordHeader
-          railSurface={surface}
-          {...(ribbon === undefined
-            ? {}
-            : {
-                ribbon: (
-                  <RecordRibbon
-                    label={ribbon.label}
-                    {...(ribbon.tone === undefined ? {} : { tone: ribbon.tone })}
-                  />
-                ),
-              })}
-          {...(paper?.width === undefined ? {} : { width: paper.width })}
-          {...(dirty === undefined ? {} : { dirty })}
-          {...(crumbs === undefined ? {} : { crumbs })}
-          {...(pager === undefined
-            ? {}
-            : {
-                pager: (
-                  <PagerControl
-                    index={pager.index}
-                    total={pager.total}
-                    surface={surface}
-                    {...(pager.onPrev === undefined ? {} : { onPrev: pager.onPrev })}
-                    {...(pager.onNext === undefined ? {} : { onNext: pager.onNext })}
-                  />
-                ),
-              })}
-          {...(actions === undefined ? {} : { actions })}
-          {...(statusBlock === undefined ? {} : { status: statusBlock })}
-          {...(identity.icon === undefined ? {} : { icon: identity.icon })}
-          title={identity.title}
-          {...(identity.subtitle === undefined ? {} : { subtitle: identity.subtitle })}
-          {...(identity.figure === undefined ? {} : { figure: identity.figure })}
-          {...(identity.tag === undefined ? {} : { tag: identity.tag })}
-          {...(smart === undefined || smart.length === 0
-            ? {}
-            : {
-                smart: (
-                  <SmartButtons>
-                    {smart.map((s) => (
-                      <SmartButton
-                        key={s.label}
-                        icon={s.icon}
-                        {...(s.count === undefined ? {} : { count: s.count })}
-                        label={s.label}
-                        layout={onTheRail && d === "comfortable" ? "inline" : "stacked"}
-                        {...(s.onClick === undefined ? {} : { onClick: s.onClick })}
-                      />
-                    ))}
-                  </SmartButtons>
-                ),
-              })}
-          {...(aspectsNode === undefined || globalSheet ? {} : { aspects: aspectsNode })}
-          {...(activitySlot === undefined
-            ? {}
-            : {
-                activity: (
-                  <Activity
-                    {...activitySlot}
-                    alerts={rest}
-                    alertsId={alertsId}
-                    open={activityOpen}
-                    onToggle={() => setActivityOpen(!activityOpen)}
-                  />
-                ),
-                activityLayout: activitySlot.layout ?? "auto",
-              })}
-          {...(blocking.length === 0 && error === null
-            ? {}
-            : {
-                blocking: (
-                  <RecordBlocking
-                    notices={blocking}
-                    error={error}
-                    errorHeading={copy.failed.operation}
-                  />
-                ),
-              })}
-          {...(rest.length === 0 && (activitySlot === undefined || notes.length === 0)
-            ? {}
-            : {
-                indicator: (
-                  <RecordNoticeIndicator
-                    notices={rest}
-                    anchored={notes.map((entry) => ({ tone: entry.note.tone ?? "info" }))}
-                    {...(activitySlot === undefined
-                      ? {}
-                      : {
-                          /* With a panel, the notices live there: the indicator goes to them
+        <NotebookScope tabs={tabs.length > 0}>
+          <RecordHeader
+            railSurface={surface}
+            {...(ribbon === undefined
+              ? {}
+              : {
+                  ribbon: (
+                    <RecordRibbon
+                      label={ribbon.label}
+                      {...(ribbon.tone === undefined ? {} : { tone: ribbon.tone })}
+                    />
+                  ),
+                })}
+            {...(paper?.width === undefined ? {} : { width: paper.width })}
+            {...(dirty === undefined ? {} : { dirty })}
+            {...(crumbs === undefined ? {} : { crumbs })}
+            {...(pager === undefined
+              ? {}
+              : {
+                  pager: (
+                    <PagerControl
+                      index={pager.index}
+                      total={pager.total}
+                      surface={surface}
+                      {...(pager.onPrev === undefined ? {} : { onPrev: pager.onPrev })}
+                      {...(pager.onNext === undefined ? {} : { onNext: pager.onNext })}
+                    />
+                  ),
+                })}
+            {...(actions === undefined ? {} : { actions })}
+            {...(statusBlock === undefined ? {} : { status: statusBlock })}
+            {...(identity.icon === undefined ? {} : { icon: identity.icon })}
+            title={identity.title}
+            {...(identity.subtitle === undefined ? {} : { subtitle: identity.subtitle })}
+            {...(identity.figure === undefined ? {} : { figure: identity.figure })}
+            {...(identity.tag === undefined ? {} : { tag: identity.tag })}
+            {...(smart === undefined || smart.length === 0
+              ? {}
+              : {
+                  smart: (
+                    <SmartButtons>
+                      {smart.map((s) => (
+                        <SmartButton
+                          key={s.label}
+                          icon={s.icon}
+                          {...(s.count === undefined ? {} : { count: s.count })}
+                          label={s.label}
+                          layout={onTheRail && d === "comfortable" ? "inline" : "stacked"}
+                          {...(s.onClick === undefined ? {} : { onClick: s.onClick })}
+                        />
+                      ))}
+                    </SmartButtons>
+                  ),
+                })}
+            {...(aspectsNode === undefined || globalSheet ? {} : { aspects: aspectsNode })}
+            {...(activitySlot === undefined
+              ? {}
+              : {
+                  activity: (
+                    <Activity
+                      {...activitySlot}
+                      alerts={rest}
+                      alertsId={alertsId}
+                      open={activityOpen}
+                      onToggle={() => setActivityOpen(!activityOpen)}
+                    />
+                  ),
+                  activityLayout: activitySlot.layout ?? "auto",
+                })}
+            {...(blocking.length === 0 && error === null
+              ? {}
+              : {
+                  blocking: (
+                    <RecordBlocking
+                      notices={blocking}
+                      error={error}
+                      errorHeading={copy.failed.operation}
+                    />
+                  ),
+                })}
+            {...(rest.length === 0 && (activitySlot === undefined || notes.length === 0)
+              ? {}
+              : {
+                  indicator: (
+                    <RecordNoticeIndicator
+                      notices={rest}
+                      anchored={notes.map((entry) => ({ tone: entry.note.tone ?? "info" }))}
+                      {...(activitySlot === undefined
+                        ? {}
+                        : {
+                            /* With a panel, the notices live there: the indicator goes to them
                            instead of floating a second copy in a popover. */
-                          reveal: {
-                            target: alertsId,
-                            onReveal: () => {
-                              setActivityOpen(true);
-                              setReveal((n) => n + 1);
+                            reveal: {
+                              target: alertsId,
+                              onReveal: () => {
+                                setActivityOpen(true);
+                                setReveal((n) => n + 1);
+                              },
                             },
-                          },
-                        })}
-                  />
-                ),
-              })}
-        >
-          {/* THE MARGIN of field notes lives OUTSIDE the paper, on the ground beside it —
+                          })}
+                    />
+                  ),
+                })}
+          >
+            {/* THE MARGIN of field notes lives OUTSIDE the paper, on the ground beside it —
             Google-Docs style — and is laid out by `RecordHeader` (see THE MARGIN there).
             Nothing between a field and that page box may be positioned: a note's card is
             absolute against the page, at its field's height. */}
-          <div className="min-w-0">
-            <div
-              className={`flex min-w-0 flex-col ${byDensity(
-                d,
-                "gap-(--spacing-block) px-4 pt-(--spacing-block) pb-4",
-                "gap-2.5 pt-2.5 pb-2",
-              )}`}
-            >
-              <Sheet
-                layout={paper?.layout ?? "stacked"}
-                columns={paper?.columns ?? 2}
-                {...(hasFacts ? { fields } : {})}
-                {...(above.length > 0 || (globalSheet && aspectsNode !== undefined)
-                  ? {
-                      head: (
-                        <>
-                          {above}
-                          {globalSheet && aspectsNode !== undefined ? (
-                            <div
-                              className={`border-b border-line-strong ${byDensity(d, "-mx-4 px-4", "")}`}
-                            >
-                              {aspectsNode}
-                            </div>
-                          ) : null}
-                        </>
-                      ),
-                    }
-                  : {})}
+            <div className="min-w-0">
+              <div
+                className={`flex min-w-0 flex-col ${byDensity(
+                  d,
+                  "gap-(--spacing-block) px-4 pt-(--spacing-block) pb-4",
+                  "gap-2.5 pt-2.5 pb-2",
+                )}`}
               >
-                {pageBody}
-                {below}
-              </Sheet>
+                <Sheet
+                  layout={paper?.layout ?? "stacked"}
+                  columns={paper?.columns ?? 2}
+                  {...(hasFacts ? { fields } : {})}
+                  {...(above.length > 0 || (globalSheet && aspectsNode !== undefined)
+                    ? {
+                        head: (
+                          <>
+                            {above}
+                            {globalSheet && aspectsNode !== undefined ? (
+                              <div
+                                className={`border-b border-line-strong ${byDensity(d, "-mx-4 px-4", "")}`}
+                              >
+                                {aspectsNode}
+                              </div>
+                            ) : null}
+                          </>
+                        ),
+                      }
+                    : {})}
+                >
+                  {tabs.length === 0 ? (
+                    pageBody
+                  ) : (
+                    <TabsPanel
+                      id={current}
+                      className={`flex min-w-0 flex-col ${byDensity(d, "gap-(--spacing-block)", "gap-2.5")}`}
+                    >
+                      {pageBody}
+                    </TabsPanel>
+                  )}
+                  {below}
+                </Sheet>
+              </div>
+              {audit === undefined ? null : <RecordAudit {...audit} />}
             </div>
-            {audit === undefined ? null : <RecordAudit {...audit} />}
-          </div>
-        </RecordHeader>
+          </RecordHeader>
+        </NotebookScope>
       </article>
     </NoteRegistryContext>
   );

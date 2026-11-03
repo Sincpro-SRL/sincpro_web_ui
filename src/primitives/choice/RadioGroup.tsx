@@ -97,9 +97,12 @@ export function RadioGroup({
           key={o.value}
           value={o.value}
           isDisabled={o.disabled}
-          className="flex min-w-0 flex-col data-disabled:opacity-45"
+          className="flex min-w-0 flex-col"
         >
-          <RadioButton className="group flex min-w-0 cursor-pointer items-start gap-2.5 text-meta text-ink disabled:cursor-not-allowed">
+          {/* The option fades when it cannot be chosen; its description does NOT: it is
+              usually the reason («requiere una licencia»), and a reason nobody can read
+              explains nothing. */}
+          <RadioButton className="group flex min-w-0 cursor-pointer items-start gap-2.5 text-meta text-ink disabled:cursor-not-allowed data-disabled:opacity-45">
             {(state) => (
               <>
                 <span className={mark(state)}>

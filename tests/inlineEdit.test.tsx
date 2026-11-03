@@ -40,9 +40,11 @@ const withEdit = (when?: (f: Factura) => boolean): DataColumn<Factura>[] => [
 
 test("an editable cell is a button named by the verb, the column and the value", () => {
   const html = draw(withEdit());
-  const buttons = html.match(/<button[^>]*aria-labelledby="[^"]+"[^>]*>/g) ?? [];
+  /* Named by its content, the verb read first: the visible value stays in the name. */
+  const buttons = html.match(/<button[^>]*aria-expanded="false"[^>]*>/g) ?? [];
   assert.equal(buttons.length, 2, "one per row of the editable column");
-  assert.match(html, /<span id="[^"]+" hidden="">Edit vence<\/span>/);
+  assert.doesNotMatch(buttons.join(""), /aria-label/);
+  assert.match(html, /<span class="sr-only">Edit vence <\/span>/);
   assert.match(html, /2026-11-24/);
   /* The editor itself is not drawn until the cell is opened. */
   assert.doesNotMatch(html, /editor/);

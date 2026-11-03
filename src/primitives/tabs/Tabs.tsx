@@ -3,7 +3,14 @@
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
 import type { LucideIcon } from "lucide-react";
-import { Tab, TabList, Tabs as AriaTabs } from "react-aria-components";
+import {
+  createContext,
+  type KeyboardEvent,
+  type ReactNode,
+  useContext,
+  useId,
+  useRef,
+} from "react";
 
 /**
  * UNA TIRA DE PESTAÑAS. La misma en todo el sistema.
@@ -111,6 +118,58 @@ const NOTICE_DOT: Record<Tone, string> = {
  * arrows move between tabs and select them, Home/End jump to the ends, and only the open
  * tab is in the Tab order. The hand-written version had the roles and none of the keys.
  */
+/* Set by `TabsScope`: the strip and its page share an id, so each tab can say which panel
+   it controls and the panel which tab names it. */
+const Scope = createContext<string | null>(null);
+
+const tabIdOf = (base: string, id: string) => `${base}-tab-${id}`;
+const panelIdOf = (base: string, id: string) => `${base}-panel-${id}`;
+
+/**
+ * A notebook whose strip and page are far apart — the record's tabs ride in its header and
+ * the page is drawn in its paper. It only shares an id: no box, no context of anything
+ * else, so it can wrap a whole record without touching what is inside.
+ *
+ * Context: it was React Aria's `Tabs`, and that one walks its whole subtree to collect its
+ * items — wrapped around a record it collected the breadcrumbs too, and broke them.
+ */
+export function TabsScope({ children }: { children: ReactNode }) {
+  return <Scope value={useId()}>{children}</Scope>;
+}
+
+/** The page of the open tab, inside a `TabsScope`. `id` is the tab's. */
+export function TabsPanel({
+  id,
+  className,
+  children,
+}: {
+  id: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  const base = useContext(Scope);
+  return (
+    <div
+      role="tabpanel"
+      {...(base === null
+        ? {}
+        : { id: panelIdOf(base, id), "aria-labelledby": tabIdOf(base, id) })}
+      /* Reachable on its own (the ARIA pattern), with the ring every focus stop has. */
+      tabIndex={0}
+      className={`focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${className ?? ""}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+/**
+ * The strip. Inside a `TabsScope` each tab points at its panel; alone it is a strip whose
+ * page the caller draws.
+ *
+ * The keyboard is the ARIA tabs pattern with automatic activation: one tab stop (the open
+ * tab), ← / → move AND open (wrapping), Home / End go to the ends.
+ */
 export function Tabs({
   tabs,
   current,
@@ -124,88 +183,119 @@ export function Tabs({
   label?: string;
 }) {
   const copy = useUiCopy();
+  const base = useContext(Scope);
+  const strip = useRef<HTMLDivElement>(null);
+
+  const go = (to: number) => {
+    const next = tabs[(to + tabs.length) % tabs.length];
+    if (next === undefined) return;
+    onSelect?.(next.id);
+    strip.current?.querySelector<HTMLElement>(`[data-tab="${CSS.escape(next.id)}"]`)?.focus();
+  };
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    const at = tabs.findIndex((one) => one.id === current);
+    const to =
+      event.key === "ArrowRight"
+        ? at + 1
+        : event.key === "ArrowLeft"
+          ? at - 1
+          : event.key === "Home"
+            ? 0
+            : event.key === "End"
+              ? tabs.length - 1
+              : null;
+    if (to === null) return;
+    event.preventDefault();
+    go(to);
+  };
+
   return (
-    <AriaTabs selectedKey={current} onSelectionChange={(key) => onSelect?.(String(key))}>
-      <TabList
-        aria-label={label ?? copy.record.faces}
-        className="flex min-w-0 flex-wrap items-end gap-1"
-      >
-        {tabs.map((a) => {
-          const Icon = a.icon;
-          const empty = a.count === 0;
-          /* Un cero no pide nada, así que no se dibuja. Es la diferencia con el
-             contador, donde «0» es una respuesta. */
-          const notice = a.notice?.count === 0 ? undefined : a.notice;
-          return (
-            <Tab
-              key={a.id}
-              id={a.id}
-              /* La palabra de la notificación viaja con la pestaña y no en un
-                 elemento aparte: así la lee un lector de pantalla al llegar a la
-                 pestaña, sin tener que entrar. */
-              {...(notice === undefined
-                ? {}
-                : { "aria-label": `${a.label} · ${notice.label}` })}
-              className={({ isSelected }) =>
-                `inline-flex shrink-0 cursor-default items-center px-3 py-2 text-meta outline-0 transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary ${
-                  isSelected
-                    ? "-mb-px rounded-t-control border border-b-0 border-line-strong bg-surface font-medium text-ink"
-                    : "border border-transparent text-muted hover:text-ink"
-                }`
-              }
+    <div
+      ref={strip}
+      role="tablist"
+      aria-label={label ?? copy.record.faces}
+      onKeyDown={onKeyDown}
+      className="flex min-w-0 flex-wrap items-end gap-1"
+    >
+      {tabs.map((a) => {
+        const Icon = a.icon;
+        const empty = a.count === 0;
+        /* Un cero no pide nada, así que no se dibuja. Es la diferencia con el
+           contador, donde «0» es una respuesta. */
+        const notice = a.notice?.count === 0 ? undefined : a.notice;
+        const isSelected = a.id === current;
+        return (
+          <button
+            key={a.id}
+            type="button"
+            role="tab"
+            data-tab={a.id}
+            aria-selected={isSelected}
+            tabIndex={isSelected ? 0 : -1}
+            {...(base === null
+              ? {}
+              : { id: tabIdOf(base, a.id), "aria-controls": panelIdOf(base, a.id) })}
+            onClick={() => onSelect?.(a.id)}
+            className={`inline-flex shrink-0 cursor-default items-center px-3 py-2 text-meta outline-0 transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary ${
+              isSelected
+                ? "-mb-px rounded-t-control border border-b-0 border-line-strong bg-surface font-medium text-ink"
+                : "border border-transparent text-muted hover:text-ink"
+            }`}
+          >
+            {/* The word of the notice rides on the content's `title`: a native tooltip
+                over the whole tab, for whoever points at the dot. */}
+            <span
+              className="inline-flex items-center gap-1.5"
+              {...(notice === undefined ? {} : { title: notice.label })}
             >
-              {({ isSelected }) => (
-                /* The `title` goes on the content and not on the tab: React Aria does not
-                   forward it, and on the content the native tooltip still covers the
-                   whole tab. */
+              {Icon === undefined ? null : (
+                <Icon
+                  className={`size-(--size-icon-sm) shrink-0 ${isSelected ? "text-ink" : "text-muted"}`}
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              )}
+              {a.label}
+              {a.count === undefined ? null : (
                 <span
-                  className="inline-flex items-center gap-1.5"
-                  {...(notice === undefined ? {} : { title: notice.label })}
+                  className={`rounded-pill px-1.5 text-micro tabular-nums ${
+                    empty
+                      ? "bg-ink/5 text-muted"
+                      : isSelected
+                        ? "bg-ink/8 text-ink"
+                        : "bg-ink/8 text-muted"
+                  }`}
                 >
-                  {Icon === undefined ? null : (
-                    <Icon
-                      className={`size-(--size-icon-sm) shrink-0 ${isSelected ? "text-ink" : "text-muted"}`}
-                      strokeWidth={2}
-                      aria-hidden
-                    />
-                  )}
-                  {a.label}
-                  {a.count === undefined ? null : (
-                    <span
-                      className={`rounded-pill px-1.5 text-micro tabular-nums ${
-                        empty
-                          ? "bg-ink/5 text-muted/70"
-                          : isSelected
-                            ? "bg-ink/8 text-ink"
-                            : "bg-ink/8 text-muted"
-                      }`}
-                    >
-                      {a.count.toLocaleString(copy.locale)}
-                    </span>
-                  )}
-                  {notice === undefined ? null : notice.count === undefined ? (
-                    /* Sin número, un punto. La palabra no se dibuja pero está: en el
-                       `title` y en el nombre accesible de la pestaña. */
-                    <span
-                      className={`size-1.5 shrink-0 rounded-pill ${NOTICE_DOT[notice.tone ?? "bad"]}`}
-                      aria-hidden
-                    />
-                  ) : (
-                    <span
-                      className={`rounded-pill px-1.5 text-micro font-medium tabular-nums ${
-                        NOTICE_TONE[notice.tone ?? "bad"]
-                      }`}
-                      aria-hidden
-                    >
-                      {notice.count.toLocaleString(copy.locale)}
-                    </span>
-                  )}
+                  {a.count.toLocaleString(copy.locale)}
                 </span>
               )}
-            </Tab>
-          );
-        })}
-      </TabList>
-    </AriaTabs>
+              {/* La palabra de la notificación viaja DENTRO de la pestaña y no en un
+                    `aria-label`: así la lee un lector de pantalla al llegar, y el nombre
+                    sigue conteniendo lo que se ve — el rótulo y el contador (WCAG 2.5.3). */}
+              {notice === undefined ? null : (
+                <span className="sr-only">{` · ${notice.label}`}</span>
+              )}
+              {notice === undefined ? null : notice.count === undefined ? (
+                /* Sin número, un punto. La palabra no se dibuja pero está: en el
+                       `title` y en el nombre accesible de la pestaña. */
+                <span
+                  className={`size-1.5 shrink-0 rounded-pill ${NOTICE_DOT[notice.tone ?? "bad"]}`}
+                  aria-hidden
+                />
+              ) : (
+                <span
+                  className={`rounded-pill px-1.5 text-micro font-medium tabular-nums ${
+                    NOTICE_TONE[notice.tone ?? "bad"]
+                  }`}
+                  aria-hidden
+                >
+                  {notice.count.toLocaleString(copy.locale)}
+                </span>
+              )}
+            </span>
+          </button>
+        );
+      })}
+    </div>
   );
 }

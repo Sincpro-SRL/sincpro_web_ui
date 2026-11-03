@@ -56,6 +56,8 @@ const config: StorybookConfig = {
     "../stories/components/*.stories.@(ts|tsx)",
     "../stories/views/*.stories.@(ts|tsx)",
     "../stories/templates/*.stories.@(ts|tsx)",
+    "../stories/Extender.mdx",
+    "../stories/extend/*.stories.@(ts|tsx)",
   ],
   addons: [
     "@storybook/addon-docs",

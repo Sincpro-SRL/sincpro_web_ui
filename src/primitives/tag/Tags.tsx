@@ -332,7 +332,9 @@ function Inside({ item }: { item: TagItem }): ReactNode {
       )}
       <span className="min-w-0 truncate">{item.label}</span>
       {item.note === undefined ? null : (
-        <span className="shrink-0 opacity-60">· {item.note}</span>
+        /* Secondary by its separator and weight, not by fading: at 60 % the note fell
+           under 4.5:1 on a tinted chip. */
+        <span className="shrink-0 font-normal">· {item.note}</span>
       )}
     </>
   );

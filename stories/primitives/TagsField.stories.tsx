@@ -201,5 +201,13 @@ export const LoBuscaElServidor: Story = {
     await waitFor(() =>
       expect(page.queryByRole("option", { name: "Producto 2501" })).toBeNull(),
     );
+    /* Close the list before the a11y check: while it is open React Aria hides the rest of
+       the page (`aria-hidden`), and axe reads that state, not the page a person leaves. */
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(page.queryByRole("listbox")).toBeNull());
+    /* And React Aria has given the page back: it un-hides on the next frame. */
+    await waitFor(() =>
+      expect(canvasElement.querySelector('div[aria-hidden="true"]')).toBeNull(),
+    );
   },
 };

@@ -8,6 +8,8 @@ import {
   StatusBar,
   SurfaceProvider,
   Tabs,
+  TabsPanel,
+  TabsScope,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
@@ -20,6 +22,7 @@ import {
   Truck,
 } from "lucide-react";
 import { useState } from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import { ORDER_STAGES as STAGES } from "../support/erp-lists";
 
@@ -318,6 +321,9 @@ export const Contadores: Story = {
  *  que puedo pasar al siguiente sin volver a la lista, y se apaga en los
  *  extremos en vez de desaparecer. */
 export const DóndeEstoy: Story = {
+  /* The same trail is drawn on purpose twice — once per surface — to compare them; on a real
+     screen each trail names its own record and the landmarks differ. */
+  parameters: { a11y: { config: { rules: [{ id: "landmark-unique", enabled: false }] } } },
   args: { stages: STAGES, current: "sale" },
   render: () => (
     <div className="flex flex-col gap-6 bg-ground p-8">
@@ -401,6 +407,26 @@ export const DóndeEstoy: Story = {
  *  respuesta, y esconderla obliga a abrir la pestaña para averiguarla. */
 export const Caras: Story = {
   args: { stages: STAGES, current: "sale" },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const open = () => canvas.getByRole("tab", { selected: true });
+    /* One tab stop, and each tab says which panel it opens. */
+    await expect(open()).toHaveAttribute("tabindex", "0");
+    await expect(canvas.getByRole("tabpanel")).toHaveAttribute(
+      "id",
+      open().getAttribute("aria-controls"),
+    );
+    /* ← / → move AND open, wrapping; Home and End go to the ends. */
+    open().focus();
+    await userEvent.keyboard("{ArrowRight}");
+    await expect(open()).toHaveTextContent("entregas");
+    await expect(open()).toHaveFocus();
+    await userEvent.keyboard("{ArrowLeft}{ArrowLeft}");
+    await expect(open()).toHaveTextContent("devoluciones");
+    await userEvent.keyboard("{Home}");
+    await expect(open()).toHaveTextContent("líneas");
+    await expect(canvas.getByRole("tabpanel")).toHaveTextContent("página «lineas»");
+  },
   render: () => {
     const [cara, setCara] = useState("lineas");
     return (
@@ -409,10 +435,15 @@ export const Caras: Story = {
           <div className="px-4 pt-3.5 pb-2 text-title font-semibold text-ink">
             S00142 · Importadora y Exportadora del Oriente Boliviano Ltda.
           </div>
-          <div className="border-b border-line-strong px-4">
-            <Tabs tabs={ASPECTS} current={cara} onSelect={setCara} />
-          </div>
-          <div className="px-4 py-4 text-meta text-muted">página «{cara}»</div>
+          {/* The strip and its page in one notebook: each tab points at the panel it opens. */}
+          <TabsScope>
+            <div className="border-b border-line-strong px-4">
+              <Tabs tabs={ASPECTS} current={cara} onSelect={setCara} />
+            </div>
+            <TabsPanel id={cara} className="px-4 py-4 text-meta text-muted">
+              página «{cara}»
+            </TabsPanel>
+          </TabsScope>
         </div>
       </div>
     );
@@ -438,10 +469,15 @@ export const CarasConAvisos: Story = {
           <div className="px-4 pt-3.5 pb-2 text-title font-semibold text-ink">
             S00142 · Importadora y Exportadora del Oriente Boliviano Ltda.
           </div>
-          <div className="border-b border-line-strong px-4">
-            <Tabs tabs={ASPECTS_CON_AVISOS} current={cara} onSelect={setCara} />
-          </div>
-          <div className="px-4 py-4 text-meta text-muted">página «{cara}»</div>
+          {/* The strip and its page in one notebook: each tab points at the panel it opens. */}
+          <TabsScope>
+            <div className="border-b border-line-strong px-4">
+              <Tabs tabs={ASPECTS_CON_AVISOS} current={cara} onSelect={setCara} />
+            </div>
+            <TabsPanel id={cara} className="px-4 py-4 text-meta text-muted">
+              página «{cara}»
+            </TabsPanel>
+          </TabsScope>
         </div>
         <p className="max-w-prose text-meta text-muted">
           «entregas 3 · 1» son tres entregas y una que pide algo. «facturas 0 ⬤» no tiene

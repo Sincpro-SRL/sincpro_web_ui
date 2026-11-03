@@ -1,6 +1,6 @@
 "use client";
 
-import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { stickyTop, useScrollBox } from "@sincpro/web-ui/foundations/sticky";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
 import { Cell } from "@sincpro/web-ui/primitives/value/Value";
@@ -310,8 +310,8 @@ export function SheetTable({
         ref={caja.ref}
         style={caja.style}
         onKeyDown={isEditable ? onKey : undefined}
-        tabIndex={isEditable ? 0 : undefined}
-        className={`relative min-w-0 rounded-box border border-line bg-surface focus:outline-none ${caja.className}`}
+        tabIndex={isEditable ? 0 : caja.tabIndex}
+        className={`relative min-w-0 rounded-box border border-line bg-surface outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary ${caja.className}`}
         role="grid"
         aria-rowcount={rows}
         aria-colcount={columns.length + 1}
@@ -381,37 +381,43 @@ export function SheetTable({
                     className="absolute top-0 left-0 flex w-full border-b border-line-strong bg-ground"
                     style={{ height: item.size, transform: `translateY(${item.start}px)` }}
                   >
-                    <button
-                      type="button"
-                      onClick={
-                        onBandToggle === undefined
-                          ? undefined
-                          : () => onBandToggle(item.index)
-                      }
-                      aria-expanded={montón.open}
-                      className="sticky left-0 z-10 flex min-w-0 shrink-0 items-center gap-1.5 border-r border-line bg-ground px-2.5 text-left"
-                      style={{
-                        height: "100%",
-                        /* El mismo ancho que la columna del número de fila, para
-                           que el rótulo no corra la cuadrícula. */
-                        width: ROW_LABEL_WIDTH,
-                        ...(montón.depth === undefined || montón.depth === 0
-                          ? {}
-                          : {
-                              paddingLeft: `calc(var(--spacing-indent) * ${montón.depth} + 0.625rem)`,
-                            }),
-                      }}
+                    {/* A row of a grid holds cells: the band's toggle sits in one, and it is
+                        named by what it opens — the chevron alone said nothing. */}
+                    <div
+                      role="gridcell"
+                      className="sticky left-0 z-10 shrink-0 border-r border-line bg-ground"
+                      style={{ height: "100%", width: ROW_LABEL_WIDTH }}
                     >
                       {onBandToggle === undefined ? null : (
-                        <ChevronRight
-                          className={`size-(--size-icon-sm) shrink-0 text-muted transition-transform duration-(--duration-instant) ${
-                            montón.open ? "rotate-90" : ""
-                          }`}
-                          strokeWidth={2}
-                          aria-hidden
-                        />
+                        <button
+                          type="button"
+                          onClick={() => onBandToggle(item.index)}
+                          aria-expanded={montón.open}
+                          aria-label={fillCopy(
+                            montón.open ? copy.report.close : copy.report.open,
+                            {
+                              name: montón.label,
+                            },
+                          )}
+                          className="flex h-full w-full min-w-0 items-center gap-1.5 px-2.5 text-left focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary"
+                          style={
+                            montón.depth === undefined || montón.depth === 0
+                              ? undefined
+                              : {
+                                  paddingLeft: `calc(var(--spacing-indent) * ${montón.depth} + 0.625rem)`,
+                                }
+                          }
+                        >
+                          <ChevronRight
+                            className={`size-(--size-icon-sm) shrink-0 text-muted transition-transform duration-(--duration-instant) ${
+                              montón.open ? "rotate-90" : ""
+                            }`}
+                            strokeWidth={2}
+                            aria-hidden
+                          />
+                        </button>
                       )}
-                    </button>
+                    </div>
 
                     {/* El rótulo del montón ocupa la PRIMERA columna, que es
                         donde alguien lo busca; de la segunda en adelante van los
@@ -430,7 +436,7 @@ export function SheetTable({
                           {ci === 0 ? (
                             <span className="flex min-w-0 items-center gap-1.5">
                               {montón.field === undefined ? null : (
-                                <span className="shrink-0 text-micro text-muted/70">
+                                <span className="shrink-0 text-micro text-muted">
                                   {montón.field}
                                 </span>
                               )}

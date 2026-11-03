@@ -70,7 +70,15 @@ export function stickyReset(): CSSProperties {
 export function useScrollBox<T extends HTMLElement>(options: {
   /** El alto declarado. `undefined` o `"auto"` = crece con el contenido. */
   height?: number | string;
-}): { ref: RefObject<T | null>; className: string; style: CSSProperties } {
+}): {
+  ref: RefObject<T | null>;
+  className: string;
+  style: CSSProperties;
+  /** `0` when the box scrolls: someone without a pointer has to be able to reach it to
+   *  scroll it (WCAG 2.1.1) — a twelve-column report is unreadable past its third column
+   *  otherwise. `undefined` when it grows with its content. */
+  tabIndex: 0 | undefined;
+} {
   const ref = useRef<T>(null);
   const crece = options.height === undefined || options.height === "auto";
   const [desborda, setDesborda] = useState(false);
@@ -102,6 +110,7 @@ export function useScrollBox<T extends HTMLElement>(options: {
   return {
     ref,
     className: suelta ? "overflow-clip" : "overflow-auto",
+    tabIndex: suelta ? undefined : 0,
     style: suelta
       ? {}
       : {

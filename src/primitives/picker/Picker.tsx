@@ -37,7 +37,6 @@ import {
   ListBoxItem,
   ListBoxLoadMoreItem,
   ListBoxSection,
-  Text,
   useFilter,
 } from "react-aria-components";
 
@@ -750,28 +749,34 @@ function Row({
       )}
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="flex min-w-0 items-center gap-1.5">
-          <Text
-            slot="label"
+          <span
             className={cn(
               "min-w-0 truncate text-meta text-ink",
               selected ? "font-medium" : "",
             )}
           >
             <MatchedText text={item.name} query={query} locale={locale} />
-          </Text>
+          </span>
           {item.tags}
         </span>
-        {item.meta === undefined ? null : (
-          <Text slot="description" className="truncate text-micro tabular-nums text-muted">
-            <MatchedText text={item.meta} query={query} locale={locale} />
-          </Text>
-        )}
-        {hidden === null ? null : (
-          <span className="truncate text-micro text-muted">
-            {copy.picker.matched}{" "}
-            <span className="font-mono">
-              <MatchedText text={hidden} query={query} locale={locale} />
-            </span>
+        {/* The option is named by EVERYTHING it shows — name, tags, meta, what the search
+            matched, the figure on the right. Named by a label slot, the rest was shown but
+            not said, and the name stopped matching the option (WCAG 2.5.3). */}
+        {item.meta === undefined && hidden === null ? null : (
+          <span className="flex min-w-0 flex-col gap-0.5">
+            {item.meta === undefined ? null : (
+              <span className="truncate text-micro tabular-nums text-muted">
+                <MatchedText text={item.meta} query={query} locale={locale} />
+              </span>
+            )}
+            {hidden === null ? null : (
+              <span className="truncate text-micro text-muted">
+                {copy.picker.matched}{" "}
+                <span className="font-mono">
+                  <MatchedText text={hidden} query={query} locale={locale} />
+                </span>
+              </span>
+            )}
           </span>
         )}
       </span>

@@ -520,6 +520,7 @@ export function WhereTree({
             }`}
           >
             <select
+              aria-label={copy.builder.ruleField}
               value={child.field}
               onChange={(event) =>
                 setChild(index, {
@@ -540,6 +541,7 @@ export function WhereTree({
             </select>
 
             <select
+              aria-label={copy.builder.ruleOperator}
               value={child.operator}
               onChange={(event) =>
                 setChild(index, { ...child, operator: event.target.value })
@@ -681,12 +683,12 @@ export function FilterBuilder({
     try {
       parsed = JSON.parse(text);
     } catch {
-      setRawError(currentCopy().builder.invalidJson);
+      setRawError(copy.builder.invalidJson);
       return;
     }
 
     if (!isRecognizedFilter(parsed)) {
-      setRawError(currentCopy().builder.notFilter);
+      setRawError(copy.builder.notFilter);
       return;
     }
     setRawError(null);

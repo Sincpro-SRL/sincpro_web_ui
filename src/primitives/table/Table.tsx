@@ -66,7 +66,12 @@ export function Table({
        `useScrollBox`: ahí vive el dilema entero y ahí vive su explicación. Las
        tres tablas del sistema lo resolvían con tres copias de la misma
        medición. */
-    <div ref={caja.ref} className={`min-w-0 ${caja.className}`} style={caja.style}>
+    <div
+      ref={caja.ref}
+      tabIndex={caja.tabIndex}
+      className={`min-w-0 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary ${caja.className}`}
+      style={caja.style}
+    >
       <table
         aria-rowcount={rowCount}
         className="w-full border-separate border-spacing-0 px-1 text-left"
@@ -337,7 +342,7 @@ export function Td({
       title={title}
       className={`border-b border-line px-3 py-1.5 text-meta text-ink first:rounded-l-control last:rounded-r-control ${
         (align ?? (numeric ? "right" : "left")) === "right" ? "text-right" : "text-left"
-      } ${mono ? "font-mono tabular-nums" : numeric ? "tabular-nums" : ""} ${
+      } ${mono ? "font-mono tabular-nums" : numeric ? "tabular-nums whitespace-nowrap" : ""} ${
         tone === undefined ? rowWash(mark) : CELL_TONE[tone]
       }`}
     >

@@ -41,3 +41,19 @@ test("templates import only from the package, never from its internals", () => {
     );
   assert.deepEqual(deep, [], "a template uses what a consumer can import: @sincpro/web-ui");
 });
+
+/* The recipes of «Extender» are application code: they may style their own pieces, and
+   they must not reach inside the package — what they use is what an application can. */
+const RECIPES = join(import.meta.dirname, "..", "stories", "extend");
+
+test("the recipes import only from the package, never from its internals", () => {
+  const deep = readdirSync(RECIPES)
+    .filter((name) => name.endsWith(".tsx"))
+    .flatMap((name) =>
+      readFileSync(join(RECIPES, name), "utf8")
+        .split("\n")
+        .filter((line) => /from "@sincpro\/web-ui\//.test(line))
+        .map((line) => `${name}  ${line.trim()}`),
+    );
+  assert.deepEqual(deep, [], "a recipe uses what an application can import: @sincpro/web-ui");
+});

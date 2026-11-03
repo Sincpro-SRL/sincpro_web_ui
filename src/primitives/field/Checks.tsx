@@ -10,7 +10,6 @@ import {
   ListBox,
   ListBoxItem,
   type Selection,
-  Text,
 } from "react-aria-components";
 
 /* ==================================================================== *
@@ -237,16 +236,11 @@ export function CheckList({
               <>
                 <Mark on={isSelected} mixed={false} />
                 <span className="flex min-w-0 flex-col">
-                  <Text
-                    slot="label"
-                    className={`truncate text-meta text-ink ${mono ? "font-mono" : ""}`}
-                  >
+                  <span className={`truncate text-meta text-ink ${mono ? "font-mono" : ""}`}>
                     {item.label}
-                  </Text>
+                  </span>
                   {item.detail === undefined ? null : (
-                    <Text slot="description" className="truncate text-micro text-muted">
-                      {item.detail}
-                    </Text>
+                    <span className="truncate text-micro text-muted">{item.detail}</span>
                   )}
                 </span>
               </>

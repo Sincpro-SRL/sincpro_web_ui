@@ -53,10 +53,12 @@ const preview: Preview = {
         ...MINIMAL_VIEWPORTS,
       },
     },
-    /* `todo` while the violations axe found on the migration (2026-10-31) are fixed: reported in
-       the a11y panel and the test output, not failing. Back to `error` once the list is empty —
-       docs/ROADMAP.md, «Pruebas». */
-    a11y: { test: "todo" },
+    /* axe FAILS the story (2026-11-03): the 314 violations of the migration were fixed at their
+       root — names that hid the visible text, empty headers, headings that skipped a level,
+       scroll boxes the keyboard could not reach, tints that lost contrast. A story that has to
+       leave something out says why, next to it (SVAR's grid in `Gantt`, a trail drawn twice on
+       purpose in `Surfaces`). */
+    a11y: { test: "error" },
     controls: { expanded: true },
   },
   globalTypes: {

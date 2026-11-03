@@ -254,7 +254,7 @@ function says(node: ReactNode): boolean {
 function pileTag<T>(pile: Pile<T>, locale: string): ReactNode {
   return (
     <span className="flex min-w-0 items-center gap-1.5">
-      <span className="shrink-0 text-micro text-muted/70">{pile.field}</span>
+      <span className="shrink-0 text-micro text-muted">{pile.field}</span>
       <span className="truncate text-micro font-medium text-ink">{pile.label}</span>
       <span className="inline-flex shrink-0 items-center rounded-pill border border-line-strong bg-ink/5 px-2 py-0.5 text-micro tabular-nums text-muted">
         {pile.count.toLocaleString(locale)}
@@ -1136,28 +1136,38 @@ export function EditableTable<T>({
       {/* When this box is a scroll container and when it is not is decided by
           `useScrollBox`, exactly as in `Table`: the header sticks to the page while
           the table fits, and to the box when the box scrolls. */}
-      <div ref={box.ref} className={`min-w-0 ${box.className}`} style={box.style}>
+      <div
+        ref={box.ref}
+        tabIndex={box.tabIndex}
+        className={`min-w-0 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary ${box.className}`}
+        style={box.style}
+      >
         {stacked ? (
           list
         ) : (
           <table className="w-full border-separate border-spacing-0 px-1 text-left">
             <thead className="sticky z-10 bg-ground" style={stickyTop}>
               <tr>
-                {reorderable ? <th className="w-0 border-b border-line-strong" /> : null}
-                {columns.map((c) => (
-                  <th
-                    key={c.id}
-                    scope="col"
-                    style={c.width === undefined ? undefined : { width: c.width }}
-                    className={`border-b border-line-strong ${HEADER_TEXT} ${cell} ${
-                      c.numeric === true ? "text-right" : "text-left"
-                    }`}
-                  >
-                    {c.header}
-                  </th>
-                ))}
+                {reorderable ? <td className="w-0 border-b border-line-strong" /> : null}
+                {/* A column of buttons has no header: its top is a cell, not an empty one. */}
+                {columns.map((c) =>
+                  c.header === "" ? (
+                    <td key={c.id} className="w-0 border-b border-line-strong" />
+                  ) : (
+                    <th
+                      key={c.id}
+                      scope="col"
+                      style={c.width === undefined ? undefined : { width: c.width }}
+                      className={`border-b border-line-strong ${HEADER_TEXT} ${cell} ${
+                        c.numeric === true ? "text-right" : "text-left"
+                      }`}
+                    >
+                      {c.header}
+                    </th>
+                  ),
+                )}
                 {onRemove === undefined ? null : (
-                  <th className="w-0 border-b border-line-strong" />
+                  <td className="w-0 border-b border-line-strong" />
                 )}
               </tr>
             </thead>
