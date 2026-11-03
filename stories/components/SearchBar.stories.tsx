@@ -290,6 +290,15 @@ function muchos(): SearchCriteria[] {
 export const MuchosRecortes: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
+    /* With chips set the placeholder is gone, and the input keeps its name anyway. */
+    await expect(canvas.getAllByRole("textbox", { name: "Buscar" })).toHaveLength(2);
+    /* The panel button says what it opens and how many are set — not a bare «8». */
+    const count = String(muchos().length);
+    const panels = canvas.getAllByRole("button", {
+      name: `Filtrar, agrupar y favoritos, ${count} puestos`,
+    });
+    await expect(panels).toHaveLength(2);
+    for (const button of panels) await expect(button).toHaveTextContent(count);
     /* Wide: four facets show and «+2» names the two folded; pressing it unfolds them. */
     await userEvent.click(canvas.getByRole("button", { name: /^\+2: / }));
     await expect(canvas.getByRole("button", { name: "ver menos" })).toBeVisible();
@@ -516,6 +525,11 @@ export const BusquedaLiteral: Story = {
     );
     await userEvent.keyboard("{Enter}");
     await expect(await canvas.findByText(/Buscar «andina»/)).toBeVisible();
+    // A chip is set and the placeholder is gone: the input is still named.
+    await expect(canvas.getByRole("textbox", { name: "Buscar" })).toHaveAttribute(
+      "placeholder",
+      "",
+    );
     const sent = canvas.getByLabelText("lo que viaja");
     await expect(sent).toHaveTextContent('"any"');
     await expect(sent).toHaveTextContent('"customer_name"');

@@ -14,6 +14,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Ban, Copy, FileDown, Pencil } from "lucide-react";
 import { useState } from "react";
+import { expect, waitFor, within } from "storybook/test";
 
 import {
   type Invoice,
@@ -290,5 +291,110 @@ export const Widgets: Story = {
         </div>
       </div>
     );
+  },
+};
+
+/* ================================================================== *
+ *  MILES DE FILAS.
+ *
+ *  Pasados `WINDOW_FROM` (200) la tabla dibuja sólo las filas que se ven, y la
+ *  tabla sigue siendo una `<table>`: lo que no se dibuja es una fila vacía
+ *  arriba y otra abajo con su alto real, y `aria-rowcount` dice cuántas son de
+ *  verdad. El que scrollea lo encuentra ella —la página, un panel, su propia
+ *  caja—; no hay que decírselo.
+ * ================================================================== */
+
+/** Cinco mil facturas: las treinta y dos de siempre, repetidas con su número. */
+const MILES: readonly Item[] = Array.from({ length: 5000 }, (_, i) => ({
+  ...INVOICES[i % INVOICES.length]!,
+  id: `INV${i}`,
+  number: `FAC/2026/${String(i + 1).padStart(5, "0")}`,
+}));
+
+/** Las filas que hay de verdad en el DOM, sin las de relleno. */
+const dibujadas = (root: HTMLElement) => root.querySelectorAll("tbody tr[data-index]").length;
+
+/** **Con la página.** Sin `height` la tabla no tiene scroll propio: el que se mueve
+ *  es la página —como dentro de `AppFrame`, donde eso mantiene pegadas la barra de
+ *  la aplicación, la de la lista y el encabezado—, y la ventana de filas lo sigue.
+ *  De cinco mil se dibujan unas cincuenta. */
+export const MilesDeFilas: Story = {
+  render: () => (
+    <div className="bg-ground px-8 py-8">
+      <div className="overflow-clip rounded-box border border-line bg-surface">
+        <DataTable data={MILES} columns={COLUMNS} getRowId={(d) => d.id} />
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    /* The table says how many rows it really has — the header plus five thousand. */
+    await expect(canvas.getByRole("table")).toHaveAttribute("aria-rowcount", "5001");
+    await expect(dibujadas(canvasElement)).toBeLessThan(120);
+    await expect(canvas.getByText("FAC/2026/00001")).toBeVisible();
+
+    /* What has the focus stays drawn while the page scrolls away from it. */
+    const first = canvasElement.querySelector<HTMLButtonElement>(
+      'tbody tr[data-index="0"] button',
+    );
+    first?.focus();
+    window.scrollTo(0, document.documentElement.scrollHeight);
+    await expect(await canvas.findByText("FAC/2026/05000")).toBeVisible();
+    await expect(dibujadas(canvasElement)).toBeLessThan(120);
+    await expect(first?.isConnected).toBe(true);
+    await expect(first).toHaveFocus();
+    window.scrollTo(0, 0);
+  },
+};
+
+/** **En su caja, y agrupada.** Con `height` la tabla scrollea adentro, y las filas
+ *  de grupo entran en la misma ventana: plegar un montón saca sus filas de la
+ *  secuencia, y la ventana se acomoda. */
+export const MilesDeFilasEnCaja: Story = {
+  render: () => {
+    const niveles = [
+      {
+        id: "state",
+        label: "estado",
+        keyOf: (item: Item) => STATE_LABEL[item.state],
+        labelOf: (key: string) => key,
+      },
+    ];
+    const [plegados, setPlegados] = useState<string[]>([]);
+    return (
+      <div className="bg-ground px-8 py-8">
+        <div className="overflow-clip rounded-box border border-line bg-surface">
+          <DataTable
+            data={MILES}
+            columns={COLUMNS}
+            getRowId={(d) => d.id}
+            levels={niveles}
+            collapsed={plegados}
+            onGroupToggle={(key) =>
+              setPlegados((now) =>
+                now.includes(key) ? now.filter((one) => one !== key) : [...now, key],
+              )
+            }
+            totals
+            height={420}
+          />
+        </div>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(dibujadas(canvasElement)).toBeLessThan(60);
+    const box = canvasElement.querySelector("table")!.parentElement!;
+    box.scrollTop = box.scrollHeight;
+    await waitFor(() =>
+      expect(canvasElement.querySelector("tbody tr[data-index]:last-of-type")).not.toBeNull(),
+    );
+    /* The last row of the sequence is drawn at the bottom of the box. */
+    const rows = Number(canvas.getByRole("table").getAttribute("aria-rowcount"));
+    await waitFor(() =>
+      expect(canvasElement.querySelector(`tr[aria-rowindex="${rows - 1}"]`)).not.toBeNull(),
+    );
+    await expect(dibujadas(canvasElement)).toBeLessThan(60);
   },
 };

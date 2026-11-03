@@ -41,6 +41,7 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 | Kanban: crear rápido, total, barra de actividades, plegar, agregar etapa | ✅ 10-31 | `List.Board stages`                                   |
 | Calendario por recurso, planificación automática, ruta crítica           | 💲       | licencia: FullCalendar scheduler / SVAR PRO           |
 | Exportar lo que se ve (xlsx)                                             | ✅       | `foundations/xlsx`                                    |
+| Miles de filas en la tabla: dibuja sólo las que se ven (desde 200)       | ✅ 11-03 | `DataTable` (`primitives/table/rowWindow`)            |
 
 ## 3. Elegir y buscar
 
@@ -63,6 +64,7 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 | Un grupo dice cuánto suma, no sólo cuántos hay                                    | ✅ 10-31 | `Pile.detail` → `GroupHeader detail` (lo suma quien guarda los datos)           |
 | Búsqueda literal en la barra («Buscar «X»» sobre todo el conjunto, con Enter)     | ✅ 10-31 | `SearchBar literal`: primero, salvo que el modelo lea lo escrito como pregunta  |
 | Un monto (`decimal`, `monetary`) se pregunta como número                          | ✅ 10-31 | `kindOf` lo leía como texto: «total <= 1000» no se podía pedir                  |
+| La barra con fichas puestas: el campo y el botón del panel conservan su nombre    | ✅ 11-03 | `SearchBar`: «Buscar» y «Filtrar, agrupar y favoritos, N puestos»               |
 
 ## 4. Dónde se abre (espacio de trabajo)
 

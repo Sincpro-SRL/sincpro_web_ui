@@ -7,6 +7,7 @@ import { CellCopy } from "@sincpro/web-ui/primitives/table/CellCopy";
 import { CellEditor } from "@sincpro/web-ui/primitives/table/CellEditor";
 import { EditRow, firstControl } from "@sincpro/web-ui/primitives/table/EditableTable";
 import { type RowAction, RowActions } from "@sincpro/web-ui/primitives/table/RowActions";
+import { useRowWindow } from "@sincpro/web-ui/primitives/table/rowWindow";
 import {
   SelectBox,
   type SortState,
@@ -525,6 +526,15 @@ export function DataTable<T extends object>({
           return true;
         });
   const selecting = onSelectedChange !== undefined;
+  const width = columns.length + (selecting ? 1 : 0) + (rowActions === undefined ? 0 : 1);
+
+  /* Past a few hundred rows only the ones in view are drawn — see `rowWindow.tsx`. It
+     windows what is DRAWN, group rows included and folded rows left out: that is the
+     sequence a person scrolls through. */
+  const view = useRowWindow({
+    count: drawn.length,
+    getKey: (i) => drawn[i]?.id ?? String(i),
+  });
 
   const leaves = useMemo(() => rows.filter((r) => r.subRows.length === 0), [rows]);
 
@@ -546,8 +556,15 @@ export function DataTable<T extends object>({
   }
 
   const grid = (
-    <Table height={height}>
-      <THead>
+    <Table
+      height={height}
+      {...(view.on
+        ? {
+            rowCount: 1 + drawn.length + (draft === null ? 0 : 1) + (totals ? 1 : 0),
+          }
+        : {})}
+    >
+      <THead {...(view.on ? { rowIndex: 1 } : {})}>
         {selecting ? (
           <Th width={36}>
             <SelectBox
@@ -577,9 +594,24 @@ export function DataTable<T extends object>({
         {rowActions === undefined ? null : <Th width={1}>{""}</Th>}
       </THead>
 
-      <tbody>
-        {drawn.map((row) => {
+      <tbody ref={view.body.ref}>
+        {/* ONE flat list of keyed rows: arrays nested per slot would be matched by
+            POSITION, and every scroll would remount every row — focus and open editors
+            with it. */}
+        {view.rows.flatMap((slot, at) => {
+          const row = drawn[slot.index];
+          if (row === undefined) return [];
           const isGroup = row.subRows.length > 0;
+          const windowed = view.windowed(slot.index);
+          /* What is not drawn between the previous drawn row and this one: the rows
+             above the view before the first, and the gap before a row kept only because
+             it has the focus. */
+          const gap = view.pad(
+            at === 0 ? 0 : view.rows[at - 1]!.end,
+            slot.start,
+            width,
+            `\u0000pad${slot.index}`,
+          );
 
           if (isGroup) {
             const path = pathOf(row);
@@ -594,15 +626,14 @@ export function DataTable<T extends object>({
               collapsed === undefined
                 ? row.getIsExpanded()
                 : collapsed.includes(key) !== true;
-            return (
+            return [
+              gap,
               /* The group row: it spans the whole width, says which value it
                  groups by and how many are inside. The counter is what makes it
                  useful without opening it. */
-              <tr key={row.id} className="border-b border-line bg-ground">
+              <tr key={row.id} {...windowed} className="border-b border-line bg-ground">
                 <td
-                  colSpan={
-                    columns.length + (selecting ? 1 : 0) + (rowActions === undefined ? 0 : 1)
-                  }
+                  colSpan={width}
                   className="px-3 py-1.5"
                   style={
                     depth === 0
@@ -644,14 +675,16 @@ export function DataTable<T extends object>({
                     </span>
                   </button>
                 </td>
-              </tr>
-            );
+              </tr>,
+            ];
           }
 
           const original = row.original;
-          return (
+          return [
+            gap,
             <Tr
               key={row.id}
+              {...(windowed === undefined ? {} : { windowed })}
               selected={selected?.has(row.id) === true}
               onClick={onRowClick === undefined ? undefined : () => onRowClick(original)}
             >
@@ -701,9 +734,10 @@ export function DataTable<T extends object>({
               {rowActions === undefined ? null : (
                 <RowActions actions={rowActions(original)} />
               )}
-            </Tr>
-          );
+            </Tr>,
+          ];
         })}
+        {view.tail(width)}
         {create === undefined || draft === null ? null : (
           <EditRow
             as="tr"
@@ -752,7 +786,10 @@ export function DataTable<T extends object>({
 
       {footer === null ? null : (
         <tfoot className="sticky bottom-0 z-10 bg-ground">
-          <tr className="border-t border-line-strong">
+          <tr
+            className="border-t border-line-strong"
+            aria-rowindex={view.on ? 2 + drawn.length + (draft === null ? 0 : 1) : undefined}
+          >
             {selecting ? <td /> : null}
             {columns.map((c, i) => {
               const value = footer[i] ?? null;
