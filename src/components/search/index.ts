@@ -1,5 +1,9 @@
 /* Buscar con facetas, con los recortes metidos adentro del campo. */
 export {
+  type BuiltCondition,
+  type BuiltFilter,
+} from "@sincpro/web-ui/components/search/criteria";
+export {
   type BuiltCriteria,
   type BuiltLevel,
   type BuiltSort,
@@ -7,8 +11,6 @@ export {
 } from "@sincpro/web-ui/components/search/CriteriaBuilder";
 export {
   blankGroup,
-  type BuiltCondition,
-  type BuiltFilter,
   describeFilter,
   FilterBuilder,
   type TreeCondition,

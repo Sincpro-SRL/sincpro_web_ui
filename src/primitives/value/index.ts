@@ -8,7 +8,7 @@ export {
   DateValue,
   formatDateTime,
   formatRelative,
-} from "@sincpro/web-ui/primitives/value/Fecha";
+} from "@sincpro/web-ui/primitives/value/DateValue";
 export {
   Meter,
   type MeterLevel,

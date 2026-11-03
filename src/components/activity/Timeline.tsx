@@ -3,7 +3,7 @@
 import { SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
 import { Empty } from "@sincpro/web-ui/primitives/notice/Notice";
-import { DateValue } from "@sincpro/web-ui/primitives/value/Fecha";
+import { DateValue } from "@sincpro/web-ui/primitives/value/DateValue";
 import { Children, type ReactNode } from "react";
 
 const DOT_TONE: Record<Tone, { canvas: string; chrome: string }> = {

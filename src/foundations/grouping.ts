@@ -1,4 +1,4 @@
-import { dateLabel } from "@sincpro/web-ui/foundations/calendar";
+import { dateLabel, type GroupGrain } from "@sincpro/web-ui/foundations/calendar";
 
 /**
  * LA AGRUPACIÓN, en N niveles.
@@ -46,9 +46,9 @@ import { dateLabel } from "@sincpro/web-ui/foundations/calendar";
  * falta: en las fechas, que las nombra `system/calendar.ts`.
  */
 
-/** El grano de un nivel de fecha. Sin grano, un campo de fecha parte por
- *  instante y cada fila termina en su propio montón, que es no agrupar. */
-export type GroupGrain = "day" | "week" | "month" | "quarter" | "year";
+/* El grano es del calendario (`calendar.ts`): acá se lo nombra porque un nivel de fecha
+   lo lleva. Vivía acá y el calendario lo pedía de vuelta — un ciclo. */
+export type { GroupGrain } from "@sincpro/web-ui/foundations/calendar";
 
 /**
  * De GRUESO a fino. Es el orden en que se anidan los granos de un mismo campo, y

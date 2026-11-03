@@ -1,15 +1,15 @@
 "use client";
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
+import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { type ChoiceOption, labelOf } from "@sincpro/web-ui/primitives/choice/options";
 import {
   FieldButton,
   FieldGroup,
   listOptionStyles,
 } from "@sincpro/web-ui/primitives/field/aria";
-import { useFieldIds } from "@sincpro/web-ui/primitives/field/context";
 import { ReadValue } from "@sincpro/web-ui/primitives/field/Field";
-import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
 import { Check, ChevronDown } from "lucide-react";
 import {

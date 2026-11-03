@@ -2,8 +2,8 @@
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { useFieldIds } from "@sincpro/web-ui/foundations/form";
 import { FieldButton, FieldGroup } from "@sincpro/web-ui/primitives/field/aria";
-import { useFieldIds } from "@sincpro/web-ui/primitives/field/context";
 import { Search, X } from "lucide-react";
 import { Input, SearchField as AriaSearchField } from "react-aria-components";
 

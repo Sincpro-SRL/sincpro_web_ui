@@ -11,12 +11,12 @@ import {
 } from "@internationalized/date";
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { Calendar } from "@sincpro/web-ui/primitives/date/Calendar";
 import { Segments } from "@sincpro/web-ui/primitives/date/DatePicker";
 import { FieldButton, FieldGroup } from "@sincpro/web-ui/primitives/field/aria";
-import { useFieldIds } from "@sincpro/web-ui/primitives/field/context";
 import { ReadValue } from "@sincpro/web-ui/primitives/field/Field";
-import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
 import { CalendarDays } from "lucide-react";
 import {

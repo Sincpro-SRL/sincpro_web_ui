@@ -1,12 +1,12 @@
 "use client";
 
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { FieldIdsContext } from "@sincpro/web-ui/foundations/form";
+import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import type { OpenTarget, Tone } from "@sincpro/web-ui/foundations/types";
 import { cn, focusRing } from "@sincpro/web-ui/foundations/variants";
 import { Button, ButtonLink, IconButton } from "@sincpro/web-ui/primitives/button/Button";
 import { CellStack, Thumb } from "@sincpro/web-ui/primitives/cell/CellStack";
-import { FieldIdsContext } from "@sincpro/web-ui/primitives/field/context";
-import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
 import { Menu } from "@sincpro/web-ui/primitives/menu/Menu";
 import { PopoverTrigger } from "@sincpro/web-ui/primitives/overlay/PopoverTrigger";
 import { Preview } from "@sincpro/web-ui/primitives/overlay/Preview";

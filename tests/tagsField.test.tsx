@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 
 import { Field, FormModeProvider, type TagOption, TagsField } from "@sincpro/web-ui";
-import { tagChoices, withoutTag, withTag } from "@sincpro/web-ui/primitives/tag/choices";
+import {
+  tagChoices,
+  withoutTag,
+  withTag,
+} from "@sincpro/web-ui/primitives/picker/tagChoices";
 import { renderToStaticMarkup } from "react-dom/server";
 import { test } from "vitest";
 

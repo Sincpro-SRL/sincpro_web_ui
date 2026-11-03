@@ -8,8 +8,8 @@ import {
 } from "@sincpro/web-ui/components/assist/assist";
 import { AssistLabel, AssistSourceLink } from "@sincpro/web-ui/components/assist/AssistMark";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { FieldIdsContext } from "@sincpro/web-ui/foundations/form";
 import { Button, IconButton } from "@sincpro/web-ui/primitives/button/Button";
-import { FieldIdsContext } from "@sincpro/web-ui/primitives/field/context";
 import { useToastIfAny } from "@sincpro/web-ui/primitives/notice/Toast";
 import { Check, X } from "lucide-react";
 import { type ReactNode, useContext, useId } from "react";

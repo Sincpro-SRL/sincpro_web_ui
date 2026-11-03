@@ -3,20 +3,20 @@
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
-import { focusRing, tv } from "@sincpro/web-ui/foundations/variants";
-import { FieldGroup, listOptionStyles } from "@sincpro/web-ui/primitives/field/aria";
 import {
   type FieldIds,
   FieldIdsContext,
   useFieldIds,
-} from "@sincpro/web-ui/primitives/field/context";
-import { FieldCopy, useFieldCopy } from "@sincpro/web-ui/primitives/field/copy";
-import { useSheetLayout } from "@sincpro/web-ui/primitives/field/layout";
+} from "@sincpro/web-ui/foundations/form";
 import {
   type FormMode,
   FormModeProvider,
   useFormMode,
-} from "@sincpro/web-ui/primitives/field/mode";
+} from "@sincpro/web-ui/foundations/form";
+import { focusRing, tv } from "@sincpro/web-ui/foundations/variants";
+import { FieldGroup, listOptionStyles } from "@sincpro/web-ui/primitives/field/aria";
+import { FieldCopy, useFieldCopy } from "@sincpro/web-ui/primitives/field/clipboard";
+import { useSheetLayout } from "@sincpro/web-ui/primitives/field/layout";
 import {
   describedByOf,
   type FieldNote,

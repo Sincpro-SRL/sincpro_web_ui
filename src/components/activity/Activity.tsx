@@ -11,7 +11,7 @@ import { SegmentedControl } from "@sincpro/web-ui/primitives/choice/SegmentedCon
 import { type NoteEntry, useNoteEntries } from "@sincpro/web-ui/primitives/field/note";
 import { Callout, type CalloutProps } from "@sincpro/web-ui/primitives/notice/Callout";
 import { Tag } from "@sincpro/web-ui/primitives/tag/Tag";
-import { DateValue } from "@sincpro/web-ui/primitives/value/Fecha";
+import { DateValue } from "@sincpro/web-ui/primitives/value/DateValue";
 import { Avatar } from "@sincpro/web-ui/primitives/value/Person";
 import type { LucideIcon } from "lucide-react";
 import {

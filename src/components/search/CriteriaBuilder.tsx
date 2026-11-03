@@ -1,8 +1,8 @@
 "use client";
 
+import type { BuiltFilter } from "@sincpro/web-ui/components/search/criteria";
 import {
   blankGroup,
-  type BuiltFilter,
   ExpressionView,
   treeFromFilter,
   type TreeGroup,

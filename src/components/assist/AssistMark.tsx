@@ -10,7 +10,7 @@ import { currentCopy, fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/co
 import { cn, focusRing } from "@sincpro/web-ui/foundations/variants";
 import { PopoverTrigger } from "@sincpro/web-ui/primitives/overlay/PopoverTrigger";
 import { Tooltip, TooltipTrigger } from "@sincpro/web-ui/primitives/overlay/Tooltip";
-import { DateValue } from "@sincpro/web-ui/primitives/value/Fecha";
+import { DateValue } from "@sincpro/web-ui/primitives/value/DateValue";
 import type { ComponentPropsWithRef, ReactNode } from "react";
 import { Link } from "react-aria-components";
 

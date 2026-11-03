@@ -2,12 +2,12 @@
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import type { OpenTarget } from "@sincpro/web-ui/foundations/types";
 import { cn } from "@sincpro/web-ui/foundations/variants";
 import { fieldGroupStyles, listOptionStyles } from "@sincpro/web-ui/primitives/field/aria";
-import { useFieldIds } from "@sincpro/web-ui/primitives/field/context";
 import { ReadValue } from "@sincpro/web-ui/primitives/field/Field";
-import { type FormMode, useFormMode } from "@sincpro/web-ui/primitives/field/mode";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
 import { MatchedText } from "@sincpro/web-ui/primitives/picker/MatchedText";
 import {
@@ -15,7 +15,7 @@ import {
   type TagOption,
   withoutTag,
   withTag,
-} from "@sincpro/web-ui/primitives/tag/choices";
+} from "@sincpro/web-ui/primitives/picker/tagChoices";
 import { type TagItem, Tags } from "@sincpro/web-ui/primitives/tag/Tags";
 import { Avatar } from "@sincpro/web-ui/primitives/value/Person";
 import { Plus, Search } from "lucide-react";

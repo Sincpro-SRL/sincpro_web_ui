@@ -2,6 +2,8 @@
 
 import {
   at,
+  type BuiltCondition,
+  type BuiltFilter,
   criteriaId,
   type CriteriaJoin,
   type CriteriaPath,
@@ -11,10 +13,6 @@ import {
   type SearchCriteria,
 } from "@sincpro/web-ui/components/search/criteria";
 import { CriteriaChips } from "@sincpro/web-ui/components/search/CriteriaChips";
-import type {
-  BuiltCondition,
-  BuiltFilter,
-} from "@sincpro/web-ui/components/search/FilterBuilder";
 import type { ModelDefinition } from "@sincpro/web-ui/components/search/model";
 import {
   describeCondition,

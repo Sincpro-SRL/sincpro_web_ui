@@ -1,6 +1,10 @@
 "use client";
 
-import type { CriteriaJoin } from "@sincpro/web-ui/components/search/criteria";
+import type {
+  BuiltCondition,
+  BuiltFilter,
+  CriteriaJoin,
+} from "@sincpro/web-ui/components/search/criteria";
 import { JoinWord } from "@sincpro/web-ui/components/search/JoinWord";
 import { JsonEditor } from "@sincpro/web-ui/components/search/JsonEditor";
 import {
@@ -63,20 +67,6 @@ function inputType(type: string): string {
   if (type === "datetime") return "datetime-local";
   return "text";
 }
-
-/** Una condición, tal como la declara el motor. `operator` sale del `ops` del campo, así que
- *  lo que el constructor ofrece es exactamente lo que el modelo acepta. */
-export interface BuiltCondition {
-  field: string;
-  operator: string;
-  value: unknown;
-}
-
-/** Lo que el filtro puede ser en su forma real: una condición, un grupo `all`/`any` de más
- *  filtros —lo que el árbol arma, a cualquier profundidad—, o un `negate` que llegó de otro
- *  lado y que el árbol no fabrica, pero que este componente sabe mostrar y editar como JSON. */
-export type BuiltFilter =
-  BuiltCondition | { all: BuiltFilter[] } | { any: BuiltFilter[] } | { negate: BuiltFilter };
 
 function isCondition(value: unknown): value is BuiltCondition {
   return (
