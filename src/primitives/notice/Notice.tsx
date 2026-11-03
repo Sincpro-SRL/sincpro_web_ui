@@ -41,7 +41,8 @@ export function Skeleton({
 }) {
   const d = useDensity();
   return (
-    <div aria-busy="true" className="flex flex-col">
+    /* It appears late (`animate-reveal-late`): a read faster than 200ms never shows it. */
+    <div aria-busy="true" className="flex animate-reveal-late flex-col">
       <span className="sr-only">{label}</span>
       {Array.from({ length: rows }, (_, i) => (
         <div

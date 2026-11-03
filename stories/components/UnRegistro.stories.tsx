@@ -170,7 +170,10 @@ export const Escalera: Story = {
     const canvas = within(canvasElement);
     /* The name of the link opens in a modal by default… */
     await userEvent.click(canvas.getByRole("link", { name: CUSTOMER.name }));
-    await expect(canvas.getByRole("status")).toHaveTextContent("enlace → modal");
+    /* The story's own status line — a record's rail has its own live region too. */
+    await expect(canvasElement.querySelector('p[role="status"]')).toHaveTextContent(
+      "enlace → modal",
+    );
     /* …the row's 👁 opens the drawer, without leaving. */
     await userEvent.click(canvas.getByRole("button", { name: /Vista previa/ }));
     const drawer = await canvas.findByRole("complementary");

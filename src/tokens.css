@@ -630,6 +630,28 @@
      the corner of the eye. The bar uses it behind `motion-safe:`: with reduced
      motion it stands still. */
   --animate-progress-sweep: progress-sweep 1.6s var(--ease-in-out) infinite;
+
+  /* What appears only if waiting takes long enough to be seen: a skeleton. A read that
+     answers in 150ms showed a skeleton for one frame — a flash that says «something broke»
+     more than «loading». It waits 200ms invisible, then fades in. */
+  --animate-reveal-late: reveal var(--duration-quick) var(--ease-out) 200ms both;
+}
+
+@keyframes reveal {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The focus ring ARRIVES: it closes in from a little farther out while it takes its colour,
+   in 160ms. A ring that pops is found; one that moves is found before the eye looks for it.
+   Only on the controls a person moves through — a dialog or a popover that takes the focus to
+   be announced keeps its own entrance — and only with motion allowed. */
+@keyframes focus-in {
+  from {
+    outline-offset: 5px;
+    outline-color: transparent;
+  }
 }
 
 /* The segment is two fifths of its track: from just off the left edge (-100 % of
@@ -922,6 +944,26 @@
      across rows. */
   .font-mono {
     font-variant-numeric: tabular-nums;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    :where(
+      button,
+      a[href],
+      input,
+      textarea,
+      select,
+      summary,
+      [role="tab"],
+      [role="option"],
+      [role="gridcell"],
+      [role="row"],
+      [role="checkbox"],
+      [role="radio"],
+      [role="switch"]
+    ):focus-visible {
+      animation: focus-in var(--duration-quick) var(--ease-out);
+    }
   }
 
   /* Thin and warm scrollbars. With six panels open, six grey system bars are

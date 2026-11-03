@@ -76,6 +76,7 @@ export function Field({
   action,
   mode,
   note,
+  changed = false,
   copy: copyAs,
 }: {
   label: string;
@@ -107,8 +108,13 @@ export function Field({
    *  Aplicar». A card in the record's margin when there is one, a `Flag` by the label when
    *  there is not; its sentence describes the control (`aria-describedby`). See `note.tsx`. */
   note?: FieldNote;
-  /** The copy button by the label (see `copy.tsx`): on by default, copying what the control
-   *  shows. A string copies that instead; `false` removes the button from this field. */
+  /** Its value changed and is not saved yet. A dot by the label says WHICH fields a
+   *  «2 cambios sin guardar» is about — in a form of twenty, the reason to look before
+   *  saving — and it is read as part of the field's description. */
+  changed?: boolean;
+  /** The copy button by the label (see `clipboard.tsx`): on by default, copying what the
+   *  control shows. A string copies that instead; `false` removes the button from this
+   *  field. */
   copy?: string | false;
 }) {
   const d = useDensity();
@@ -124,16 +130,20 @@ export function Field({
   const hintId = `${id}-hint`;
   const errorId = `${id}-error`;
   const noteId = `${id}-note`;
+  const changedId = `${id}-changed`;
   /* The error first: what has to be corrected is heard before what is worth knowing. */
   const describedBy = describedByOf(
     hint === undefined ? null : hintId,
     error === undefined ? null : errorId,
     note === undefined ? null : noteId,
+    changed ? changedId : null,
   );
 
   const labelNode = (
+    /* The label follows its control's focus: in a form of twenty fields, the eye finds the
+       row being written by its name as much as by the ring. */
     <span
-      className={`flex min-w-0 items-center gap-1 text-micro font-medium text-muted ${inline ? "pt-2" : ""}`}
+      className={`flex min-w-0 items-center gap-1 text-micro font-medium text-muted transition-colors duration-(--duration-quick) group-focus-within/field:text-primary ${inline ? "pt-2" : ""}`}
     >
       <label id={`${id}-label`} htmlFor={id} className={inline ? "min-w-0 truncate" : ""}>
         {label}
@@ -151,6 +161,18 @@ export function Field({
       </label>
       {hint === undefined ? null : <Hint id={hintId}>{hint}</Hint>}
       {note === undefined ? null : <NoteFlag note={note} />}
+      {changed ? (
+        <>
+          <span
+            aria-hidden
+            title={copy.field.changed}
+            className="size-1.5 shrink-0 rounded-pill bg-accent transition-transform duration-(--duration-quick) ease-(--ease-out) starting:scale-0"
+          />
+          <span id={changedId} className="sr-only">
+            {copy.field.changed}
+          </span>
+        </>
+      ) : null}
       {copies ? (
         <FieldCopy
           label={label}

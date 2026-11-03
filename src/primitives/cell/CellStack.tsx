@@ -102,16 +102,21 @@ export function CellStack({
           {...(media.icon === undefined ? {} : { icon: media.icon })}
         />
       )}
+      {/* `line-clamp-1` and not `truncate`: both cut with «…», but `truncate` forbids the
+          text to wrap, and in an auto-sized table that makes the column as wide as the whole
+          sentence — the description of an invoice line pushed the table past its box, and a
+          horizontal scrollbar appeared under it. A clamp lets the column narrow and cuts
+          where it ends. */}
       <span className="flex min-w-0 flex-col">
         <span
-          className="truncate text-meta font-medium text-ink"
+          className="line-clamp-1 text-meta font-medium break-all text-ink"
           {...(typeof primary === "string" ? { title: primary } : {})}
         >
           {primary}
         </span>
         {secondary === undefined ? null : (
           <span
-            className={`text-micro text-muted ${wrap ? "line-clamp-2" : "truncate"}`}
+            className={`text-micro text-muted ${wrap ? "line-clamp-2" : "line-clamp-1 break-all"}`}
             {...(typeof secondary === "string" ? { title: secondary } : {})}
           >
             {secondary}

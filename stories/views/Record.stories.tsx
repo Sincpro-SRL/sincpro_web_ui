@@ -20,7 +20,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Receipt, RotateCcw, ShoppingCart, Truck } from "lucide-react";
 import { useState } from "react";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { type InvoiceLine, lineTotal, money } from "../support/erp";
 import { ORDER_EVENTS, ORDER_MESSAGES, ORDER_STAGES as STAGES } from "../support/erp-lists";
@@ -645,15 +645,26 @@ export const EditarSinAcciones: Story = {
   render: function Render() {
     const [name, setName] = useState("Constructora Illimani");
     const [saved, setSaved] = useState(name);
+    const [saving, setSaving] = useState(false);
+    /* A save that takes a moment, like a real one: what the rail says while it runs and
+       right after is the point of this story. */
+    const save = () => {
+      setSaving(true);
+      setTimeout(() => {
+        setSaved(name);
+        setSaving(false);
+      }, 400);
+    };
+    const changed = name !== saved;
     return (
       <Record
         identity={{ title: saved }}
-        {...(name === saved
-          ? {}
-          : { dirty: { onSave: () => setSaved(name), onDiscard: () => setName(saved) } })}
+        {...(changed
+          ? { dirty: { onSave: save, onDiscard: () => setName(saved), saving, changes: 1 } }
+          : {})}
       >
         <Record.Paper>
-          <Field label="Razón social">
+          <Field label="Razón social" changed={changed}>
             <TextInput value={name} onChange={setName} />
           </Field>
         </Record.Paper>
@@ -666,13 +677,28 @@ export const EditarSinAcciones: Story = {
     await userEvent.click(field);
     await userEvent.type(field, " SRL");
     /* Every letter landed in the same field, and it still has the focus. */
-    await expect(canvas.getByRole("textbox", { name: "Razón social" })).toHaveValue(
-      "Constructora Illimani SRL",
-    );
-    await expect(canvas.getByRole("textbox", { name: "Razón social" })).toHaveFocus();
-    await userEvent.click(canvas.getByRole("button", { name: /Guardar/ }));
+    await expect(field).toHaveValue("Constructora Illimani SRL");
+    await expect(field).toHaveFocus();
+    /* What changed is said: by the field, and by the rail with a count. */
+    await expect(field).toHaveAccessibleDescription("modificado");
+    /* The rail's, not the phone's thumb bar (hidden on a desk). */
+    const marks = canvas.getAllByText("1 cambio sin guardar");
+    await expect(marks.some((mark) => mark.offsetParent !== null)).toBe(true);
+    /* Saving, the button keeps the focus and says it is busy; a second press is not a
+       second save. */
+    const save = canvas.getByRole("button", { name: /Guardar/ });
+    await userEvent.click(save);
+    const busy = canvas.getByRole("button", { name: /Guardando/ });
+    await expect(busy).toHaveAttribute("aria-busy", "true");
+    await expect(busy).toHaveFocus();
+    /* Then it says it is done, by itself. */
+    await expect(
+      await canvas.findByText("Guardado", { selector: "[role=status]" }),
+    ).toBeInTheDocument();
     await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(
       "Constructora Illimani SRL",
     );
+    /* Save left with the save, and the focus did not fall to the page: it is on the name. */
+    await waitFor(() => expect(canvas.getByRole("heading", { level: 1 })).toHaveFocus());
   },
 };

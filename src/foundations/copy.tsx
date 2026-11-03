@@ -74,8 +74,13 @@ export type UiCopy = {
     faces: string;
     /** The mark of a record with changes that are not saved yet. */
     unsaved: string;
+    /** The same mark when the record says how many fields changed. */
+    unsavedOne: string;
+    unsavedMany: string;
     save: string;
     saving: string;
+    /** Said, briefly, once what was saved is saved. */
+    saved: string;
     discard: string;
     /** Read aloud next to a stage that failed: the red fill alone says nothing to a
      *  screen reader. */
@@ -119,6 +124,8 @@ export type UiCopy = {
     unset: string;
     /** A list of checks read with nothing chosen. */
     none: string;
+    /** Next to the label of a field whose value changed and is not saved yet. */
+    changed: string;
   };
   /** The choice controls: combo boxes, selects, suggestion lists. */
   choice: {
@@ -791,8 +798,11 @@ export const ENGLISH_COPY: UiCopy = {
     status: "Status",
     faces: "Record faces",
     unsaved: "unsaved",
+    unsavedOne: "1 change unsaved",
+    unsavedMany: "{count} changes unsaved",
     save: "Save",
     saving: "Saving…",
+    saved: "Saved",
     discard: "Discard",
     failed: "failed",
     notices: "Notices about this record",
@@ -825,6 +835,7 @@ export const ENGLISH_COPY: UiCopy = {
     help: "Help",
     unset: "not set",
     none: "None",
+    changed: "changed",
   },
   choice: {
     noResults: "No results",

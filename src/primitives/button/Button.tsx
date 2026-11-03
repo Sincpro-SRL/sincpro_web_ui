@@ -65,7 +65,7 @@ import {
   TooltipTrigger,
   useInTooltipTrigger,
 } from "@sincpro/web-ui/primitives/overlay/Tooltip";
-import type { LucideIcon } from "lucide-react";
+import { LoaderCircle, type LucideIcon } from "lucide-react";
 import type { ComponentPropsWithRef, ReactNode } from "react";
 
 export type ButtonRole = "primary" | "secondary" | "ghost" | "danger";
@@ -214,6 +214,16 @@ export type ButtonProps = NativeProps<
   expanded?: boolean;
   /** What it opens, written to `aria-haspopup`. `menu` when absent. */
   haspopup?: ButtonPopup;
+  /**
+   * What it started is running — saving, publishing, registering a payment.
+   *
+   * Context: the buttons said it by turning `disabled`, and a disabled button drops the focus
+   * to the page: whoever pressed Save with the keyboard was left nowhere, and a press while
+   * it ran was silently lost or — worse — sent twice. Busy, the button KEEPS the focus and
+   * its width (the label stays), says so (`aria-busy`, a turning mark where its icon was) and
+   * ignores presses until it is done.
+   */
+  busy?: boolean;
 };
 
 export function Button({
@@ -227,11 +237,14 @@ export function Button({
   type = "button",
   expanded,
   haspopup,
+  busy = false,
   ref,
+  onClick,
   ...native
 }: ButtonProps) {
   const surface = useSurface(surfaceProp);
   const ic = ICON[size];
+  const Mark = busy ? LoaderCircle : Icon;
   return (
     <button
       {...native}
@@ -239,14 +252,30 @@ export function Button({
       type={type}
       title={title}
       disabled={disabled}
+      {...(busy ? { "aria-busy": true, "aria-disabled": true } : {})}
+      onClick={(event) => {
+        if (busy) {
+          event.preventDefault();
+          return;
+        }
+        onClick?.(event);
+      }}
       {...popupAttrs(expanded, haspopup)}
       /* The role in the DOM: `make smoke` counts the primaries of a view — the rule is
          ONE per screen, and a rule nobody checks is a suggestion. */
       data-emphasis={role}
-      className={buttonClasses(role, size, surface)}
+      className={
+        busy
+          ? `${buttonClasses(role, size, surface)} cursor-progress`
+          : buttonClasses(role, size, surface)
+      }
     >
-      {Icon === undefined ? null : (
-        <Icon className={`${ic.size} shrink-0`} strokeWidth={ic.stroke} aria-hidden />
+      {Mark === undefined ? null : (
+        <Mark
+          className={`${ic.size} shrink-0 ${busy ? "motion-safe:animate-spin" : ""}`}
+          strokeWidth={ic.stroke}
+          aria-hidden
+        />
       )}
       {children}
     </button>
