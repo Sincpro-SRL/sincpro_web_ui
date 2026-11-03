@@ -5,11 +5,13 @@ import {
   Cell,
   Copyable,
   DataField,
+  Field,
   type Message,
   MessageComposer,
   Record,
   Table,
   Td,
+  TextInput,
   Th,
   THead,
   Tr,
@@ -18,6 +20,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Receipt, RotateCcw, ShoppingCart, Truck } from "lucide-react";
 import { useState } from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import { type InvoiceLine, lineTotal, money } from "../support/erp";
 import { ORDER_EVENTS, ORDER_MESSAGES, ORDER_STAGES as STAGES } from "../support/erp-lists";
@@ -628,6 +631,48 @@ export const ConAvisos: Story = {
           />
         </Record>
       </div>
+    );
+  },
+};
+
+/**
+ * **Editar un registro que no declara acciones.** Lo que se escribe es lo que la persona está
+ * haciendo: que aparezca «Guardar» no puede mover el papel. Sin `Record.Actions` el registro
+ * se montaba sin papel y, con la primera letra, `dirty` lo pasaba a papel: el árbol cambiaba,
+ * el campo se desmontaba y el foco se perdía después de una sola letra.
+ */
+export const EditarSinAcciones: Story = {
+  render: function Render() {
+    const [name, setName] = useState("Constructora Illimani");
+    const [saved, setSaved] = useState(name);
+    return (
+      <Record
+        identity={{ title: saved }}
+        {...(name === saved
+          ? {}
+          : { dirty: { onSave: () => setSaved(name), onDiscard: () => setName(saved) } })}
+      >
+        <Record.Paper>
+          <Field label="Razón social">
+            <TextInput value={name} onChange={setName} />
+          </Field>
+        </Record.Paper>
+      </Record>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const field = canvas.getByRole("textbox", { name: "Razón social" });
+    await userEvent.click(field);
+    await userEvent.type(field, " SRL");
+    /* Every letter landed in the same field, and it still has the focus. */
+    await expect(canvas.getByRole("textbox", { name: "Razón social" })).toHaveValue(
+      "Constructora Illimani SRL",
+    );
+    await expect(canvas.getByRole("textbox", { name: "Razón social" })).toHaveFocus();
+    await userEvent.click(canvas.getByRole("button", { name: /Guardar/ }));
+    await expect(canvas.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Constructora Illimani SRL",
     );
   },
 };

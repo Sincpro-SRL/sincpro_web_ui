@@ -385,8 +385,14 @@ export type ListProps<T extends object> = {
    *  passes the handlers generically does not have to strip them one by one. */
   readOnly?: boolean;
 
-  /** Los tres estados, en un solo lugar. */
-  state?: { loading?: boolean; error?: string | null };
+  /** Los estados del conjunto, en un solo lugar.
+   *
+   *  `loading` es la PRIMERA lectura: no hay filas todavía, y se dibuja el esqueleto.
+   *  `refreshing` es volver a preguntar con filas en la mano —se tipeó en la búsqueda, se
+   *  cambió de página—: las filas se quedan y una barra discreta dice que se está
+   *  preguntando. Cambiarlas por un esqueleto en cada pregunta hacía parpadear la tabla, y un
+   *  clic podía caer sobre una fila que ya no estaba. */
+  state?: { loading?: boolean; refreshing?: boolean; error?: string | null };
   /** Vacía POR UN FILTRO es otra situación: no falta contenido, sobra un
    *  recorte. */
   filtered?: boolean;

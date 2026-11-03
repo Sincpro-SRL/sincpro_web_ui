@@ -99,7 +99,9 @@ function Facts({
         const value = (
           <dd
             {...(noteId === undefined ? {} : { "aria-describedby": noteId })}
-            className={`min-w-0 text-meta ${card === null ? "" : "flex"} ${
+            /* `wrap-anywhere`: an email or a code has no space to break at, and in two
+               columns it ran over the fact beside it. */
+            className={`min-w-0 text-meta wrap-anywhere ${card === null ? "" : "flex"} ${
               empty ? "text-muted italic" : "text-ink"
             } ${field.mono === true ? "font-mono tabular-nums" : ""}`}
           >

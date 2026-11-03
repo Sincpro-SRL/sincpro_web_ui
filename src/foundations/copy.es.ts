@@ -130,6 +130,7 @@ export const SPANISH_COPY: UiCopyOverride = {
   },
   search: {
     tools: "Filtrar, agrupar y favoritos",
+    suggestions: "Sugerencias",
     toolsSetOne: "{label}, {count} puesto",
     toolsSetMany: "{label}, {count} puestos",
     editChip: "Clic para editar",
@@ -213,6 +214,7 @@ export const SPANISH_COPY: UiCopyOverride = {
     count: "{count} registros",
     peek: "Vista previa",
     open: "Abrir",
+    refreshing: "Actualizando la lista…",
   },
   activity: {
     bySystem: "el sistema",

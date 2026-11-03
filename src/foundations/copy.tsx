@@ -131,6 +131,8 @@ export type UiCopy = {
   };
   search: {
     tools: string;
+    /** The name of the list of what the bar offers for what was typed. */
+    suggestions: string;
     /** The name of the panel button once something is set: it shows the count, and what
      *  the button SHOWS has to be inside its name (WCAG 2.5.3) — `{label}` is `tools`. */
     toolsSetOne: string;
@@ -259,6 +261,8 @@ export type UiCopy = {
      *  record itself. */
     peek: string;
     open: string;
+    /** Asked again while the rows stay: the name of the discreet bar over them. */
+    refreshing: string;
   };
   /** La historia de un registro: eventos y mensajes. */
   /** The panel of everything around a record: its notices, its conversation and its
@@ -828,6 +832,7 @@ export const ENGLISH_COPY: UiCopy = {
   },
   search: {
     tools: "Filter, group and favorites",
+    suggestions: "Suggestions",
     toolsSetOne: "{label}, {count} applied",
     toolsSetMany: "{label}, {count} applied",
     editChip: "Click to edit",
@@ -897,6 +902,7 @@ export const ENGLISH_COPY: UiCopy = {
     count: "{count} records",
     peek: "Quick look",
     open: "Open",
+    refreshing: "Updating the list…",
   },
   activity: {
     bySystem: "the system",

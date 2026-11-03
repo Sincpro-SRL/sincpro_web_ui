@@ -374,6 +374,11 @@ export function SearchBar({
   const input = useRef<HTMLInputElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const id = useId();
+  /* The suggestions are the input's popup (the ARIA combobox pattern): the input keeps the
+     focus and says which list it controls and which option is the active one, so a screen
+     reader announces «Nombre del cliente · contiene Globex» as the option it is. */
+  const listId = useId();
+  const optionId = (at: number) => `${listId}-${at}`;
 
   /**
    * Los campos por los que se puede preguntar.
@@ -671,6 +676,13 @@ export function SearchBar({
             /* Named even when a placeholder shows: a placeholder is not a label, and once
                chips are set there is none at all. */
             aria-label={copy.choice.search}
+            role="combobox"
+            aria-autocomplete="list"
+            aria-expanded={open}
+            {...(open ? { "aria-controls": listId } : {})}
+            {...(open && !asTags && suggestions[active] !== undefined
+              ? { "aria-activedescendant": optionId(active) }
+              : {})}
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
@@ -867,7 +879,7 @@ export function SearchBar({
             /* UNA LISTA, no una tira. Se está ELIGIENDO: el ojo baja por una
                columna y el teclado también. Doce atributos doblados en tres
                renglones son doce cosas que barrer en zigzag para encontrar una. */
-            <div className="max-h-72 overflow-y-auto p-1">
+            <div id={listId} className="max-h-72 overflow-y-auto p-1">
               <Tags
                 stack
                 surface="canvas"
@@ -888,14 +900,23 @@ export function SearchBar({
               />
             </div>
           ) : (
-            <div className="p-1">
+            <div
+              id={listId}
+              role="listbox"
+              aria-label={copy.search.suggestions}
+              className="p-1"
+            >
               {suggestions.map((one, at) => (
-                <button
+                <div
                   key={one.id}
-                  type="button"
+                  id={optionId(at)}
+                  role="option"
+                  aria-selected={at === active}
+                  /* The input keeps the focus: pressing an option must not take it. */
+                  onMouseDown={(event) => event.preventDefault()}
                   onClick={() => pick(one)}
                   onMouseEnter={() => setActive(at)}
-                  className={`flex w-full items-baseline gap-1.5 rounded-control px-2 py-1.5 text-left text-meta transition-colors duration-(--duration-instant) ${
+                  className={`flex w-full cursor-pointer items-baseline gap-1.5 rounded-control px-2 py-1.5 text-left text-meta transition-colors duration-(--duration-instant) ${
                     at === active ? "bg-primary/8" : "hover:bg-ink/4"
                   }`}
                 >
@@ -912,7 +933,7 @@ export function SearchBar({
                       {one.hint}
                     </span>
                   ) : null}
-                </button>
+                </div>
               ))}
             </div>
           )}

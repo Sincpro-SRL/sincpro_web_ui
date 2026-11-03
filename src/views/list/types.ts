@@ -360,7 +360,14 @@ export type ListViewProps<T extends object> = {
   /** The three states, in a single place. Every view used to re-assemble them
    *  with three nested ternaries, and that is why «empty because of a filter»
    *  and «really empty» got mixed up in half the screens. */
-  state?: { loading?: boolean; error?: string | null };
+  /** Los estados del conjunto, en un solo lugar.
+   *
+   *  `loading` es la PRIMERA lectura: no hay filas todavía, y se dibuja el esqueleto.
+   *  `refreshing` es volver a preguntar con filas en la mano —se tipeó en la búsqueda, se
+   *  cambió de página—: las filas se quedan y una barra discreta dice que se está
+   *  preguntando. Cambiarlas por un esqueleto en cada pregunta hacía parpadear la tabla, y un
+   *  clic podía caer sobre una fila que ya no estaba. */
+  state?: { loading?: boolean; refreshing?: boolean; error?: string | null };
   filtered?: boolean;
   empty?: ListEmpty;
 
