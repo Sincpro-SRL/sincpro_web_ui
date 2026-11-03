@@ -3,7 +3,7 @@
 import { cn, focusRing } from "@sincpro/web-ui/foundations/variants";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
 import { Pencil } from "lucide-react";
-import { type ReactNode, useEffect, useId, useRef } from "react";
+import { type ReactNode, useEffect, useRef } from "react";
 import { Button as AriaButton, Dialog, DialogTrigger } from "react-aria-components";
 
 /* ==================================================================== *
@@ -102,14 +102,11 @@ export function CellEditor({
   editor: (done: () => void) => ReactNode;
   children: ReactNode;
 }) {
-  const verb = useId();
-  const shown = useId();
   return (
     /* The row may open its record on click; changing one cell must not also open it. */
     <div onClick={(event) => event.stopPropagation()} className="-mx-1 min-w-0">
       <DialogTrigger>
         <AriaButton
-          aria-labelledby={`${verb} ${shown}`}
           className={({ isFocusVisible }) =>
             cn(
               "group/edit flex w-full min-w-0 cursor-pointer items-center gap-1.5 rounded-mark px-1 text-inherit outline-0 transition-colors duration-(--duration-instant) hover:bg-ink/6 pressed:bg-ink/10 aria-expanded:bg-primary/8",
@@ -118,12 +115,10 @@ export function CellEditor({
             )
           }
         >
-          <span id={verb} hidden>
-            {label}
-          </span>
-          <span id={shown} className="min-w-0 flex-1 truncate">
-            {children}
-          </span>
+          {/* Named by what it shows, with the verb read first («Editar vencimiento
+              15/11»): a name that is not the visible text hides it from voice control. */}
+          <span className="sr-only">{`${label} `}</span>
+          <span className="min-w-0 flex-1 truncate">{children}</span>
           <Pencil
             aria-hidden
             strokeWidth={2}

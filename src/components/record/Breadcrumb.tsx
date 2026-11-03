@@ -94,12 +94,14 @@ export function Breadcrumb({
     ? [crumbs[0]!, null, crumbs[crumbs.length - 1]!]
     : crumbs;
 
+  /* Named by WHERE it ends, not only by what it is: two records side by side (panes, a
+     panel next to the page) are two trails, and a screen reader lists landmarks by name. */
+  const last = crumbs[crumbs.length - 1];
+  const name =
+    last === undefined ? copy.record.location : `${copy.record.location}: ${last.label}`;
   return (
-    <nav aria-label={copy.record.location} className="flex min-w-0">
-      <Breadcrumbs
-        aria-label={copy.record.location}
-        className="flex min-w-0 flex-wrap items-center gap-1"
-      >
+    <nav aria-label={name} className="flex min-w-0">
+      <Breadcrumbs aria-label={name} className="flex min-w-0 flex-wrap items-center gap-1">
         {shown.map((crumb, i) => {
           const key = crumb === null ? "folded" : `${i}-${crumb.label}`;
           const last = i === shown.length - 1;

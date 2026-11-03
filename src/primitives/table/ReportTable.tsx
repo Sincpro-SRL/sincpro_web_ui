@@ -1,6 +1,6 @@
 "use client";
 
-import { currentCopyLocale, fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { stickyTop, useScrollBox } from "@sincpro/web-ui/foundations/sticky";
 import { HEADER_TEXT } from "@sincpro/web-ui/primitives/table/Table";
@@ -116,6 +116,7 @@ const SKIN: Record<ReportRowKind, { row: string; cell: string; text: string }> =
 };
 
 function Amount({ value, format }: { value: number | null; format?: (v: number) => string }) {
+  const { locale } = useUiCopy();
   if (value === null) return <span className="text-line-strong">·</span>;
 
   const zero = value === 0;
@@ -125,7 +126,7 @@ function Amount({ value, format }: { value: number | null; format?: (v: number) 
     <span
       className={`tabular-nums ${zero ? "text-muted" : negative ? "text-bad" : "text-ink"}`}
     >
-      {format === undefined ? amountFormat(currentCopyLocale()).format(value) : format(value)}
+      {format === undefined ? amountFormat(locale).format(value) : format(value)}
     </span>
   );
 }
@@ -306,7 +307,12 @@ export function ReportTable({
        desplazamiento de la barra y quedaba empujado 68 px hacia adentro de su
        propia caja — banda en blanco arriba y títulos de columna cayendo entre
        las filas. */
-    <div ref={caja.ref} className={`min-w-0 ${caja.className}`} style={caja.style}>
+    <div
+      ref={caja.ref}
+      tabIndex={caja.tabIndex}
+      className={`min-w-0 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary ${caja.className}`}
+      style={caja.style}
+    >
       <table className="w-full border-collapse px-1">
         {caption === undefined ? null : (
           <caption
@@ -331,7 +337,7 @@ export function ReportTable({
                 {c.header}
               </th>
             ))}
-            <th className="w-0" />
+            <td className="w-0" />
           </tr>
         </thead>
         <tbody>

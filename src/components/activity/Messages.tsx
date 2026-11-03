@@ -1,6 +1,6 @@
 "use client";
 
-import { currentCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { currentCopy, type UiCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { TextArea } from "@sincpro/web-ui/primitives/field/Field";
 import { Send, Users, X } from "lucide-react";
@@ -61,10 +61,10 @@ export type MessageKind = {
  *
  * Es una función y no una constante porque sus palabras salen de la copia, y una
  * constante las congelaría con las que hubiera al cargar el módulo —o sea, las
- * de fábrica— por más que después se instale otra.
+ * de fábrica— por más que después se instale otra. Sin `copy`, las instaladas; un
+ * componente le pasa las de su rama.
  */
-export function writeANote(): MessageKind {
-  const copy = currentCopy();
+export function writeANote(copy: UiCopy = currentCopy()): MessageKind {
   return {
     id: "note",
     label: copy.activity.writeNote,
@@ -93,7 +93,7 @@ export function MessageComposer({
   /* La manera por default se arma acá adentro y no en la firma: un default de
      parámetro se evalúa en cada render, sí, pero escrito como constante del
      módulo congelaría las palabras de fábrica. */
-  const ways = kinds ?? [writeANote()];
+  const ways = kinds ?? [writeANote(copy)];
   const [writing, setWriting] = useState<MessageKind | undefined>(undefined);
   const [body, setBody] = useState("");
   const ready = body.trim() !== "" && !sending;

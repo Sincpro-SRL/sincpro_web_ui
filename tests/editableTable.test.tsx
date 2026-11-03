@@ -86,7 +86,9 @@ const rowsOf = (markup: string) =>
 
 test("growing with its lines, the box is not a scroller: the header sticks to the page", () => {
   const box = boxOf(table({ onChange: noop }));
-  assert.match(box, /class="min-w-0 overflow-clip"/);
+  assert.match(box, /class="min-w-0 [^"]*overflow-clip"/);
+  /* Not a scroller, so not a stop for the keyboard either. */
+  assert.doesNotMatch(box, /tabindex/);
   assert.doesNotMatch(box, /overflow-auto/);
   /* No reset: the header reads the page's stack (application bar + rail). */
   assert.doesNotMatch(box, /--sticky-top/);

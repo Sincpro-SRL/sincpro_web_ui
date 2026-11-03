@@ -109,7 +109,7 @@ test("embedded, a written title heads the line at the level of a group title", (
   const inside = draw(<Apuntes embedded />);
   assert.match(
     inside,
-    /<h3 class="[^"]*text-body font-semibold[^"]*">Apuntes contables<\/h3>/,
+    /<h2 class="[^"]*text-body font-semibold[^"]*">Apuntes contables<\/h2>/,
   );
 });
 

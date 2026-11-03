@@ -227,6 +227,13 @@ export type Grouping<T> = {
   /** Qué montones están plegados, por `pathKey(pile.path)`. */
   collapsed?: readonly string[];
   onToggle?: (key: string) => void;
+  /**
+   * Un montón contado afuera trae su PRIMERA página y su conteo entero: esto pide las
+   * siguientes. Con esto, cada presentación ofrece «Ver N más» debajo del montón que
+   * tiene menos filas de las que cuenta; quien guarda los datos agrega las que lleguen a
+   * `pile.items`.
+   */
+  onMore?: (pile: Pile<T>) => void;
 };
 
 /**

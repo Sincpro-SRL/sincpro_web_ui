@@ -212,9 +212,9 @@ export function ListingBar({
               written; standing alone among the record's sections it needs one, at the level of
               a group title — a heading of the record, not of a screen. */}
           {title === undefined ? null : (
-            <h3 className="min-w-0 shrink-0 truncate text-body font-semibold text-ink">
+            <h2 className="min-w-0 shrink-0 truncate text-body font-semibold text-ink">
               {title}
-            </h3>
+            </h2>
           )}
           {/* `basis` is what the search asks for before the line breaks; `flex-1` is what
               makes it fill once it has its line. `overflow-x-clip` for the reason given

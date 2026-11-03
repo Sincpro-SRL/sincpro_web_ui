@@ -31,5 +31,5 @@ test("a group title is a step above its labels, with a line where the group star
     </SheetGroups>,
   );
   assert.match(html, /<header class="[^"]*border-b border-line[^"]*">/);
-  assert.match(html, /<h3 class="[^"]*text-body font-semibold[^"]*">Cliente<\/h3>/);
+  assert.match(html, /<h2 class="[^"]*text-body font-semibold[^"]*">Cliente<\/h2>/);
 });

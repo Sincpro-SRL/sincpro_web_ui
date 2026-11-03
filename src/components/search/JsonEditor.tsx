@@ -8,6 +8,7 @@ import { useTheme } from "@sincpro/web-ui/foundations/theme";
 import { Button } from "@sincpro/web-ui/primitives/button/index";
 import CodeMirror, { EditorView, Prec } from "@uiw/react-codemirror";
 import { Wand2 } from "lucide-react";
+import { useId } from "react";
 
 /* ====================================================================== *
  *  UN JSON QUE SE ESCRIBE A MANO, EN UN EDITOR DE VERDAD.
@@ -75,6 +76,7 @@ export function JsonEditor({
   label?: string;
 }) {
   const copy = useUiCopy();
+  const labelId = useId();
   const surface = useSurface();
   const { resolved } = useTheme();
   /* The chrome is dark in both themes; the canvas follows the theme. */
@@ -83,7 +85,9 @@ export function JsonEditor({
   return (
     <div className="flex min-w-0 flex-col gap-1">
       <div className="flex items-center justify-between">
-        <p className="text-micro text-muted">{label ?? copy.builder.editor}</p>
+        <p id={labelId} className="text-micro text-muted">
+          {label ?? copy.builder.editor}
+        </p>
         <Button
           role="ghost"
           size="sm"
@@ -105,6 +109,8 @@ export function JsonEditor({
           height={height}
           theme={dark ? "dark" : "light"}
           extensions={[
+            /* The editable area is CodeMirror's own element: named here or nowhere. */
+            EditorView.contentAttributes.of({ "aria-labelledby": labelId }),
             json(),
             linter(jsonParseLinter()),
             lintGutter(),

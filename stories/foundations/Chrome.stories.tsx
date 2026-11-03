@@ -162,9 +162,9 @@ function Card({ c }: { c: Candidate }) {
     >
       <header className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1">
         <span className="font-mono text-micro text-primary">{c.id}</span>
-        <h3 className={`text-lead text-ink ${c.selected ? "font-semibold" : "font-medium"}`}>
+        <h2 className={`text-lead text-ink ${c.selected ? "font-semibold" : "font-medium"}`}>
           {c.name}
-        </h3>
+        </h2>
         <span className="ml-auto flex items-center gap-3 font-mono text-micro tabular-nums text-muted">
           <span>dorado {ratioLabel(gold)}</span>
           <span>texto {ratioLabel(ink)}</span>

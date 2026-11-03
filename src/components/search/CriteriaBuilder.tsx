@@ -14,7 +14,7 @@ import {
   filterableNames,
   type ModelDefinition,
 } from "@sincpro/web-ui/components/search/model";
-import { currentCopy, fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { GRAIN_ORDER } from "@sincpro/web-ui/foundations/grouping";
 import { useSurface } from "@sincpro/web-ui/foundations/surface";
 import { Rule } from "@sincpro/web-ui/primitives/block/Block";
@@ -336,11 +336,11 @@ export function CriteriaBuilder({
     try {
       parsed = JSON.parse(text) as BuiltCriteria;
     } catch {
-      setRawError(currentCopy().builder.invalidJson);
+      setRawError(copy.builder.invalidJson);
       return;
     }
     if (typeof parsed !== "object" || parsed === null || Array.isArray(parsed)) {
-      setRawError(currentCopy().builder.notCriteria);
+      setRawError(copy.builder.notCriteria);
       return;
     }
     setRawError(null);

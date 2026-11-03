@@ -203,6 +203,7 @@ export const SPANISH_COPY: UiCopyOverride = {
     min: "mín {value}",
     max: "máx {value}",
     distinct: "{value} distintos",
+    pileMore: "Ver {count} más",
   },
   menu: { empty: "Nada coincide." },
   list: {
@@ -268,6 +269,7 @@ export const SPANISH_COPY: UiCopyOverride = {
     weekOfYear: "Semana {n} de {year}",
     quarter: "T{n}",
     quarterOfYear: "T{n} de {year}",
+    today: "Hoy",
   },
   grouping: {
     label: "Agrupar por",
@@ -352,6 +354,8 @@ export const SPANISH_COPY: UiCopyOverride = {
     pilePageNote:
       "Sólo el primer nivel: pedida una página, los niveles más profundos sólo contestan por los montones que sobrevivieron.",
     limitPiles: "Limitar cuántos montones vuelven",
+    ruleField: "Campo",
+    ruleOperator: "Comparación",
     noValue: "sin valor",
     from: "desde…",
     to: "hasta…",

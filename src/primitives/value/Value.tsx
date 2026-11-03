@@ -100,7 +100,9 @@ export function Cell({
   const copy = useUiCopy();
   if (value === null || value === undefined) {
     return (
-      <span className="text-muted italic" title={copy.cell.missing}>
+      /* Said by the word and the italic, in ink: muted, it fell under 4.5:1 on a toned
+         cell — and a missing value is exactly what someone has to see. */
+      <span className="text-ink italic" title={copy.cell.missing}>
         {copy.cell.missing}
       </span>
     );

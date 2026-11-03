@@ -12,7 +12,12 @@ import { Listing } from "@sincpro/web-ui/components/listing/Listing";
 import { ListingBar } from "@sincpro/web-ui/components/listing/ListingBar";
 import { PivotExplorer } from "@sincpro/web-ui/components/listing/PivotExplorer";
 import { RecordCard } from "@sincpro/web-ui/components/listing/RecordCard";
-import { GroupHeader, Row, RowHeader } from "@sincpro/web-ui/components/listing/Row";
+import {
+  GroupHeader,
+  GroupMore,
+  Row,
+  RowHeader,
+} from "@sincpro/web-ui/components/listing/Row";
 import type { BuiltInPresent } from "@sincpro/web-ui/components/listing/set";
 import {
   type SortField,
@@ -437,6 +442,16 @@ export function ListView<T extends object>({
             : pile.piles.length > 0
               ? renderPiles(pile.piles, nodes)
               : nodes(pile.items)}
+          {open &&
+          pile.piles.length === 0 &&
+          pile.items.length < pile.count &&
+          group?.onMore !== undefined ? (
+            <GroupMore
+              left={pile.count - pile.items.length}
+              depth={pile.depth}
+              onMore={() => group.onMore?.(pile)}
+            />
+          ) : null}
         </Fragment>
       );
     });
@@ -476,6 +491,7 @@ export function ListView<T extends object>({
         ...(group?.onToggle === undefined
           ? {}
           : { toggle: (pile: Pile<T>) => group.onToggle?.(pathKey(pile.path)) }),
+        ...(group?.onMore === undefined ? {} : { more: group.onMore }),
         ...(selection === undefined
           ? {}
           : { selection: { has: selection.has, toggle: selection.toggle } }),

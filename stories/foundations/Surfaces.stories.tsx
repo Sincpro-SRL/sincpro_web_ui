@@ -394,6 +394,9 @@ function ElRegistro({ sinRiel = false }: { sinRiel?: boolean }) {
  * que la cabecera del cajón no dice.
  */
 export const UnRegistro: Story = {
+  /* The same record is drawn on purpose more than once — on each surface — to compare them;
+     on a real screen each trail names its own record. */
+  parameters: { a11y: { config: { rules: [{ id: "landmark-unique", enabled: false }] } } },
   render: () => {
     const [dialogo, setDialogo] = useState(false);
     const [cajon, setCajon] = useState(true);

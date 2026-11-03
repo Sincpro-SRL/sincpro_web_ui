@@ -262,7 +262,7 @@ export function SheetGroup({
               aria-hidden
             />
           )}
-          <h3 className="min-w-0 truncate text-body font-semibold text-ink">{title}</h3>
+          <h2 className="min-w-0 truncate text-body font-semibold text-ink">{title}</h2>
           {hint === undefined ? null : <Hint>{hint}</Hint>}
         </header>
       ) : hint === undefined ? null : (

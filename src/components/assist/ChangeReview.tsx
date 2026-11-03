@@ -246,9 +246,9 @@ function ReviewBody({ review }: { review: Review }) {
       {groups.map((group, i) => (
         <section key={group.title ?? i} className="flex min-w-0 flex-col">
           {group.title === undefined ? null : (
-            <h4 className="px-4 pt-3 pb-1 text-micro font-medium text-muted">
+            <h3 className="px-4 pt-3 pb-1 text-micro font-medium text-muted">
               {group.title}
-            </h4>
+            </h3>
           )}
           <ul className="flex min-w-0 flex-col">
             {group.changes.map((change) => (
@@ -336,9 +336,9 @@ export function ChangeReview(props: ChangeReviewProps) {
           <AssistLabel />
           {source === undefined ? null : <AssistSourceLink source={source} />}
         </span>
-        <h3 id={titleId} className="text-lead font-semibold text-ink">
+        <h2 id={titleId} className="text-lead font-semibold text-ink">
           {title ?? copy.assist.review}
-        </h3>
+        </h2>
         {summary === undefined ? null : (
           <p className="max-w-prose text-meta text-muted">{summary}</p>
         )}

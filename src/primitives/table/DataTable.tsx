@@ -1,7 +1,7 @@
 "use client";
 
 import { fillCopy, type UiCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import { pathKey } from "@sincpro/web-ui/foundations/grouping";
+import { pathKey, type Pile, pileItems } from "@sincpro/web-ui/foundations/grouping";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
 import { CellCopy } from "@sincpro/web-ui/primitives/table/CellCopy";
 import { CellEditor } from "@sincpro/web-ui/primitives/table/CellEditor";
@@ -322,6 +322,70 @@ export type GroupColumn<T> = {
   labelOf: (key: string) => string;
 };
 
+/** One line of the body, whoever grouped the set: a pile's header, a record, or the
+ *  «show more» under a pile that holds fewer records than it counts. */
+type Entry<T> =
+  | {
+      kind: "pile";
+      id: string;
+      depth: number;
+      /** Which field cut this pile — with several levels a bare «2026-09» is ambiguous. */
+      level: string | undefined;
+      label: string;
+      count: number;
+      detail: string | undefined;
+      open: boolean;
+      toggle: (() => void) | undefined;
+    }
+  | { kind: "row"; id: string; item: T }
+  | { kind: "more"; id: string; depth: number; left: number; more: () => void };
+
+/** The piles someone else counted, as the body draws them: open ones with what is inside,
+ *  the deepest with its records and, when it holds fewer than it counts, its «show more». */
+function entriesOfPiles<T>(
+  piles: readonly Pile<T>[],
+  keyOf: (item: T) => string,
+  collapsed: readonly string[] | undefined,
+  onToggle: ((key: string) => void) | undefined,
+  onMore: ((pile: Pile<T>) => void) | undefined,
+): Entry<T>[] {
+  return piles.flatMap((pile): Entry<T>[] => {
+    const key = pathKey(pile.path);
+    const open = collapsed?.includes(key) !== true;
+    const head: Entry<T> = {
+      kind: "pile",
+      id: `\u0000pile${key}`,
+      depth: pile.depth,
+      level: pile.field,
+      label: pile.label,
+      count: pile.count,
+      detail: pile.detail,
+      open,
+      toggle: onToggle === undefined ? undefined : () => onToggle(key),
+    };
+    if (!open) return [head];
+    if (pile.piles.length > 0) {
+      return [head, ...entriesOfPiles(pile.piles, keyOf, collapsed, onToggle, onMore)];
+    }
+    const left = pile.count - pile.items.length;
+    return [
+      head,
+      ...pile.items.map((item): Entry<T> => ({ kind: "row", id: keyOf(item), item })),
+      ...(left > 0 && onMore !== undefined
+        ? [
+            {
+              kind: "more" as const,
+              id: `\u0000more${key}`,
+              depth: pile.depth,
+              left,
+              more: () => onMore(pile),
+            },
+          ]
+        : []),
+    ];
+  });
+}
+
 export function DataTable<T extends object>({
   data,
   columns,
@@ -337,6 +401,8 @@ export function DataTable<T extends object>({
   totals = false,
   collapsed,
   onGroupToggle,
+  piles,
+  onMore,
   create,
   copyable = true,
 }: {
@@ -372,6 +438,15 @@ export function DataTable<T extends object>({
    *  table does not reopen what rows just folded. */
   collapsed?: readonly string[];
   onGroupToggle?: (key: string) => void;
+  /**
+   * The piles ALREADY counted by whoever keeps the data — «187» over the whole set, not
+   * the 12 rows of the page. Given, the table draws them as they come (their order, their
+   * labels, their `detail`) instead of grouping `data` by `levels`.
+   */
+  piles?: readonly Pile<T>[];
+  /** A pile shows its first page and counts them all: this asks for the next ones, and
+   *  the table offers it under each pile that holds fewer than it counts. */
+  onMore?: (pile: Pile<T>) => void;
   /** Write a new record as a row of the list. See the file's header. */
   create?: DataTableCreate<T>;
   /** The cells' copy buttons, on by default. `false` takes them off the whole table; a
@@ -473,7 +548,8 @@ export function DataTable<T extends object>({
         sort === null || sort === undefined
           ? []
           : [{ id: sort.key, desc: sort.direction === "desc" }],
-      grouping: (levels ?? []).map((level) => level.id),
+      /* Counted elsewhere, the tree comes made: grouping the page again would undo it. */
+      grouping: piles === undefined ? (levels ?? []).map((level) => level.id) : [],
     },
     // Groups start open: grouping and then having to open each group is two
     // gestures for what the user asked for in one.
@@ -514,7 +590,7 @@ export function DataTable<T extends object>({
      the same thing; with several, folding the outer pile has to take the inner
      ones with it — otherwise closing «Ferretería Sur» leaves its months on screen,
      orphaned under a header that says it is closed. */
-  const drawn =
+  const shown =
     collapsed === undefined
       ? rows
       : rows.filter((row) => {
@@ -525,18 +601,59 @@ export function DataTable<T extends object>({
           }
           return true;
         });
+
+  /* ONE sequence for the body, whoever grouped: the piles counted elsewhere, or the tree
+     TanStack built from the page. Before, the table only knew the second — grouped on the
+     server, a list said «187» in rows and «12» in the table. */
+  const entries: readonly Entry<T>[] =
+    piles !== undefined
+      ? entriesOfPiles(piles, getRowId, collapsed, onGroupToggle, onMore)
+      : shown.map((row): Entry<T> => {
+          if (row.subRows.length === 0)
+            return { kind: "row", id: row.id, item: row.original };
+          const path = pathOf(row);
+          const key = pathKey(path);
+          const depth = path.length - 1;
+          const level = levels?.find((one) => one.id === row.groupingColumnId);
+          /* La CLAVE del montón —la del motor— y el rótulo, que lo pone el nivel: son dos
+             textos y sólo el segundo cambia con el idioma. */
+          const value = path[depth] ?? key;
+          return {
+            kind: "pile",
+            id: row.id,
+            depth,
+            level: level?.label,
+            label: level === undefined ? value : level.labelOf(value),
+            /* Las FILAS de adentro, no los subgrupos: `subRows` de un montón con niveles
+               abajo son los montones del nivel siguiente, y contarlos decía «2» donde hay
+               cuarenta filas. */
+            count: row.getLeafRows().filter((leaf) => leaf.subRows.length === 0).length,
+            detail: undefined,
+            open: collapsed === undefined ? row.getIsExpanded() : !collapsed.includes(key),
+            toggle: () =>
+              onGroupToggle === undefined ? row.toggleExpanded() : onGroupToggle(key),
+          };
+        });
   const selecting = onSelectedChange !== undefined;
   const width = columns.length + (selecting ? 1 : 0) + (rowActions === undefined ? 0 : 1);
 
   /* Past a few hundred rows only the ones in view are drawn — see `rowWindow.tsx`. It
-     windows what is DRAWN, group rows included and folded rows left out: that is the
+     windows what is DRAWN, pile headers included and folded rows left out: that is the
      sequence a person scrolls through. */
   const view = useRowWindow({
-    count: drawn.length,
-    getKey: (i) => drawn[i]?.id ?? String(i),
+    count: entries.length,
+    getKey: (i) => entries[i]?.id ?? String(i),
   });
 
-  const leaves = useMemo(() => rows.filter((r) => r.subRows.length === 0), [rows]);
+  /* Every record the selection can reach — folded ones included: «select all» over a
+     grouped list means all of them, not the ones whose pile happens to be open. */
+  const leaves = useMemo(
+    () =>
+      piles !== undefined
+        ? pileItems(piles).map(getRowId)
+        : rows.filter((r) => r.subRows.length === 0).map((r) => r.id),
+    [piles, rows, getRowId],
+  );
 
   /* The aggregates are computed by the component and not by TanStack: its
      `aggregationFn` lives in the GROUP model, and a footer exists precisely when
@@ -545,8 +662,8 @@ export function DataTable<T extends object>({
     () => (totals ? columns.map((c) => aggregateOf(c, data)) : null),
     [totals, columns, data],
   );
-  const all = leaves.length > 0 && leaves.every((r) => selected?.has(r.id) === true);
-  const some = leaves.some((r) => selected?.has(r.id) === true);
+  const all = leaves.length > 0 && leaves.every((id) => selected?.has(id) === true);
+  const some = leaves.some((id) => selected?.has(id) === true);
 
   function toggle(id: string, on: boolean) {
     const n = new Set(selected ?? []);
@@ -560,7 +677,7 @@ export function DataTable<T extends object>({
       height={height}
       {...(view.on
         ? {
-            rowCount: 1 + drawn.length + (draft === null ? 0 : 1) + (totals ? 1 : 0),
+            rowCount: 1 + entries.length + (draft === null ? 0 : 1) + (totals ? 1 : 0),
           }
         : {})}
     >
@@ -571,9 +688,7 @@ export function DataTable<T extends object>({
               label={copy.selection.all}
               checked={all}
               indeterminate={some}
-              onChange={(v) =>
-                onSelectedChange?.(v ? new Set(leaves.map((r) => r.id)) : new Set())
-              }
+              onChange={(v) => onSelectedChange?.(v ? new Set(leaves) : new Set())}
             />
           </Th>
         ) : null}
@@ -591,7 +706,9 @@ export function DataTable<T extends object>({
         ))}
         {/* The actions column carries no label: naming a column that is empty
             until the pointer arrives is labelling the void. */}
-        {rowActions === undefined ? null : <Th width={1}>{""}</Th>}
+        {rowActions === undefined ? null : (
+          <td className="w-px border-b border-line-strong" />
+        )}
       </THead>
 
       <tbody ref={view.body.ref}>
@@ -599,9 +716,8 @@ export function DataTable<T extends object>({
             POSITION, and every scroll would remount every row — focus and open editors
             with it. */}
         {view.rows.flatMap((slot, at) => {
-          const row = drawn[slot.index];
-          if (row === undefined) return [];
-          const isGroup = row.subRows.length > 0;
+          const entry = entries[slot.index];
+          if (entry === undefined) return [];
           const windowed = view.windowed(slot.index);
           /* What is not drawn between the previous drawn row and this one: the rows
              above the view before the first, and the gap before a row kept only because
@@ -612,88 +728,97 @@ export function DataTable<T extends object>({
             width,
             `\u0000pad${slot.index}`,
           );
+          const indent =
+            entry.kind === "row" || entry.depth === 0
+              ? undefined
+              : { paddingLeft: `calc(var(--spacing-indent) * ${entry.depth} + 0.75rem)` };
 
-          if (isGroup) {
-            const path = pathOf(row);
-            const key = pathKey(path);
-            const depth = path.length - 1;
-            const id = row.groupingColumnId ?? undefined;
-            const level = levels?.find((one) => one.id === id);
-            /* La CLAVE del montón —la del motor— y el rótulo, que lo pone el
-               nivel: son dos textos y sólo el segundo cambia con el idioma. */
-            const value = path[depth] ?? key;
-            const open =
-              collapsed === undefined
-                ? row.getIsExpanded()
-                : collapsed.includes(key) !== true;
+          if (entry.kind === "pile") {
+            const head = (
+              <>
+                {entry.toggle === undefined ? null : (
+                  <ChevronRight
+                    className={`size-(--size-icon-sm) text-muted transition-transform duration-(--duration-instant) ${
+                      entry.open ? "rotate-90" : ""
+                    }`}
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                )}
+                {entry.level === undefined ? null : (
+                  <span className="text-micro font-normal text-muted">{entry.level}</span>
+                )}
+                <span>{entry.label}</span>
+                <span className="inline-flex shrink-0 items-center rounded-pill border border-line-strong bg-ink/5 px-2 py-0.5 text-micro tabular-nums text-muted">
+                  {entry.count.toLocaleString(copy.locale)}
+                </span>
+                {entry.detail === undefined ? null : (
+                  <span className="text-micro font-normal tabular-nums text-muted">
+                    {entry.detail}
+                  </span>
+                )}
+              </>
+            );
             return [
               gap,
-              /* The group row: it spans the whole width, says which value it
-                 groups by and how many are inside. The counter is what makes it
-                 useful without opening it. */
-              <tr key={row.id} {...windowed} className="border-b border-line bg-ground">
-                <td
-                  colSpan={width}
-                  className="px-3 py-1.5"
-                  style={
-                    depth === 0
-                      ? undefined
-                      : { paddingLeft: `calc(var(--spacing-indent) * ${depth} + 0.75rem)` }
-                  }
-                >
+              /* The pile's row: it spans the whole width, says which value it groups by
+                 and how many are inside — what makes it useful without opening it. */
+              <tr key={entry.id} {...windowed} className="border-b border-line bg-ground">
+                <td colSpan={width} className="px-3 py-1.5" style={indent}>
+                  {entry.toggle === undefined ? (
+                    <span className="inline-flex items-center gap-1.5 text-meta font-medium text-ink">
+                      {head}
+                    </span>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={entry.toggle}
+                      aria-expanded={entry.open}
+                      className="inline-flex items-center gap-1.5 rounded-control text-meta font-medium text-ink transition-colors duration-(--duration-instant) hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+                    >
+                      {head}
+                    </button>
+                  )}
+                </td>
+              </tr>,
+            ];
+          }
+
+          if (entry.kind === "more") {
+            return [
+              gap,
+              <tr key={entry.id} {...windowed} className="border-b border-line">
+                <td colSpan={width} className="px-3 py-1" style={indent}>
                   <button
                     type="button"
-                    onClick={() =>
-                      onGroupToggle === undefined ? row.toggleExpanded() : onGroupToggle(key)
-                    }
-                    aria-expanded={open}
-                    className="inline-flex items-center gap-1.5 rounded-control text-meta font-medium text-ink transition-colors duration-(--duration-instant) hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+                    onClick={entry.more}
+                    className="rounded-control text-meta text-primary transition-colors duration-(--duration-instant) hover:underline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
                   >
-                    <ChevronRight
-                      className={`size-(--size-icon-sm) text-muted transition-transform duration-(--duration-instant) ${
-                        open ? "rotate-90" : ""
-                      }`}
-                      strokeWidth={2}
-                      aria-hidden
-                    />
-                    {/* Which field this pile was cut by. With a single level
-                        everyone knew; with several, a bare «2026-09» does not
-                        say whether it is the month it was registered or the one
-                        it ran. */}
-                    {level === undefined ? null : (
-                      <span className="text-micro font-normal text-muted/70">
-                        {level.label}
-                      </span>
-                    )}
-                    <span>{level === undefined ? value : level.labelOf(value)}</span>
-                    <span className="inline-flex shrink-0 items-center rounded-pill border border-line-strong bg-ink/5 px-2 py-0.5 text-micro tabular-nums text-muted">
-                      {/* Las FILAS de adentro, no los subgrupos. `subRows` de un
-                          montón con niveles abajo son los montones del nivel
-                          siguiente, así que contarlos decía «2» donde hay
-                          cuarenta filas. */}
-                      {row.getLeafRows().length.toLocaleString(copy.locale)}
-                    </span>
+                    {fillCopy(copy.table.pileMore, {
+                      count: entry.left.toLocaleString(copy.locale),
+                    })}
                   </button>
                 </td>
               </tr>,
             ];
           }
 
-          const original = row.original;
+          const original = entry.item;
+          const id = entry.id;
           return [
             gap,
             <Tr
-              key={row.id}
+              key={id}
               {...(windowed === undefined ? {} : { windowed })}
-              selected={selected?.has(row.id) === true}
+              selected={selected?.has(id) === true}
               onClick={onRowClick === undefined ? undefined : () => onRowClick(original)}
             >
               {selecting ? (
                 <Td>
                   <SelectBox
                     label={copy.selection.row}
-                    checked={selected?.has(row.id) === true}
-                    onChange={(v) => toggle(row.id, v)}
+                    checked={selected?.has(id) === true}
+                    onChange={(v) => toggle(id, v)}
                   />
                 </Td>
               ) : null}
@@ -788,7 +913,9 @@ export function DataTable<T extends object>({
         <tfoot className="sticky bottom-0 z-10 bg-ground">
           <tr
             className="border-t border-line-strong"
-            aria-rowindex={view.on ? 2 + drawn.length + (draft === null ? 0 : 1) : undefined}
+            aria-rowindex={
+              view.on ? 2 + entries.length + (draft === null ? 0 : 1) : undefined
+            }
           >
             {selecting ? <td /> : null}
             {columns.map((c, i) => {

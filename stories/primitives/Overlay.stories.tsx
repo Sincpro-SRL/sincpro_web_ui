@@ -84,7 +84,8 @@ function Lineas({ actions = false }: { actions?: boolean }) {
             Cantidad
           </th>
           <th className="border-b border-line px-2 py-1.5 text-right font-medium">Precio</th>
-          {actions ? <th className="border-b border-line px-2 py-1.5" /> : null}
+          {/* A column of buttons has no header: its top is a cell, as in `DataTable`. */}
+          {actions ? <td className="border-b border-line px-2 py-1.5" /> : null}
         </tr>
       </thead>
       <tbody>

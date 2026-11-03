@@ -82,6 +82,8 @@ La aplicación arma lo suyo con la API pública (`@sincpro/web-ui`), sin forks n
 | Una pieza compuesta escrita como árbol         | `slot()`, `pick`, `propsOf` (`foundations/slots`)                                            |
 | Una operación sobre N registros (el «wizard»)  | `Record` en un modal + `api.pick` / `api.answer` (composer) — ver `5 · Plantillas/Operación` |
 | Mis componentes con el mismo aspecto           | las clases de los tokens (`bg-surface text-ink …`)                                           |
+| Las palabras de mi aplicación, en su idioma    | `createCopy` → `install`, `Provider`, `useCopy` (`foundations/catalog`)                      |
+| Varios conjuntos a la vez (la conciliación)    | `Panes` / `Pane` — ver `5 · Plantillas/Conciliación`                                         |
 
 Lo que está cerrado a propósito: el aspecto de un componente (no hay `className` ni `style`) y
 el dominio. Lo abierto es la estructura.
@@ -104,28 +106,44 @@ no son públicos: `package.json` exporta los niveles, no los archivos.
   `field/clipboard.tsx` (era el botón de copiar, no la copia de textos).
 - `tests/architecture.test.ts`: tiers y ciclos, para que no vuelvan.
 
-### Fase 2 — la copia por familia
+### Fase 2 — la copia: un mecanismo, no un archivo por familia ✅ 2026-11-03
 
-Hoy `foundations/copy.tsx` (1.400 líneas) enumera los textos de TODAS las piezas: la base
-conoce a los de arriba, cada pieza nueva edita `foundations`, y una aplicación no puede sumar los
-textos de sus propios componentes. El destino: `foundations` da el mecanismo
-(`createCopy(english, { es })` → `Provider`, `useCopy`, `install`) y cada familia declara su
-sección. La usan igual composer, web-framework y las aplicaciones, que hoy tienen tres tablas y
-tres `install*Copy`. De paso: un `UiCopyProvider` deja de escribir la tabla global (hoy un sector
-en otro idioma cambia el de toda la pantalla). Toca los tres repos: va después de un release.
+Se pensó repartir los 1.400 textos por familia. Se descartó: un catálogo por paquete es lo
+estándar (React Aria, MUI) y moverlo era mucho churn por poco. Los problemas reales eran otros y
+se cerraron:
 
-### Fase 3 — «Extender», recetas que son pruebas
+- **El mecanismo, una vez** (`foundations/catalog.tsx`): `createCopy(english)` → `install`,
+  `Provider`, `useCopy`, `current`, `merge`. El de web-ui es uno; el de una aplicación, otro.
+- **Un `Provider` cambia su rama y nunca la copia instalada.** Antes la escribía al dibujarse:
+  un rincón en otro idioma cambiaba toda la pantalla, y un test pasaba porque otro anterior había
+  dejado el castellano puesto.
+- **Un `Provider` se apoya en lo que lo rodea**, no en el inglés, y **la mezcla es profunda**:
+  renombrar una palabra no vacía a sus hermanas. Agregar una sección ya no toca cinco lugares.
+- Lo que no es un componente (una frase armada en una función, un mes) lee la copia instalada;
+  un componente le pasa la de su rama (`formatRelative`, `writeANote`).
 
-Una página `Extender.mdx` con una receta por fila de la tabla de §5. Cada receta es una historia
-armada sólo con la API pública —como las plantillas—, así que si algo de lo que la receta usa se
-vuelve interno, la historia deja de compilar. Es la garantía de que la librería sigue abierta.
+composer y web-framework pueden adoptar `createCopy` para sus tablas después de este release.
 
-### Fase 4 — pantallas de varias listas: la conciliación
+### Fase 3 — «Extender», recetas que son pruebas ✅ 2026-11-03
 
-La conciliación bancaria de Odoo: extractos, asientos y apuntes lado a lado, cada uno con su
-búsqueda, que se cruzan. Una plantilla `Conciliación` dice qué falta. Lo que ya se sospecha: una
-lista de página entera mueve su barra al encabezado de la pantalla (`useHeaderSlot`), y ahí hay
-UN lugar — con tres listas, compiten.
+`stories/Extender.mdx` y `6 · Extender/Recetas`: un control propio en un `Field`, una celda
+propia, una pieza compuesta con `slot()`, textos propios. Importan sólo `@sincpro/web-ui`
+(`tests/templates.test.ts`): si algo deja de ser público, dejan de compilar.
+
+### Fase 4 — pantallas de varios conjuntos: la conciliación ✅ 2026-11-03
+
+`Panes` / `Pane` (`components/shell`): cada panel scrollea solo y lo que se pega adentro se pega
+a su borde, no al encabezado de la pantalla; angosto, se apilan. `5 · Plantillas/Conciliación`
+lo usa con dos `List` y un `Record`, cada lista con su búsqueda.
+
+### Fase 5 — accesibilidad como error ✅ 2026-11-03
+
+axe falla la historia (`.storybook/preview.ts`). Las 314 violaciones se cerraron en la raíz:
+nombres que escondían el texto visible (celdas del pivote, la celda editable, las opciones del
+`Picker` y del `ComboBox`, las pestañas), encabezados de tabla vacíos (una columna de botones
+lleva una celda), títulos que salteaban un nivel, cajas con scroll que el teclado no alcanzaba,
+tintes que perdían contraste sobre un fondo de color (`Avatar`), la pestaña que apuntaba a un
+panel que no existía (`TabsScope` / `TabsPanel`).
 
 ### Lo que no se mueve, y por qué
 

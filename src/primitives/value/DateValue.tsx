@@ -1,6 +1,11 @@
 "use client";
 
-import { currentCopy, currentCopyLocale, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import {
+  currentCopy,
+  currentCopyLocale,
+  type UiCopy,
+  useUiCopy,
+} from "@sincpro/web-ui/foundations/copy";
 
 /* ==================================================================== *
  *  WHEN — a date says two things and they can't both be said together.
@@ -50,12 +55,18 @@ const STEPS: readonly [ms: number, unit: Intl.RelativeTimeFormatUnit][] = [
   [DAY, "day"],
 ];
 
-export function formatRelative(when: Date, now: Date = new Date()): string {
-  const locale = currentCopyLocale();
+/** Context: `copy` defaults to the installed words — what a caller outside a component has;
+ *  a component passes its branch's (`useUiCopy()`), so a provider reaches the sentence. */
+export function formatRelative(
+  when: Date,
+  now: Date = new Date(),
+  copy: UiCopy = currentCopy(),
+): string {
+  const locale = copy.locale;
   const delta = when.getTime() - now.getTime();
   const abs = Math.abs(delta);
 
-  if (abs < MINUTE) return currentCopy().time.justNow;
+  if (abs < MINUTE) return copy.time.justNow;
   if (abs > 7 * DAY) return dateFormat(locale).format(when);
 
   const step = STEPS.find(([ms]) => abs < ms * 60) ?? STEPS[STEPS.length - 1]!;
@@ -63,8 +74,7 @@ export function formatRelative(when: Date, now: Date = new Date()): string {
   return relativeFormat(locale).format(Math.round(delta / ms), unit);
 }
 
-export function formatDateTime(when: Date): string {
-  const locale = currentCopyLocale();
+export function formatDateTime(when: Date, locale: string = currentCopyLocale()): string {
   return `${dateFormat(locale).format(when)} ${timeFormat(locale).format(when)}`;
 }
 
@@ -101,13 +111,13 @@ export function DateValue({
     );
   }
 
-  const exact = formatDateTime(d);
+  const exact = formatDateTime(d, copy.locale);
   const text =
     format === "exact"
       ? exact
       : format === "date"
         ? dateFormat(copy.locale).format(d)
-        : formatRelative(d, now);
+        : formatRelative(d, now, copy);
 
   return (
     <time

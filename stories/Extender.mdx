@@ -1,0 +1,35 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="6 · Extender/Cómo extender" />
+
+# Extender · lo que la aplicación agrega
+
+web-ui trae las piezas; la aplicación trae lo suyo —su control, su celda, su manera de mirar
+una lista, sus palabras— **sin forks y sin estilos sueltos sobre los componentes**. Cada fila
+de abajo es una receta en `6 · Extender/Recetas`, escrita como la escribiría una aplicación:
+importando sólo `@sincpro/web-ui`. Si algo de lo que usa deja de ser público, la receta deja de
+compilar — por eso son pruebas y no ejemplos.
+
+| Quiero…                                        | Con                                                            | Receta                                       |
+| ---------------------------------------------- | -------------------------------------------------------------- | -------------------------------------------- |
+| Un control propio adentro de un `Field`        | `useFieldIds` (la etiqueta lo nombra), `useFormMode` (lectura) | Control propio                               |
+| Una celda con una pieza mía                    | `DataColumn.cell` — `value` sigue ordenando                    | Celda propia                                 |
+| Otra manera de mirar una lista (mapa, galería) | `List.Present` → recibe el conjunto (`ListSet`)                | `4 · Vistas/Lista › Una presentación propia` |
+| Una pieza compuesta escrita como árbol         | `slot`, `flatten`, `pickAll`, `propsOf`                        | Pieza compuesta                              |
+| Las palabras de mi aplicación, en su idioma    | `createCopy` — `install`, `Provider`, `useCopy`                | Textos propios                               |
+| Una operación sobre N registros (el «wizard»)  | `Record` en un modal + `api.pick` / `api.answer` (composer)    | `5 · Plantillas/Operación`                   |
+| Varios conjuntos a la vez (la conciliación)    | `Panes` / `Pane` con una `List` o un `Record` en cada uno      | `5 · Plantillas/Conciliación`                |
+
+## Lo que está cerrado, y por qué
+
+- **El aspecto de un componente.** No hay `className` ni `style` en `Button`, `Tag` o `List`:
+  el aspecto lo dicen su rol y su tamaño, y una pantalla no se ve distinta de la de al lado.
+  Para las piezas propias están las clases de los tokens (`bg-surface text-ink border-line`),
+  que siguen el tema claro y el oscuro.
+- **El dominio.** No hay un componente «Factura»: se arma con `Record`, `List` y las primitivas.
+
+## Antes de escribir una pieza
+
+Puede que ya exista, o su hermana. Dónde iría si fuera del paquete —y de qué puede depender— lo
+dice `docs/ARCHITECTURE.md`: cuatro niveles y, en las primitivas, lo que **muestra**, lo que
+**pregunta** y lo que **muestra muchos**. Para armar algo propio se empieza por lo que muestra.

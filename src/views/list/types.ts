@@ -61,6 +61,9 @@ export type ListSet<T> = {
   isOpen: (pile: Pile<T>) => boolean;
   /** Folds or unfolds a pile — present when the list lets it. */
   toggle?: (pile: Pile<T>) => void;
+  /** Asks for the next page of a pile that holds fewer records than it counts
+   *  (`pile.items.length < pile.count`) — present when whoever keeps the data can. */
+  more?: (pile: Pile<T>) => void;
   selection?: { has: (id: string) => boolean; toggle: (id: string) => void };
   /** What a press on a record does in THIS list: choose it, look at it or open it, as the
    *  list decided (`onChoose`, `rowClick`). Call this from the body of a card or a marker. */

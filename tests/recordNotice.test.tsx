@@ -83,7 +83,7 @@ test("the quiet notices are not in the form: one indicator in the rail counts th
   assert.match(chip[1]!, /lucide-triangle-alert/);
   /* In the rail, before the record's name. */
   assert.ok(at(html, "data-record-notices") < at(html, "FAC/2026/0115</h1>"));
-  assert.ok(at(html, 'aria-label="Location"') < at(html, "data-record-notices"));
+  assert.ok(at(html, 'aria-label="Location') < at(html, "data-record-notices"));
 });
 
 test("in Spanish the indicator counts in Spanish, singular and plural", () => {
@@ -118,7 +118,7 @@ test("what is wrong stays visible, outside the sheet: between the rail and the p
   const band = at(html, 'aria-label="What is wrong with this record"');
   const error = at(html, "El servidor no respondió.");
   const rejected = at(html, "El SIN rechazó la factura.");
-  assert.ok(at(html, 'aria-label="Location"') < band, "under the rail");
+  assert.ok(at(html, 'aria-label="Location') < band, "under the rail");
   assert.ok(band < error && error < rejected, "the operation error first");
   assert.ok(rejected < at(html, "FAC/2026/0115</h1>"), "above the paper");
   assert.ok(rejected < at(html, "Cliente"));

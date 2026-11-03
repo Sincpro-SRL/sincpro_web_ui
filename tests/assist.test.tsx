@@ -223,7 +223,7 @@ test("the review is a section named by its title, with the assistant and the sou
   assert.ok(named);
   assert.match(
     html,
-    new RegExp(`<h3 id="${named[1]}"[^>]*>Completar la factura desde la orden de compra<`),
+    new RegExp(`<h2 id="${named[1]}"[^>]*>Completar la factura desde la orden de compra<`),
   );
   assert.match(html, />Asistente</);
   assert.match(html, /href="\/compras\/42"/);

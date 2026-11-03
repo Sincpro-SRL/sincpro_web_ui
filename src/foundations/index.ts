@@ -1,4 +1,11 @@
 /* What is shared by more than one family and belongs to none of them. */
+/* THE MECHANISM of a copy catalog — web-ui's words are one; an application's own are another. */
+export {
+  type CopyCatalog,
+  type CopyOverride,
+  createCopy,
+  mergeCopyOver,
+} from "@sincpro/web-ui/foundations/catalog";
 export {
   currentCopy,
   currentCopyLocale,

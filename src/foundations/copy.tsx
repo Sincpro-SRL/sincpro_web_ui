@@ -1,21 +1,23 @@
 "use client";
 
-import { createContext, type ReactNode, useContext } from "react";
+import { type CopyOverride, createCopy, fillCopy } from "@sincpro/web-ui/foundations/catalog";
+import type { ReactNode } from "react";
 
 /**
  * Chrome copy for the design system.
  *
  * The handbook rule: code is English; language is chosen at render. This
  * package must not bake product Spanish into buttons. English is the default
- * so a story still reads; the app overlays the session locale via
- * `UiCopyProvider`.
+ * so a story still reads; the app installs the session's language once
+ * (`installCopy(SPANISH_COPY)`), and `UiCopyProvider` changes a branch.
  *
  * Domain sentences (empty catalog, upload hint) stay out — those are the
  * product's catalogs, passed as props.
  *
- * `locale` is also a module store so `formatCount` — called from modules that
- * are not components — tracks the same BCP-47 the provider just set. A React
- * context cannot be read from `shared/format.ts`.
+ * The installed words are also what is not a component reads (`currentCopy`,
+ * `currentCopyLocale`): a sentence built in a function, a month named by the
+ * calendar. A provider does not change those — it is for a branch, not for the
+ * session (see `catalog.tsx`).
  */
 
 export type UiCopy = {
@@ -226,6 +228,8 @@ export type UiCopy = {
     min: string;
     max: string;
     distinct: string;
+    /** Under a pile that holds its first page and counts them all: ask for the rest. */
+    pileMore: string;
   };
   menu: {
     empty: string;
@@ -365,6 +369,8 @@ export type UiCopy = {
     weekOfYear: string;
     quarter: string;
     quarterOfYear: string;
+    /** The calendar's «go to today» button: its word and its name are the same. */
+    today: string;
   };
   /**
    * CÓMO SE LLAMA UN OPERADOR para quien lo lee.
@@ -497,6 +503,9 @@ export type UiCopy = {
     pilePageNote: string;
     limitPiles: string;
     /** El árbol de condiciones. */
+    /** The names of a rule's two choices — the field it asks about, and how it compares. */
+    ruleField: string;
+    ruleOperator: string;
     noValue: string;
     from: string;
     to: string;
@@ -876,6 +885,7 @@ export const ENGLISH_COPY: UiCopy = {
     min: "min {value}",
     max: "max {value}",
     distinct: "{value} distinct",
+    pileMore: "Show {count} more",
   },
   menu: {
     empty: "Nothing matches.",
@@ -972,6 +982,7 @@ export const ENGLISH_COPY: UiCopy = {
     weekOfYear: "Week {n}, {year}",
     quarter: "Q{n}",
     quarterOfYear: "Q{n} {year}",
+    today: "Today",
   },
   grouping: {
     label: "Group by",
@@ -1069,6 +1080,8 @@ export const ENGLISH_COPY: UiCopy = {
     pilePageNote:
       "Only the first level: once a page is asked for, the deeper levels answer only for the piles that survived.",
     limitPiles: "Limit how many piles come back",
+    ruleField: "Field",
+    ruleOperator: "Comparison",
     noValue: "no value",
     from: "from…",
     to: "to…",
@@ -1236,158 +1249,33 @@ export const ENGLISH_COPY: UiCopy = {
   },
 };
 
-let activeCopy = ENGLISH_COPY;
+/* The mechanism is `catalog.tsx`, the same one an application uses for its own words. */
+const ui = createCopy(ENGLISH_COPY);
 
-/** The merged catalog the formatters read when they are not a component. */
-export function currentCopy(): UiCopy {
-  return activeCopy;
-}
+/** What changes of web-ui's words, at any depth: `{ search: { joins: { any: "o" } } }`. */
+export type UiCopyOverride = CopyOverride<UiCopy>;
+
+/** The installed words: for formatters and sentences that are not a component. */
+export const currentCopy: () => UiCopy = ui.current;
 
 /** BCP-47 the formatters read when they are not a component. */
 export function currentCopyLocale(): string {
-  return activeCopy.locale;
+  return ui.current().locale;
 }
 
-function rememberCopy(copy: UiCopy) {
-  activeCopy = copy;
-}
+/** English with `over` on top, without installing it. */
+export const mergeCopy: (over?: UiCopyOverride) => UiCopy = ui.merge;
 
-/**
- * La copia del árbol, cuando alguien la puso.
- *
- * Arranca en `null` y NO en el inglés de fábrica: un contexto se queda con el
- * valor que tenía cuando se creó, así que con el inglés adentro un componente
- * sin provider ignoraba `installCopy` y seguía diciendo «grouped by» aunque la
- * aplicación entera estuviera en castellano. Dos verdades sobre la misma cosa.
- *
- * Con `null`, sin provider se lee la instalada, que es la única.
- */
-const CopyContext = createContext<UiCopy | null>(null);
+/** Sets the session's words: once, before the first draw — and the one global there is. */
+export const installCopy: (over?: UiCopyOverride) => UiCopy = ui.install;
 
-export type UiCopyOverride = {
-  locale?: string;
-  present?: Partial<UiCopy["present"]>;
-  frame?: Partial<UiCopy["frame"]>;
-  selection?: Partial<UiCopy["selection"]>;
-  pager?: Partial<UiCopy["pager"]>;
-  record?: Partial<UiCopy["record"]>;
-  shell?: Partial<UiCopy["shell"]>;
-  field?: Partial<UiCopy["field"]>;
-  choice?: Partial<UiCopy["choice"]>;
-  search?: Partial<UiCopy["search"]>;
-  failed?: Partial<UiCopy["failed"]>;
-  table?: Partial<UiCopy["table"]>;
-  menu?: Partial<UiCopy["menu"]>;
-  list?: Partial<UiCopy["list"]>;
-  grouping?: Partial<UiCopy["grouping"]>;
-  dates?: Partial<UiCopy["dates"]>;
-  calendar?: Partial<UiCopy["calendar"]>;
-  ops?: Record<string, string>;
-  sorting?: Partial<UiCopy["sorting"]>;
-  copyable?: Partial<UiCopy["copyable"]>;
-  activity?: Partial<UiCopy["activity"]>;
-  editable?: Partial<UiCopy["editable"]>;
-  picker?: Partial<UiCopy["picker"]>;
-  cell?: Partial<UiCopy["cell"]>;
-  time?: Partial<UiCopy["time"]>;
-  dialog?: Partial<UiCopy["dialog"]>;
-  report?: Partial<UiCopy["report"]>;
-  builder?: Partial<UiCopy["builder"]>;
-  pivot?: Partial<UiCopy["pivot"]>;
-  person?: Partial<UiCopy["person"]>;
-  lines?: Partial<UiCopy["lines"]>;
-  lineItems?: Partial<UiCopy["lineItems"]>;
-  priority?: Partial<UiCopy["priority"]>;
-  board?: Partial<UiCopy["board"]>;
-  kanbanState?: Partial<UiCopy["kanbanState"]>;
-  timeline?: Partial<UiCopy["timeline"]>;
-  activityState?: Partial<UiCopy["activityState"]>;
-  relation?: Partial<UiCopy["relation"]>;
-  relationCard?: Partial<UiCopy["relationCard"]>;
-  totals?: Partial<UiCopy["totals"]>;
-  inlineEdit?: Partial<UiCopy["inlineEdit"]>;
-  theme?: Partial<UiCopy["theme"]>;
-  tree?: Partial<UiCopy["tree"]>;
-  assist?: Partial<UiCopy["assist"]>;
-};
-
-export function mergeCopy(over?: UiCopyOverride): UiCopy {
-  if (over === undefined) return ENGLISH_COPY;
-  return {
-    locale: over.locale ?? ENGLISH_COPY.locale,
-    present: { ...ENGLISH_COPY.present, ...over.present },
-    frame: { ...ENGLISH_COPY.frame, ...over.frame },
-    selection: { ...ENGLISH_COPY.selection, ...over.selection },
-    pager: { ...ENGLISH_COPY.pager, ...over.pager },
-    record: { ...ENGLISH_COPY.record, ...over.record },
-    shell: { ...ENGLISH_COPY.shell, ...over.shell },
-    field: { ...ENGLISH_COPY.field, ...over.field },
-    choice: { ...ENGLISH_COPY.choice, ...over.choice },
-    search: { ...ENGLISH_COPY.search, ...over.search },
-    failed: { ...ENGLISH_COPY.failed, ...over.failed },
-    table: { ...ENGLISH_COPY.table, ...over.table },
-    menu: { ...ENGLISH_COPY.menu, ...over.menu },
-    list: { ...ENGLISH_COPY.list, ...over.list },
-    grouping: { ...ENGLISH_COPY.grouping, ...over.grouping },
-    dates: { ...ENGLISH_COPY.dates, ...over.dates },
-    calendar: { ...ENGLISH_COPY.calendar, ...over.calendar },
-    ops: { ...ENGLISH_COPY.ops, ...over.ops },
-    sorting: { ...ENGLISH_COPY.sorting, ...over.sorting },
-    copyable: { ...ENGLISH_COPY.copyable, ...over.copyable },
-    activity: { ...ENGLISH_COPY.activity, ...over.activity },
-    editable: { ...ENGLISH_COPY.editable, ...over.editable },
-    picker: { ...ENGLISH_COPY.picker, ...over.picker },
-    cell: { ...ENGLISH_COPY.cell, ...over.cell },
-    time: { ...ENGLISH_COPY.time, ...over.time },
-    dialog: { ...ENGLISH_COPY.dialog, ...over.dialog },
-    report: { ...ENGLISH_COPY.report, ...over.report },
-    builder: { ...ENGLISH_COPY.builder, ...over.builder },
-    pivot: { ...ENGLISH_COPY.pivot, ...over.pivot },
-    person: { ...ENGLISH_COPY.person, ...over.person },
-    lines: { ...ENGLISH_COPY.lines, ...over.lines },
-    lineItems: { ...ENGLISH_COPY.lineItems, ...over.lineItems },
-    priority: { ...ENGLISH_COPY.priority, ...over.priority },
-    board: { ...ENGLISH_COPY.board, ...over.board },
-    kanbanState: { ...ENGLISH_COPY.kanbanState, ...over.kanbanState },
-    timeline: { ...ENGLISH_COPY.timeline, ...over.timeline },
-    activityState: { ...ENGLISH_COPY.activityState, ...over.activityState },
-    relation: { ...ENGLISH_COPY.relation, ...over.relation },
-    relationCard: { ...ENGLISH_COPY.relationCard, ...over.relationCard },
-    totals: { ...ENGLISH_COPY.totals, ...over.totals },
-    inlineEdit: { ...ENGLISH_COPY.inlineEdit, ...over.inlineEdit },
-    theme: { ...ENGLISH_COPY.theme, ...over.theme },
-    tree: { ...ENGLISH_COPY.tree, ...over.tree },
-    assist: { ...ENGLISH_COPY.assist, ...over.assist },
-  };
-}
-
-/** For tests and non-React callers that need a locale before a provider mounts. */
-export function installCopy(over?: UiCopyOverride): UiCopy {
-  const merged = mergeCopy(over);
-  rememberCopy(merged);
-  return merged;
-}
-
-export function UiCopyProvider({
-  copy,
-  children,
-}: {
+/** Changes the words for its branch, on top of what encloses it. It never writes the
+ *  global: a corner in another language does not change the rest of the screen. */
+export const UiCopyProvider: (props: {
   copy?: UiCopyOverride;
   children: ReactNode;
-}) {
-  const merged = mergeCopy(copy);
-  rememberCopy(merged);
-  return <CopyContext.Provider value={merged}>{children}</CopyContext.Provider>;
-}
+}) => ReactNode = ui.Provider;
 
-export function useUiCopy(): UiCopy {
-  return useContext(CopyContext) ?? currentCopy();
-}
+export const useUiCopy: () => UiCopy = ui.useCopy;
 
-/** `{name}` → value. A missing key stays visible in the template. */
-export function fillCopy(template: string, params: Record<string, string | number>): string {
-  return template.replace(/\{(\w+)\}/g, (whole, name: string) => {
-    const value = params[name];
-    return value === undefined ? whole : String(value);
-  });
-}
+export { fillCopy };

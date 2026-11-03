@@ -78,6 +78,8 @@ export function TablePresentation<T extends object>({
               ]),
           ...(rowActions?.(item) ?? []),
         ];
+  /* Piles counted by whoever keeps the data go through as they are: the table draws those,
+     not the ones it would build from the page. */
   return (
     <DataTable
       data={items}
@@ -88,6 +90,8 @@ export function TablePresentation<T extends object>({
       {...(levels.length === 0 ? {} : { levels: levels })}
       {...(group?.collapsed === undefined ? {} : { collapsed: group.collapsed })}
       {...(group?.onToggle === undefined ? {} : { onGroupToggle: group.onToggle })}
+      {...(group?.piles === undefined || levels.length === 0 ? {} : { piles: group.piles })}
+      {...(group?.onMore === undefined ? {} : { onMore: group.onMore })}
       {...(selection === undefined
         ? {}
         : {
