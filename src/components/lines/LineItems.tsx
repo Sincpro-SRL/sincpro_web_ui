@@ -11,7 +11,7 @@ import {
 } from "@sincpro/web-ui/components/listing/columns";
 import { ColumnsMenu } from "@sincpro/web-ui/components/listing/ColumnsMenu";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import { FieldIdsContext } from "@sincpro/web-ui/foundations/form";
+import { FieldBoundary, FieldIdsContext } from "@sincpro/web-ui/foundations/form";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { Button, IconButton } from "@sincpro/web-ui/primitives/button/Button";
 import { SearchField } from "@sincpro/web-ui/primitives/choice/SearchField";
@@ -529,7 +529,15 @@ export function LineItems<T>({
     ...(c.stack === undefined ? {} : { stack: c.stack }),
     ...(c.brief === undefined ? {} : { brief: c.brief }),
     render: (line: T) => {
-      const drawn = c.cell === undefined ? plain(c.value(line)) : c.cell(line);
+      /* `cell` draws it; without one, `text` is how it READS — the raw `value` is what the
+         search and the sort compare («3» is a unit id; «caja ×12» is what it says). The
+         same order `DataTable` follows. */
+      const drawn =
+        c.cell !== undefined
+          ? c.cell(line)
+          : c.text !== undefined
+            ? c.text(line)
+            : plain(c.value(line));
       /* An amount never breaks in two: «Bs.» over «12.500,00» reads as two values. */
       return c.numeric === true ? <span className="whitespace-nowrap">{drawn}</span> : drawn;
     },
@@ -614,154 +622,158 @@ export function LineItems<T>({
         });
 
   return (
-    <section
-      ref={root}
-      aria-label={copy.lineItems.table}
-      className="flex min-w-0 flex-col gap-4"
-    >
-      {/* Empty, a document that can still change shows its table — the headers say what
+    /* A collection is many controls, each named by its column: no enclosing `Field`
+       reaches inside (see `FieldBoundary`). */
+    <FieldBoundary>
+      <section
+        ref={root}
+        aria-label={copy.lineItems.table}
+        className="flex min-w-0 flex-col gap-4"
+      >
+        {/* Empty, a document that can still change shows its table — the headers say what
           a line will hold, and «add» is right where the first one appears. Only one that
           cannot change says it in a sentence. */}
-      {lines.length === 0 && !canAdd ? (
-        /* Said, with its way out: an empty document is a question («what is sold
+        {lines.length === 0 && !canAdd ? (
+          /* Said, with its way out: an empty document is a question («what is sold
            here?»), not a blank box. In read mode there is no way out to offer. */
-        <Empty align="start" sentence={copy.lines.empty} action={addButton ?? undefined} />
-      ) : (
-        <div className="flex min-w-0 flex-col gap-2">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-1">
-            {searchable ? (
-              <div className="w-full max-w-(--container-search) min-w-0 flex-1">
-                <span id={searchLabelId} className="sr-only">
-                  {copy.lines.search}
-                </span>
-                {/* Named through the field context, the way a control inside a `Field`
+          <Empty align="start" sentence={copy.lines.empty} action={addButton ?? undefined} />
+        ) : (
+          <div className="flex min-w-0 flex-col gap-2">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2 px-1">
+              {searchable ? (
+                <div className="w-full max-w-(--container-search) min-w-0 flex-1">
+                  <span id={searchLabelId} className="sr-only">
+                    {copy.lines.search}
+                  </span>
+                  {/* Named through the field context, the way a control inside a `Field`
                     is — the label is read aloud and not drawn: the placeholder already
                     says it on screen. */}
-                <FieldIdsContext.Provider
-                  value={{
-                    id: `${searchLabelId}-input`,
-                    labelId: searchLabelId,
-                    describedBy: undefined,
-                    invalid: false,
-                  }}
-                >
-                  <SearchField
-                    value={query}
-                    onChange={setQuery}
-                    placeholder={copy.lines.search}
-                  />
-                </FieldIdsContext.Provider>
-              </div>
-            ) : null}
-            <span className="text-meta text-muted tabular-nums" aria-live="polite">
-              {count}
-            </span>
-            {columnControl.hasOptional || addButton !== null ? (
-              <span className="ml-auto flex items-center gap-2">
-                <ColumnsMenu control={columnControl} />
-                {addButton}
-              </span>
-            ) : null}
-          </div>
-
-          <EditableTable<T>
-            rows={shown}
-            columns={tableColumns}
-            getRowId={getLineId}
-            empty={
-              lines.length === 0
-                ? copy.lines.empty
-                : fillCopy(copy.lineItems.noMatch, { query: query.trim() })
-            }
-            layout={layout}
-            {...(inline ? { onAdd: () => addInline(), addLabel: copy.lines.add } : {})}
-            {...(bandAdds.length === 0 ? {} : { adds: bandAdds })}
-            {...(bands === undefined ? {} : { bands })}
-            {...(flag === undefined ? {} : { flag })}
-            {...(cellState === undefined ? {} : { cellState })}
-            {...(rowState === undefined ? {} : { rowState })}
-            {...(onReorder === undefined || read ? {} : { onReorder })}
-            {...(inPlace && onRemove !== undefined
-              ? /* A blank row nobody wrote in is taken back without a notice: nobody
-                   removed anything, so there is nothing to undo. */
-                { onDiscard: onRemove }
-              : {})}
-            {...(canEdit
-              ? {
-                  onOpen: (id: string) => {
-                    const line = lines.find((l) => getLineId(l) === id);
-                    /* A read-only line opens no form to change it. */
-                    if (line !== undefined && rowState?.(line)?.readonly !== true) {
-                      openLine(id, line);
-                    }
-                  },
-                }
-              : {})}
-            {...(canChange && columns.some((c) => c.edit !== undefined)
-              ? { onChange: (id: string, next: T) => onChange?.(id, next) }
-              : {})}
-          />
-        </div>
-      )}
-
-      {totals === undefined || ("length" in totals && totals.length === 0) ? null : (
-        /* Inset like the table's cells, so the last figure lines up with the amounts. */
-        <div className="px-4">
-          {"length" in totals ? <Totals rows={totals} /> : <Totals {...totals} />}
-        </div>
-      )}
-
-      {editor === undefined || session === null ? null : (
-        <Dialog
-          open={open}
-          width="sm"
-          title={session.id === null ? copy.lineItems.newLine : copy.lines.edit}
-          {...(context === undefined ? {} : { context })}
-          {...(session.id === null ? {} : { subtitle: labelOf(session.draft) })}
-          onClose={() => setOpen(false)}
-          footer={
-            <>
-              {session.id === null || !canRemove ? null : (
-                /* Apart, at the other end from «Listo»: removing is not the way the
-                   form is meant to close. */
-                <span className="mr-auto">
-                  <IconButton
-                    icon={Trash2}
-                    label={copy.lines.remove}
-                    tone="danger"
-                    onClick={() => {
-                      const line = lines.find((l) => getLineId(l) === session.id);
-                      setOpen(false);
-                      if (line !== undefined) remove(line);
+                  <FieldIdsContext.Provider
+                    value={{
+                      id: `${searchLabelId}-input`,
+                      labelId: searchLabelId,
+                      describedBy: undefined,
+                      invalid: false,
                     }}
-                  />
+                  >
+                    <SearchField
+                      value={query}
+                      onChange={setQuery}
+                      placeholder={copy.lines.search}
+                    />
+                  </FieldIdsContext.Provider>
+                </div>
+              ) : null}
+              <span className="text-meta text-muted tabular-nums" aria-live="polite">
+                {count}
+              </span>
+              {columnControl.hasOptional || addButton !== null ? (
+                <span className="ml-auto flex items-center gap-2">
+                  <ColumnsMenu control={columnControl} />
+                  {addButton}
                 </span>
-              )}
-              <Button role="ghost" size="sm" onClick={() => setOpen(false)}>
-                {copy.dialog.cancel}
-              </Button>
-              <Button role="primary" size="sm" type="submit" form={formId}>
-                {copy.lines.done}
-              </Button>
-            </>
-          }
-        >
-          <form
-            id={formId}
-            noValidate
-            onSubmit={(e) => {
-              e.preventDefault();
-              save();
-            }}
-            className="flex flex-col gap-3"
+              ) : null}
+            </div>
+
+            <EditableTable<T>
+              rows={shown}
+              columns={tableColumns}
+              getRowId={getLineId}
+              empty={
+                lines.length === 0
+                  ? copy.lines.empty
+                  : fillCopy(copy.lineItems.noMatch, { query: query.trim() })
+              }
+              layout={layout}
+              {...(inline ? { onAdd: () => addInline(), addLabel: copy.lines.add } : {})}
+              {...(bandAdds.length === 0 ? {} : { adds: bandAdds })}
+              {...(bands === undefined ? {} : { bands })}
+              {...(flag === undefined ? {} : { flag })}
+              {...(cellState === undefined ? {} : { cellState })}
+              {...(rowState === undefined ? {} : { rowState })}
+              {...(onReorder === undefined || read ? {} : { onReorder })}
+              {...(inPlace && onRemove !== undefined
+                ? /* A blank row nobody wrote in is taken back without a notice: nobody
+                   removed anything, so there is nothing to undo. */
+                  { onDiscard: onRemove }
+                : {})}
+              {...(canEdit
+                ? {
+                    onOpen: (id: string) => {
+                      const line = lines.find((l) => getLineId(l) === id);
+                      /* A read-only line opens no form to change it. */
+                      if (line !== undefined && rowState?.(line)?.readonly !== true) {
+                        openLine(id, line);
+                      }
+                    },
+                  }
+                : {})}
+              {...(canChange && columns.some((c) => c.edit !== undefined)
+                ? { onChange: (id: string, next: T) => onChange?.(id, next) }
+                : {})}
+            />
+          </div>
+        )}
+
+        {totals === undefined || ("length" in totals && totals.length === 0) ? null : (
+          /* Inset like the table's cells, so the last figure lines up with the amounts. */
+          <div className="px-4">
+            {"length" in totals ? <Totals rows={totals} /> : <Totals {...totals} />}
+          </div>
+        )}
+
+        {editor === undefined || session === null ? null : (
+          <Dialog
+            open={open}
+            width="sm"
+            title={session.id === null ? copy.lineItems.newLine : copy.lines.edit}
+            {...(context === undefined ? {} : { context })}
+            {...(session.id === null ? {} : { subtitle: labelOf(session.draft) })}
+            onClose={() => setOpen(false)}
+            footer={
+              <>
+                {session.id === null || !canRemove ? null : (
+                  /* Apart, at the other end from «Listo»: removing is not the way the
+                   form is meant to close. */
+                  <span className="mr-auto">
+                    <IconButton
+                      icon={Trash2}
+                      label={copy.lines.remove}
+                      tone="danger"
+                      onClick={() => {
+                        const line = lines.find((l) => getLineId(l) === session.id);
+                        setOpen(false);
+                        if (line !== undefined) remove(line);
+                      }}
+                    />
+                  </span>
+                )}
+                <Button role="ghost" size="sm" onClick={() => setOpen(false)}>
+                  {copy.dialog.cancel}
+                </Button>
+                <Button role="primary" size="sm" type="submit" form={formId}>
+                  {copy.lines.done}
+                </Button>
+              </>
+            }
           >
-            {editor(session.draft, setDraft, {
-              tried: session.tried,
-              isNew: session.id === null,
-            })}
-          </form>
-        </Dialog>
-      )}
-    </section>
+            <form
+              id={formId}
+              noValidate
+              onSubmit={(e) => {
+                e.preventDefault();
+                save();
+              }}
+              className="flex flex-col gap-3"
+            >
+              {editor(session.draft, setDraft, {
+                tried: session.tried,
+                isNew: session.id === null,
+              })}
+            </form>
+          </Dialog>
+        )}
+      </section>
+    </FieldBoundary>
   );
 }

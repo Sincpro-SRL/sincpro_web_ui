@@ -2,7 +2,7 @@
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { controlName, useFieldIds } from "@sincpro/web-ui/foundations/form";
 import { FieldButton, FieldGroup } from "@sincpro/web-ui/primitives/field/aria";
 import { Search, X } from "lucide-react";
 import { Input, SearchField as AriaSearchField } from "react-aria-components";
@@ -63,11 +63,11 @@ export function SearchField({
     describedBy: ownDescribedBy,
   });
   /* A `Field` names it through its label; anything else falls back so it always has one. */
-  const name =
-    ariaLabel ??
-    (labelledBy === undefined
-      ? (nameFromPlaceholder(placeholder) ?? copy.choice.search)
-      : undefined);
+  const name = controlName(
+    labelledBy,
+    ariaLabel,
+    nameFromPlaceholder(placeholder) ?? copy.choice.search,
+  );
   return (
     <AriaLocale>
       <AriaSearchField

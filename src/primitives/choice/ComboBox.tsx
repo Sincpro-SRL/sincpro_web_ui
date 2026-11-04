@@ -1,7 +1,7 @@
 "use client";
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
-import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { controlName, useFieldIds } from "@sincpro/web-ui/foundations/form";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { type ChoiceOption, labelOf } from "@sincpro/web-ui/primitives/choice/options";
 import {
@@ -97,7 +97,7 @@ function EditableComboBox({
     <AriaComboBox
       id={id}
       aria-labelledby={labelledBy}
-      aria-label={ariaLabel}
+      aria-label={controlName(labelledBy, ariaLabel)}
       aria-describedby={describedBy}
       /* `defaultItems` and not `items`: with `items` React Aria hands the filtering to the
          consumer. These are the same options every render — only the filtering is React

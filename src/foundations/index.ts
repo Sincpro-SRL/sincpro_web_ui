@@ -27,6 +27,8 @@ export {
 /* EL CONTRATO DE UN CONTROL — los ids que le da su `Field` y si se mira o se escribe. Lo
    hablan los controles del paquete y los de la aplicación por igual. */
 export {
+  controlName,
+  FieldBoundary,
   type FieldIds,
   type FormMode,
   FormModeProvider,

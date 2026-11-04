@@ -2,7 +2,7 @@
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { controlName, useFieldIds } from "@sincpro/web-ui/foundations/form";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { matchedWord, matches } from "@sincpro/web-ui/foundations/match";
 import type { OpenTarget } from "@sincpro/web-ui/foundations/types";
@@ -447,7 +447,7 @@ function EditablePicker({
     <AriaComboBox
       id={id}
       aria-labelledby={labelledBy}
-      aria-label={ariaLabel}
+      aria-label={controlName(labelledBy, ariaLabel)}
       aria-describedby={describedBy}
       items={listed}
       value={value ?? null}

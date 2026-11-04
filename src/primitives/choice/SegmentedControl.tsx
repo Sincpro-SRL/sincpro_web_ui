@@ -1,6 +1,6 @@
 "use client";
 
-import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { controlName, useFieldIds } from "@sincpro/web-ui/foundations/form";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { tv } from "@sincpro/web-ui/foundations/variants";
 import { labelOf, type SegmentOption } from "@sincpro/web-ui/primitives/choice/options";
@@ -84,7 +84,7 @@ export function SegmentedControl({
   if (inForm && formMode === "read") return <ReadValue value={labelOf(options, value)} />;
   return (
     <ToggleButtonGroup
-      aria-label={ariaLabel}
+      aria-label={controlName(labelledBy, ariaLabel)}
       aria-labelledby={labelledBy}
       aria-describedby={describedBy}
       selectionMode="single"
