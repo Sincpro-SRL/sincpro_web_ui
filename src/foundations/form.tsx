@@ -34,7 +34,23 @@ export type FieldIds = {
 
 export const FieldIdsContext = createContext<FieldIds | null>(null);
 
-/** The ids of the enclosing `Field`, resolved against the control's own props. */
+/**
+ * What a place WITHOUT a `Field` says to the control in it: what describes it and whether it
+ * is in error — no id, no label.
+ *
+ * Context: a cell of an editable table has no label of its own (its control carries an
+ * `aria-label`, the column's name) but it can be wrong — «la cantidad supera el stock» — and
+ * that has to reach the control the same way a field's error does, or the error is a red
+ * cell nobody hears. The table provides this around each control it edits; every control
+ * that reads `useFieldIds` (the package's and an application's own) gets `aria-invalid` and
+ * `aria-describedby` without the table knowing what control it is.
+ */
+export type ControlState = { describedBy?: string; invalid?: boolean };
+
+export const ControlStateContext = createContext<ControlState | null>(null);
+
+/** The ids of the enclosing `Field` — or, outside one, the state of the place the control
+ *  sits in (a cell) — resolved against the control's own props. */
 export function useFieldIds(own: { id?: string; describedBy?: string; invalid?: boolean }): {
   id: string | undefined;
   labelledBy: string | undefined;
@@ -42,11 +58,12 @@ export function useFieldIds(own: { id?: string; describedBy?: string; invalid?: 
   invalid: boolean;
 } {
   const field = useContext(FieldIdsContext);
+  const place = useContext(ControlStateContext);
   return {
     id: own.id ?? field?.id,
     labelledBy: field?.labelId,
-    describedBy: own.describedBy ?? field?.describedBy,
-    invalid: own.invalid ?? field?.invalid ?? false,
+    describedBy: own.describedBy ?? field?.describedBy ?? place?.describedBy,
+    invalid: own.invalid ?? field?.invalid ?? place?.invalid ?? false,
   };
 }
 

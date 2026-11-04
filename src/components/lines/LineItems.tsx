@@ -25,8 +25,10 @@ import {
   EditableTable,
   type EditAdd,
   type EditBands,
+  type EditCellState,
   type EditColumn,
   type EditLayout,
+  type EditRowState,
 } from "@sincpro/web-ui/primitives/table/EditableTable";
 import {
   Totals,
@@ -100,6 +102,25 @@ import { type ReactNode, useEffect, useId, useMemo, useRef, useState } from "rea
  *  bottom sheet there— and the editor carries «Quitar la línea» (on every width:
  *  Odoo's line dialog does too, and the trash on the row stays on a desk).
  *
+ *  ── A line's key is LOCAL, not its id on the server ─────────────────
+ *
+ *  `getLineId` is the line's key on this screen. A line just added has no id on the server
+ *  yet, so it gets a local key when it is made (`newLine`: `crypto.randomUUID()`), and it
+ *  KEEPS it after the save gives it a server id — that id goes in a field of its own. A key
+ *  that changes is a different line to React: the row being written is unmounted and loses
+ *  the focus, the editor closes, and an undo puts back a line under a key that is gone.
+ *  Whoever sends the lines maps local key → server id; this block never sees the second.
+ *
+ *  ── Per line and per cell: what the backend says (`cellState`, `rowState`) ──
+ *
+ *  A column declares what it is for every line; the backend decides per line — a delivered
+ *  line is read only, a service has no lot, the price is wrong on line 3. `cellState` says
+ *  it cell by cell (readonly, required, hidden, an error, a warning), `rowState` line by line
+ *  (readonly). The error is drawn under the value and reaches the control the column wrote
+ *  as `aria-invalid` and `aria-describedby`, through the form contract — the block does not
+ *  know what control it is. A warning about one value is a `flag` on that cell; one about
+ *  the whole line stays `flag` on the line.
+ *
  *  ── Removing is undone, not confirmed ───────────────────────────────
  *
  *  «¿Seguro que querés quitar la línea?» on every line trains people to press
@@ -166,6 +187,8 @@ export type LineEditorState = {
 export type LineItemsProps<T> = {
   lines: readonly T[];
   columns: readonly LineItemColumn<T>[];
+  /** The line's key on this screen — LOCAL, not its id on the server: a new line gets one
+   *  when it is made and keeps it after saving. See «A line's key is local» above. */
   getLineId: (line: T) => string;
   /** How a line is named — in the removal notice, the editor's header and for the
    *  screen reader next to each row's buttons. Defaults to the first column's text. */
@@ -177,7 +200,8 @@ export type LineItemsProps<T> = {
   onChange?: (id: string, next: T) => void;
   /** A new line, already filled in the editor (or blank, without an editor). */
   onAdd?: (line: T) => void;
-  /** The blank line «Agregar una línea» starts from. Required for adding. */
+  /** The blank line «Agregar una línea» starts from. Required for adding. It carries its
+   *  local key from here — `{ key: crypto.randomUUID(), … }` — since it has no server id. */
   newLine?: () => T;
   /** A line was removed. It is gone at once; the notice offers to undo it. */
   onRemove?: (id: string) => void;
@@ -215,6 +239,14 @@ export type LineItemsProps<T> = {
   flag?: (
     line: T,
   ) => { tone: FlagTone; label: string; detail?: ReactNode; owner?: string } | null;
+  /** What each cell is on each line — readonly, required, hidden, its error, its warning
+   *  («precio bajo el costo» on the price) — as the backend says it per line and field.
+   *  `EditableTable`'s `cellState`, passed through. The error reaches the cell's control as
+   *  `aria-invalid` and `aria-describedby`. */
+  cellState?: (line: T, columnId: string) => EditCellState | null;
+  /** What a whole line is: `readonly` is read in place and offers no pencil (a delivered
+   *  line). A line that should not be seen is not passed in `lines`. */
+  rowState?: (line: T) => EditRowState | null;
   /** Sections and notes among the lines. See the file's header. */
   structure?: LineStructure<T>;
   /** The lines' order is the document's (Odoo's `sequence`): a grip at the start of each line
@@ -271,6 +303,8 @@ export function LineItems<T>({
   adding,
   onOpenLine,
   flag,
+  cellState,
+  rowState,
   structure,
   onReorder,
   visibleColumnIds,
@@ -537,7 +571,7 @@ export function LineItems<T>({
             <span id={nameId} className="sr-only">
               {labelOf(line)}
             </span>
-            {canEdit && kindOf(line) === "line" ? (
+            {canEdit && kindOf(line) === "line" && rowState?.(line)?.readonly !== true ? (
               <IconButton
                 icon={Pencil}
                 label={copy.lines.edit}
@@ -644,6 +678,8 @@ export function LineItems<T>({
             {...(bandAdds.length === 0 ? {} : { adds: bandAdds })}
             {...(bands === undefined ? {} : { bands })}
             {...(flag === undefined ? {} : { flag })}
+            {...(cellState === undefined ? {} : { cellState })}
+            {...(rowState === undefined ? {} : { rowState })}
             {...(onReorder === undefined || read ? {} : { onReorder })}
             {...(inPlace && onRemove !== undefined
               ? /* A blank row nobody wrote in is taken back without a notice: nobody
@@ -654,7 +690,10 @@ export function LineItems<T>({
               ? {
                   onOpen: (id: string) => {
                     const line = lines.find((l) => getLineId(l) === id);
-                    if (line !== undefined) openLine(id, line);
+                    /* A read-only line opens no form to change it. */
+                    if (line !== undefined && rowState?.(line)?.readonly !== true) {
+                      openLine(id, line);
+                    }
                   },
                 }
               : {})}

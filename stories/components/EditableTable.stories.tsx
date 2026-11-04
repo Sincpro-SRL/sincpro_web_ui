@@ -3,6 +3,7 @@ import {
   DatePicker,
   DateValue,
   EditableTable,
+  type EditCellState,
   type EditColumn,
   NumberInput,
   Picker,
@@ -16,6 +17,7 @@ import {
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { CUSTOMER_OPTIONS, PRODUCT_NAMES, SALESPERSON_OPTIONS } from "../support/erp";
 import { INVOICE_LABELS } from "../support/erp-tags";
@@ -755,6 +757,280 @@ export const TodosLosCampos: Story = {
           />
         </div>
       </div>
+    );
+  },
+};
+
+/* ================================================================== *
+ *  WHAT THE BACKEND SAYS, CELL BY CELL
+ * ================================================================== */
+
+type Renglon = {
+  id: string;
+  producto: string;
+  stock: number;
+  servicio: boolean;
+  entregada: boolean;
+  cantidad: number | "";
+  descuento: number | "";
+};
+
+const RENGLONES: Renglon[] = [
+  {
+    id: "1",
+    producto: "Impresora térmica de tickets 80 mm",
+    stock: 40,
+    servicio: false,
+    entregada: false,
+    cantidad: 4,
+    descuento: "",
+  },
+  {
+    id: "2",
+    producto: "Lector de códigos de barras USB",
+    stock: 25,
+    servicio: false,
+    entregada: true,
+    cantidad: 6,
+    descuento: 5,
+  },
+  {
+    id: "3",
+    producto: "Rollo de papel térmico 80 × 80",
+    stock: 10,
+    servicio: false,
+    entregada: false,
+    cantidad: 24,
+    descuento: 20,
+  },
+  {
+    id: "4",
+    producto: "Instalación en sitio (por hora)",
+    stock: 0,
+    servicio: true,
+    entregada: false,
+    cantidad: 3,
+    descuento: "",
+  },
+];
+
+/** The states a backend sends per line and field — here computed from the line itself. */
+function estadoDe(r: Renglon, columna: string): EditCellState | null {
+  if (columna === "cantidad") {
+    return {
+      required: true,
+      error:
+        r.cantidad === ""
+          ? "Poné una cantidad."
+          : !r.servicio && r.cantidad > r.stock
+            ? `Hay ${r.stock} en stock: bajá la cantidad o programá la entrega.`
+            : null,
+    };
+  }
+  if (columna === "descuento") {
+    /* A service has no discount line here: the cell is not there on that row. */
+    if (r.servicio) return { hidden: true };
+    return r.descuento !== "" && r.descuento > 15
+      ? {
+          flag: {
+            tone: "warn",
+            label: "Descuento sobre el 15 %",
+            detail: "Lo aprueba gerencia.",
+          },
+        }
+      : null;
+  }
+  return null;
+}
+
+/**
+ * **Lo que dice el servidor, celda por celda.** La columna declara qué es para todas las
+ * líneas; el servidor decide por línea:
+ *
+ * - la línea 2 ya se **entregó**: se lee, no se abre, y `Tab` la salta (`rowState`);
+ * - la **cantidad** es obligatoria y tiene su **error** debajo del valor — «Hay 10 en stock…»
+ *   en la línea 3 —, y el control lo recibe como `aria-invalid` y `aria-describedby`;
+ * - un descuento sobre el 15 % lleva su **aviso en la celda** del descuento, no en la línea;
+ * - la instalación es un servicio: su descuento **no está** (`hidden`).
+ */
+export const EstadoPorCelda: Story = {
+  render: function Render() {
+    const [renglones, setRenglones] = useState(RENGLONES);
+    const numero = (v: number | "") => (v === "" ? vacio : v.toLocaleString("es-BO"));
+    return (
+      <div className="flex flex-col gap-4 bg-ground p-8">
+        <div className="max-w-[60rem] overflow-clip rounded-box border border-line bg-surface">
+          <EditableTable<Renglon>
+            rows={renglones}
+            getRowId={(r) => r.id}
+            layout="table"
+            onChange={(id, next) =>
+              setRenglones((all) => all.map((r) => (r.id === id ? next : r)))
+            }
+            cellState={estadoDe}
+            rowState={(r) => (r.entregada ? { readonly: true } : null)}
+            columns={[
+              {
+                id: "producto",
+                header: "producto",
+                render: (r) => (
+                  <span className="flex flex-col">
+                    <span>{r.producto}</span>
+                    {r.entregada ? (
+                      <span className="text-micro text-muted">entregada</span>
+                    ) : null}
+                  </span>
+                ),
+              },
+              {
+                id: "cantidad",
+                header: "cantidad",
+                width: 150,
+                numeric: true,
+                render: (r) => numero(r.cantidad),
+                edit: (r, set) => (
+                  <NumberInput
+                    aria-label="Cantidad"
+                    value={r.cantidad}
+                    onChange={(v) => set({ ...r, cantidad: v })}
+                  />
+                ),
+              },
+              {
+                id: "descuento",
+                header: "descuento %",
+                width: 150,
+                numeric: true,
+                render: (r) => (r.descuento === "" ? vacio : `${r.descuento} %`),
+                edit: (r, set) => (
+                  <NumberInput
+                    aria-label="Descuento %"
+                    value={r.descuento}
+                    onChange={(v) => set({ ...r, descuento: v })}
+                  />
+                ),
+              },
+            ]}
+          />
+        </div>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const row = (id: string) =>
+      canvasElement.querySelector<HTMLElement>(`[data-row-id="${id}"]`)!;
+    /* Read: the error is under the value of line 3, and its discount carries its warning. */
+    await expect(row("3")).toHaveTextContent("Hay 10 en stock");
+    await expect(
+      within(row("3")).getByRole("button", { name: /Descuento sobre el 15/ }),
+    ).toBeVisible();
+    /* The service has no discount. */
+    await expect(row("4")).not.toHaveTextContent("%");
+
+    /* The delivered line is read, not opened. */
+    await userEvent.click(within(row("2")).getByText(/Lector de códigos/));
+    await expect(within(row("2")).queryByRole("textbox")).toBeNull();
+
+    /* Opened, the control of the wrong cell is invalid and described by its error. */
+    await userEvent.click(within(row("3")).getByText(/Rollo de papel/));
+    const cantidad = await within(row("3")).findByRole("textbox", { name: "Cantidad" });
+    await expect(cantidad).toHaveAttribute("aria-invalid", "true");
+    await expect(cantidad).toHaveAccessibleDescription(/Hay 10 en stock/);
+    await userEvent.clear(cantidad);
+    await userEvent.type(cantidad, "8");
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(row("3")).not.toHaveTextContent("Hay 10 en stock"));
+
+    /* Tab past line 1's last control passes over the delivered line 2 and opens line 3. */
+    await userEvent.click(within(row("1")).getByText(/Impresora térmica/));
+    const descuento = await within(row("1")).findByRole("textbox", { name: "Descuento %" });
+    await userEvent.click(descuento);
+    await userEvent.tab();
+    await waitFor(() => expect(row("3").contains(document.activeElement)).toBe(true));
+  },
+};
+
+/* ================================================================== *
+ *  TWO THOUSAND LINES
+ * ================================================================== */
+
+const MUCHAS: Renglon[] = Array.from({ length: 2000 }, (_, i) => ({
+  id: String(i + 1),
+  producto: `Repuesto ${String(i + 1).padStart(4, "0")}`,
+  stock: 100,
+  servicio: false,
+  entregada: false,
+  cantidad: (i % 9) + 1,
+  descuento: "",
+}));
+
+/**
+ * **Dos mil líneas.** Pasadas las doscientas, la tabla dibuja sólo las que se ven (como
+ * `DataTable`): medidas, escribir en una línea de dos mil costaba un cuarto de segundo por
+ * tecla, porque cada letra volvía a dibujar todas. Las flechas, `Home` y `End` llegan a
+ * cualquiera — la traen a la vista y le dan el foco —, y la línea que se está escribiendo
+ * queda dibujada aunque se la deje atrás con la rueda.
+ */
+export const DosMilLineas: Story = {
+  render: function Render() {
+    const [renglones, setRenglones] = useState(MUCHAS);
+    return (
+      <div className="flex flex-col gap-4 bg-ground p-8">
+        <div className="max-w-[48rem] overflow-clip rounded-box border border-line bg-surface">
+          <EditableTable<Renglon>
+            rows={renglones}
+            getRowId={(r) => r.id}
+            layout="table"
+            height={480}
+            onChange={(id, next) =>
+              setRenglones((all) => all.map((r) => (r.id === id ? next : r)))
+            }
+            columns={[
+              { id: "producto", header: "producto", render: (r) => r.producto },
+              {
+                id: "cantidad",
+                header: "cantidad",
+                width: 150,
+                numeric: true,
+                render: (r) => (r.cantidad === "" ? vacio : r.cantidad),
+                edit: (r, set) => (
+                  <NumberInput
+                    aria-label="Cantidad"
+                    value={r.cantidad}
+                    onChange={(v) => set({ ...r, cantidad: v })}
+                  />
+                ),
+              },
+            ]}
+          />
+        </div>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const table = canvas.getByRole("table");
+    /* Says the rows it has, draws the ones in view. */
+    await expect(table).toHaveAttribute("aria-rowcount", "2001");
+    await waitFor(() =>
+      expect(canvasElement.querySelectorAll("tr[data-row-id]").length).toBeLessThan(100),
+    );
+    /* End reaches the last line, past everything drawn. */
+    const first = canvasElement.querySelector<HTMLElement>('tr[data-row-id="1"]')!;
+    first.focus();
+    await userEvent.keyboard("{End}");
+    await waitFor(() =>
+      expect(document.activeElement?.getAttribute("data-row-id")).toBe("2000"),
+    );
+    /* And it is written in like any other. */
+    await userEvent.keyboard("{Enter}");
+    const cantidad = await canvas.findByRole("textbox", { name: "Cantidad" });
+    await userEvent.clear(cantidad);
+    await userEvent.type(cantidad, "42");
+    await expect(cantidad).toHaveFocus();
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() =>
+      expect(canvasElement.querySelector('tr[data-row-id="2000"]')).toHaveTextContent("42"),
     );
   },
 };
