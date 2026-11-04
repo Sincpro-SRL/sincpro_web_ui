@@ -4,7 +4,7 @@ import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { useFieldIds } from "@sincpro/web-ui/foundations/form";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { FieldGroup, listOptionStyles } from "@sincpro/web-ui/primitives/field/aria";
-import { ReadValue } from "@sincpro/web-ui/primitives/field/Field";
+import { nameOf, ReadValue } from "@sincpro/web-ui/primitives/field/Field";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
 import {
   ComboBox as AriaComboBox,
@@ -113,7 +113,7 @@ function EditableSuggest({
     <AriaComboBox
       id={id}
       aria-labelledby={labelledBy}
-      aria-label={labelledBy === undefined ? (ariaLabel ?? placeholder) : ariaLabel}
+      aria-label={nameOf(labelledBy, ariaLabel, placeholder)}
       /* An open field: what is typed is the value, a suggestion only fills it faster. */
       allowsCustomValue
       inputValue={value}

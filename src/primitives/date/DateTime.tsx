@@ -11,7 +11,7 @@ import {
 } from "@internationalized/date";
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { controlName, useFieldIds } from "@sincpro/web-ui/foundations/form";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { Calendar } from "@sincpro/web-ui/primitives/date/Calendar";
 import { Segments } from "@sincpro/web-ui/primitives/date/DatePicker";
@@ -144,7 +144,7 @@ export function TimeField({
       <AriaTimeField
         id={id}
         aria-labelledby={labelledBy}
-        aria-label={ariaLabel}
+        aria-label={controlName(labelledBy, ariaLabel)}
         aria-describedby={describedBy}
         value={parseClock(value)}
         onChange={(next) => onChange?.(next === null ? null : hhmm(next))}
@@ -199,7 +199,7 @@ export function DateTimePicker({
       <AriaDatePicker
         id={id}
         aria-labelledby={labelledBy}
-        aria-label={ariaLabel}
+        aria-label={controlName(labelledBy, ariaLabel)}
         aria-describedby={describedBy}
         value={parseStamp(value)}
         onChange={(next) => onChange?.(next === null ? null : stampOf(next))}

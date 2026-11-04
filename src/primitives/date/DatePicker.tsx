@@ -3,7 +3,7 @@
 import { type CalendarDate, DateFormatter, parseDate } from "@internationalized/date";
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { controlName, useFieldIds } from "@sincpro/web-ui/foundations/form";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { tv } from "@sincpro/web-ui/foundations/variants";
 import { Calendar, RangeCalendar } from "@sincpro/web-ui/primitives/date/Calendar";
@@ -116,7 +116,7 @@ export function DateField({
       <AriaDateField
         id={id}
         aria-labelledby={labelledBy}
-        aria-label={ariaLabel}
+        aria-label={controlName(labelledBy, ariaLabel)}
         aria-describedby={describedBy}
         value={parse(value)}
         onChange={(next) => onChange?.(next === null ? null : next.toString())}
@@ -159,7 +159,7 @@ export function DatePicker({
       <AriaDatePicker
         id={id}
         aria-labelledby={labelledBy}
-        aria-label={ariaLabel}
+        aria-label={controlName(labelledBy, ariaLabel)}
         aria-describedby={describedBy}
         value={parse(value)}
         onChange={(next) => onChange?.(next === null ? null : next.toString())}
@@ -222,7 +222,7 @@ export function DateRangePicker({
       <AriaDateRangePicker
         id={id}
         aria-labelledby={labelledBy}
-        aria-label={ariaLabel}
+        aria-label={controlName(labelledBy, ariaLabel)}
         aria-describedby={describedBy}
         value={start === null || end === null ? null : { start, end }}
         onChange={(next) =>

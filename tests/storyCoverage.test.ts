@@ -29,6 +29,8 @@ const SHOWN_THROUGH: Readonly<Record<string, string>> = {
   RecordAudit:
     "Record.Audit — 4 · Vistas/Registro · Archivado, 5 · Plantillas · Factura completa",
   FieldLayoutProvider: "Sheet — the two layouts of a form",
+  FieldBoundary:
+    "draws nothing: EditableTable, DataTable and LineItems wrap themselves — 3 · Componentes/Tabla editable",
   ReadValue: "the read mode of every control — Fechas · Lectura, Elecciones · Lectura",
   Popover: "DatePicker, ComboBox and PopoverTrigger",
   RangeCalendar: "DateRangePicker — 2 · Primitivas/Fechas",

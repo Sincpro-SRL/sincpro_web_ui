@@ -2,7 +2,7 @@
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { controlName, useFieldIds } from "@sincpro/web-ui/foundations/form";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import type { OpenTarget } from "@sincpro/web-ui/foundations/types";
 import { cn } from "@sincpro/web-ui/foundations/variants";
@@ -313,7 +313,7 @@ function EditableTagsField({
       <AriaComboBox
         id={id}
         aria-labelledby={labelledBy}
-        aria-label={ariaLabel}
+        aria-label={controlName(labelledBy, ariaLabel)}
         aria-describedby={describedBy}
         items={listed}
         selectedKey={null}

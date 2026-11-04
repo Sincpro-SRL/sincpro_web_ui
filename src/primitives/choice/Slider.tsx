@@ -2,7 +2,7 @@
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import { useFieldIds } from "@sincpro/web-ui/foundations/form";
+import { controlName, useFieldIds } from "@sincpro/web-ui/foundations/form";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { tv } from "@sincpro/web-ui/foundations/variants";
 import { ReadValue } from "@sincpro/web-ui/primitives/field/Field";
@@ -89,7 +89,7 @@ export function Slider({
       <AriaSlider
         id={id}
         aria-labelledby={labelledBy}
-        aria-label={ariaLabel}
+        aria-label={controlName(labelledBy, ariaLabel)}
         aria-describedby={describedBy}
         value={value}
         onChange={(next) => onChange?.(next)}
@@ -111,7 +111,7 @@ export function Slider({
               a `<Label>` this system does not render — the field's label goes on it too. */}
           <SliderThumb
             aria-labelledby={labelledBy}
-            aria-label={ariaLabel}
+            aria-label={controlName(labelledBy, ariaLabel)}
             aria-describedby={describedBy}
             className={thumb}
           />

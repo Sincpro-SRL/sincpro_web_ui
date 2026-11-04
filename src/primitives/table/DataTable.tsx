@@ -1,6 +1,7 @@
 "use client";
 
 import { fillCopy, type UiCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { FieldBoundary } from "@sincpro/web-ui/foundations/form";
 import {
   pathKey,
   type Pile,
@@ -144,9 +145,12 @@ function raw(copy: UiCopy, v: string | number | boolean | null): string {
   return v;
 }
 
-/** What a cell draws: its `cell`, or the raw value. */
+/** What a cell draws: its `cell`; without one, how it READS (`text`); only then the raw
+ *  value — which is the sort key, «posted» and not «publicada». */
 function drawCell<T>(copy: UiCopy, column: DataColumn<T>, row: T): ReactNode {
-  return column.cell === undefined ? raw(copy, column.value(row)) : column.cell(row);
+  if (column.cell !== undefined) return column.cell(row);
+  if (column.text !== undefined) return column.text(row);
+  return raw(copy, column.value(row));
 }
 
 export interface DataColumn<T> {
@@ -158,7 +162,7 @@ export interface DataColumn<T> {
   field?: string;
   /** The raw value: this is what sorting and grouping run on. */
   value: (row: T) => string | number | boolean | null;
-  /** How it is drawn. Without this the raw value is drawn. */
+  /** How it is drawn. Without this, `text`; without either, the raw value. */
   cell?: (row: T) => ReactNode;
   /** A column of CODES — a SKU, a hash, a key — set in the monospaced face. Numbers do not
    *  need it: they align with tabular figures in the same face as the rest of the row. */
@@ -939,27 +943,29 @@ export function DataTable<T extends object>({
     </Table>
   );
 
-  if (create === undefined) return grid;
+  if (create === undefined) return <FieldBoundary>{grid}</FieldBoundary>;
   return (
-    <div className="flex min-w-0 flex-col">
-      {grid}
-      {/* Under the table, as text, like `EditableTable`'s «add»: what is about to happen
+    <FieldBoundary>
+      <div className="flex min-w-0 flex-col">
+        {grid}
+        {/* Under the table, as text, like `EditableTable`'s «add»: what is about to happen
           is one more row right above it. Hidden while a record is being written — one
           at a time; `Tab` past the last control starts the next. */}
-      {writing ? null : (
-        <div className="px-1 py-0.5">
-          <button
-            ref={addButton}
-            type="button"
-            onClick={start}
-            className="flex w-full items-center gap-1.5 rounded-control px-3 py-1 text-left text-meta text-primary transition-colors duration-(--duration-instant) hover:bg-primary/5 focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-primary"
-          >
-            <Plus className="size-(--size-icon-sm)" strokeWidth={2.5} aria-hidden />
-            {create.label ?? copy.table.add}
-          </button>
-        </div>
-      )}
-    </div>
+        {writing ? null : (
+          <div className="px-1 py-0.5">
+            <button
+              ref={addButton}
+              type="button"
+              onClick={start}
+              className="flex w-full items-center gap-1.5 rounded-control px-3 py-1 text-left text-meta text-primary transition-colors duration-(--duration-instant) hover:bg-primary/5 focus-visible:outline-2 focus-visible:-outline-offset-1 focus-visible:outline-primary"
+            >
+              <Plus className="size-(--size-icon-sm)" strokeWidth={2.5} aria-hidden />
+              {create.label ?? copy.table.add}
+            </button>
+          </div>
+        )}
+      </div>
+    </FieldBoundary>
   );
 }
 

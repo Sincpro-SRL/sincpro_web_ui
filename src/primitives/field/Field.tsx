@@ -9,6 +9,7 @@ import {
   useFieldIds,
 } from "@sincpro/web-ui/foundations/form";
 import {
+  controlName,
   type FormMode,
   FormModeProvider,
   useFormMode,
@@ -405,7 +406,8 @@ export type ControlProps = {
   /** Forces the mode. By default it inherits the form's: in read mode it draws the value. */
   mode?: FormMode;
   /** The name of the control when it is NOT inside a `Field` — a cell of an editable table,
-   *  the box of a message. Inside a field, the field's label names it. */
+   *  the box of a message. Inside a field the field's label names it and this is IGNORED
+   *  (`controlName`): with both, the control was read twice. */
   "aria-label"?: string;
 };
 
@@ -422,7 +424,7 @@ export function nameOf(
   ariaLabel?: string,
   placeholder?: string,
 ) {
-  return labelledBy === undefined ? (ariaLabel ?? placeholder) : ariaLabel;
+  return controlName(labelledBy, ariaLabel, placeholder);
 }
 
 /**
