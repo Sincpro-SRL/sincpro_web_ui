@@ -22,6 +22,7 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 | Una carga rápida no destella un esqueleto                                | ✅ 11-03 | `animate-reveal-late` (aparece a los 200 ms) en `Skeleton` y `RecordSkeleton`      |
 | Un hecho largo (un email) no pisa al de al lado                          | ✅ 11-03 | `Sheet` (`wrap-anywhere`); la densidad la da `DensityProvider`                     |
 | Quién lo creó y quién lo tocó por última vez                             | ✅ 10-31 | `Record.Audit`                                                                     |
+| El pie de autoría habla como el formulario: chip de persona, DD/MM/AAAA  | ✅ 11-04 | `Record.Audit` (`by` opcional o props del chip; `at` como `Date`/ISO)              |
 | Avisos, notas de campo, actividad, historia                              | ✅       | `Record.Notice`, `note`, `Record.Activity`                                         |
 | Abrir un registro desde otro (sub-contexto)                              | ✅       | composer (modal, vista previa, al costado, página)                                 |
 | Prioridad (estrellas)                                                    | ✅ 10-31 | `Priority`                                                                         |

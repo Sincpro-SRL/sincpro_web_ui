@@ -784,8 +784,8 @@ function FullInvoice({ api }: ViewProps) {
 
       <Record.Paper layout="horizontal">
         <Record.Audit
-          created={{ by: "Carla Rojas", at: "12/10/2026 09:14" }}
-          updated={{ by: "Tesorería", at: "hace 3 días" }}
+          created={{ by: "Carla Rojas", at: "2026-10-12T09:14:00" }}
+          updated={{ by: "Tesorería", at: "2026-11-01T16:48:00" }}
         />
         {/* The dense header of a real invoice: who it is for, and on what terms — two groups,
             twelve fields, each group answering one question. */}

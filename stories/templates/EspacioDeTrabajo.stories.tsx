@@ -252,7 +252,7 @@ function Pedido({ resource, api }: ViewProps) {
         </SheetGroups>
         <Record.Audit
           created={{ by: order.salesperson, at: order.date }}
-          updated={{ by: "Tesorería", at: "hace 2 días" }}
+          updated={{ by: "Tesorería", at: "2026-11-02T09:30:00" }}
         />
       </Record.Paper>
     </Record>

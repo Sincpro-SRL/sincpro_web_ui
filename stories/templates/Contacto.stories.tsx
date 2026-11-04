@@ -295,8 +295,8 @@ function Contact({ api }: ViewProps) {
           </Record.Pages>
 
           <Record.Audit
-            created={{ by: "Josefa Muñoz", at: "14/03/2021" }}
-            updated={{ by: "Andrés Gutiérrez", at: "hace 3 días" }}
+            created={{ by: "Josefa Muñoz", at: "2021-03-14T10:12:00" }}
+            updated={{ by: "Andrés Gutiérrez", at: "2026-11-01T16:48:00" }}
           />
         </Record.Paper>
       </Record>
