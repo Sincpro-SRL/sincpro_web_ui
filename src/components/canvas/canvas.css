@@ -1,0 +1,19 @@
+/* React Flow's own stylesheet, then the product's tokens on top of it. Its variables
+   are the only hook the library offers for colour, so the canvas reads as the same
+   paper and ink as the rest of the screen, in light and dark alike. */
+@import "@xyflow/react/dist/style.css";
+
+.react-flow {
+  --xy-background-color: var(--color-ground);
+  --xy-node-background-color-default: var(--color-surface);
+  --xy-node-border-default: 1px solid var(--color-line-strong);
+  --xy-node-boxshadow-selected: 0 0 0 2px var(--color-primary);
+  --xy-edge-stroke-default: var(--color-muted);
+  --xy-edge-stroke-selected-default: var(--color-primary);
+  --xy-controls-button-background-color-default: var(--color-surface);
+  --xy-controls-button-border-color-default: var(--color-line);
+  --xy-controls-button-color-default: var(--color-ink);
+  --xy-minimap-background-color-default: var(--color-surface);
+  --xy-minimap-mask-background-color-default: var(--color-scrim);
+  --xy-handle-background-color-default: var(--color-primary);
+}

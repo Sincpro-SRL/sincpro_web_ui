@@ -3,6 +3,11 @@
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
 import { cn, focusRing } from "@sincpro/web-ui/foundations/variants";
+import {
+  currentPage,
+  errorReport,
+  useErrorCopy,
+} from "@sincpro/web-ui/primitives/notice/Notice";
 import { CheckCircle2, Info, TriangleAlert, X, XCircle } from "lucide-react";
 import {
   createContext,
@@ -279,6 +284,16 @@ function ToastCard({
   const Icon = ICON[tone];
   const close = () => queue.close(queued.key);
   const action = toast.action;
+  /* Only an error is worth copying whole: what it said, the server's reason, when, where.
+     The hook runs for every toast so the rules of hooks hold; only a bad one draws it. */
+  const errorCopy = useErrorCopy(() =>
+    errorReport({
+      heading: toast.message,
+      detail: toast.detail,
+      at: new Date(),
+      page: currentPage(),
+    }),
+  );
 
   return (
     <AriaToast
@@ -307,6 +322,14 @@ function ToastCard({
         )}
       </ToastContent>
 
+      {tone !== "bad" ? null : (
+        <AriaButton
+          onPress={() => void errorCopy.run()}
+          className={({ isFocusVisible }) => cn(LINK, "mt-px", focusRing({ isFocusVisible }))}
+        >
+          {errorCopy.said}
+        </AriaButton>
+      )}
       {action === undefined ? null : action.href !== undefined ? (
         <AriaLink
           href={action.href}

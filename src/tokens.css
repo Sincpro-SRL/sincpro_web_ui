@@ -11,6 +11,8 @@
 @import "@fontsource/ibm-plex-mono/latin-ext-400.css";
 @import "@fontsource/ibm-plex-mono/latin-500.css";
 @import "@fontsource/ibm-plex-mono/latin-ext-500.css";
+/* streamdown's animations for text that is still arriving (see Markdown). */
+@import "streamdown/styles.css";
 /* The record calendar (`RecordCalendar`, FullCalendar v7): its structure and the `forma`
    theme. The palette that theme reads is defined below, from web-ui's tokens. */
 @import "@fullcalendar/react/skeleton.css";
@@ -31,6 +33,13 @@
  * inside node_modules — which Tailwind skips unless told. Importing this file is the whole
  * setup a consumer needs. */
 @source ".";
+/* streamdown (the markdown renderer) ships its Tailwind classes too. Two paths, because the
+ * package sits in two places: the repo's node_modules (src/ and dist/ are one level below
+ * it), and the hoisted node_modules of an application (dist/ sits in
+ * node_modules/@sincpro/web-ui). A path that does not exist matches nothing, so the other
+ * one is simply skipped. */
+@source "../node_modules/streamdown/dist";
+@source "../../../streamdown/dist";
 
 /* ==================================================================== *
  *  LIGHT THEME

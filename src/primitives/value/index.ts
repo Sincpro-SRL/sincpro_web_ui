@@ -9,6 +9,7 @@ export {
   formatDateTime,
   formatRelative,
 } from "@sincpro/web-ui/primitives/value/DateValue";
+export { Markdown, type MarkdownProps } from "@sincpro/web-ui/primitives/value/Markdown";
 export {
   Meter,
   type MeterLevel,
