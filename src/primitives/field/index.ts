@@ -65,12 +65,19 @@ export {
   TextArea,
   TextInput,
 } from "@sincpro/web-ui/primitives/field/Field";
+/* An image the record holds (chosen, dropped, pasted, cropped) and a signature (drawn or typed). */
+export { type ImageChange, ImageInput } from "@sincpro/web-ui/primitives/field/ImageInput";
 export {
   type FieldLayout,
   FieldLayoutProvider,
   useSheetLayout,
 } from "@sincpro/web-ui/primitives/field/layout";
 export { PasswordInput } from "@sincpro/web-ui/primitives/field/PasswordInput";
+/* Formatted text (an Odoo `html` field): Tiptap, loaded only on editing. */
+export {
+  type MentionItem,
+  RichTextInput,
+} from "@sincpro/web-ui/primitives/field/RichTextInput";
 /* An identifier with a fixed shape: NIT, CI, account, IBAN. */
 export {
   formatPattern,
@@ -79,6 +86,7 @@ export {
   patternValue,
 } from "@sincpro/web-ui/primitives/field/pattern";
 export { PatternInput } from "@sincpro/web-ui/primitives/field/PatternInput";
+export { SignatureInput } from "@sincpro/web-ui/primitives/field/SignatureInput";
 export { Suggest, type SuggestProps } from "@sincpro/web-ui/primitives/field/Suggest";
 /* A note that belongs to one field: a card in the record's margin, or a flag by its label. */
 export { type FieldNote } from "@sincpro/web-ui/primitives/field/note";

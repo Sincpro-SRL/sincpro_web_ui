@@ -1,12 +1,16 @@
 import assert from "node:assert/strict";
 
+import { SPANISH_COPY, UiCopyProvider } from "@sincpro/web-ui";
 import {
   claimedFields,
   columnsFromModel,
+  modelCellKind,
   readModelValue,
 } from "@sincpro/web-ui/components/listing/modelColumns";
 import type { ModelDefinition } from "@sincpro/web-ui/components/search/model";
 import type { DataColumn } from "@sincpro/web-ui/primitives/table/DataTable";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { test } from "vitest";
 
 /* Lo que el servidor manda bajo `model_meta_data`, recortado: dos campos que la
@@ -129,4 +133,99 @@ test("un campo sin ninguna palabra declarada muestra su nombre tal cual", () => 
   const fingerprint = columns.find((one) => one.id === "fingerprint")!;
 
   assert.equal(fingerprint.header, "fingerprint");
+});
+
+/* ====================================================================== *
+ *  A COLUMN NOBODY DECLARED IS DRAWN BY WHAT THE MODEL SAYS IT IS.
+ *
+ *  Before this an email was a string to select and paste, a `float_time` read
+ *  «8.5» and a boolean «true». Now the cell is what the record's read mode is:
+ *  a `mailto:`, a `tel:`, the website in a new tab, «8:30», «sí» with a check.
+ * ====================================================================== */
+
+const CONTACT_MODEL: ModelDefinition = {
+  aggregate: "partner",
+  identity: "id",
+  fields: {
+    email: { type: "Email", nullable: true, sortable: true, ops: ["eq"] },
+    website: { type: "url", nullable: true, sortable: true, ops: ["eq"] },
+    phone: { type: "phone", nullable: true, sortable: true, ops: ["eq"] },
+    hours: { type: "float_time", nullable: true, sortable: true, ops: ["gt"] },
+    active: { type: "boolean", nullable: false, sortable: true, ops: ["eq"] },
+    birthday: { type: "date", nullable: true, sortable: true, ops: ["gt"] },
+    payload: { type: "jsonb", nullable: true, sortable: false, ops: [] },
+  },
+};
+
+const cellOf = (id: string, row: Record<string, unknown>): string => {
+  const column = columnsFromModel([], CONTACT_MODEL).find((one) => one.id === id)!;
+  return renderToStaticMarkup(
+    createElement(UiCopyProvider, {
+      copy: SPANISH_COPY,
+      children: column.cell!(row as never),
+    }),
+  );
+};
+
+test("the kind comes from the type, in any case; an unknown type stays text", () => {
+  assert.equal(modelCellKind("Email"), "email");
+  assert.equal(modelCellKind("WEBSITE"), "url");
+  assert.equal(modelCellKind("tel"), "phone");
+  assert.equal(modelCellKind("float_time"), "duration");
+  assert.equal(modelCellKind("bool"), "boolean");
+  assert.equal(modelCellKind("datetime"), "datetime");
+  assert.equal(modelCellKind("monetary"), "number");
+  assert.equal(modelCellKind("jsonb"), "text");
+});
+
+test("an email is a mailto link and a phone a tel link", () => {
+  assert.match(
+    cellOf("email", { email: "ana@sincpro.com.bo" }),
+    /href="mailto:ana@sincpro\.com\.bo"/,
+  );
+  assert.match(cellOf("phone", { phone: "+591 7 123-4567" }), /href="tel:\+59171234567"/);
+  // Something that is not an email is not a link — the text, as before.
+  assert.doesNotMatch(cellOf("email", { email: "ana" }), /<a /);
+});
+
+test("a website opens in a new tab, read without its scheme, and a script is never a link", () => {
+  const html = cellOf("website", { website: "https://www.sincpro.com.bo/" });
+  assert.match(html, /href="https:\/\/www\.sincpro\.com\.bo\/"/);
+  assert.match(html, /target="_blank"/);
+  assert.match(html, /rel="noopener noreferrer"/);
+  assert.match(html, />sincpro\.com\.bo</);
+  assert.match(html, /se abre en otra pestaña/);
+
+  const script = cellOf("website", { website: "javascript:alert(1)" });
+  assert.doesNotMatch(script, /href=/);
+});
+
+test("a duration reads hours and minutes, sorts as a number and totals as hours", () => {
+  const column = columnsFromModel([], CONTACT_MODEL).find((one) => one.id === "hours")!;
+  assert.match(cellOf("hours", { hours: 8.5 }), />8:30</);
+  assert.equal(column.numeric, true);
+  assert.equal(column.value({ hours: 8.5 } as never), 8.5);
+  assert.equal(column.format!(42.5), "42:30");
+  assert.equal(column.text!({ hours: 0.25 } as never), "0:15");
+});
+
+test("a boolean says yes or no in words, the check only next to the yes", () => {
+  const yes = cellOf("active", { active: true });
+  const no = cellOf("active", { active: false });
+  assert.match(yes, /sí/);
+  assert.match(yes, /<svg/);
+  assert.match(no, />no</);
+  assert.doesNotMatch(no, /<svg/);
+});
+
+test("a date is a DateValue, and an unknown type keeps the plain text", () => {
+  assert.match(cellOf("birthday", { birthday: "2026-09-15" }), /<time[^>]*>15\/09\/2026</);
+  const payload = cellOf("payload", { payload: "{}" });
+  assert.match(payload, /title="\{\}"/);
+  assert.doesNotMatch(payload, /<a |<time/);
+});
+
+test("nothing is still the dash, whatever the type", () => {
+  assert.match(cellOf("email", { email: null }), />—</);
+  assert.match(cellOf("hours", {}), />—</);
 });

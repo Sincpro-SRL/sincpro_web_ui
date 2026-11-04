@@ -359,6 +359,32 @@ export type UiCopy = {
     /** A field with nothing in it: said, not a silent success. */
     empty: string;
   };
+  /** The rich-text editor: its toolbar, its link form, its list of people to mention. */
+  richText: {
+    toolbar: string;
+    bold: string;
+    italic: string;
+    underline: string;
+    strike: string;
+    heading: string;
+    subheading: string;
+    bulletList: string;
+    orderedList: string;
+    quote: string;
+    link: string;
+    linkUrl: string;
+    applyLink: string;
+    removeLink: string;
+    /** Said when the address is not a website, an email or a phone: what to write instead. */
+    badLink: string;
+    table: string;
+    undo: string;
+    redo: string;
+    clear: string;
+    /** The list that opens on «@»: people to mention. */
+    mentions: string;
+    noMatches: string;
+  };
   /** Ordenar, cuando la presentación no tiene encabezados donde hacer clic. */
   sorting: {
     label: string;
@@ -497,6 +523,26 @@ export type UiCopy = {
     next: string;
     finish: string;
     busy: string;
+  };
+  /** A multi-step operation done in one sitting (`StepFlow`): where you are, what is left,
+   *  and its own buttons. */
+  stepFlow: {
+    /** The accessible name of the strip of steps. */
+    steps: string;
+    /** Over the step's title: «Step 2 of 3». */
+    position: string;
+    /** Read by the live region on every move: `{position}` is the line above, `{title}`
+     *  the step's. */
+    announce: string;
+    /** The state of a step on the strip, said to a screen reader — never only a colour. */
+    done: string;
+    pending: string;
+    cancel: string;
+    back: string;
+    next: string;
+    finish: string;
+    /** Read by the live region while the operation runs. */
+    working: string;
   };
   report: {
     open: string;
@@ -724,6 +770,28 @@ export type UiCopy = {
     /** The accessible name of an editable cell. `{column}` is the column's header. */
     editCell: string;
   };
+  /** The files of a record (`Attachments`): listing, adding, removing and their states. */
+  attachments: {
+    /** The accessible name of the list. */
+    label: string;
+    /** An empty list in read mode. */
+    empty: string;
+    /** The drop zone's sentence when there is no file yet… */
+    emptyAdd: string;
+    /** …and when there already are some. */
+    add: string;
+    download: string;
+    remove: string;
+    /** The notice after removing. `{name}` is the file. */
+    removed: string;
+    undo: string;
+    /** The name of an upload's progress bar. `{name}` is the file. */
+    uploading: string;
+    cancelUpload: string;
+    /** A failed upload, when the server did not say why. */
+    failed: string;
+    retry: string;
+  };
   /** The theme switch: the three choices an app offers for the palette. */
   theme: {
     /** The name of the control — what a screen reader says for the group. */
@@ -785,6 +853,35 @@ export type UiCopy = {
     to: string;
     /** A value that was empty before the change. */
     empty: string;
+  };
+  /** The media controls: an image chosen and cropped (`ImageInput`), a signature drawn or
+   *  typed (`SignatureInput`). */
+  media: {
+    /** What the empty image zone says. */
+    dropImage: string;
+    chooseImage: string;
+    changeImage: string;
+    removeImage: string;
+    /** A file that is not an image: what to choose instead. */
+    notImage: string;
+    /** The name of the crop area, and how it is moved from the keyboard. */
+    crop: string;
+    cropHelp: string;
+    zoomIn: string;
+    zoomOut: string;
+    applyCrop: string;
+    cancel: string;
+    /** The name of the drawing pad, and what to do there. */
+    signaturePad: string;
+    signatureHelp: string;
+    clear: string;
+    /** The way in for whoever cannot draw: type the name, and it is written as the signature. */
+    typeName: string;
+    drawInstead: string;
+    /** The label of the box the name is typed in. */
+    typedName: string;
+    /** The image of a signature, when the form does not say whose it is. */
+    signature: string;
   };
 };
 
@@ -1005,6 +1102,29 @@ export const ENGLISH_COPY: UiCopy = {
     field: "Copy «{label}»",
     empty: "Nothing to copy",
   },
+  richText: {
+    toolbar: "Text formatting",
+    bold: "Bold",
+    italic: "Italic",
+    underline: "Underline",
+    strike: "Strikethrough",
+    heading: "Heading",
+    subheading: "Subheading",
+    bulletList: "Bulleted list",
+    orderedList: "Numbered list",
+    quote: "Quote",
+    link: "Link",
+    linkUrl: "Link address",
+    applyLink: "Apply",
+    removeLink: "Remove link",
+    badLink: "Write a website (example.com), an email or a phone number.",
+    table: "Insert table",
+    undo: "Undo",
+    redo: "Redo",
+    clear: "Clear formatting",
+    mentions: "People",
+    noMatches: "Nobody matches",
+  },
   sorting: {
     label: "Sort",
     by: "sort by",
@@ -1115,6 +1235,18 @@ export const ENGLISH_COPY: UiCopy = {
     next: "Next",
     finish: "Finish",
     busy: "Working…",
+  },
+  stepFlow: {
+    steps: "Steps",
+    position: "Step {index} of {total}",
+    announce: "{position}: {title}",
+    done: "done",
+    pending: "to do",
+    cancel: "Cancel",
+    back: "Back",
+    next: "Next",
+    finish: "Finish",
+    working: "Working…",
   },
   report: {
     open: "Open {name}",
@@ -1282,6 +1414,20 @@ export const ENGLISH_COPY: UiCopy = {
     createTag: "Create «{name}»",
     editCell: "Edit {column}",
   },
+  attachments: {
+    label: "Attachments",
+    empty: "No files attached yet.",
+    emptyAdd: "No files attached yet. Drop one here, or choose it.",
+    add: "Drop another file here, or choose one.",
+    download: "Download",
+    remove: "Remove the file",
+    removed: "Removed «{name}».",
+    undo: "Undo",
+    uploading: "Uploading {name}",
+    cancelUpload: "Cancel the upload",
+    failed: "The file could not be uploaded.",
+    retry: "Try again",
+  },
   theme: {
     label: "Theme",
     system: "System",
@@ -1320,6 +1466,26 @@ export const ENGLISH_COPY: UiCopy = {
     from: "from",
     to: "to",
     empty: "empty",
+  },
+  media: {
+    dropImage: "Drop an image here, paste it, or choose one.",
+    chooseImage: "Choose image",
+    changeImage: "Change image",
+    removeImage: "Remove image",
+    notImage: "That file is not an image. Choose a PNG, JPG or WebP.",
+    crop: "Image crop",
+    cropHelp: "Drag the image, or move it with the arrow keys; + and − zoom in and out.",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    applyCrop: "Apply crop",
+    cancel: "Cancel",
+    signaturePad: "Signature pad",
+    signatureHelp: "Sign with the mouse or a finger over the line.",
+    clear: "Clear",
+    typeName: "Type my name instead",
+    drawInstead: "Draw the signature",
+    typedName: "Name for the signature",
+    signature: "Signature",
   },
 };
 

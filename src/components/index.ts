@@ -1,7 +1,9 @@
 /* COMPONENTS — primitives composed to answer ONE question of the product, by family. */
 export * from "@sincpro/web-ui/components/activity/index";
 export * from "@sincpro/web-ui/components/assist/index";
+export * from "@sincpro/web-ui/components/attachments/index";
 export * from "@sincpro/web-ui/components/calendar/index";
+export * from "@sincpro/web-ui/components/flow/index";
 export * from "@sincpro/web-ui/components/form/index";
 export * from "@sincpro/web-ui/components/frame/index";
 export * from "@sincpro/web-ui/components/gantt/index";

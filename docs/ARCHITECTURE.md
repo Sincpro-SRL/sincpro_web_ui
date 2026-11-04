@@ -152,6 +152,7 @@ panel que no existía (`TabsScope` / `TabsPanel`).
   están; el tier `collection`/`input` ya dice que no son ladrillos.
 - **`Dialog` trae `Wizard`** para pasos en un diálogo suelto. Dentro del espacio de trabajo de
   composer, un modal es una vista de composer (`stories/Estilo.mdx`), y una operación de varios
-  pasos se escribe ahí.
+  pasos se escribe ahí con `StepFlow` (`components/flow`), que no dibuja diálogo propio:
+  `5 · Plantillas/Importar`.
 - **La lógica de `components/search` y `components/listing`** (`query.ts`, `pages.ts`, …) queda
   junto a su interfaz: la usa sólo su familia. Baja a `foundations` el día que la use otra.
