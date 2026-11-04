@@ -1,6 +1,7 @@
 "use client";
 
 import type { GroupingControl } from "@sincpro/web-ui/components/listing/grouping";
+import { FieldPath, type PathPick } from "@sincpro/web-ui/components/search/FieldPath";
 import { grainName } from "@sincpro/web-ui/foundations/calendar";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import {
@@ -9,7 +10,7 @@ import {
   type GroupGrain,
   levelKey,
 } from "@sincpro/web-ui/foundations/grouping";
-import { ChevronDown, ChevronRight, ChevronUp, X } from "lucide-react";
+import { ChevronDown, ChevronRight, ChevronUp, Plus, X } from "lucide-react";
 import { useState } from "react";
 
 /**
@@ -44,13 +45,21 @@ export type GroupingLevelsProps = {
   /** Cómo se llama cada grano, cuando el producto lo dice con otras palabras.
    *  Sin esto, las de la copia en el idioma activo. */
   grainLabel?: (grain: GroupGrain) => string;
+  /** «Agrupar por otro campo»: un `FieldPath` que recorre relaciones («Cliente > País»).
+   *  Devuelve el camino; qué nivel se pone con él lo decide quien orquesta la pantalla. */
+  addPath?: PathPick;
 };
 
 function fieldLabel(fields: readonly GroupableField[], field: string): string {
   return fields.find((one) => one.field === field)?.label ?? field;
 }
 
-export function GroupingLevels({ fields, control, grainLabel }: GroupingLevelsProps) {
+export function GroupingLevels({
+  fields,
+  control,
+  grainLabel,
+  addPath,
+}: GroupingLevelsProps) {
   const copy = useUiCopy();
   /* Qué fechas están desplegadas. Arranca desplegada la que ya tenga algún grano
      puesto: si no, lo puesto queda escondido detrás de un chevron y hay que
@@ -59,7 +68,7 @@ export function GroupingLevels({ fields, control, grainLabel }: GroupingLevelsPr
     control.levels.filter((one) => one.grain !== undefined).map((one) => one.field),
   );
 
-  if (fields.length === 0) return null;
+  if (fields.length === 0 && addPath === undefined) return null;
 
   const placed = control.levels;
   const grain = (one: GroupGrain) => grainLabel?.(one) ?? grainName(one);
@@ -212,6 +221,25 @@ export function GroupingLevels({ fields, control, grainLabel }: GroupingLevelsPr
           </div>
         );
       })}
+
+      {addPath === undefined ? null : (
+        <div className="px-1 pt-1">
+          <FieldPath
+            look="button"
+            icon={Plus}
+            model={addPath.model}
+            {...(addPath.loadModel === undefined ? {} : { loadModel: addPath.loadModel })}
+            {...(addPath.filter === undefined ? {} : { filter: addPath.filter })}
+            {...(addPath.followRelations === undefined
+              ? {}
+              : { followRelations: addPath.followRelations })}
+            value={[]}
+            label={copy.fieldPath.addLevel}
+            placeholder={copy.fieldPath.addLevel}
+            onChange={addPath.onPick}
+          />
+        </div>
+      )}
 
       {placed.length === 0 ? null : (
         <>

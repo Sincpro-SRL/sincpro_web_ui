@@ -52,7 +52,35 @@ export interface BuiltCondition {
  *  filtros —lo que el árbol arma, a cualquier profundidad—, o un `negate` que llegó de otro
  *  lado y que el árbol no fabrica, pero que este componente sabe mostrar y editar como JSON. */
 export type BuiltFilter =
-  BuiltCondition | { all: BuiltFilter[] } | { any: BuiltFilter[] } | { negate: BuiltFilter };
+  | BuiltCondition
+  | { all: BuiltFilter[] }
+  | { any: BuiltFilter[] }
+  | { negate: BuiltFilter }
+  | BuiltThrough;
+
+/** How many of the records reached through a to-many relation have to match: «alguno»,
+ *  «ninguno», «todos». A to-one relation reaches one record, so it carries none. */
+export type ThroughMatch = "any" | "none" | "all";
+
+/**
+ * A filter asked about the records at the other end of a relation.
+ *
+ *      «alguna línea con algún impuesto con monto > 10»
+ *      {through: "lines", match: "any",
+ *       where: {through: "taxes", match: "any",
+ *               where: {field: "amount", operator: ">", value: 10}}}
+ *
+ *      «el cliente es de Bolivia»  (to-one: no `match`)
+ *      {through: "partner_id", where: {field: "country", operator: "=", value: "BO"}}
+ *
+ * One node per relation crossed, nested in the order of the path: the engine reads it from
+ * the outside in, the same way the path reads left to right.
+ */
+export interface BuiltThrough {
+  through: string;
+  match?: ThroughMatch;
+  where: BuiltFilter;
+}
 
 /** Cómo se juntan las instancias de un nodo. `not` niega lo que tiene adentro. */
 export type CriteriaJoin = "all" | "any" | "not";

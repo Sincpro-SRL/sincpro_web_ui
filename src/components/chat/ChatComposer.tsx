@@ -56,7 +56,9 @@ export function ChatComposer({
   return (
     <div
       onKeyDown={onKeyDown}
-      className="flex items-end gap-3 border-t border-line bg-surface px-5 py-4"
+      /* A container, so the send button follows the width of the COMPOSER, not of the
+         screen: in a narrow side panel on a desk it is as tight as on a phone. */
+      className="@container flex items-end gap-3 border-t border-line bg-surface px-5 py-4"
     >
       <div className="min-w-0 flex-1">
         <TextArea
@@ -69,7 +71,9 @@ export function ChatComposer({
         />
       </div>
       <Button role="secondary" icon={Send} disabled={blocked} onClick={send}>
-        {copy.chat.send}
+        {/* Below 20rem the word goes and the icon stays: the box keeps the room to write.
+            The word is still the button's name for a screen reader. */}
+        <span className="sr-only @xs:not-sr-only">{copy.chat.send}</span>
       </Button>
     </div>
   );

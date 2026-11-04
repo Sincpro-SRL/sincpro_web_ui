@@ -2,6 +2,8 @@
 export {
   type BuiltCondition,
   type BuiltFilter,
+  type BuiltThrough,
+  type ThroughMatch,
 } from "@sincpro/web-ui/components/search/criteria";
 export {
   type BuiltCriteria,
@@ -16,10 +18,33 @@ export {
   type TreeCondition,
   treeFromFilter,
   type TreeGroup,
+  type TreeHop,
   type TreeNode,
   treeToFilter,
 } from "@sincpro/web-ui/components/search/FilterBuilder";
+/* Un campo alcanzado por relaciones: el selector (web-ui dibuja) y su modelo (quien lo usa
+   pasa `loadModel`). */
+export {
+  FieldPath,
+  type FieldPathProps,
+  type FieldPathRule,
+  type PathPick,
+  useFieldPathSteps,
+  useModelCache,
+} from "@sincpro/web-ui/components/search/FieldPath";
 export { formatJson, JsonEditor } from "@sincpro/web-ui/components/search/JsonEditor";
+export {
+  createModelCache,
+  type FieldPathStep,
+  type FieldPathValue,
+  isRelation,
+  isToMany,
+  type LoadModel,
+  type ModelCache,
+  pathLabel,
+  peekLabels,
+  resolvePath,
+} from "@sincpro/web-ui/components/search/paths";
 export {
   SearchBar,
   type SearchBarProps,

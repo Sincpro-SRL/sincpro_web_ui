@@ -20,6 +20,18 @@ function test<T>(
   if ("all" in where) return where.all.every((one) => test(item, one, read));
   if ("any" in where) return where.any.some((one) => test(item, one, read));
   if ("negate" in where) return !test(item, where.negate, read);
+  if ("through" in where) {
+    /* The records at the other end of the relation, read as plain objects: a to-one is one
+       of them, a to-many a list. The inner filter reads their own fields by name. */
+    const reached = read(item, where.through);
+    const inner = (one: unknown) =>
+      test(one as Record<string, unknown>, where.where, (row, field) => row[field]);
+    if (where.match === undefined) return reached != null && inner(reached);
+    const list = Array.isArray(reached) ? reached : [];
+    if (where.match === "all") return list.every(inner);
+    if (where.match === "none") return !list.some(inner);
+    return list.some(inner);
+  }
   const value = read(item, where.field);
   const wanted = where.value;
   switch (where.operator) {

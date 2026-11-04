@@ -3,21 +3,35 @@
 import type {
   BuiltCondition,
   BuiltFilter,
+  BuiltThrough,
   CriteriaJoin,
+  ThroughMatch,
 } from "@sincpro/web-ui/components/search/criteria";
+import {
+  FieldPath,
+  useFieldPathSteps,
+  useModelCache,
+} from "@sincpro/web-ui/components/search/FieldPath";
 import { JoinWord } from "@sincpro/web-ui/components/search/JoinWord";
 import { LazyJsonEditor } from "@sincpro/web-ui/components/search/LazyJsonEditor";
 import {
+  type FieldDefinition,
   fieldLabel,
   filterableNames,
+  isFilterable,
   type ModelDefinition,
 } from "@sincpro/web-ui/components/search/model";
+import {
+  isToMany,
+  type LoadModel,
+  type ModelCache,
+} from "@sincpro/web-ui/components/search/paths";
 import { opLabel, sayCondition } from "@sincpro/web-ui/components/search/query";
 import { currentCopy, fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { useSurface } from "@sincpro/web-ui/foundations/surface";
 import { Button } from "@sincpro/web-ui/primitives/button/index";
 import { FolderTree, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 
 /* ====================================================================== *
  *  UN FILTRO QUE ALGUIEN ARMA, DE LO QUE EL MODELO DICE QUE ACEPTA.
@@ -90,15 +104,41 @@ export function isRecognizedFilter(value: unknown): value is BuiltFilter {
   if (Array.isArray(record.all)) return true;
   if (Array.isArray(record.any)) return true;
   if ("negate" in record) return true;
+  if (typeof record.through === "string" && "where" in record) return true;
   return false;
+}
+
+const MATCHES: readonly ThroughMatch[] = ["any", "none", "all"];
+
+function isThrough(value: unknown): value is BuiltThrough {
+  if (typeof value !== "object" || value === null) return false;
+  const record = value as Record<string, unknown>;
+  return (
+    typeof record.through === "string" &&
+    "where" in record &&
+    (record.match === undefined || MATCHES.includes(record.match as ThroughMatch))
+  );
 }
 
 /* ---------------------------------------------------------------------- *
  *  EL ÁRBOL EDITABLE — una condición, o un grupo con sus hijos adentro.
  * ---------------------------------------------------------------------- */
 
+/** One relation crossed on the way to a condition's field: «Líneas», and how many of the
+ *  lines have to match. A to-one relation (`many: false`) reaches one record: no `match`. */
+export interface TreeHop {
+  field: string;
+  many: boolean;
+  match: ThroughMatch;
+}
+
 export interface TreeCondition {
   kind: "condition";
+  /** The relations crossed before `field`, in order: `Líneas > Impuestos` of «Líneas >
+   *  Impuestos > Monto». Absent or empty = a field of the record itself. */
+  through?: TreeHop[];
+  /** The LAST field of the path: the one compared. Its operators and its type decide the
+   *  rest of the row. */
   field: string;
   operator: string;
   value: string;
@@ -149,6 +189,26 @@ export function blankGroup(model: ModelDefinition, first: string | undefined): T
  *  haberlo anidado. */
 export function treeToFilter(node: TreeNode): BuiltFilter | undefined {
   if (node.kind === "condition") {
+    const leaf = conditionToFilter(node);
+    return leaf === undefined ? undefined : wrapThrough(node.through ?? [], leaf);
+  }
+  return groupToFilter(node);
+}
+
+/** The relations of a path, as nested `through` nodes around the condition: the first hop
+ *  outside, the last one next to the condition — the order the path reads in. */
+function wrapThrough(hops: readonly TreeHop[], leaf: BuiltFilter): BuiltFilter {
+  return hops.reduceRight<BuiltFilter>(
+    (inner, hop) =>
+      hop.many
+        ? { through: hop.field, match: hop.match, where: inner }
+        : { through: hop.field, where: inner },
+    leaf,
+  );
+}
+
+function conditionToFilter(node: TreeCondition): BuiltFilter | undefined {
+  {
     if (node.field === "") return undefined;
 
     if (WITHOUT_VALUE.has(node.operator)) {
@@ -171,7 +231,9 @@ export function treeToFilter(node: TreeNode): BuiltFilter | undefined {
 
     return { field: node.field, operator: node.operator, value: node.value };
   }
+}
 
+function groupToFilter(node: TreeGroup): BuiltFilter | undefined {
   const kept = node.children
     .map(treeToFilter)
     .filter((one): one is BuiltFilter => one !== undefined);
@@ -232,6 +294,24 @@ function conditionToTree(condition: BuiltCondition): TreeCondition {
  */
 export function treeFromFilter(filter: unknown): TreeNode | null {
   if (isCondition(filter)) return conditionToTree(filter);
+
+  /* A chain of relations ending in ONE condition is one row with its path. A chain that ends
+     in a group («alguna línea con impuesto > 10 Y cantidad > 2», both about the SAME line)
+     cannot be a row: the tree shows it read-only and the JSON stays the way to edit it. */
+  if (isThrough(filter)) {
+    const hops: TreeHop[] = [];
+    let node: unknown = filter;
+    while (isThrough(node)) {
+      hops.push({
+        field: node.through,
+        many: node.match !== undefined,
+        match: node.match ?? "any",
+      });
+      node = node.where;
+    }
+    if (!isCondition(node)) return null;
+    return { ...conditionToTree(node), through: hops };
+  }
 
   if (typeof filter !== "object" || filter === null) return null;
   const record = filter as Record<string, unknown>;
@@ -314,16 +394,40 @@ function describeValue(value: unknown, operator?: string): string {
  *  Un grupo anidado se encierra entre paréntesis, que es lo que evita que «a y (b o c)» se
  *  lea como «(a y b) o c». Para más de tres condiciones se corta: una ficha que no entra en
  *  la barra no dice nada — para eso está abrir el constructor y verlo entero. */
-export function describeFilter(node: BuiltFilter, model?: ModelDefinition): string {
-  return say(node, model, 0);
+export function describeFilter(
+  node: BuiltFilter,
+  model?: ModelDefinition,
+  /** The model at the end of a path of relations, when it already arrived: it names the
+   *  fields of a `through`. Without it they keep their raw names. */
+  modelAt?: (path: readonly string[]) => ModelDefinition | undefined,
+): string {
+  return say(node, model, 0, [], modelAt);
 }
 
-function say(node: BuiltFilter, model: ModelDefinition | undefined, depth: number): string {
+function say(
+  node: BuiltFilter,
+  model: ModelDefinition | undefined,
+  depth: number,
+  at: readonly string[],
+  modelAt: ((path: readonly string[]) => ModelDefinition | undefined) | undefined,
+): string {
   const copy = currentCopy();
+  if ("through" in node) {
+    /* «alguno de Líneas con alguno de Impuestos con Monto mayor que 10». The quantifier
+       is a separate word and not «algún impuesto» because the model publishes the label,
+       not its gender or its singular: «algún Impuestos» would be worse than neutral. */
+    const relation =
+      model === undefined ? node.through : fieldLabel(model, node.through, copy.locale);
+    const next = [...at, node.through];
+    const inner = say(node.where, modelAt?.(next), depth + 1, next, modelAt);
+    const template =
+      node.match === undefined ? copy.fieldPath.say.one : copy.fieldPath.say[node.match];
+    return fillCopy(template, { relation, inner });
+  }
   if ("all" in node || "any" in node) {
     const items = "all" in node ? node.all : node.any;
     const glue = "all" in node ? copy.search.and : copy.search.or;
-    const said = items.slice(0, 3).map((child) => say(child, model, depth + 1));
+    const said = items.slice(0, 3).map((child) => say(child, model, depth + 1, at, modelAt));
     if (items.length > 3) {
       said.push(fillCopy(copy.search.andMore, { count: items.length - 3 }));
     }
@@ -331,7 +435,9 @@ function say(node: BuiltFilter, model: ModelDefinition | undefined, depth: numbe
     return depth === 0 || said.length === 1 ? joined : `(${joined})`;
   }
 
-  if ("negate" in node) return `${copy.search.notWord} ${say(node.negate, model, depth + 1)}`;
+  if ("negate" in node) {
+    return `${copy.search.notWord} ${say(node.negate, model, depth + 1, at, modelAt)}`;
+  }
 
   const label = model === undefined ? node.field : fieldLabel(model, node.field, copy.locale);
   return sayCondition(label, node.operator, describeValue(node.value, node.operator));
@@ -346,16 +452,46 @@ export function ExpressionView({
   node,
   model,
   depth = 0,
+  modelAt,
+  at = [],
 }: {
   node: BuiltFilter;
   /** Quién sabe cómo se llama un campo. Sin él queda el nombre crudo. */
   model?: ModelDefinition;
   depth?: number;
+  /** El modelo al final de un camino de relaciones, si ya llegó: nombra los campos de un
+   *  `through`. */
+  modelAt?: (path: readonly string[]) => ModelDefinition | undefined;
+  /** El camino hasta acá (por los `through` de afuera). */
+  at?: readonly string[];
 }) {
   const surface = useSurface();
   const copy = useUiCopy();
   const box = surface === "chrome" ? "border-chrome-ink/20" : "border-ink/15";
   const indent = depth === 0 ? "" : "ml-4";
+
+  if ("through" in node) {
+    const relation =
+      model === undefined ? node.through : fieldLabel(model, node.through, copy.locale);
+    const next = [...at, node.through];
+    const inner = modelAt?.(next);
+    return (
+      <div className={`flex flex-col gap-1 border-l-2 pl-2 ${box} ${indent}`}>
+        <p className="text-micro text-muted">
+          {node.match === undefined
+            ? relation
+            : `${copy.fieldPath.match[node.match]} · ${relation}`}
+        </p>
+        <ExpressionView
+          node={node.where}
+          {...(inner === undefined ? {} : { model: inner })}
+          {...(modelAt === undefined ? {} : { modelAt })}
+          at={next}
+          depth={depth + 1}
+        />
+      </div>
+    );
+  }
 
   if ("all" in node || "any" in node) {
     /* LAS MISMAS TRES PALABRAS QUE LA BARRA. Un grupo que acá se llama «coincide
@@ -405,6 +541,8 @@ export function WhereTree({
   onChange,
   depth = 0,
   focus,
+  loadModel,
+  models: shared,
 }: {
   model: ModelDefinition;
   group: TreeGroup;
@@ -429,10 +567,16 @@ export function WhereTree({
    * el otro.
    */
   focus?: string;
+  /** El modelo al final de un camino de relaciones. Con esto, el campo de cada regla puede
+   *  ser uno de un registro relacionado («Líneas > Impuestos > Monto»). */
+  loadModel?: LoadModel;
+  /** La caché de modelos que comparten las reglas. La arma el árbol de afuera. */
+  models?: ModelCache;
 }) {
   const names = filterableNames(model);
   const copy = useUiCopy();
   const surface = useSurface();
+  const models = useModelCache(model, loadModel, shared);
   const box =
     surface === "chrome"
       ? "border-chrome-ink/20 bg-chrome text-chrome-ink"
@@ -490,6 +634,7 @@ export function WhereTree({
                 group={child}
                 onChange={(next) => setChild(index, next)}
                 depth={depth + 1}
+                models={models}
                 {...(focus === undefined ? {} : { focus })}
               />
             </div>
@@ -504,123 +649,205 @@ export function WhereTree({
             </button>
           </div>
         ) : (
-          <div
+          <ConditionRow
             key={index}
-            /* La que se vino a ver se marca y se trae a la vista. El anillo y no
-               un fondo: el fondo compite con el `select` que hay que tocar. */
-            ref={
-              focus !== undefined && child.field === focus
-                ? (node) => node?.scrollIntoView({ block: "nearest" })
-                : undefined
-            }
-            className={`flex min-w-0 flex-wrap items-center gap-2 rounded-control ${
-              focus !== undefined && child.field === focus
-                ? "-m-1 p-1 ring-1 ring-primary/60"
-                : ""
-            }`}
-          >
-            <select
-              aria-label={copy.builder.ruleField}
-              value={child.field}
-              onChange={(event) =>
-                setChild(index, {
-                  ...child,
-                  field: event.target.value,
-                  operator: model.fields[event.target.value]?.ops.includes(child.operator)
-                    ? child.operator
-                    : (model.fields[event.target.value]?.ops[0] ?? "="),
-                })
-              }
-              className={`min-w-0 flex-1 basis-40 rounded-control border px-2 py-1 text-meta ${box}`}
-            >
-              {names.map((name) => (
-                <option key={name} value={name}>
-                  {name}
-                </option>
-              ))}
-            </select>
+            model={model}
+            models={models}
+            child={child}
+            box={box}
+            focused={focus !== undefined && child.field === focus}
+            onChange={(next) => setChild(index, next)}
+            actions={
+              <span className="ml-auto flex shrink-0 items-center gap-2">
+                <button
+                  type="button"
+                  aria-label={copy.builder.addRule}
+                  onClick={() => addConditionAfter(index)}
+                  className="text-muted hover:text-ink"
+                >
+                  <Plus className="size-4" />
+                </button>
 
-            <select
-              aria-label={copy.builder.ruleOperator}
-              value={child.operator}
-              onChange={(event) =>
-                setChild(index, { ...child, operator: event.target.value })
-              }
-              className={`min-w-0 flex-1 basis-36 rounded-control border px-2 py-1 text-meta ${box}`}
-            >
-              {(model.fields[child.field]?.ops ?? []).map((operator) => (
-                <option key={operator} value={operator}>
-                  {opLabel(operator)}
-                </option>
-              ))}
-            </select>
+                <button
+                  type="button"
+                  aria-label={copy.builder.addNested}
+                  onClick={() => addGroupAfter(index)}
+                  className="text-muted hover:text-ink"
+                >
+                  <FolderTree className="size-4" />
+                </button>
 
-            {WITHOUT_VALUE.has(child.operator) ? (
-              <span className="flex-1 text-meta text-muted">{copy.builder.noValue}</span>
-            ) : WITH_RANGE.has(child.operator) ? (
-              <span className="flex min-w-0 flex-1 basis-40 items-center gap-1">
-                <input
-                  type={inputType(model.fields[child.field]?.type ?? "text")}
-                  value={child.value}
-                  onChange={(event) =>
-                    setChild(index, { ...child, value: event.target.value })
-                  }
-                  placeholder={copy.builder.from}
-                  className={`min-w-0 flex-1 rounded-control border px-2 py-1 text-meta ${box}`}
-                />
-                <span className="shrink-0 text-micro text-muted">{copy.search.and}</span>
-                <input
-                  type={inputType(model.fields[child.field]?.type ?? "text")}
-                  value={child.upper ?? ""}
-                  onChange={(event) =>
-                    setChild(index, { ...child, upper: event.target.value })
-                  }
-                  placeholder={copy.builder.to}
-                  className={`min-w-0 flex-1 rounded-control border px-2 py-1 text-meta ${box}`}
-                />
+                <button
+                  type="button"
+                  aria-label={copy.builder.dropRule}
+                  disabled={group.children.length === 1}
+                  onClick={() => removeAt(index)}
+                  className="text-muted disabled:opacity-30"
+                >
+                  <Trash2 className="size-4" />
+                </button>
               </span>
-            ) : (
-              <input
-                type={inputType(model.fields[child.field]?.type ?? "text")}
-                value={child.value}
-                onChange={(event) => setChild(index, { ...child, value: event.target.value })}
-                placeholder={copy.builder.value}
-                className={`min-w-0 flex-1 basis-40 rounded-control border px-2 py-1 text-meta ${box}`}
-              />
-            )}
-
-            <span className="ml-auto flex shrink-0 items-center gap-2">
-              <button
-                type="button"
-                aria-label={copy.builder.addRule}
-                onClick={() => addConditionAfter(index)}
-                className="text-muted hover:text-ink"
-              >
-                <Plus className="size-4" />
-              </button>
-
-              <button
-                type="button"
-                aria-label={copy.builder.addNested}
-                onClick={() => addGroupAfter(index)}
-                className="text-muted hover:text-ink"
-              >
-                <FolderTree className="size-4" />
-              </button>
-
-              <button
-                type="button"
-                aria-label={copy.builder.dropRule}
-                disabled={group.children.length === 1}
-                onClick={() => removeAt(index)}
-                className="text-muted disabled:opacity-30"
-              >
-                <Trash2 className="size-4" />
-              </button>
-            </span>
-          </div>
+            }
+          />
         ),
       )}
+    </div>
+  );
+}
+
+/* ---------------------------------------------------------------------- *
+ *  UNA REGLA — el camino hasta el campo, cuántos de cada relación, el operador y el valor.
+ * ---------------------------------------------------------------------- */
+
+function ConditionRow({
+  model,
+  models,
+  child,
+  box,
+  focused,
+  onChange,
+  actions,
+}: {
+  model: ModelDefinition;
+  models: ModelCache;
+  child: TreeCondition;
+  box: string;
+  focused: boolean;
+  onChange: (next: TreeCondition) => void;
+  actions: ReactNode;
+}) {
+  const copy = useUiCopy();
+  const hops = child.through ?? [];
+  const path = child.field === "" ? [] : [...hops.map((hop) => hop.field), child.field];
+  const steps = useFieldPathSteps(models, path);
+  /* El operador y el valor salen del ÚLTIMO campo del camino: «Monto», alcanzado por dos
+     relaciones, se compara como un número y no como la relación por la que se llegó. Una
+     regla de la raíz lo sabe sin esperar a nadie. */
+  const leaf =
+    steps?.at(-1)?.field ?? (hops.length === 0 ? model.fields[child.field] : undefined);
+  const ops = leaf?.ops ?? [];
+  const type = leaf?.type ?? "text";
+
+  function choosePath(
+    next: readonly string[],
+    found: readonly { name: string; field: FieldDefinition }[],
+  ) {
+    const last = found.at(-1);
+    if (last === undefined) return;
+    const nextHops = found.slice(0, -1).map((step, at) => ({
+      field: step.name,
+      many: isToMany(step.field),
+      /* Cambiar el campo final no reinicia la ficha de una relación que sigue en el camino. */
+      match: hops[at]?.field === step.name ? hops[at]!.match : ("any" as ThroughMatch),
+    }));
+    onChange({
+      ...child,
+      through: nextHops.length === 0 ? undefined : nextHops,
+      field: next[next.length - 1] ?? "",
+      operator: last.field.ops.includes(child.operator)
+        ? child.operator
+        : (last.field.ops[0] ?? "="),
+    });
+  }
+
+  function setMatch(at: number, match: ThroughMatch) {
+    onChange({
+      ...child,
+      through: hops.map((hop, i) => (i === at ? { ...hop, match } : hop)),
+    });
+  }
+
+  return (
+    <div
+      /* La que se vino a ver se marca y se trae a la vista. El anillo y no
+         un fondo: el fondo compite con el `select` que hay que tocar. */
+      ref={focused ? (node) => node?.scrollIntoView({ block: "nearest" }) : undefined}
+      className={`flex min-w-0 flex-wrap items-center gap-2 rounded-control ${
+        focused ? "-m-1 p-1 ring-1 ring-primary/60" : ""
+      }`}
+    >
+      <FieldPath
+        model={model}
+        models={models}
+        value={path}
+        label={copy.builder.ruleField}
+        filter={(field) => isFilterable(field)}
+        onChange={choosePath}
+      />
+
+      {/* UNA FICHA POR CADA RELACIÓN A MUCHOS del camino: «alguna línea», «ninguna línea»,
+          «todas las líneas» son tres preguntas distintas y el camino solo no dice cuál. */}
+      {hops.map((hop, at) =>
+        hop.many ? (
+          <label
+            key={`${hop.field}-${at}`}
+            className={`flex min-w-0 shrink-0 items-center gap-1 rounded-control border px-2 py-0.5 text-micro ${box}`}
+          >
+            <span className="max-w-32 truncate text-muted">
+              {steps?.[at]?.label ?? hop.field}
+            </span>
+            <select
+              aria-label={fillCopy(copy.fieldPath.match.label, {
+                relation: steps?.[at]?.label ?? hop.field,
+              })}
+              value={hop.match}
+              onChange={(event) => setMatch(at, event.target.value as ThroughMatch)}
+              className="bg-transparent text-micro font-medium"
+            >
+              {MATCHES.map((match) => (
+                <option key={match} value={match}>
+                  {copy.fieldPath.match[match]}
+                </option>
+              ))}
+            </select>
+          </label>
+        ) : null,
+      )}
+
+      <select
+        aria-label={copy.builder.ruleOperator}
+        value={child.operator}
+        onChange={(event) => onChange({ ...child, operator: event.target.value })}
+        className={`min-w-0 flex-1 basis-36 rounded-control border px-2 py-1 text-meta ${box}`}
+      >
+        {ops.map((operator) => (
+          <option key={operator} value={operator}>
+            {opLabel(operator)}
+          </option>
+        ))}
+      </select>
+
+      {WITHOUT_VALUE.has(child.operator) ? (
+        <span className="flex-1 text-meta text-muted">{copy.builder.noValue}</span>
+      ) : WITH_RANGE.has(child.operator) ? (
+        <span className="flex min-w-0 flex-1 basis-40 items-center gap-1">
+          <input
+            type={inputType(type)}
+            value={child.value}
+            onChange={(event) => onChange({ ...child, value: event.target.value })}
+            placeholder={copy.builder.from}
+            className={`min-w-0 flex-1 rounded-control border px-2 py-1 text-meta ${box}`}
+          />
+          <span className="shrink-0 text-micro text-muted">{copy.search.and}</span>
+          <input
+            type={inputType(type)}
+            value={child.upper ?? ""}
+            onChange={(event) => onChange({ ...child, upper: event.target.value })}
+            placeholder={copy.builder.to}
+            className={`min-w-0 flex-1 rounded-control border px-2 py-1 text-meta ${box}`}
+          />
+        </span>
+      ) : (
+        <input
+          type={inputType(type)}
+          value={child.value}
+          onChange={(event) => onChange({ ...child, value: event.target.value })}
+          placeholder={copy.builder.value}
+          className={`min-w-0 flex-1 basis-40 rounded-control border px-2 py-1 text-meta ${box}`}
+        />
+      )}
+
+      {actions}
     </div>
   );
 }
@@ -630,8 +857,17 @@ export function FilterBuilder({
   initial,
   onApply,
   onCancel,
+  loadModel,
+  models: shared,
 }: {
   model: ModelDefinition;
+  /** El modelo al final de un camino de relaciones. Con esto, una regla puede preguntar por
+   *  un campo de un registro relacionado: «alguna línea con algún impuesto con monto > 10».
+   *  web-ui no pide nada: quien dibuja el constructor sabe de dónde salen los modelos. */
+  loadModel?: LoadModel;
+  /** Una caché de modelos compartida con quien dibuja el constructor —la misma que usa para
+   *  describir el filtro aplicado con `describeFilter(…, modelAt)`—. Sin esto, una propia. */
+  models?: ModelCache;
   /** El filtro que ya estaba puesto, si había uno. Reabrir el constructor con esto adentro
    *  tiene que seguir donde quedó, no empezar en blanco. */
   initial?: BuiltFilter;
@@ -639,6 +875,7 @@ export function FilterBuilder({
   onCancel?: () => void;
 }) {
   const names = filterableNames(model);
+  const models = useModelCache(model, loadModel, shared);
 
   const copy = useUiCopy();
   const decomposed = initial === undefined ? null : treeFromFilter(initial);
@@ -712,10 +949,10 @@ export function FilterBuilder({
         {lockedView !== null ? (
           <>
             <p className="text-meta text-muted">{copy.search.unreadable}</p>
-            <ExpressionView node={lockedView} model={model} />
+            <ExpressionView node={lockedView} model={model} modelAt={models.peek} />
           </>
         ) : (
-          <WhereTree model={model} group={tree} onChange={updateTree} />
+          <WhereTree model={model} group={tree} onChange={updateTree} models={models} />
         )}
       </div>
 

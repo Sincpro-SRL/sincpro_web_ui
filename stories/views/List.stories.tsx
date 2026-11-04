@@ -246,11 +246,14 @@ function Tarjeta({ d, ways }: { d: Item; ways?: CardWays }) {
   const body = (
     <>
       <Tag tone={TONE[d.stage]}>{LABEL[d.stage]}</Tag>
-      <span className="truncate text-lead font-medium text-primary">{orderName(d)}</span>
+      <span className="max-w-full truncate text-lead font-medium text-primary">
+        {orderName(d)}
+      </span>
       <span className="text-micro text-muted tabular-nums">{orderMeta(d)}</span>
     </>
   );
-  const box = "flex flex-col items-start gap-2 rounded-box border border-line bg-surface p-4";
+  const box =
+    "flex min-w-0 flex-col items-start gap-2 rounded-box border border-line bg-surface p-4";
   return ways?.press === undefined ? (
     <div className={box}>{body}</div>
   ) : (

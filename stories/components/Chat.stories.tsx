@@ -106,8 +106,9 @@ function Conversacion({ inicial }: { inicial: ChatMessage[] }) {
   const [mensajes, setMensajes] = useState(inicial);
   const [abierta, setAbierta] = useState("ana");
   return (
-    <div className="grid h-full grid-cols-[minmax(0,16rem)_minmax(0,1fr)] overflow-hidden rounded-control border border-line bg-ground">
-      <aside className="flex min-h-0 flex-col border-r border-line bg-surface">
+    <div className="grid h-full grid-cols-1 grid-rows-[auto_minmax(0,1fr)] overflow-hidden rounded-control border border-line bg-ground sm:grid-cols-[minmax(0,16rem)_minmax(0,1fr)] sm:grid-rows-1">
+      {/* On a phone the conversations go above the thread, short; side by side from `sm`. */}
+      <aside className="flex max-h-40 min-h-0 flex-col border-b border-line bg-surface sm:max-h-none sm:border-r sm:border-b-0">
         <ConversationList
           conversations={CONVERSACIONES}
           selectedId={abierta}

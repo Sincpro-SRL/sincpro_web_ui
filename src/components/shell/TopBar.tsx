@@ -119,11 +119,12 @@ export function TopBar({
           </span>
         )}
 
-        {/* The app's menus. They are the first thing to be clipped on their right:
-            what gives way first is what can be reopened from the switcher. */}
+        {/* The app's menus. They are what gives way first when the bar is narrow — and they
+            give way by SCROLLING, not by being clipped: clipped, a phone showed «Cl» against
+            the icons and the rest of the menus could not be reached at all. */}
         {menus === undefined ? null : (
           <nav
-            className="flex min-w-0 items-center gap-0.5 overflow-hidden"
+            className="scroll-quiet flex min-w-0 items-center gap-0.5"
             aria-label={copy.shell.menus}
           >
             {menus.map((m) => (
