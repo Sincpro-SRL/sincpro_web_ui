@@ -34,54 +34,58 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 
 ## 2. Una colección de registros
 
-| Necesidad                                                                         | Estado   | Pieza / dueño                                                                |
-| --------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------- |
-| Filas, tabla, tablero, planilla, informe, pivote                                  | ✅       | `List.*`                                                                     |
-| Solo lectura vs. abrible; vista previa 👁 y abrir ↗                                | ✅ 10-31 | `List readOnly`, `onPeek`, `onOpen`                                          |
-| Encabezado de filas alineado al píxel                                             | ✅ 10-31 | `List.Rows header`                                                           |
-| Lista embebida con título cuando está suelta                                      | ✅ 10-31 | `List.Identity` en `embedded`                                                |
-| Tablero POR ETAPAS con arrastrar entre columnas                                   | ✅ 10-31 | `List.Board stages` (`BoardColumns`), Alt + ← / →                            |
-| Reordenar filas arrastrando (secuencia)                                           | ✅ 10-31 | `EditableTable` / `LineItems` `onReorder`                                    |
-| Elegir «los 187 que coinciden», no solo la página                                 | ✅ 10-31 | `selection.matching`                                                         |
-| Vista calendario de registros                                                     | ✅ 10-31 | `List.Calendar` (`RecordCalendar`, FullCalendar v7)                          |
-| Gantt de proyecto (tareas, dependencias, avance)                                  | ✅ 10-31 | `List.Gantt` (`RecordGantt`, SVAR)                                           |
-| Planificación agrupada (el «Gantt» de Odoo)                                       | ✅ 10-31 | `List.Timeline` (`RecordTimeline`), `TimelineToolbar`                        |
-| Kanban: crear rápido, total, barra de actividades, plegar, agregar etapa          | ✅ 10-31 | `List.Board stages`                                                          |
-| Calendario por recurso, planificación automática, ruta crítica                    | 💲       | licencia: FullCalendar scheduler / SVAR PRO                                  |
-| Exportar lo que se ve (xlsx)                                                      | ✅       | `foundations/xlsx`                                                           |
-| Una presentación propia (mapa, galería, plano) con el mismo conjunto              | ✅ 11-03 | `List.Present` (`ListSet`: orden, montones, selección)                       |
-| Una operación sobre N registros elegidos (el «wizard» de Odoo)                    | ✅ 11-03 | `5 · Plantillas/Operación`: `Record` en modal + `api.pick`                   |
-| Una operación en VARIOS pasos de una sentada (importar: subir › mapear › revisar) | ❌       | web-ui: falta la pieza; `Steps` es para trabajo de días                      |
-| Miles de filas en la tabla: dibuja sólo las que se ven (desde 200)                | ✅ 11-03 | `DataTable` (`primitives/table/rowWindow`)                                   |
-| La tabla dibuja los montones que contó el servidor, con «Ver N más»               | ✅ 11-03 | `DataTable piles`, `Grouping.onMore` (filas, tablero, tabla, `ListSet.more`) |
-| Volver a preguntar sin que las filas desaparezcan                                 | ✅ 11-03 | `List state.refreshing`: las filas quedan, una barra discreta y `aria-busy`  |
-| La tarjeta de una persona dibuja su cara                                          | ✅ 11-03 | `RecordCard media.person`, como `RelationCard`                               |
-| Varios conjuntos a la vez (la conciliación), cada uno con su búsqueda             | ✅ 11-03 | `Panes` / `Pane`; `5 · Plantillas/Conciliación`                              |
+| Necesidad                                                                          | Estado   | Pieza / dueño                                                                |
+| ---------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------- |
+| Filas, tabla, tablero, planilla, informe, pivote                                   | ✅       | `List.*`                                                                     |
+| Solo lectura vs. abrible; vista previa 👁 y abrir ↗                                 | ✅ 10-31 | `List readOnly`, `onPeek`, `onOpen`                                          |
+| Encabezado de filas alineado al píxel                                              | ✅ 10-31 | `List.Rows header`                                                           |
+| Lista embebida con título cuando está suelta                                       | ✅ 10-31 | `List.Identity` en `embedded`                                                |
+| Tablero POR ETAPAS con arrastrar entre columnas                                    | ✅ 10-31 | `List.Board stages` (`BoardColumns`), Alt + ← / →                            |
+| Reordenar filas arrastrando (secuencia)                                            | ✅ 10-31 | `EditableTable` / `LineItems` `onReorder`                                    |
+| Elegir «los 187 que coinciden», no solo la página                                  | ✅ 10-31 | `selection.matching`                                                         |
+| Vista calendario de registros                                                      | ✅ 10-31 | `List.Calendar` (`RecordCalendar`, FullCalendar v7)                          |
+| Gantt de proyecto (tareas, dependencias, avance)                                   | ✅ 10-31 | `List.Gantt` (`RecordGantt`, SVAR)                                           |
+| Planificación agrupada (el «Gantt» de Odoo)                                        | ✅ 10-31 | `List.Timeline` (`RecordTimeline`), `TimelineToolbar`                        |
+| Kanban: crear rápido, total, barra de actividades, plegar, agregar etapa           | ✅ 10-31 | `List.Board stages`                                                          |
+| Calendario por recurso, planificación automática, ruta crítica                     | 💲       | licencia: FullCalendar scheduler / SVAR PRO                                  |
+| Exportar lo que se ve (xlsx)                                                       | ✅       | `foundations/xlsx`                                                           |
+| Una presentación propia (mapa, galería, plano) con el mismo conjunto               | ✅ 11-03 | `List.Present` (`ListSet`: orden, montones, selección)                       |
+| Una operación sobre N registros elegidos (el «wizard» de Odoo)                     | ✅ 11-03 | `5 · Plantillas/Operación`: `Record` en modal + `api.pick`                   |
+| Una operación en VARIOS pasos de una sentada (importar: subir › mapear › revisar)  | ❌       | web-ui: falta la pieza; `Steps` es para trabajo de días                      |
+| Miles de filas en la tabla: dibuja sólo las que se ven (desde 200)                 | ✅ 11-03 | `DataTable` (`primitives/table/rowWindow`)                                   |
+| La tabla dibuja los montones que contó el servidor, con «Ver N más»                | ✅ 11-03 | `DataTable piles`, `Grouping.onMore` (filas, tablero, tabla, `ListSet.more`) |
+| «Ver más» de un montón dice lo que trae («Ver 50 más de 49.950») y para en el tope | ✅ 11-03 | `Pile.more`, `pileFoot`, `PileFootLine` (filas, tablero, tabla, propias)     |
+| Una tarjeta propia del tablero abre como la del sistema                            | ✅ 11-03 | `List.Board card(item, ways)` (`CardWays`, como `ListSet`)                   |
+| Volver a preguntar sin que las filas desaparezcan                                  | ✅ 11-03 | `List state.refreshing`: las filas quedan, una barra discreta y `aria-busy`  |
+| La tarjeta de una persona dibuja su cara                                           | ✅ 11-03 | `RecordCard media.person`, como `RelationCard`                               |
+| Varios conjuntos a la vez (la conciliación), cada uno con su búsqueda              | ✅ 11-03 | `Panes` / `Pane`; `5 · Plantillas/Conciliación`                              |
 
 ## 3. Elegir y buscar
 
-| Necesidad                                                                         | Estado   | Pieza / dueño                                                                   |
-| --------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------------- |
-| Barra con facetas, filtros, agrupado, favoritos                                   | ✅       | `SearchBar`                                                                     |
-| Muchos recortes sin romper la barra                                               | ✅ 10-31 | cadena de agrupado, «+N», tope por ficha                                        |
-| Constructor de criterios con JSON                                                 | ✅       | `CriteriaBuilder`                                                               |
-| many2one con columnas para distinguir                                             | ✅       | `Picker`                                                                        |
-| «Buscar más…» (one y many/agregar), con el buscador, orden y páginas de la lista  | ✅ 10-31 | `api.pick` + `List onChoose` (many: `selection.actions`)                        |
-| many2many como fichas, con «Buscar más…»                                          | ✅ 10-31 | `TagsField onBrowseAll`                                                         |
-| Paleta de comandos                                                                | ✅       | composer (⌘K)                                                                   |
-| Búsqueda literal marcada (sin tildes), y «coincide NIT…» cuando matchea lo oculto | ✅ 10-31 | `Picker`, `TagsField` (`foundations/match`)                                     |
-| Crear desde el campo: «Crear «…»» y «Crear y editar…»                             | ✅ 10-31 | `Picker onCreate`, `onCreateAndEdit`                                            |
-| Filas del elegidor con widgets (cara, estado, saldo a la derecha)                 | ✅ 10-31 | `PickerItem.avatar`, `tags`, `aside`                                            |
-| «Buscar más…» con varias presentaciones (tabla, filas, planilla, calendario)      | 🟡       | el elegidor es una `List`: tabla y filas ✅; planilla y calendario, por mostrar |
-| Búsqueda contra el servidor con facetas del modelo                                | 🟡       | web-ui da la barra; el modelo lo trae web-framework                             |
-| Un selector que busca en el SERVIDOR: no filtra ni corta lo que le dan            | ✅ 10-31 | `Picker onSearch`; el nombre del elegido fuera de la página, `valueLabel`       |
-| Un many2many que busca en el SERVIDOR (fichas sobre miles)                        | ✅ 10-31 | `TagsField onSearch`: no filtra lo que le dan; los elegidos no vuelven          |
-| Un grupo dice cuánto suma, no sólo cuántos hay                                    | ✅ 10-31 | `Pile.detail` → `GroupHeader detail` (lo suma quien guarda los datos)           |
-| Búsqueda literal en la barra («Buscar «X»» sobre todo el conjunto, con Enter)     | ✅ 10-31 | `SearchBar literal`: primero, salvo que el modelo lea lo escrito como pregunta  |
-| Un monto (`decimal`, `monetary`) se pregunta como número                          | ✅ 10-31 | `kindOf` lo leía como texto: «total <= 1000» no se podía pedir                  |
-| La barra con fichas puestas: el campo y el botón del panel conservan su nombre    | ✅ 11-03 | `SearchBar`: «Buscar» y «Filtrar, agrupar y favoritos, N puestos»               |
-| Las sugerencias de la barra son opciones (combobox de ARIA)                       | ✅ 11-03 | `SearchBar`: `listbox` / `option`, `aria-activedescendant`                      |
-| Las palabras de la aplicación con el mismo mecanismo que las del paquete          | ✅ 11-03 | `createCopy`; un `Provider` cambia su rama y nunca la copia instalada           |
+| Necesidad                                                                            | Estado   | Pieza / dueño                                                                   |
+| ------------------------------------------------------------------------------------ | -------- | ------------------------------------------------------------------------------- |
+| Barra con facetas, filtros, agrupado, favoritos                                      | ✅       | `SearchBar`                                                                     |
+| Muchos recortes sin romper la barra                                                  | ✅ 10-31 | cadena de agrupado, «+N», tope por ficha                                        |
+| Constructor de criterios con JSON                                                    | ✅       | `CriteriaBuilder`                                                               |
+| many2one con columnas para distinguir                                                | ✅       | `Picker`                                                                        |
+| «Buscar más…» (one y many/agregar), con el buscador, orden y páginas de la lista     | ✅ 10-31 | `api.pick` + `List onChoose` (many: `selection.actions`)                        |
+| many2many como fichas, con «Buscar más…»                                             | ✅ 10-31 | `TagsField onBrowseAll`                                                         |
+| many2many: el dato que distingue dos opciones (el NIT), buscable y fuera de la ficha | ✅ 11-03 | `TagOption.meta`                                                                |
+| Una opción que no encaja en «nombre + dato + aparte»                                 | ✅ 11-03 | `renderOption` en `Picker` y `TagsField`; `MatchedText`                         |
+| Paleta de comandos                                                                   | ✅       | composer (⌘K)                                                                   |
+| Búsqueda literal marcada (sin tildes), y «coincide NIT…» cuando matchea lo oculto    | ✅ 10-31 | `Picker`, `TagsField` (`foundations/match`)                                     |
+| Crear desde el campo: «Crear «…»» y «Crear y editar…»                                | ✅ 10-31 | `Picker onCreate`, `onCreateAndEdit`                                            |
+| Filas del elegidor con widgets (cara, estado, saldo a la derecha)                    | ✅ 10-31 | `PickerItem.avatar`, `tags`, `aside`                                            |
+| «Buscar más…» con varias presentaciones (tabla, filas, planilla, calendario)         | 🟡       | el elegidor es una `List`: tabla y filas ✅; planilla y calendario, por mostrar |
+| Búsqueda contra el servidor con facetas del modelo                                   | 🟡       | web-ui da la barra; el modelo lo trae web-framework                             |
+| Un selector que busca en el SERVIDOR: no filtra ni corta lo que le dan               | ✅ 10-31 | `Picker onSearch`; el nombre del elegido fuera de la página, `valueLabel`       |
+| Un many2many que busca en el SERVIDOR (fichas sobre miles)                           | ✅ 10-31 | `TagsField onSearch`: no filtra lo que le dan; los elegidos no vuelven          |
+| Un grupo dice cuánto suma, no sólo cuántos hay                                       | ✅ 10-31 | `Pile.detail` → `GroupHeader detail` (lo suma quien guarda los datos)           |
+| Búsqueda literal en la barra («Buscar «X»» sobre todo el conjunto, con Enter)        | ✅ 10-31 | `SearchBar literal`: primero, salvo que el modelo lea lo escrito como pregunta  |
+| Un monto (`decimal`, `monetary`) se pregunta como número                             | ✅ 10-31 | `kindOf` lo leía como texto: «total <= 1000» no se podía pedir                  |
+| La barra con fichas puestas: el campo y el botón del panel conservan su nombre       | ✅ 11-03 | `SearchBar`: «Buscar» y «Filtrar, agrupar y favoritos, N puestos»               |
+| Las sugerencias de la barra son opciones (combobox de ARIA)                          | ✅ 11-03 | `SearchBar`: `listbox` / `option`, `aria-activedescendant`                      |
+| Las palabras de la aplicación con el mismo mecanismo que las del paquete             | ✅ 11-03 | `createCopy`; un `Provider` cambia su rama y nunca la copia instalada           |
 
 ## 4. Dónde se abre (espacio de trabajo)
 

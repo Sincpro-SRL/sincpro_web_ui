@@ -1,5 +1,6 @@
 import {
   Button,
+  type CardWays,
   downloadPivot,
   filterCriteria,
   GroupingLevels,
@@ -12,6 +13,9 @@ import {
   NumberInput,
   Pagination,
   Picker,
+  type Pile,
+  pileFoot,
+  PileFootLine,
   type PivotFold,
   pivotFrom,
   ProgressBar,
@@ -235,13 +239,27 @@ const filaDe = (d: Item) => ({
 });
 
 /** La tarjeta del tablero. */
-function Tarjeta({ d }: { d: Item }) {
-  return (
-    <div className="flex flex-col gap-2 rounded-box border border-line bg-surface p-4">
+/** The domain's own card. It answers a click the way the list decided — `ways.press` — instead
+ *  of being a picture of a record that opens nothing. */
+function Tarjeta({ d, ways }: { d: Item; ways?: CardWays }) {
+  const body = (
+    <>
       <Tag tone={TONE[d.stage]}>{LABEL[d.stage]}</Tag>
-      <p className="truncate text-lead font-medium text-primary">{orderName(d)}</p>
-      <p className="text-micro text-muted tabular-nums">{orderMeta(d)}</p>
-    </div>
+      <span className="truncate text-lead font-medium text-primary">{orderName(d)}</span>
+      <span className="text-micro text-muted tabular-nums">{orderMeta(d)}</span>
+    </>
+  );
+  const box = "flex flex-col items-start gap-2 rounded-box border border-line bg-surface p-4";
+  return ways?.press === undefined ? (
+    <div className={box}>{body}</div>
+  ) : (
+    <button
+      type="button"
+      onClick={ways.press}
+      className={`${box} text-left transition-colors duration-(--duration-instant) hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary`}
+    >
+      {body}
+    </button>
   );
 }
 
@@ -413,7 +431,7 @@ export const Catalogo: Story = {
                 },
               ]}
             />
-            <List.Board<Item> card={(d) => <Tarjeta d={d} />} />
+            <List.Board<Item> card={(d, ways) => <Tarjeta d={d} ways={ways} />} />
           </List>
         </div>
       </div>
@@ -724,7 +742,7 @@ function Presentacion({ present }: { present: ListPresent }) {
             row={filaDe}
           />
           <List.Table<Item> columns={COLUMNAS} totals />
-          <List.Board<Item> card={(d) => <Tarjeta d={d} />} />
+          <List.Board<Item> card={(d, ways) => <Tarjeta d={d} ways={ways} />} />
         </List>
       </div>
     </div>
@@ -1332,7 +1350,7 @@ export const LasSeis: Story = {
                 pueda quedar diciendo otra cosa. */}
             <List.Rows<Item> row={filaDe} />
             <List.Table<Item> columns={COLUMNAS} totals />
-            <List.Board<Item> card={(d) => <Tarjeta d={d} />} />
+            <List.Board<Item> card={(d, ways) => <Tarjeta d={d} ways={ways} />} />
             <List.Sheet<Item>
               columns={[
                 { id: "number", header: "número", type: "identificador" },
@@ -1748,7 +1766,7 @@ export const DentroDeUnRegistro: Story = {
                   </List.Bar>
                   <List.Table<Item> columns={COLUMNAS_DEL_EQUIPO} totals />
                   <List.Rows<Item> row={filaDe} />
-                  <List.Board<Item> card={(d) => <Tarjeta d={d} />} />
+                  <List.Board<Item> card={(d, ways) => <Tarjeta d={d} ways={ways} />} />
                   <List.Sheet<Item> />
                 </List>
               </Record.Page>
@@ -1831,8 +1849,19 @@ function Galeria({ set }: { set: ListSet<Item> }) {
             {pile.label} · {pile.count}
           </button>
           {set.isOpen(pile) ? tiles(pile.items) : null}
+          {/* A presentation of its own ends a short pile the way the list's do. */}
+          {set.isOpen(pile) ? <GaleriaPie pile={pile} set={set} /> : null}
         </section>
       ))}
+    </div>
+  );
+}
+
+function GaleriaPie({ pile, set }: { pile: Pile<Item>; set: ListSet<Item> }) {
+  const foot = pileFoot(pile, set.more !== undefined);
+  return foot === null ? null : (
+    <div className="px-3 pb-3">
+      <PileFootLine foot={foot} onMore={() => set.more?.(pile)} />
     </div>
   );
 }
@@ -1924,5 +1953,117 @@ export const UnaPresentacionPropia: Story = {
     await expect(
       canvas.getByRole("checkbox", { name: `Elegir ${orderName(largest)}` }),
     ).toBeChecked();
+  },
+};
+
+/**
+ * **Una tarjeta propia abre como las del sistema.** El dominio dibuja su tarjeta y recibe, al
+ * lado del registro, lo que hace un clic en ESTA lista (`ways.press`): una vista previa
+ * primero, como la fila. Antes la tarjeta propia perdía el «abrir» y la aplicación se lo
+ * tenía que pasar a mano.
+ */
+export const TarjetaPropia: Story = {
+  render: function Render() {
+    const [visto, setVisto] = useState("ninguno");
+    return (
+      <div className="flex flex-col gap-3 bg-ground p-8">
+        <div className="@container overflow-clip rounded-box border border-line-strong bg-surface">
+          <List<Item>
+            items={ITEMS.slice(0, 6)}
+            keyOf={(d) => d.id}
+            present="board"
+            onPeek={(d) => setVisto(`vista previa · ${orderName(d)}`)}
+            onOpen={(d) => setVisto(`abrir · ${orderName(d)}`)}
+          >
+            <List.Bar>
+              <List.Identity title="Pedidos" />
+            </List.Bar>
+            <List.Board<Item> card={(d, ways) => <Tarjeta d={d} ways={ways} />} />
+          </List>
+        </div>
+        <p className="text-meta text-muted">
+          último gesto: <span className="text-ink">{visto}</span>
+        </p>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const first = ITEMS[0]!;
+    await userEvent.click(canvas.getByRole("button", { name: new RegExp(first.number) }));
+    await expect(canvas.getByText(/^último gesto:/)).toHaveTextContent(
+      `vista previa · ${orderName(first)}`,
+    );
+  },
+};
+
+/** What the server counts per stage — the whole set, not the page. */
+const CONTADOS: Record<Item["stage"], number> = { quotation: 38, order: 96, invoiced: 53 };
+/** One press brings this many… */
+const PAGINA = 2;
+/** …and a pile holds at most this many rows: past it the list asks to narrow the search. */
+const TOPE = 4;
+
+/**
+ * **Agrupado en el servidor: el botón dice lo que trae.** Cada montón llega contado entero
+ * —«96»— con su primera página. El botón no promete los 94 que faltan: dice cuántos trae
+ * una vez («Ver 2 más de 94»), porque eso es lo que pasa al tocarlo. Y cuando el montón
+ * llega al tope de filas que la aplicación guarda (`more: false`), el botón se va y el
+ * montón dice cuántas muestra de cuántas cuenta — un botón que no hace nada era el bug.
+ */
+export const AgrupadoEnElServidor: Story = {
+  render: function Render() {
+    const [shown, setShown] = useState<Record<string, number>>({});
+    const piles: Pile<Item>[] = (["quotation", "order", "invoiced"] as const).map((stage) => {
+      const held = ITEMS.filter((d) => d.stage === stage);
+      const limit = Math.min(TOPE, held.length);
+      const count = shown[stage] ?? PAGINA;
+      const next = Math.min(PAGINA, limit - count);
+      return {
+        path: [stage],
+        depth: 0,
+        field: "stage",
+        key: stage,
+        label: LABEL[stage],
+        count: CONTADOS[stage],
+        items: held.slice(0, count),
+        piles: [],
+        more: next > 0 ? next : false,
+      };
+    });
+    return (
+      <div className="bg-ground p-8">
+        <div className="@container overflow-clip rounded-box border border-line-strong bg-surface">
+          <List<Item>
+            items={piles.flatMap((p) => p.items)}
+            keyOf={(d) => d.id}
+            group={{
+              levels: [{ field: "stage" }],
+              of: (d) => d.stage,
+              piles,
+              onMore: (pile) =>
+                setShown((now) => ({
+                  ...now,
+                  [pile.key]: (now[pile.key] ?? PAGINA) + (pile.more || 0),
+                })),
+            }}
+          >
+            <List.Bar>
+              <List.Identity title="Pedidos por estado" />
+            </List.Bar>
+            <List.Rows<Item> row={filaDe} />
+            <List.Table<Item> columns={COLUMNAS} />
+          </List>
+        </div>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    /* «order» counts 96 and holds 2: one press brings 2 of the 94 left. */
+    await userEvent.click(canvas.getByRole("button", { name: "Ver 2 más de 94" }));
+    /* Four held — the cap: no button that does nothing, the pile says what it shows. */
+    await expect(canvas.getByText("Se muestran 4 de 96")).toBeInTheDocument();
+    await expect(canvas.queryByRole("button", { name: /de 92/ })).toBeNull();
   },
 };

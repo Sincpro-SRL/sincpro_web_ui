@@ -17,6 +17,7 @@ import type { RowAction } from "@sincpro/web-ui/primitives/table/RowActions";
 import type { SortState } from "@sincpro/web-ui/primitives/table/Table";
 import { ListView } from "@sincpro/web-ui/views/list/ListView";
 import {
+  type CardWays,
   type ListCalendar,
   type ListCrumb,
   type ListEmpty,
@@ -214,7 +215,8 @@ type TableProps<T extends object> = {
  *  nombre, el `meta` y las fichas. Escribirla igual es declarar que ESTA lista
  *  se puede ver como tablero. */
 type BoardProps<T> = {
-  card?: (item: T) => ReactNode;
+  /** `ways` carries the list's rule of what a press does — call `ways.press` from the card. */
+  card?: (item: T, ways: CardWays) => ReactNode;
   /** One column per stage, with drag (and Alt + ← / →) to move a card between them. */
   stages?: BoardStages<T>;
 };

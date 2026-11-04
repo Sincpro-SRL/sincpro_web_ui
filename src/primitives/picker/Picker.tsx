@@ -138,6 +138,12 @@ export interface PickerItem {
   aside?: ReactNode;
 }
 
+/**
+ * What a `renderOption` is handed beside the item: whether it is the chosen one, and what was
+ * typed — mark it with `MatchedText`, so the row still says why it is listed.
+ */
+export type PickerOptionState = { selected: boolean; query: string };
+
 /** A run of consecutive items under one header, as the list draws it. */
 interface PickerSection {
   id: string;
@@ -275,6 +281,14 @@ export type PickerProps = {
   /** A page asked for by `onLoadMore` is on its way: a quiet row at the end says so. Unlike
    *  `loading`, the rows already there stay. */
   loadingMore?: boolean;
+  /**
+   * The content of an option, for one that does not fit «name + meta + aside» — a product
+   * with its photo, a slot of an agenda. The row around it stays the picker's: keys, focus,
+   * the search by `name` (and `haystack`), the ✓ of the chosen one. What it draws is also
+   * what the option is called, so it should show the name. Data beyond `PickerItem` is looked
+   * up by `item.id` in the consumer's own records.
+   */
+  renderOption?: (item: PickerItem, state: PickerOptionState) => ReactNode;
   describedBy?: string;
   invalid?: boolean;
   disabled?: boolean;
@@ -318,6 +332,7 @@ function EditablePicker({
   loadingText,
   onLoadMore,
   loadingMore = false,
+  renderOption,
   describedBy: ownDescribedBy,
   invalid: ownInvalid,
   disabled = false,
@@ -538,6 +553,7 @@ function EditablePicker({
              would ask for page two before page one arrived. */
           onLoadMore={loading ? undefined : onLoadMore}
           loadingMore={loadingMore}
+          {...(renderOption === undefined ? {} : { renderOption })}
         />
 
         {remaining > 0 && !browsable ? (
@@ -567,6 +583,7 @@ export function PickerOptions({
   emptyText,
   onLoadMore,
   loadingMore = false,
+  renderOption,
   "aria-label": ariaLabel,
 }: {
   items: readonly PickerItem[];
@@ -578,6 +595,7 @@ export function PickerOptions({
   emptyText: string;
   onLoadMore?: () => void;
   loadingMore?: boolean;
+  renderOption?: (item: PickerItem, state: PickerOptionState) => ReactNode;
   /** Only when rendered outside the combobox, which otherwise names the list. */
   "aria-label"?: string;
 }) {
@@ -620,16 +638,32 @@ export function PickerOptions({
         isDisabled={item.disabled}
         className={(state) => option({ ...state, hints })}
       >
-        {({ isSelected }) => (
-          <Row
-            item={item}
-            selected={isSelected}
-            marks={marks}
-            hints={hints}
-            query={query}
-            locale={copy.locale}
-          />
-        )}
+        {({ isSelected }) =>
+          renderOption === undefined ? (
+            <Row
+              item={item}
+              selected={isSelected}
+              marks={marks}
+              hints={hints}
+              query={query}
+              locale={copy.locale}
+            />
+          ) : (
+            <>
+              <span className="min-w-0 flex-1">
+                {renderOption(item, { selected: isSelected, query })}
+              </span>
+              {/* The chosen one is said by the picker, whatever the content draws. */}
+              {isSelected ? (
+                <Check
+                  aria-hidden
+                  className="size-(--size-icon-sm) shrink-0 self-center text-primary forced-colors:text-[HighlightText]"
+                  strokeWidth={2.5}
+                />
+              ) : null}
+            </>
+          )
+        }
       </ListBoxItem>
     );
 
@@ -654,7 +688,7 @@ export function PickerOptions({
           after the records, and a list given `items` takes only the function. */}
       {/* React Aria caches each row's render by its item: what was typed is a dependency, or
           the marks would stay those of the first render. */}
-      <Collection items={entries} dependencies={[query]}>
+      <Collection items={entries} dependencies={[query, renderOption]}>
         {(entry) =>
           "items" in entry ? (
             <ListBoxSection
@@ -668,7 +702,7 @@ export function PickerOptions({
                 ) : null}
                 {entry.section}
               </Header>
-              <Collection items={entry.items} dependencies={[query]}>
+              <Collection items={entry.items} dependencies={[query, renderOption]}>
                 {renderItem}
               </Collection>
             </ListBoxSection>

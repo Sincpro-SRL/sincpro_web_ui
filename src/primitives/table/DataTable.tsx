@@ -1,11 +1,18 @@
 "use client";
 
 import { fillCopy, type UiCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import { pathKey, type Pile, pileItems } from "@sincpro/web-ui/foundations/grouping";
+import {
+  pathKey,
+  type Pile,
+  type PileFoot,
+  pileFoot,
+  pileItems,
+} from "@sincpro/web-ui/foundations/grouping";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
 import { CellCopy } from "@sincpro/web-ui/primitives/table/CellCopy";
 import { CellEditor } from "@sincpro/web-ui/primitives/table/CellEditor";
 import { EditRow, firstControl } from "@sincpro/web-ui/primitives/table/EditableTable";
+import { PileFootLine } from "@sincpro/web-ui/primitives/table/PileFootLine";
 import { type RowAction, RowActions } from "@sincpro/web-ui/primitives/table/RowActions";
 import { useRowWindow } from "@sincpro/web-ui/primitives/table/rowWindow";
 import {
@@ -338,7 +345,7 @@ type Entry<T> =
       toggle: (() => void) | undefined;
     }
   | { kind: "row"; id: string; item: T }
-  | { kind: "more"; id: string; depth: number; left: number; more: () => void };
+  | { kind: "more"; id: string; depth: number; foot: PileFoot; more: () => void };
 
 /** The piles someone else counted, as the body draws them: open ones with what is inside,
  *  the deepest with its records and, when it holds fewer than it counts, its «show more». */
@@ -367,21 +374,21 @@ function entriesOfPiles<T>(
     if (pile.piles.length > 0) {
       return [head, ...entriesOfPiles(pile.piles, keyOf, collapsed, onToggle, onMore)];
     }
-    const left = pile.count - pile.items.length;
+    const foot = pileFoot(pile, onMore !== undefined);
     return [
       head,
       ...pile.items.map((item): Entry<T> => ({ kind: "row", id: keyOf(item), item })),
-      ...(left > 0 && onMore !== undefined
-        ? [
+      ...(foot === null
+        ? []
+        : [
             {
               kind: "more" as const,
               id: `\u0000more${key}`,
               depth: pile.depth,
-              left,
-              more: () => onMore(pile),
+              foot,
+              more: () => onMore?.(pile),
             },
-          ]
-        : []),
+          ]),
     ];
   });
 }
@@ -789,15 +796,7 @@ export function DataTable<T extends object>({
               gap,
               <tr key={entry.id} {...windowed} className="border-b border-line">
                 <td colSpan={width} className="px-3 py-1" style={indent}>
-                  <button
-                    type="button"
-                    onClick={entry.more}
-                    className="rounded-control text-meta text-primary transition-colors duration-(--duration-instant) hover:underline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
-                  >
-                    {fillCopy(copy.table.pileMore, {
-                      count: entry.left.toLocaleString(copy.locale),
-                    })}
-                  </button>
+                  <PileFootLine foot={entry.foot} onMore={entry.more} />
                 </td>
               </tr>,
             ];

@@ -157,3 +157,14 @@ test("a chosen record that is not among the items reads by its valueLabel", () =
   // Without it, nothing is invented: the field is empty.
   assert.match(renderToStaticMarkup(<Picker items={ITEMS} value="P-99" />), /value=""/);
 });
+
+test("renderOption draws the content; the row stays the picker's", () => {
+  const html = list(ITEMS.slice(0, 2), {
+    renderOption: (item, { query }) => <b data-own={item.id}>{`${item.name}|${query}`}</b>,
+    query: "ce",
+  });
+  /* Still an option of the list, keyed by its id. */
+  assert.equal([...html.matchAll(/role="option"/g)].length, 2);
+  assert.match(html, new RegExp(`data-key="${ITEMS[0]!.id}"[^]*data-own="${ITEMS[0]!.id}"`));
+  assert.match(html, /\|ce<\/b>/);
+});

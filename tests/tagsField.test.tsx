@@ -129,3 +129,30 @@ test("searched by its consumer, the options are its answer: not filtered again",
     ["exp", "c30", "sus"],
   );
 });
+
+/* ── meta: the datum that tells two options apart ───────────────────── */
+
+const CUSTOMERS: TagOption[] = [
+  { value: "c1", label: "Ferretería Illimani", meta: "NIT 1023456027" },
+  { value: "c2", label: "Ferretería Illimani Sur", meta: "NIT 4587123018" },
+];
+
+test("typing the meta finds the option, as typing its name does", () => {
+  const { available } = tagChoices(CUSTOMERS, [], "4587", match, true);
+  assert.deepEqual(
+    available.map((o) => o.value),
+    ["c2"],
+  );
+});
+
+test("a text that is an option's meta names that option: no «create» for it", () => {
+  assert.equal(tagChoices(CUSTOMERS, [], "NIT 1023456027", match, true).create, null);
+});
+
+test("the chip says the name alone: the meta is for the list", () => {
+  const html = renderToStaticMarkup(
+    <TagsField value={["c1"]} options={CUSTOMERS} mode="read" />,
+  );
+  assert.match(html, /Ferretería Illimani/);
+  assert.doesNotMatch(html, /1023456027/);
+});

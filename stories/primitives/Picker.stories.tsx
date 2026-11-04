@@ -1,4 +1,4 @@
-import { Field, Picker, type PickerItem, Tag } from "@sincpro/web-ui";
+import { Field, MatchedText, Picker, type PickerItem, Tag } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Building2, Package, PackageX, Truck, Warehouse, Wrench } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -489,5 +489,65 @@ export const Secciones: Story = {
         </Field>
       </div>
     );
+  },
+};
+
+/** The free slots of a clinic's agenda: the hour is what is compared, so it leads. */
+const TURNOS: (PickerItem & { hora: string; medico: string; consultorio: string })[] = [
+  { hora: "08:30", medico: "Dra. Ana Pérez", consultorio: "consultorio 2" },
+  { hora: "09:00", medico: "Dra. Ana Pérez", consultorio: "consultorio 2" },
+  { hora: "09:00", medico: "Dr. Luis Mamani", consultorio: "consultorio 4" },
+  { hora: "10:30", medico: "Dr. Luis Mamani", consultorio: "consultorio 4" },
+  { hora: "11:00", medico: "Dra. Carla Rojas", consultorio: "consultorio 1" },
+].map((t) => ({ ...t, id: `${t.hora}-${t.medico}`, name: `${t.hora} · ${t.medico}` }));
+
+/** **Una opción que no encaja en «nombre + dato + aparte».** Un turno se elige por la hora:
+ *  va grande, en su columna, y el médico y el consultorio a su lado. `renderOption` pone el
+ *  contenido; la fila sigue siendo del `Picker` —teclas, la búsqueda por `name`, la ✓ del
+ *  elegido—. Lo que no está en `PickerItem` se busca por `id` en los datos propios. */
+export const OpcionPropia: Story = {
+  args: { items: TURNOS },
+  render: function Render() {
+    const [turno, setTurno] = useState<string>();
+    return (
+      <div className="max-w-xl rounded-box border border-line bg-surface p-4">
+        <Field label="Turno">
+          <Picker
+            items={TURNOS}
+            {...(turno === undefined ? {} : { value: turno })}
+            onChange={setTurno}
+            renderOption={(item, { query }) => {
+              const t = TURNOS.find((one) => one.id === item.id);
+              return (
+                <span className="flex min-w-0 items-center gap-3">
+                  <span className="text-lead font-semibold tabular-nums text-ink">
+                    {t?.hora}
+                  </span>
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate text-meta text-ink">
+                      <MatchedText text={t?.medico ?? item.name} query={query} />
+                    </span>
+                    <span className="text-micro text-muted">{t?.consultorio}</span>
+                  </span>
+                </span>
+              );
+            }}
+          />
+        </Field>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(document.body);
+    const field = canvas.getByRole("combobox");
+    await userEvent.click(field);
+    /* Searched by `name`, the content is the application's. */
+    await userEvent.type(field, "mamani");
+    const options = await page.findAllByRole("option");
+    await expect(options).toHaveLength(2);
+    await expect(options[0]).toHaveTextContent("consultorio 4");
+    await userEvent.click(options[1]!);
+    await waitFor(() => expect(field).toHaveValue("10:30 · Dr. Luis Mamani"));
   },
 };

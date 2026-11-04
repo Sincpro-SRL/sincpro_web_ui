@@ -1,8 +1,9 @@
 import { matchSpans } from "@sincpro/web-ui/foundations/match";
 
 /**
- * A text with the part that matched the search marked — internal to the lists that filter
- * as you type (`Picker`, `TagsField`). A `<mark>`, so it is also said as marked text, and
+ * A text with the part that matched the search marked — what the lists that filter as you
+ * type (`Picker`, `TagsField`) draw in every row, and what an option of the application's own
+ * (`renderOption`) uses to say the same. A `<mark>`, so it is also said as marked text, and
  * bold besides the tint: in forced colors the tint is gone and the weight is what remains.
  */
 export function MatchedText({

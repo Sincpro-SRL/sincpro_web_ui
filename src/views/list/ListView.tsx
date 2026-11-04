@@ -35,6 +35,7 @@ import { useDensity } from "@sincpro/web-ui/foundations/density";
 import {
   pathKey,
   type Pile,
+  pileFoot,
   pileIsOpen,
   pilesOf,
 } from "@sincpro/web-ui/foundations/grouping";
@@ -56,7 +57,7 @@ import {
   SheetPresentation,
   TablePresentation,
 } from "@sincpro/web-ui/views/list/presentations";
-import type { ListViewProps } from "@sincpro/web-ui/views/list/types";
+import type { CardWays, ListViewProps } from "@sincpro/web-ui/views/list/types";
 import { useNarrowList } from "@sincpro/web-ui/views/list/useNarrowList";
 import type { LucideIcon } from "lucide-react";
 import {
@@ -416,6 +417,14 @@ export function ListView<T extends object>({
   const first = items[0];
   const firstRow = first === undefined ? undefined : row(first);
 
+  /* The same foot the table draws: «Ver 50 más de 49.950», or «Se muestran 500 de …». */
+  function footOf(pile: Pile<T>) {
+    const foot = pileFoot(pile, group?.onMore !== undefined);
+    return foot === null ? null : (
+      <GroupMore foot={foot} depth={pile.depth} onMore={() => group?.onMore?.(pile)} />
+    );
+  }
+
   /** Los montones, con sus filas adentro. Se llama a sí misma porque el árbol
    *  tiene N niveles: un montón dibuja su encabezado y, adentro, o bien los
    *  montones de abajo o bien las filas — nunca las dos cosas. */
@@ -444,16 +453,7 @@ export function ListView<T extends object>({
             : pile.piles.length > 0
               ? renderPiles(pile.piles, nodes)
               : nodes(pile.items)}
-          {open &&
-          pile.piles.length === 0 &&
-          pile.items.length < pile.count &&
-          group?.onMore !== undefined ? (
-            <GroupMore
-              left={pile.count - pile.items.length}
-              depth={pile.depth}
-              onMore={() => group.onMore?.(pile)}
-            />
-          ) : null}
+          {open ? footOf(pile) : null}
         </Fragment>
       );
     });
@@ -466,9 +466,15 @@ export function ListView<T extends object>({
     return renderPiles(piles, nodes);
   }
 
+  const waysOf = (item: T): CardWays => ({
+    ...(press === undefined ? {} : { press: () => press(item) }),
+    ...(onPeek === undefined || choosing ? {} : { peek: () => onPeek(item) }),
+    ...(onOpen === undefined || choosing ? {} : { open: () => onOpen(item) }),
+  });
+
   const renderCard = (item: T) => {
     if (card !== undefined) {
-      return <Fragment key={keyOf(item)}>{card(item)}</Fragment>;
+      return <Fragment key={keyOf(item)}>{card(item, waysOf(item))}</Fragment>;
     }
     const d = row(item);
     return (

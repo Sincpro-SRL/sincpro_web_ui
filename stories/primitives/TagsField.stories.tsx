@@ -1,6 +1,8 @@
 import {
   Field,
   FormModeProvider,
+  MatchedText,
+  Tag,
   type TagOption,
   TagsField,
   TextInput,
@@ -9,6 +11,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useRef, useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
+import { CUSTOMER_CARDS, customerCard } from "../support/erp-people";
 import { CUSTOMER_CATEGORIES, INVOICE_LABELS } from "../support/erp-tags";
 
 /**
@@ -209,5 +212,103 @@ export const LoBuscaElServidor: Story = {
     await waitFor(() =>
       expect(canvasElement.querySelector('div[aria-hidden="true"]')).toBeNull(),
     );
+  },
+};
+
+/** The customers of a campaign: a face, a name and the NIT that tells two of them apart. */
+const CLIENTES: TagOption[] = CUSTOMER_CARDS.map((c) => ({
+  value: c.taxId,
+  label: c.name,
+  avatar: true,
+  meta: `NIT ${c.taxId}`,
+}));
+
+/** **Clientes de una campaña, con su NIT.** Dos clientes se pueden llamar casi igual: en la
+ *  lista cada uno lleva su NIT debajo del nombre (`meta`), y escribir el NIT también lo
+ *  encuentra. La ficha elegida dice sólo el nombre — se reconoce por él, y un NIT en cada
+ *  ficha volvería la tira una tabla. */
+export const ConDatoQueDistingue: Story = {
+  render: function Render() {
+    const [clientes, setClientes] = useState<string[]>([]);
+    return (
+      <Box>
+        <Field label="Clientes de la campaña">
+          <TagsField value={clientes} onChange={setClientes} options={CLIENTES} />
+        </Field>
+        <p className="text-micro text-muted tabular-nums">
+          valor: {JSON.stringify(clientes)}
+        </p>
+      </Box>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(document.body);
+    const second = CLIENTES[1]!;
+    const input = canvas.getByRole("combobox");
+    await userEvent.click(input);
+    /* The NIT is in the list, under the name. */
+    const nit = await page.findByText(second.meta!);
+    await waitFor(() => expect(nit).toBeVisible());
+    /* Typing part of it finds the customer — and never offers to create a tag called that. */
+    await userEvent.type(input, second.value.slice(0, 6));
+    const option = await page.findByRole("option", { name: new RegExp(second.label) });
+    await expect(option.querySelector("mark")).toHaveTextContent(second.value.slice(0, 6));
+    await userEvent.keyboard("{Enter}");
+    /* Added; and the chip is the name alone. */
+    await expect(canvas.getByText(/^valor:/)).toHaveTextContent(second.value);
+    /* The open list hides the rest from the accessibility tree: close it to read the chips. */
+    await userEvent.keyboard("{Escape}");
+    const chips = await canvas.findByRole("grid");
+    await expect(chips).toHaveTextContent(second.label);
+    await expect(chips).not.toHaveTextContent(second.value);
+  },
+};
+
+/** **Una opción que no encaja en «cara + nombre + dato».** `renderOption` dibuja el contenido
+ *  —acá el estado de la cuenta y la ciudad de cada cliente— y la fila sigue siendo del campo:
+ *  flechas, Enter que agrega, la búsqueda por el nombre. Lo escrito se marca con
+ *  `MatchedText`, como en las demás. */
+export const OpcionPropia: Story = {
+  render: function Render() {
+    const [clientes, setClientes] = useState<string[]>([]);
+    return (
+      <Box>
+        <Field label="Clientes a visitar">
+          <TagsField
+            value={clientes}
+            onChange={setClientes}
+            options={CLIENTES}
+            renderOption={(option, { query }) => {
+              const card = customerCard(option.value);
+              return (
+                <span className="flex min-w-0 items-center justify-between gap-2">
+                  <span className="flex min-w-0 flex-col">
+                    <span className="truncate">
+                      <MatchedText text={option.label} query={query} />
+                    </span>
+                    <span className="text-micro text-muted">{card?.city}</span>
+                  </span>
+                  {card === undefined ? null : (
+                    <Tag tone={card.state.tone}>{card.state.label}</Tag>
+                  )}
+                </span>
+              );
+            }}
+          />
+        </Field>
+      </Box>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const page = within(document.body);
+    await userEvent.click(canvas.getByRole("combobox"));
+    const late = CUSTOMER_CARDS.find((c) => c.state.label === "con deuda vencida")!;
+    const option = await page.findByRole("option", { name: new RegExp(late.name) });
+    await expect(option).toHaveTextContent("con deuda vencida");
+    await userEvent.click(option);
+    await userEvent.keyboard("{Escape}");
+    await expect(await canvas.findByRole("grid")).toHaveTextContent(late.name);
   },
 };

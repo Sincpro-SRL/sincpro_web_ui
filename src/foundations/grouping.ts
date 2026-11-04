@@ -112,6 +112,15 @@ export type Pile<T> = {
   items: readonly T[];
   /** El nivel de abajo. Vacío en el más profundo. */
   piles: readonly Pile<T>[];
+  /**
+   * What the next «show more» of a short pile brings — said by whoever pages it.
+   *
+   * `50` reads «Show 50 more of 49,950»: the button says what one press adds, not what is
+   * missing. `false` says there is no next page although the count says more (a cap on
+   * the rows held, a server that stops paging): the button goes and the pile says how many
+   * it shows. Absent, the button counts what is left, as it did before this existed.
+   */
+  more?: number | false;
 };
 
 /**
@@ -420,6 +429,31 @@ export function pileItems<T>(piles: readonly Pile<T>[]): readonly T[] {
   return piles.flatMap((pile) =>
     pile.piles.length === 0 ? pile.items : pileItems(pile.piles),
   );
+}
+
+/**
+ * What the foot of a pile offers: the next page, or the word that there is none.
+ *
+ * Context: every presentation that draws piles —rows, cards, the table, one of the
+ * application's own— asks this, so «Show 50 more of 49,950» and «Showing 500 of 49,950»
+ * are decided once. `null` when the pile holds every row it counts, or holds piles and not
+ * rows. A short pile with no way to page (`more: false`, or no `onMore`) still says so: a
+ * header that reads 49,950 over 500 rows is a count the screen silently contradicts.
+ */
+export type PileFoot =
+  | { kind: "more"; left: number; next?: number }
+  | { kind: "end"; shown: number; count: number };
+
+export function pileFoot<T>(pile: Pile<T>, canAsk: boolean): PileFoot | null {
+  if (pile.piles.length > 0) return null;
+  const left = pile.count - pile.items.length;
+  if (left <= 0) return null;
+  const next = pile.more ?? left;
+  if (!canAsk || next === false || next <= 0) {
+    return { kind: "end", shown: pile.items.length, count: pile.count };
+  }
+  /* The last page brings what is left; «50 more of 12» would promise rows that are not there. */
+  return next >= left ? { kind: "more", left } : { kind: "more", left, next };
 }
 
 /** Cuántas filas hay en total. Suma los conteos del primer nivel, que ya
