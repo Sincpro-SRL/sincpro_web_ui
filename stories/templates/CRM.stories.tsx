@@ -502,8 +502,8 @@ function Opportunity_({ api, resource }: ViewProps) {
           </SheetGroup>
         </SheetGroups>
         <Record.Audit
-          created={{ by: o.salesperson, at: "20/10/2026" }}
-          updated={{ by: o.contact, at: "hace 1 día" }}
+          created={{ by: o.salesperson, at: "2026-10-20T08:55:00" }}
+          updated={{ by: o.contact, at: "2026-11-03T18:20:00" }}
         />
       </Record.Paper>
 

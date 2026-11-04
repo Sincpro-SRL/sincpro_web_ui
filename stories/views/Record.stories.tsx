@@ -5,6 +5,7 @@ import {
   Cell,
   Copyable,
   DataField,
+  DensityProvider,
   Field,
   type Message,
   MessageComposer,
@@ -315,8 +316,8 @@ export const Archivado: Story = {
               ]}
             />
             <Record.Audit
-              created={{ by: "Josefa Muñoz", at: "02/09/2026 11:40" }}
-              updated={{ by: "Andrés Gutiérrez", at: "28/10/2026 17:05" }}
+              created={{ by: "Josefa Muñoz", at: "2026-09-02T11:40:00" }}
+              updated={{ by: "Andrés Gutiérrez", at: "2026-10-28T17:05:00" }}
             />
           </Record.Paper>
         </Record>
@@ -368,6 +369,58 @@ export const SinRiel: Story = {
         </div>
       </div>
     );
+  },
+};
+
+/**
+ * **Quién y cuándo, en un diálogo.** El pie del papel habla como el formulario que cierra:
+ * una etiqueta y su valor, la persona como el chip de cualquier campo de persona y la fecha
+ * escrita por el sistema (DD/MM/AAAA HH:mm), no una frase con lo que la aplicación mandó.
+ * En compacto el cuerpo no tiene margen lateral, y el pie tampoco: arranca en la misma
+ * vertical que los campos. Sin autor —una importación, una sincronización— dice solo cuándo.
+ */
+export const AuditoriaEnDialogo: Story = {
+  render: function Render() {
+    return (
+      <div className="bg-ground p-8">
+        <div className="mx-auto max-w-[36rem] overflow-hidden rounded-panel border border-line-strong bg-surface p-4 shadow-float">
+          <DensityProvider value="compact">
+            <Record identity={{ icon: ShoppingCart, title: "S00141" }}>
+              <Record.Paper>
+                <Record.Facts
+                  fields={[
+                    { label: "Cliente", value: "Distribuidora Andina S.R.L." },
+                    { label: "Total", value: "Bs. 14.300,00" },
+                  ]}
+                />
+                <Record.Audit
+                  created={{ at: "2026-09-02T11:40:00" }}
+                  updated={{
+                    by: { name: "Josefa Muñoz", role: "Tesorería", onOpen: () => {} },
+                    at: new Date(2026, 9, 28, 17, 5),
+                  }}
+                />
+              </Record.Paper>
+            </Record>
+          </DensityProvider>
+        </div>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const created = await canvas.findByText("Creado");
+    const footer = created.closest("dl")!;
+    /* The footer starts on the same vertical as the facts it closes. */
+    const fact = canvas.getByText("Cliente").closest("dl")!;
+    await expect(Math.round(footer.getBoundingClientRect().left)).toBe(
+      Math.round(fact.getBoundingClientRect().left),
+    );
+    /* No author: only when, never «por —». */
+    await expect(created.nextElementSibling).toHaveTextContent(/^02\/09\/2026 11:40$/);
+    /* The author is the chip, and it opens the person's card. */
+    await expect(canvas.getByRole("button", { name: /Josefa Muñoz/ })).toBeVisible();
+    await expect(canvas.getByText("28/10/2026 17:05")).toBeVisible();
   },
 };
 

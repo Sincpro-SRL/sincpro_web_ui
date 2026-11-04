@@ -92,7 +92,8 @@ export type UiCopy = {
     noticeMany: string;
     /** The accessible name of the band of what is wrong with the record. */
     blocking: string;
-    /** The paper's last line (`Record.Audit`): «{by}» and «{at}» are already written. */
+    /** The labels of the paper's last line (`Record.Audit`): the person and the moment are
+     *  drawn beside them as values, so they are names, not sentences with holes. */
     created: string;
     updated: string;
   };
@@ -944,8 +945,8 @@ export const ENGLISH_COPY: UiCopy = {
     noticeOne: "{count} notice",
     noticeMany: "{count} notices",
     blocking: "What is wrong with this record",
-    created: "Created by {by} · {at}",
-    updated: "Last changed by {by} · {at}",
+    created: "Created",
+    updated: "Last changed",
   },
   shell: {
     modules: "All modules",

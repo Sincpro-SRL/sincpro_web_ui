@@ -86,8 +86,8 @@ export const SPANISH_COPY: UiCopyOverride = {
     noticeOne: "{count} aviso",
     noticeMany: "{count} avisos",
     blocking: "Lo que está mal en este registro",
-    created: "Creado por {by} · {at}",
-    updated: "Modificado por última vez por {by} · {at}",
+    created: "Creado",
+    updated: "Última modificación",
   },
   shell: {
     close: "Cerrar",
