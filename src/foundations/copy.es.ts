@@ -209,6 +209,8 @@ export const SPANISH_COPY: UiCopyOverride = {
     max: "máx {value}",
     distinct: "{value} distintos",
     pileMore: "Ver {count} más",
+    pileMoreOf: "Ver {count} más de {left}",
+    pileShown: "Se muestran {shown} de {count}",
   },
   menu: { empty: "Nada coincide." },
   list: {

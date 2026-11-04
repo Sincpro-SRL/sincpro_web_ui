@@ -42,6 +42,21 @@ export type RowOf = {
 };
 
 /**
+ * What a press on ONE card does in this list, already bound to its record.
+ *
+ * Context: a board's own card replaced the built-in one and lost, with it, the rule of what
+ * a press does — the application had to pass it by hand. It gets the same three ways as a
+ * `List.Present` (`ListSet`), so a card written by the domain answers a click like the
+ * list's own: `press` is the rule (choose, look or open, as the list decided); `peek` and
+ * `open` are the two ways in, absent while the list is choosing.
+ */
+export type CardWays = {
+  press?: () => void;
+  peek?: () => void;
+  open?: () => void;
+};
+
+/**
  * The set as a presentation receives it — what a `List.Present` draws from.
  *
  * Context: the built-in presentations do not each sort, group and wire selection on their
@@ -284,8 +299,8 @@ export type ListViewProps<T extends object> = {
    *  columns that declare `input` get a control in that row. See `DataTable`'s header.
    *  While a record is being written the table shows even if the set is empty. */
   create?: DataTableCreate<T>;
-  /** The board presentation. */
-  card?: (item: T) => ReactNode;
+  /** The board presentation: the card of one record, with what a press on it does. */
+  card?: (item: T, ways: CardWays) => ReactNode;
   /** The board by stages: one column each, cards moved between them. */
   boardStages?: BoardStages<T>;
   /** The calendar presentation: when each record happens. */

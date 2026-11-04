@@ -90,6 +90,8 @@ export {
   pathLabels,
   type Pile,
   pileCount,
+  type PileFoot,
+  pileFoot,
   pileIsOpen,
   pileItems,
   pileLabel,

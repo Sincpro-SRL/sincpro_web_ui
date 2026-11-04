@@ -3,8 +3,10 @@
 import { RecordLink } from "@sincpro/web-ui/components/listing/RecordLink";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
+import type { PileFoot } from "@sincpro/web-ui/foundations/grouping";
 import { stickyTop } from "@sincpro/web-ui/foundations/sticky";
 import { Menu, type MenuGroup } from "@sincpro/web-ui/primitives/menu/Menu";
+import { PileFootLine } from "@sincpro/web-ui/primitives/table/PileFootLine";
 import { HEADER_TEXT } from "@sincpro/web-ui/primitives/table/Table";
 import { CopyButton } from "@sincpro/web-ui/primitives/value/Copyable";
 import { Avatar } from "@sincpro/web-ui/primitives/value/Person";
@@ -545,19 +547,18 @@ export function GroupHeader({
   );
 }
 
-/** Under a pile that shows its first page: «Ver 38 más». Indented like the pile's rows. */
+/** Under a short pile: «Ver 50 más de 49.950», or «Se muestran 500 de 49.950» when there is
+ *  no next page. Indented like the pile's rows. */
 export function GroupMore({
-  left,
+  foot,
   depth = 0,
   onMore,
 }: {
-  /** How many the pile counts that are not here yet. */
-  left: number;
+  foot: PileFoot;
   depth?: number;
   onMore: () => void;
 }) {
   const d = useDensity();
-  const copy = useUiCopy();
   return (
     <div
       className={`border-b border-line ${byDensity(d, "px-3 py-1", "px-2.5 py-0.5")}`}
@@ -565,13 +566,7 @@ export function GroupMore({
         depth === 0 ? undefined : { paddingLeft: `calc(var(--spacing-indent) * ${depth})` }
       }
     >
-      <button
-        type="button"
-        onClick={onMore}
-        className="rounded-control text-meta text-primary transition-colors duration-(--duration-instant) hover:underline focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
-      >
-        {fillCopy(copy.table.pileMore, { count: left.toLocaleString(copy.locale) })}
-      </button>
+      <PileFootLine foot={foot} onMore={onMore} />
     </div>
   );
 }

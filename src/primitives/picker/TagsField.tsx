@@ -22,6 +22,7 @@ import { Plus, Search } from "lucide-react";
 import {
   type CSSProperties,
   type KeyboardEvent,
+  type ReactNode,
   type RefObject,
   useContext,
   useEffect,
@@ -105,6 +106,13 @@ export type TagsFieldProps = {
   /** Where a pressed chip opens. A peek by default: a chip is a glance at one of many — «who is
    *  this follower?» — not a place to go and work. */
   openTarget?: OpenTarget;
+  /**
+   * The content of an option in the list, for one that does not fit «face + name + meta». The
+   * row stays the field's — keys, the search by `label`, Enter that adds — and «Create…» and
+   * «Buscar más…» stay the field's too. Mark what was typed with `MatchedText`. The chips are
+   * not touched: a chosen tag is read by its name.
+   */
+  renderOption?: (option: TagOption, state: { query: string }) => ReactNode;
   /** The input's placeholder while no tag is chosen. Defaults to the copy table's «Add…». */
   placeholder?: string;
   disabled?: boolean;
@@ -180,6 +188,7 @@ function EditableTagsField({
   onBrowseAll,
   onOpen,
   openTarget,
+  renderOption,
   placeholder,
   disabled = false,
   id: ownId,
@@ -347,7 +356,7 @@ function EditableTagsField({
         >
           <ListBox
             items={listed}
-            dependencies={[text]}
+            dependencies={[text, renderOption]}
             className="max-h-[inherit] overflow-auto p-1 outline-0"
           >
             {(item) => (
@@ -379,6 +388,10 @@ function EditableTagsField({
                     />
                     <span className="truncate font-medium">{item.label}</span>
                   </>
+                ) : renderOption !== undefined ? (
+                  <span className="min-w-0 flex-1">
+                    {renderOption(item, { query: text })}
+                  </span>
                 ) : (
                   <>
                     {item.avatar === undefined ? null : (
@@ -388,8 +401,15 @@ function EditableTagsField({
                         {...(typeof item.avatar === "string" ? { src: item.avatar } : {})}
                       />
                     )}
-                    <span className="truncate">
-                      <MatchedText text={item.label} query={text} locale={copy.locale} />
+                    <span className="flex min-w-0 flex-col gap-0.5">
+                      <span className="truncate">
+                        <MatchedText text={item.label} query={text} locale={copy.locale} />
+                      </span>
+                      {item.meta === undefined ? null : (
+                        <span className="truncate text-micro tabular-nums text-muted">
+                          <MatchedText text={item.meta} query={text} locale={copy.locale} />
+                        </span>
+                      )}
                     </span>
                   </>
                 )}

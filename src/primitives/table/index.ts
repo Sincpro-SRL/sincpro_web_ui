@@ -19,6 +19,7 @@ export {
   type TabTarget,
   tabTarget,
 } from "@sincpro/web-ui/primitives/table/EditableTable";
+export { PileFootLine } from "@sincpro/web-ui/primitives/table/PileFootLine";
 export {
   PivotTable,
   type PivotTableProps,

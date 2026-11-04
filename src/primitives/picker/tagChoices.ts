@@ -14,6 +14,13 @@ export interface TagOption {
   tone?: Tone;
   /** A person: its face on the chip and in the list — `true` for initials, a URL for a photo. */
   avatar?: true | string;
+  /**
+   * The datum that tells two options apart, already written — the NIT of a customer, the
+   * email of a follower. Drawn under the name in the list and searched like it; NOT on the
+   * chip: a chip is recognised by its name, and a NIT on every chip turns the strip into a
+   * table. Same role as `PickerItem.meta`.
+   */
+  meta?: string;
 }
 
 /** How the typed text is compared — the locale's, handed in by the component. */
@@ -48,12 +55,19 @@ export function tagChoices(
   const available = options.filter(
     (option) =>
       !chosen.has(option.value) &&
-      (searched || query === "" || match.contains(option.label, query)),
+      (searched ||
+        query === "" ||
+        match.contains(option.label, query) ||
+        (option.meta !== undefined && match.contains(option.meta, query))),
   );
-  const create =
-    creatable && query !== "" && !options.some((option) => match.same(option.label, query))
-      ? query
-      : null;
+  /* Typing a NIT that one option carries names that option: creating a tag called «1023…»
+     next to it is the duplicate this rule exists to prevent. */
+  const named = options.some(
+    (option) =>
+      match.same(option.label, query) ||
+      (option.meta !== undefined && match.same(option.meta, query)),
+  );
+  const create = creatable && query !== "" && !named ? query : null;
   return { available, create };
 }
 

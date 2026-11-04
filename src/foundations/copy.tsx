@@ -239,6 +239,10 @@ export type UiCopy = {
     distinct: string;
     /** Under a pile that holds its first page and counts them all: ask for the rest. */
     pileMore: string;
+    /** The same, when whoever pages says how many one press brings: «Show 50 more of 49,950». */
+    pileMoreOf: string;
+    /** Under a short pile with no next page: what it shows of what it counts. */
+    pileShown: string;
   };
   menu: {
     empty: string;
@@ -902,6 +906,8 @@ export const ENGLISH_COPY: UiCopy = {
     max: "max {value}",
     distinct: "{value} distinct",
     pileMore: "Show {count} more",
+    pileMoreOf: "Show {count} more of {left}",
+    pileShown: "Showing {shown} of {count}",
   },
   menu: {
     empty: "Nothing matches.",

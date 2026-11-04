@@ -24,3 +24,11 @@ test("wide, nothing changes", () => {
     present: "table",
   });
 });
+
+/* A board reflows: narrow, a list of cards keeps its cards — it never had rows to fold into. */
+test("narrow, a list with only a board keeps its board", () => {
+  assert.deepEqual(narrowed(["board"], "board", true), {
+    offered: ["board"],
+    present: "board",
+  });
+});
