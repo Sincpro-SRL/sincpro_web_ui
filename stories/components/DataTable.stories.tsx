@@ -111,7 +111,7 @@ type Story = StoryObj;
 
 export const Agrupar: Story = {
   render: () => {
-    const [sort, setSort] = useState<SortState | null>({ key: "total", direction: "desc" });
+    const [sort, setSort] = useState<SortState[]>([{ key: "total", direction: "desc" }]);
     /* Los niveles, EN ORDEN: el primero parte, el segundo parte lo que quedó.
        Sacar «estado» dejando «monto» deja un nivel, no cero — por eso es una
        lista y no un eje que se prende y se apaga. */
@@ -190,7 +190,7 @@ export const Agrupar: Story = {
  */
 export const Widgets: Story = {
   render: () => {
-    const [sort, setSort] = useState<SortState | null>(null);
+    const [sort, setSort] = useState<SortState[]>([]);
     const [ultima, setUltima] = useState<string | null>(null);
 
     const CON_WIDGETS: DataColumn<Item>[] = [

@@ -7,6 +7,7 @@ import {
 } from "@sincpro/web-composer";
 import {
   Button,
+  compareBy,
   type DataColumn,
   Field,
   filterCriteria,
@@ -262,13 +263,13 @@ function ChooseCustomer({ resource, api }: ViewProps) {
           ),
         ],
   );
-  const [sort, setSort] = useState<SortState | null>({ key: "name", direction: "asc" });
+  const [sort, setSort] = useState<SortState[]>([{ key: "name", direction: "asc" }]);
   const [page, setPage] = useState(0);
-  const found = keepMatching(CUSTOMERS, criteria, read).sort((a, b) => {
-    if (sort === null) return 0;
-    const [x, y] = [String(read(a, sort.key)), String(read(b, sort.key))];
-    return sort.direction === "asc" ? x.localeCompare(y, "es") : y.localeCompare(x, "es");
-  });
+  /* What the server does with the criteria: every one in order, the second breaking the
+     first one's ties. */
+  const found = keepMatching(CUSTOMERS, criteria, read).sort(
+    compareBy<CustomerCard>(sort, (key) => (row) => String(read(row, key))),
+  );
   const from = Math.min(page * PAGE, Math.max(0, found.length - 1));
   const shown = found.slice(from, from + PAGE);
   return (

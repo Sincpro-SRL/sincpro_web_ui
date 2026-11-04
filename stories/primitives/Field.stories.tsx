@@ -1,12 +1,20 @@
 import {
   Button,
+  cardBrand,
+  CardCodeInput,
+  CardExpiryInput,
+  CardNumberInput,
   Checkbox,
   CheckList,
+  CodeInput,
+  ColorInput,
   CopyButton,
   DataField,
   DateValue,
   DensityProvider,
   DropZone,
+  DurationInput,
+  EmailInput,
   Field,
   FieldCopyProvider,
   FormActions,
@@ -14,7 +22,13 @@ import {
   FormModeProvider,
   FormSection,
   IconButton,
+  isExpiryValid,
+  isPatternComplete,
+  isValidCardNumber,
   NumberInput,
+  PasswordInput,
+  PatternInput,
+  PhoneInput,
   Picker,
   SegmentedControl,
   Select,
@@ -26,11 +40,13 @@ import {
   Tag,
   TextArea,
   TextInput,
+  UrlInput,
   UserChip,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Sparkles, Trash2 } from "lucide-react";
 import { useState } from "react";
+import { expect, userEvent, within } from "storybook/test";
 
 import {
   CASH_ACCOUNTS,
@@ -856,6 +872,479 @@ export const CopiarSinEntrar: Story = {
           </FieldCopyProvider>
         </div>
       </div>
+    );
+  },
+};
+
+/**
+ * **Lo que no se muestra entero: una contraseña y una tarjeta.**
+ *
+ * La contraseña se escribe oculta; el ojo la muestra y la vuelve a ocultar, y si Bloq Mayús
+ * está activado lo dice abajo. En lectura nunca aparece: siempre los mismos ocho puntos, sea
+ * cual sea el largo, y el botón de copiar no copia los puntos.
+ *
+ * La tarjeta guarda sólo los DÍGITOS y se escribe agrupada según la marca (Amex 4-6-5, el
+ * resto 4-4-4-4), con la marca nombrada en cuanto los primeros dígitos la dicen. El cursor se
+ * queda donde estaba aunque aparezcan los espacios. Si el número no cierra —Luhn, largo de la
+ * marca— el formulario lo dice al salir del campo, con `isValidCardNumber`. En lectura: la
+ * marca y los últimos cuatro.
+ */
+export const DatosSensibles: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const clave = canvas.getByLabelText("Contraseña", { selector: "input" });
+    await userEvent.type(clave, "Secreto-2026");
+    await expect(clave).toHaveAttribute("type", "password");
+    await userEvent.click(canvas.getByRole("button", { name: "Mostrar contraseña" }));
+    await expect(clave).toHaveAttribute("type", "text");
+    await userEvent.click(canvas.getByRole("button", { name: "Ocultar contraseña" }));
+    await expect(clave).toHaveAttribute("type", "password");
+
+    const tarjeta = canvas.getByLabelText("Número de tarjeta", { selector: "input" });
+    await userEvent.type(tarjeta, "4242424242424241");
+    await expect(tarjeta).toHaveValue("4242 4242 4242 4241");
+    await expect(canvas.getByTestId("guardado")).toHaveTextContent('"4242424242424241"');
+    await userEvent.tab();
+    await expect(canvas.getByText(/no es válido/)).toBeVisible();
+
+    /* Corregir el último dígito: el error se va. */
+    await userEvent.type(tarjeta, "{backspace}2");
+    await expect(tarjeta).toHaveValue("4242 4242 4242 4242");
+    await userEvent.tab();
+    await expect(canvas.queryByText(/no es válido/)).toBeNull();
+  },
+  render: function Render() {
+    const [clave, setClave] = useState("");
+    const [tarjeta, setTarjeta] = useState("");
+    const [intento, setIntento] = useState(false);
+    const error =
+      intento && tarjeta !== "" && !isValidCardNumber(tarjeta)
+        ? "El número no es válido: revisá los dígitos, o probá con otra tarjeta."
+        : undefined;
+    return (
+      <Card>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Contraseña" hint="Al menos 12 caracteres.">
+            <PasswordInput value={clave} onChange={setClave} autoComplete="new-password" />
+          </Field>
+          <Field label="Número de tarjeta" {...(error === undefined ? {} : { error })}>
+            {/* The error is said on leaving the field, not while the number is half typed. */}
+            <div onBlur={() => setIntento(true)} className="contents">
+              <CardNumberInput
+                value={tarjeta}
+                onChange={(next) => {
+                  setTarjeta(next);
+                  setIntento(false);
+                }}
+                placeholder="1234 5678 9012 3456"
+              />
+            </div>
+          </Field>
+        </div>
+        <p className="mt-4 text-micro text-muted">
+          lo que recibe la aplicación:{" "}
+          <code data-testid="guardado" className="font-mono text-ink">
+            {JSON.stringify(tarjeta)}
+          </code>
+        </p>
+        <FormModeProvider value="read">
+          <div className="mt-4 grid gap-4 border-t border-line pt-4 sm:grid-cols-3">
+            <Field label="Contraseña (lectura)">
+              <PasswordInput value="Secreto-2026" />
+            </Field>
+            <Field label="Tarjeta (lectura)">
+              <CardNumberInput value="378282246310005" />
+            </Field>
+            <Field label="Guardada: sólo los últimos cuatro">
+              <CardNumberInput value="4444" brand="mastercard" />
+            </Field>
+          </div>
+        </FormModeProvider>
+      </Card>
+    );
+  },
+};
+
+/**
+ * **Correo, teléfono y web: texto que es una DIRECCIÓN.** En edición cada uno pide su teclado
+ * (en el teléfono, el numérico), su autocompletado y no subraya «agutierrez@» como error. En
+ * lectura es un enlace: `mailto:`, `tel:` —y WhatsApp con `whatsapp`—, la web en otra pestaña
+ * y leída sin `https://`. Lo escrito nunca se vuelve un enlace que ejecuta algo: una web
+ * «javascript:…» se lee como texto.
+ */
+export const Direcciones: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const correo = canvas.getByLabelText("Correo", { selector: "input" });
+    await userEvent.clear(correo);
+    await userEvent.type(correo, "compras@progreso.bo");
+    await expect(canvas.getByRole("link", { name: "compras@progreso.bo" })).toHaveAttribute(
+      "href",
+      "mailto:compras@progreso.bo",
+    );
+    const web = canvas.getByLabelText("Sitio web", { selector: "input" });
+    await userEvent.clear(web);
+    await userEvent.type(web, "www.progreso.bo");
+    await expect(canvas.getByRole("link", { name: /^progreso\.bo/ })).toHaveAttribute(
+      "href",
+      "https://www.progreso.bo/",
+    );
+    await expect(canvas.getByRole("link", { name: /WhatsApp/ })).toHaveAttribute(
+      "href",
+      "https://wa.me/59171234567",
+    );
+  },
+  render: function Render() {
+    const [correo, setCorreo] = useState("ventas@sangabriel.bo");
+    const [telefono, setTelefono] = useState("+591 7 123-4567");
+    const [web, setWeb] = useState("https://www.sangabriel.bo");
+    const campos = (
+      <>
+        <Field label="Correo">
+          <EmailInput value={correo} onChange={setCorreo} placeholder="nombre@empresa.bo" />
+        </Field>
+        <Field label="Teléfono">
+          <PhoneInput value={telefono} onChange={setTelefono} whatsapp />
+        </Field>
+        <Field label="Sitio web">
+          <UrlInput value={web} onChange={setWeb} placeholder="empresa.bo" />
+        </Field>
+      </>
+    );
+    return (
+      <Card>
+        <div className="grid gap-6 sm:grid-cols-2">
+          <div className="flex flex-col gap-4">{campos}</div>
+          <FormModeProvider value="read">
+            <div className="flex flex-col gap-4 border-t border-line pt-4 sm:border-t-0 sm:border-l sm:pt-0 sm:pl-6">
+              <Field label="Correo (lectura)">
+                <EmailInput value={correo} />
+              </Field>
+              <Field label="Teléfono (lectura)">
+                <PhoneInput value={telefono} whatsapp />
+              </Field>
+              <Field label="Sitio web (lectura)">
+                <UrlInput value={web} />
+              </Field>
+              <Field label="Una web que no es un enlace">
+                <UrlInput value="javascript:alert(1)" />
+              </Field>
+            </div>
+          </FormModeProvider>
+        </div>
+      </Card>
+    );
+  },
+};
+
+/**
+ * **La tarjeta entera.** El número reconoce la marca, y la marca decide el largo del código
+ * de seguridad: tres, o cuatro en una Amex. El vencimiento se escribe «MM/AA» —«4» ya es
+ * «04/»— y el formulario dice si ya venció con `isExpiryValid` (vale hasta el último día de su
+ * mes). En lectura, el código nunca aparece.
+ */
+export const TarjetaCompleta: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const vence = canvas.getByLabelText("Vence", { selector: "input" });
+    await userEvent.type(vence, "428");
+    await expect(vence).toHaveValue("04/28");
+    const numero = canvas.getByLabelText("Número", { selector: "input" });
+    await userEvent.type(numero, "3782");
+    const codigo = canvas.getByLabelText("Código de seguridad", { selector: "input" });
+    await userEvent.type(codigo, "123456");
+    await expect(codigo).toHaveValue("1234");
+  },
+  render: function Render() {
+    const [numero, setNumero] = useState("");
+    const [vence, setVence] = useState("");
+    const [codigo, setCodigo] = useState("");
+    const vencida = vence.length === 4 && !isExpiryValid(vence);
+    return (
+      <Card>
+        <div className="grid gap-4 sm:grid-cols-[2fr_1fr_1fr]">
+          <Field label="Número">
+            <CardNumberInput value={numero} onChange={setNumero} />
+          </Field>
+          <Field
+            label="Vence"
+            {...(vencida ? { error: "La tarjeta ya venció: usá otra." } : {})}
+          >
+            <CardExpiryInput value={vence} onChange={setVence} />
+          </Field>
+          <Field label="Código de seguridad" copy={false}>
+            <CardCodeInput value={codigo} onChange={setCodigo} brand={cardBrand(numero)} />
+          </Field>
+        </div>
+        <FormModeProvider value="read">
+          <div className="mt-4 grid gap-4 border-t border-line pt-4 sm:grid-cols-3">
+            <Field label="Número (lectura)">
+              <CardNumberInput value="378282246310005" />
+            </Field>
+            <Field label="Vence (lectura)">
+              <CardExpiryInput value="0930" />
+            </Field>
+            <Field label="Código (lectura)">
+              <CardCodeInput value="1234" brand="amex" />
+            </Field>
+          </div>
+        </FormModeProvider>
+      </Card>
+    );
+  },
+};
+
+/**
+ * **Duración: se guarda en horas, se lee en horas y minutos.** «8,5» es lo que suma un parte de
+ * horas; «8:30» es lo que dice la persona. Se escribe como salga —«8:30», «8,5», «8h30», «45m»—
+ * y al salir del campo se redibuja «h:mm». Algo que no es una duración vuelve al último valor
+ * bueno, nunca a cero. ↑/↓ suman o restan 15 minutos.
+ */
+export const Duraciones: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const horas = canvas.getByLabelText("Horas trabajadas", { selector: "input" });
+    await userEvent.clear(horas);
+    await userEvent.type(horas, "7h45");
+    await userEvent.tab();
+    await expect(horas).toHaveValue("7:45");
+    await expect(canvas.getByTestId("horas")).toHaveTextContent("7.75");
+    await userEvent.click(horas);
+    await userEvent.keyboard("{ArrowUp}");
+    await expect(horas).toHaveValue("8:00");
+    await userEvent.clear(horas);
+    await userEvent.type(horas, "ocho");
+    await userEvent.tab();
+    await expect(horas).toHaveValue("8:00");
+  },
+  render: function Render() {
+    const [horas, setHoras] = useState<number | "">(8.5);
+    const [estimado, setEstimado] = useState<number | "">("");
+    return (
+      <Card>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Horas trabajadas">
+            <DurationInput value={horas} onChange={setHoras} />
+          </Field>
+          <Field label="Estimado" hint="Vacío si todavía no se estimó.">
+            <DurationInput value={estimado} onChange={setEstimado} />
+          </Field>
+          <Field label="Horas (lectura)" mode="read">
+            <DurationInput value={horas} />
+          </Field>
+        </div>
+        <p className="mt-4 text-micro text-muted">
+          lo que recibe la aplicación:{" "}
+          <code data-testid="horas" className="font-mono text-ink">
+            {JSON.stringify(horas)}
+          </code>
+        </p>
+      </Card>
+    );
+  },
+};
+
+/**
+ * **Unidad y redondeo.** La unidad —o la moneda— se elige en la misma caja del número; el número
+ * no se convierte: decir cuánto es un kilo en toneladas es de la aplicación. Y el VALOR se
+ * redondea al confirmarlo: el efectivo a 0,05 (no circula la moneda de un centavo), una caja a
+ * la unidad, un kilo al gramo. Lo que se guarda es lo que se ve.
+ */
+export const UnidadYRedondeo: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const efectivo = canvas.getByLabelText("Cobro en efectivo", { selector: "input" });
+    await userEvent.clear(efectivo);
+    await userEvent.type(efectivo, "12,13");
+    await userEvent.tab();
+    await expect(canvas.getByTestId("valores")).toHaveTextContent('"efectivo":12.15');
+    await userEvent.selectOptions(
+      canvas.getByRole("combobox", { name: /^Unidad Peso despachado/ }),
+      "t",
+    );
+    await expect(canvas.getByTestId("valores")).toHaveTextContent('"unidad":"t"');
+  },
+  render: function Render() {
+    const [peso, setPeso] = useState<number | "">(1250);
+    const [unidad, setUnidad] = useState("kg");
+    const [monto, setMonto] = useState<number | "">(500);
+    const [moneda, setMoneda] = useState("BOB");
+    const [efectivo, setEfectivo] = useState<number | "">(12.1);
+    return (
+      <Card>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="Peso despachado">
+            <NumberInput
+              value={peso}
+              onChange={setPeso}
+              rounding={{ increment: 0.001 }}
+              units={{
+                options: [
+                  { id: "g", label: "g" },
+                  { id: "kg", label: "kg" },
+                  { id: "t", label: "t" },
+                ],
+                value: unidad,
+                onChange: setUnidad,
+              }}
+            />
+          </Field>
+          <Field label="Anticipo">
+            <NumberInput
+              value={monto}
+              onChange={setMonto}
+              format={{ style: "currency", currency: moneda }}
+              units={{
+                options: [
+                  { id: "BOB", label: "Bs" },
+                  { id: "USD", label: "USD" },
+                ],
+                value: moneda,
+                onChange: setMoneda,
+              }}
+            />
+          </Field>
+          <Field label="Cobro en efectivo" hint="Redondeado a 0,05.">
+            <NumberInput
+              value={efectivo}
+              onChange={setEfectivo}
+              rounding={{ increment: 0.05 }}
+              format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }}
+              unit="Bs."
+            />
+          </Field>
+        </div>
+        <p className="mt-4 text-micro text-muted">
+          lo que recibe la aplicación:{" "}
+          <code data-testid="valores" className="font-mono text-ink">
+            {JSON.stringify({ peso, unidad, monto, moneda, efectivo })}
+          </code>
+        </p>
+      </Card>
+    );
+  },
+};
+
+/**
+ * **Identificadores con forma fija.** Un NIT, un CI, una cuenta, un IBAN: se guardan sólo los
+ * caracteres («10203045»), los separadores se dibujan al escribir, lo que no entra en la ranura
+ * no entra, y el cursor se queda donde estaba. Pegar con cualquier espaciado cae en su lugar.
+ * `#` dígito, `A` letra, `*` cualquiera de los dos.
+ */
+export const Identificadores: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const cuenta = canvas.getByLabelText("Cuenta bancaria", { selector: "input" });
+    await userEvent.type(cuenta, "1a0-5012345678");
+    await expect(cuenta).toHaveValue("1050-1234567-8");
+    const iban = canvas.getByLabelText("IBAN", { selector: "input" });
+    await userEvent.click(iban);
+    await userEvent.paste("es91 2100 0418 4502 0005 1332");
+    await expect(iban).toHaveValue("ES91 2100 0418 4502 0005 1332");
+  },
+  render: function Render() {
+    const [nit, setNit] = useState("10203045");
+    const [cuenta, setCuenta] = useState("");
+    const [iban, setIban] = useState("");
+    return (
+      <Card>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <Field label="NIT">
+            <PatternInput value={nit} onChange={setNit} pattern="#######-#" />
+          </Field>
+          <Field
+            label="Cuenta bancaria"
+            {...(cuenta === "" || isPatternComplete(cuenta, "####-#######-#")
+              ? {}
+              : { error: "Faltan dígitos: son 12." })}
+          >
+            <PatternInput value={cuenta} onChange={setCuenta} pattern="####-#######-#" />
+          </Field>
+          <Field label="IBAN">
+            <PatternInput
+              value={iban}
+              onChange={setIban}
+              pattern="AA## #### #### #### #### ####"
+            />
+          </Field>
+          <Field label="NIT (lectura)" mode="read">
+            <PatternInput value={nit} pattern="#######-#" />
+          </Field>
+        </div>
+      </Card>
+    );
+  },
+};
+
+/**
+ * **Código de verificación.** Seis casillas dibujadas sobre UN solo campo: así se pega el código
+ * entero, el teléfono lo completa solo desde el SMS (`one-time-code`) y un lector de pantalla
+ * oye un campo con su nombre, no seis sin nombre.
+ */
+export const CodigoDeVerificacion: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const codigo = canvas.getByLabelText("Código que te enviamos", { selector: "input" });
+    await userEvent.click(codigo);
+    await userEvent.paste("482 913");
+    await expect(codigo).toHaveValue("482913");
+    await expect(canvas.getByTestId("codigo")).toHaveTextContent("482913");
+  },
+  render: function Render() {
+    const [codigo, setCodigo] = useState("");
+    return (
+      <Card>
+        <Field label="Código que te enviamos" hint="Llega por SMS en menos de un minuto.">
+          <CodeInput value={codigo} onChange={setCodigo} />
+        </Field>
+        <p className="mt-4 text-micro text-muted">
+          lo que recibe la aplicación:{" "}
+          <code data-testid="codigo" className="font-mono text-ink">
+            {JSON.stringify(codigo)}
+          </code>
+        </p>
+      </Card>
+    );
+  },
+};
+
+/**
+ * **Color.** El hex se escribe o se pega (con o sin `#`), y la muestra se nombra con el NOMBRE
+ * del color para un lector de pantalla. La paleta es la de la aplicación —`swatches`—, se
+ * recorre con las flechas. En lectura: la muestra y el hex.
+ */
+export const Colores: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const hex = canvas.getByLabelText("Color de la etapa", { selector: "input" });
+    await userEvent.clear(hex);
+    await userEvent.type(hex, "2e7d32");
+    await userEvent.tab();
+    await expect(canvas.getByTestId("color")).toHaveTextContent("#2E7D32");
+  },
+  render: function Render() {
+    const [color, setColor] = useState("#1F6FEB");
+    return (
+      <Card>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Color de la etapa">
+            <ColorInput
+              value={color}
+              onChange={setColor}
+              swatches={["#1F6FEB", "#2E7D32", "#B26A00", "#C62828", "#6A1B9A", "#455A64"]}
+            />
+          </Field>
+          <Field label="Color (lectura)" mode="read">
+            <ColorInput value={color} />
+          </Field>
+        </div>
+        <p className="mt-4 text-micro text-muted">
+          lo que recibe la aplicación:{" "}
+          <code data-testid="color" className="font-mono text-ink">
+            {JSON.stringify(color)}
+          </code>
+        </p>
+      </Card>
     );
   },
 };

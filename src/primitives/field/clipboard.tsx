@@ -50,9 +50,10 @@ export function useFieldCopy(): boolean {
   return useContext(FieldCopyContext);
 }
 
-/** What skipping means: not seen, or not the value. */
+/** What skipping means: not seen, or not the value. A password while it is hidden is not
+ *  SEEN — the dots are — so it is not copied; revealed, it is text like any other. */
 const SKIP =
-  '[hidden], [aria-hidden="true"], [data-placeholder], .sr-only, button[aria-label], [data-copy-skip], select';
+  '[hidden], [aria-hidden="true"], [data-placeholder], .sr-only, button[aria-label], [data-copy-skip], select, input[type="password"]';
 
 /** The text a value area shows, inputs included, placeholders and named buttons left out. */
 export function shownText(root: HTMLElement): string {

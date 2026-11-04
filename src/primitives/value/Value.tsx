@@ -1,6 +1,7 @@
 "use client";
 
 import { currentCopyLocale, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { type Rounding, roundTo } from "@sincpro/web-ui/primitives/value/rounding";
 import type { ReactNode } from "react";
 
 /**
@@ -45,6 +46,23 @@ export function KeyValue({ label, value }: { label: string; value: ReactNode }) 
   );
 }
 
+/** The three presets, as the options they are — so `signed` and a custom format share one
+ *  path. Kept in step with `integerFormat`, `decimalFormat` and `distanceFormat` above. */
+const PRESET: Record<"integer" | "decimal" | "distance", Intl.NumberFormatOptions> = {
+  integer: { maximumFractionDigits: 0 },
+  decimal: { maximumFractionDigits: 2 },
+  distance: { minimumFractionDigits: 4, maximumFractionDigits: 4 },
+};
+
+/** A number written with any `Intl.NumberFormatOptions` — a currency, a percentage, fixed
+ *  decimals — in the session locale. The same options `NumberInput` takes, so a value reads
+ *  the same in its form and in the cell or the figure that shows it elsewhere. */
+export const formatWith = (
+  value: number,
+  options: Intl.NumberFormatOptions,
+  locale = currentCopyLocale(),
+) => new Intl.NumberFormat(locale, options).format(value);
+
 /**
  * A number with its unit: right aligned, with tabular figures.
  *
@@ -52,25 +70,49 @@ export function KeyValue({ label, value }: { label: string; value: ReactNode }) 
  * the same width, so `32.561` lines up across rows exactly as it did in monospace — without
  * making a business report look like a terminal. The unit stays in the same face so the
  * digits keep their column.
+ *
+ * `format` is a preset or any `Intl.NumberFormatOptions`: `{ style: "currency", currency:
+ * "BOB" }` writes «Bs 1.234,50», `{ style: "percent" }` takes 0–1, `{ minimumFractionDigits:
+ * 2, maximumFractionDigits: 2 }` rounds to two. `align="left"` for a figure that is not in a
+ * column.
  */
 export function Numeric({
   value,
   unit,
   format = "integer",
+  align = "right",
+  rounding,
+  signed = false,
 }: {
   value: number;
   unit?: string;
-  format?: "integer" | "decimal" | "distance";
+  format?: "integer" | "decimal" | "distance" | Intl.NumberFormatOptions;
+  align?: "right" | "left";
+  /** Round the VALUE before writing it — to 0,05 for cash, to the unit's precision. See
+   *  `rounding.ts`: the format alone only rounds what is drawn. */
+  rounding?: Rounding;
+  /** A figure whose sign is the point — a balance, a difference, a variation: it carries
+   *  «+» or «−» always, and a negative is drawn in the danger tone (the sign says it too, so
+   *  it never rests on the color alone). */
+  signed?: boolean;
 }) {
-  const text =
-    format === "distance"
-      ? formatDistance(value)
-      : format === "decimal"
-        ? formatNumber(value)
-        : formatCount(value);
+  /* The locale of the copy in context, as `NumberInput` reads it — not only the installed
+     one: inside a `UiCopyProvider` the cell and the form next to it write the same digits. */
+  const { locale } = useUiCopy();
+  const shown =
+    rounding === undefined ? value : roundTo(value, rounding.increment, rounding.method);
+  const options = typeof format === "object" ? format : PRESET[format];
+  const text = formatWith(
+    shown,
+    signed ? { ...options, signDisplay: "exceptZero" } : options,
+    locale,
+  );
+  const negative = signed && shown < 0;
 
   return (
-    <span className="block text-right text-body tabular-nums whitespace-nowrap text-ink">
+    <span
+      className={`${align === "left" ? "inline-block text-left" : "block text-right"} text-body tabular-nums whitespace-nowrap ${negative ? "text-danger" : "text-ink"}`}
+    >
       <span className="tabular-nums">{text}</span>
       {unit === undefined ? null : <span className="ml-1 text-muted">{unit}</span>}
     </span>

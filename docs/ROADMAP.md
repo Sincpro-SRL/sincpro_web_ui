@@ -64,6 +64,29 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 | La tarjeta de una persona dibuja su cara                                             | ✅ 11-03 | `RecordCard media.person`, como `RelationCard`                                 |
 | Varios conjuntos a la vez (la conciliación), cada uno con su búsqueda                | ✅ 11-03 | `Panes` / `Pane`; `5 · Plantillas/Conciliación`                                |
 
+## 2b. Valores con formato — mostrar y editar (ronda del 2026-11-04)
+
+Cada control escribe y se lee igual: en edición pide el valor como la gente lo escribe, en
+lectura (`mode="read"`) lo dibuja como dato, en el idioma de la copia.
+
+| Necesidad                                                                                   | Estado   | Pieza                                                                    |
+| ------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ |
+| Monto con moneda, porcentaje, número con unidad, decimales fijos (editar y leer)            | ✅       | `NumberInput format/unit/step`                                           |
+| El mismo formato fuera del formulario (celda, cifra), en el idioma del `UiCopyProvider`     | ✅ 11-04 | `Numeric format={Intl.NumberFormatOptions}`, `formatWith`                |
+| Un campo `monetary`/`float`/`decimal` del modelo es columna numérica, alineada y formateada | ✅ 11-04 | `columnsFromModel`, `isNumericType`                                      |
+| Contraseña: ojo para mostrar, aviso de Bloq Mayús, nunca visible en lectura                 | ✅ 11-04 | `PasswordInput`                                                          |
+| Número de tarjeta: grupos por marca, marca, Luhn, cursor estable, `•••• 4242` en lectura    | ✅ 11-04 | `CardNumberInput`, `card.ts` (`isValidCardNumber`, `cardBrand`…)         |
+| Ordenar por varios campos: Mayús+clic en encabezados y panel en la barra (arrastrar)        | ✅ 11-04 | `sort: SortState[]`, `Th`, `SortMenu` (`GridList` + `useDragAndDrop`)    |
+| Correo, teléfono, web: teclado y autocompletar correctos; en lectura, un enlace             | ✅ 11-04 | `EmailInput`, `PhoneInput`, `UrlInput` (+ `isEmail`, `isUrl`, `urlHref`) |
+| Tarjeta completa: vencimiento MM/AA (no vencida) y código de seguridad (3/4 por marca)      | ✅ 11-04 | `CardExpiryInput`, `CardCodeInput` (+ `isExpiryValid`, `cardCodeLength`) |
+| Duración en horas («8:30» ↔ 8,5 h), como el `float_time` de Odoo                            | ✅ 11-04 | `DurationInput`, `formatDuration`, `parseDuration`                       |
+| Elegir la unidad o la moneda en la misma caja del número (kg / t, Bs / USD)                 | ✅ 11-04 | `NumberInput units` (nombrado por su campo)                              |
+| Redondeo explícito: al múltiplo (0,05 de caja, la precisión de la unidad), y cómo           | ✅ 11-04 | `roundTo(value, increment, method)`; `NumberInput`/`Numeric` `rounding`  |
+| Un identificador con máscara (NIT, CI, cuenta bancaria, IBAN) con el cursor estable         | ✅ 11-04 | `PatternInput`, `isPatternComplete` (cursor compartido: `mask.ts`)       |
+| Código de verificación de N dígitos (OTP), pegado entero                                    | ✅ 11-04 | `CodeInput` (un solo campo, `one-time-code`)                             |
+| Un monto con signo que se lee: negativos en rojo con su signo, contable entre paréntesis    | ✅ 11-04 | `Numeric signed`                                                         |
+| Color: paleta de etiquetas (el índice de color de Odoo) y hex                               | ✅ 11-04 | `ColorInput` (React Aria `ColorField` + `ColorSwatchPicker`)             |
+
 ## 3. Elegir y buscar
 
 | Necesidad                                                                            | Estado   | Pieza / dueño                                                                   |

@@ -1,6 +1,7 @@
 import {
   Button,
   type CardWays,
+  compareBy,
   downloadPivot,
   filterCriteria,
   GroupingLevels,
@@ -202,7 +203,7 @@ function useLista() {
   const [present, setPresent] = useState<ListPresent>("rows");
   const grouping = useGroupingControl();
   const tree = useTreeControl();
-  const [sort, setSort] = useState<SortState | null>(null);
+  const [sort, setSort] = useState<SortState[]>([]);
 
   return {
     criteria,
@@ -1869,7 +1870,7 @@ function GaleriaPie({ pile, set }: { pile: Pile<Item>; set: ListSet<Item> }) {
 export const UnaPresentacionPropia: Story = {
   render: function Render() {
     const [present, setPresent] = useState<ListPresent>("gallery");
-    const [sort, setSort] = useState<SortState | null>({ key: "total", direction: "desc" });
+    const [sort, setSort] = useState<SortState[]>([{ key: "total", direction: "desc" }]);
     const [visto, setVisto] = useState("ninguno");
     const [elegidos, setElegidos] = useState<string[]>([]);
     const grouping = useGroupingControl();
@@ -2065,5 +2066,147 @@ export const AgrupadoEnElServidor: Story = {
     /* Four held — the cap: no button that does nothing, the pile says what it shows. */
     await expect(canvas.getByText("Se muestran 4 de 96")).toBeInTheDocument();
     await expect(canvas.queryByRole("button", { name: /de 92/ })).toBeNull();
+  },
+};
+
+const POR_VARIOS = [
+  { field: "date", label: "fecha", value: (one: Item) => one.date },
+  { field: "customer", label: "cliente", value: (one: Item) => one.customer },
+  { field: "salesperson", label: "vendedor", value: (one: Item) => one.salesperson },
+  {
+    field: "total",
+    label: "total",
+    value: (one: Item) => one.total,
+    ascLabel: "de menor a mayor",
+    descLabel: "de mayor a menor",
+  },
+];
+
+/**
+ * **Ordenar por varios campos.** Por fecha, en la misma fecha por cliente, y después por
+ * vendedor: el segundo criterio sólo decide entre las filas que el primero deja iguales.
+ *
+ * Dos puertas al MISMO orden. En la tabla, clic en un encabezado ordena sólo por esa columna
+ * y **Mayús+clic la agrega como desempate** — cada encabezado ordenado lleva su lugar (1, 2,
+ * 3) junto a la flecha. En la barra, «Ordenar» abre la lista entera: se agrega un criterio, se
+ * invierte, se quita o se arrastra para cambiar cuál manda (con el teclado, desde el asa:
+ * Enter, flechas, Enter). Cambiar a filas conserva el orden: es del conjunto.
+ */
+export const OrdenarPorVarios: Story = {
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const header = (name: string) =>
+      canvas.getByRole("columnheader", { name: new RegExp(name) });
+
+    /* Clic: sólo esa columna. */
+    await userEvent.click(within(header("fecha")).getByRole("button"));
+    await expect(header("fecha")).toHaveAttribute("aria-sort", "ascending");
+
+    /* Mayús+clic: un desempate, que dice su lugar. */
+    /* One `user` keeps the key held between the calls; the bare helpers start fresh. */
+    const user = userEvent.setup();
+    await user.keyboard("{Shift>}");
+    await user.click(within(header("cliente")).getByRole("button"));
+    await user.keyboard("{/Shift}");
+    await expect(within(header("cliente")).getByRole("button")).toHaveAccessibleName(
+      /orden 2, ascendente/,
+    );
+    await expect(header("fecha")).toHaveAttribute("aria-sort", "ascending");
+
+    /* La barra cuenta los dos, y agrega un tercero. */
+    await userEvent.click(canvas.getByRole("button", { name: /fecha \+1/ }));
+    const panel = within(await within(document.body).findByRole("dialog"));
+    await expect(panel.getAllByRole("row")).toHaveLength(2);
+    await userEvent.click(panel.getByRole("button", { name: /Agregar criterio/ }));
+    await userEvent.click(
+      await within(document.body).findByRole("menuitem", { name: "vendedor" }),
+    );
+    await expect(panel.getAllByRole("row")).toHaveLength(3);
+    await expect(canvas.getByTestId("orden")).toHaveTextContent(
+      "date asc · customer asc · salesperson asc",
+    );
+
+    /* Invertir el primero, en su lugar. */
+    await userEvent.click(panel.getByRole("button", { name: /Invertir el orden por fecha/ }));
+    await expect(canvas.getByTestId("orden")).toHaveTextContent(
+      "date desc · customer asc · salesperson asc",
+    );
+
+    /* Las filas quedaron en ese orden: la primera es la que el mismo criterio pone primero. */
+    const first = [...ITEMS].sort(
+      compareBy<Item>(
+        [
+          { key: "date", direction: "desc" },
+          { key: "customer", direction: "asc" },
+          { key: "salesperson", direction: "asc" },
+        ],
+        (key) => POR_VARIOS.find((one) => one.field === key)?.value,
+      ),
+    )[0]!;
+    await expect(canvas.getAllByRole("row")[1]).toHaveTextContent(orderName(first));
+
+    /* Quitar uno. */
+    await userEvent.click(panel.getByRole("button", { name: /Quitar el orden por cliente/ }));
+    await expect(canvas.getByTestId("orden")).toHaveTextContent(
+      "date desc · salesperson asc",
+    );
+  },
+  render: function Render() {
+    const [sort, setSort] = useState<SortState[]>([]);
+    const [present, setPresent] = useState<ListPresent>("table");
+    return (
+      <div className="flex flex-col gap-3 bg-ground p-8">
+        <div className="@container overflow-clip rounded-box border border-line-strong bg-surface">
+          <List<Item>
+            items={ITEMS.slice(0, 24)}
+            keyOf={(d) => d.id}
+            present={present}
+            onPresentChange={setPresent}
+            sort={sort}
+            onSortChange={setSort}
+            sortable={POR_VARIOS}
+          >
+            <List.Bar>
+              <List.Identity title="Pedidos" />
+            </List.Bar>
+            <List.Table<Item>
+              columns={[
+                {
+                  id: "name",
+                  header: "pedido",
+                  value: (d: Item) => orderName(d),
+                  sortable: false,
+                },
+                { id: "date", header: "fecha", value: (d: Item) => d.date },
+                { id: "customer", header: "cliente", value: (d: Item) => d.customer },
+                { id: "salesperson", header: "vendedor", value: (d: Item) => d.salesperson },
+                {
+                  id: "total",
+                  header: "total (Bs.)",
+                  value: (d: Item) => d.total,
+                  numeric: true,
+                },
+              ]}
+            />
+            <List.Rows<Item>
+              header={{
+                name: "pedido · cliente",
+                meta: "líneas · fecha · total",
+                tags: "estado",
+              }}
+              row={filaDe}
+            />
+          </List>
+        </div>
+        <p className="text-micro text-muted">
+          el orden que recibe la aplicación:{" "}
+          <code data-testid="orden" className="font-mono text-ink">
+            {sort.length === 0
+              ? "como llegaron"
+              : sort.map((one) => `${one.key} ${one.direction}`).join(" · ")}
+          </code>
+        </p>
+      </div>
+    );
   },
 };

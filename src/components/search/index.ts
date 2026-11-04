@@ -62,6 +62,7 @@ export {
   fieldLabel,
   filterableNames,
   isFilterable,
+  isNumericType,
   type ModelDefinition,
   type ModelTranslations,
 } from "@sincpro/web-ui/components/search/model";

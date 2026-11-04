@@ -152,6 +152,55 @@ export function indexOptions(
   return into;
 }
 
+/**
+ * The look of a list control's trigger — «Filtros ▾», «Columnas ▾», «Ordenar ▾» — without
+ * the menu.
+ *
+ * Context: a control of the bar that opens a PANEL and not a list of options (the sort
+ * criteria) still has to look like its neighbours; copying these classes is how the third
+ * trigger ends up one pixel off. Same reason `buttonClasses` exists.
+ */
+export function menuTriggerClasses({
+  variant = "button",
+  surface = "canvas",
+  active = false,
+  open = false,
+  focusVisible = false,
+  iconOnly = false,
+}: {
+  variant?: "button" | "text";
+  surface?: "canvas" | "chrome";
+  active?: boolean;
+  open?: boolean;
+  focusVisible?: boolean;
+  iconOnly?: boolean;
+}): string {
+  /* `text` is the menu of a BAR: no frame and no background, just the highlight
+     on hover. Five bordered menus on top of an application are five buttons
+     competing with the ones in the view, and the bar stops reading as an index.
+     `button` is the menu of a CONTROL —"filters ▾", "group ▾"—, and there the
+     frame is what says it can be pressed. */
+  const tone =
+    variant === "text"
+      ? surface === "chrome"
+        ? `border-transparent text-chrome-muted hover:bg-chrome-ink/12 hover:text-chrome-ink ${
+            active || open ? "bg-chrome-ink/12 text-chrome-ink" : ""
+          }`
+        : `border-transparent text-muted hover:bg-ink/6 hover:text-ink ${
+            active || open ? "bg-ink/6 text-ink" : ""
+          }`
+      : surface === "chrome"
+        ? `border-chrome-muted/35 bg-chrome-raised text-chrome-ink hover:border-chrome-accent/45 ${
+            active ? "border-chrome-accent/60" : ""
+          }`
+        : `border-line-strong bg-surface hover:border-primary/45 hover:bg-primary/5 ${
+            active ? "border-primary/60 text-primary" : "text-ink"
+          }`;
+  return `inline-flex h-(--size-control-sm) shrink-0 cursor-default items-center gap-1.5 border text-micro font-medium whitespace-nowrap outline-0 transition-colors duration-(--duration-instant) ${
+    focusVisible ? "outline-2 outline-offset-2 outline-primary" : ""
+  } ${iconOnly ? "w-(--size-control-sm) justify-center rounded-pill" : "rounded-control px-2.5"} ${tone}`;
+}
+
 export function Menu({
   label,
   groups,
@@ -218,28 +267,6 @@ export function Menu({
   const copy = useUiCopy();
   const { contains } = useFilter({ sensitivity: "base" });
 
-  /* `text` is the menu of a BAR: no frame and no background, just the highlight
-     on hover. Five bordered menus on top of an application are five buttons
-     competing with the ones in the view, and the bar stops reading as an index.
-     `button` is the menu of a CONTROL —"filters ▾", "group ▾"—, and there the
-     frame is what says it can be pressed. */
-  const triggerClass = (open: boolean) =>
-    variant === "text"
-      ? surface === "chrome"
-        ? `border-transparent text-chrome-muted hover:bg-chrome-ink/12 hover:text-chrome-ink ${
-            active || open ? "bg-chrome-ink/12 text-chrome-ink" : ""
-          }`
-        : `border-transparent text-muted hover:bg-ink/6 hover:text-ink ${
-            active || open ? "bg-ink/6 text-ink" : ""
-          }`
-      : surface === "chrome"
-        ? `border-chrome-muted/35 bg-chrome-raised text-chrome-ink hover:border-chrome-accent/45 ${
-            active ? "border-chrome-accent/60" : ""
-          }`
-        : `border-line-strong bg-surface hover:border-primary/45 hover:bg-primary/5 ${
-            active ? "border-primary/60 text-primary" : "text-ink"
-          }`;
-
   const byId = indexOptions(groups.flatMap((g) => g.options));
 
   const menu = (
@@ -264,9 +291,14 @@ export function Menu({
         {...(role === undefined ? {} : { "data-emphasis": role })}
         className={({ isPressed, isFocusVisible }) =>
           role === undefined
-            ? `inline-flex h-(--size-control-sm) shrink-0 cursor-default items-center gap-1.5 border text-micro font-medium whitespace-nowrap outline-0 transition-colors duration-(--duration-instant) ${
-                isFocusVisible ? "outline-2 outline-offset-2 outline-primary" : ""
-              } ${iconOnly ? "w-(--size-control-sm) justify-center rounded-pill" : "rounded-control px-2.5"} ${triggerClass(isPressed)}`
+            ? menuTriggerClasses({
+                variant,
+                surface,
+                active,
+                open: isPressed,
+                focusVisible: isFocusVisible,
+                iconOnly,
+              })
             : `${buttonClasses(role, size, surface)} gap-1.5`
         }
       >
