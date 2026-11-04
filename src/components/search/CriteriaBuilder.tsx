@@ -9,7 +9,7 @@ import {
   treeToFilter,
   WhereTree,
 } from "@sincpro/web-ui/components/search/FilterBuilder";
-import { JsonEditor } from "@sincpro/web-ui/components/search/JsonEditor";
+import { LazyJsonEditor } from "@sincpro/web-ui/components/search/LazyJsonEditor";
 import {
   filterableNames,
   type ModelDefinition,
@@ -712,7 +712,7 @@ export function CriteriaBuilder({
       </section>
 
       {/* ── la criteria entera, en su forma real ──────────────────────── */}
-      <JsonEditor
+      <LazyJsonEditor
         value={rawText}
         onChange={updateRaw}
         error={rawError}

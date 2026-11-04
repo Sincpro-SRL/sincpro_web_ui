@@ -316,6 +316,20 @@ export type RecordProps = {
   /** Hay cambios sin guardar. Su presencia REEMPLAZA los botones de acción por
    *  guardar y descartar — ver la nota en `RecordHeader`. */
   dirty?: DirtyState;
+  /**
+   * Where the record is mounted — and so whether it sits on paper.
+   *
+   *     page    on the ground, on a white sheet (Odoo's `<sheet>`): the record owns the
+   *             screen, the workspace's page or a panel.
+   *     card    one surface, no ground: the record is already inside a card — a modal, a
+   *             window. In compact density (the peek) it is always this.
+   *
+   * Say it whenever the mount is known (in the composer, `api.surface`): it is a fact of
+   * WHERE the record is, and it does not change while the record is on screen. Omitted, the
+   * sheet is guessed from the rail — crumbs, pager or actions mean a page — which flips the
+   * whole tree under the paper the moment one of them appears or goes away.
+   */
+  placement?: "page" | "card";
   children?: ReactNode;
 };
 
@@ -324,7 +338,7 @@ function NotebookScope({ tabs, children }: { tabs: boolean; children: ReactNode 
   return tabs ? <TabsScope>{children}</TabsScope> : children;
 }
 
-export function Record({ identity, error = null, dirty, children }: RecordProps) {
+export function Record({ identity, error = null, dirty, placement, children }: RecordProps) {
   const d = useDensity();
   const copy = useUiCopy();
 
@@ -348,10 +362,14 @@ export function Record({ identity, error = null, dirty, children }: RecordProps)
 
   /* Las dos preguntas del estado, con la superficie ya resuelta: «¿dónde
      está?» y «¿qué pasó para llegar acá?». */
+  /* The same question `RecordHeader` asks to draw the rail (`status` included): asked
+     differently here, a record with only a status drew a `chrome` rail light until the first
+     keystroke, and dark from then on. */
   const onTheRail =
     crumbs !== undefined ||
     pager !== undefined ||
     actions !== undefined ||
+    status !== undefined ||
     dirty !== undefined;
   const railSurface = propsOf<RailProps>(railNode)?.surface ?? "canvas";
   const surface = onTheRail && d === "comfortable" ? railSurface : "canvas";
@@ -466,6 +484,7 @@ export function Record({ identity, error = null, dirty, children }: RecordProps)
         <NotebookScope tabs={tabs.length > 0}>
           <RecordHeader
             railSurface={surface}
+            {...(placement === undefined ? {} : { paper: placement === "page" })}
             {...(ribbon === undefined
               ? {}
               : {

@@ -6,7 +6,7 @@ import type {
   CriteriaJoin,
 } from "@sincpro/web-ui/components/search/criteria";
 import { JoinWord } from "@sincpro/web-ui/components/search/JoinWord";
-import { JsonEditor } from "@sincpro/web-ui/components/search/JsonEditor";
+import { LazyJsonEditor } from "@sincpro/web-ui/components/search/LazyJsonEditor";
 import {
   fieldLabel,
   filterableNames,
@@ -722,7 +722,7 @@ export function FilterBuilder({
       {/* El filtro real, en JSON: se reescribe solo mientras se toca el árbol de arriba, y se
           puede escribir o pegar acá en vez de armarlo con él — las dos vistas se mantienen
           iguales mientras lo que haya sea reconocible como filtro. */}
-      <JsonEditor
+      <LazyJsonEditor
         value={rawText}
         onChange={updateRaw}
         error={rawError}

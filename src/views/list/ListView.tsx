@@ -1,7 +1,7 @@
 "use client";
 
-import { RecordCalendar } from "@sincpro/web-ui/components/calendar/RecordCalendar";
-import { RecordGantt } from "@sincpro/web-ui/components/gantt/RecordGantt";
+import type { RecordCalendar as EagerCalendar } from "@sincpro/web-ui/components/calendar/RecordCalendar";
+import type { RecordGantt as EagerGantt } from "@sincpro/web-ui/components/gantt/RecordGantt";
 import { BoardColumns } from "@sincpro/web-ui/components/listing/BoardColumns";
 import { useColumnControl, visibleColumns } from "@sincpro/web-ui/components/listing/columns";
 import {
@@ -71,7 +71,22 @@ import {
   Sigma,
   Table2,
 } from "lucide-react";
-import { Fragment, type ReactNode, useCallback, useMemo } from "react";
+import { Fragment, lazy, type ReactNode, Suspense, useCallback, useMemo } from "react";
+
+/* The calendar (FullCalendar) and the gantt (SVAR) are each about a third of a list's weight,
+   and most lists never show either face. Each is its own chunk, fetched the first time its
+   face is SHOWN. `lazy` erases the generic, so the eager signature is put back: the props
+   are checked exactly as before. */
+const RecordCalendar = lazy(() =>
+  import("@sincpro/web-ui/components/calendar/RecordCalendar").then((module) => ({
+    default: module.RecordCalendar,
+  })),
+) as unknown as typeof EagerCalendar;
+const RecordGantt = lazy(() =>
+  import("@sincpro/web-ui/components/gantt/RecordGantt").then((module) => ({
+    default: module.RecordGantt,
+  })),
+) as unknown as typeof EagerGantt;
 
 /**
  * EL DIBUJO de una lista. **La puerta es `List`**, que se escribe como árbol y
@@ -583,21 +598,25 @@ export function ListView<T extends object>({
       />
     ) : present === "calendar" && calendar !== undefined ? (
       <div className="p-3">
-        <RecordCalendar
-          {...calendar}
-          items={ordered}
-          keyOf={keyOf}
-          {...(press === undefined ? {} : { onOpen: press })}
-        />
+        <Suspense fallback={<Skeleton label={copy.failed.loading} />}>
+          <RecordCalendar
+            {...calendar}
+            items={ordered}
+            keyOf={keyOf}
+            {...(press === undefined ? {} : { onOpen: press })}
+          />
+        </Suspense>
       </div>
     ) : present === "gantt" && gantt !== undefined ? (
       <div className="p-3">
-        <RecordGantt
-          {...gantt}
-          items={ordered}
-          keyOf={keyOf}
-          {...(press === undefined ? {} : { onOpen: press })}
-        />
+        <Suspense fallback={<Skeleton label={copy.failed.loading} />}>
+          <RecordGantt
+            {...gantt}
+            items={ordered}
+            keyOf={keyOf}
+            {...(press === undefined ? {} : { onOpen: press })}
+          />
+        </Suspense>
       </div>
     ) : present === "timeline" && timeline !== undefined ? (
       <div className="p-3">
