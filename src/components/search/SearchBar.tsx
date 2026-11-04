@@ -38,6 +38,7 @@ import {
   X,
 } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
+import { useOverlay } from "react-aria";
 
 /* ==================================================================== *
  *  LA BARRA — buscar es preguntar DÓNDE, no sólo qué.
@@ -373,6 +374,8 @@ export function SearchBar({
   const puestos = criteria.length;
   const input = useRef<HTMLInputElement>(null);
   const box = useRef<HTMLDivElement>(null);
+  const toolsButton = useRef<HTMLButtonElement>(null);
+  const panelBox = useRef<HTMLDivElement>(null);
   const id = useId();
   /* The suggestions are the input's popup (the ARIA combobox pattern): the input keeps the
      focus and says which list it controls and which option is the active one, so a screen
@@ -449,22 +452,42 @@ export function SearchBar({
       : [{ title: copy.search.favorites, groups: favorites, onSelect: onFavoriteSelect }]),
   ];
 
-  useEffect(() => {
-    if (!panel) return;
-    function outside(e: MouseEvent) {
-      if (box.current?.contains(e.target as Node) === true) return;
-      setPanel(false);
-    }
-    function onEscape(e: KeyboardEvent) {
-      if (e.key === "Escape") setPanel(false);
-    }
-    document.addEventListener("mousedown", outside);
-    document.addEventListener("keydown", onEscape);
-    return () => {
-      document.removeEventListener("mousedown", outside);
-      document.removeEventListener("keydown", onEscape);
-    };
-  }, [panel]);
+  /* THE PANEL IS A LAYER, and Escape closes the layer on top — only that one.
+
+     It listened for Escape and for a click outside on `document`, without stopping either.
+     Inside a dialog —the «Buscar más…» chooser, a composer modal— the dialog (React Aria's
+     `ModalOverlay`, which answers inside the React tree) closed FIRST, then the panel: whoever
+     pressed Escape to put the panel away lost the chooser. React Aria did not know the panel
+     sat on top of the dialog. Now it does: `useOverlay` puts the panel on React Aria's stack
+     of layers, the same one a `Select` or a `Picker` popover is on, so Escape and a press
+     outside close the top layer and leave the dialog open. A press inside the bar is not
+     «outside» (the button toggles, the input keeps typing). */
+  const closePanel = () => {
+    /* The focus goes back to the button that opened it — but only if it was inside the panel
+       (Escape): a press elsewhere already put it where the person wanted. */
+    const hadFocus = panelBox.current?.contains(document.activeElement) === true;
+    setPanel(false);
+    if (hadFocus) toolsButton.current?.focus();
+  };
+  const { overlayProps } = useOverlay(
+    {
+      isOpen: panel,
+      onClose: closePanel,
+      isDismissable: true,
+      shouldCloseOnInteractOutside: (element) => box.current?.contains(element) !== true,
+    },
+    panelBox,
+  );
+  /* With the focus still in the bar (the input, the button) and the panel open, Escape is
+     the panel's too — used up the same way, so it does not reach the dialog either. With the
+     panel closed, Escape is not the bar's and goes on to whoever owns it. */
+  const closePanelOnEscape = (e: React.KeyboardEvent) => {
+    if (e.key !== "Escape" || !panel || e.defaultPrevented) return;
+    e.preventDefault();
+    e.stopPropagation();
+    setPanel(false);
+    toolsButton.current?.focus();
+  };
 
   /**
    * UNA PREGUNTA ENTERA entra como instancia, y la barra vuelve al principio.
@@ -546,7 +569,11 @@ export function SearchBar({
   }
 
   return (
-    <div ref={box} className="relative flex min-w-0 items-center gap-2">
+    <div
+      ref={box}
+      onKeyDown={closePanelOnEscape}
+      className="relative flex min-w-0 items-center gap-2"
+    >
       {/* Three columns: the magnifier, what is set plus the input (the only part that wraps),
           and the buttons. The two ends sit on the FIRST line: when the middle wraps they
           stay where the eye starts reading, instead of floating to its middle. */}
@@ -731,16 +758,19 @@ export function SearchBar({
               if (e.key === "Escape") {
                 if (text !== "") {
                   e.preventDefault();
+                  e.stopPropagation();
                   setText("");
                   return;
                 }
                 if (step.op !== undefined) {
                   e.preventDefault();
+                  e.stopPropagation();
                   setStep({ field: step.field });
                   return;
                 }
                 if (step.field !== undefined) {
                   e.preventDefault();
+                  e.stopPropagation();
                   setStep({});
                   return;
                 }
@@ -748,6 +778,7 @@ export function SearchBar({
                    se deshace. */
                 if (openGroup !== null) {
                   e.preventDefault();
+                  e.stopPropagation();
                   closeGroup();
                 }
                 return;
@@ -806,6 +837,7 @@ export function SearchBar({
 
         {columns.length === 0 && onOpenBuilder === undefined ? null : (
           <button
+            ref={toolsButton}
             type="button"
             onClick={() => setPanel((v) => !v)}
             aria-expanded={panel}
@@ -946,6 +978,8 @@ export function SearchBar({
           que es exactamente lo que hace falta en un teléfono. */}
       {panel && (columns.length > 0 || onOpenBuilder !== undefined) ? (
         <div
+          {...overlayProps}
+          ref={panelBox}
           id={id}
           className="absolute top-full right-0 z-30 mt-1 flex w-max max-w-full flex-wrap overflow-hidden rounded-panel border border-line-strong bg-surface shadow-float"
         >
