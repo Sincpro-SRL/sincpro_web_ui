@@ -2,6 +2,7 @@
 
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
+import { ControlStateContext } from "@sincpro/web-ui/foundations/form";
 import {
   type Grouping,
   pathKey,
@@ -13,16 +14,23 @@ import {
 import { HANDHELD_WIDTH } from "@sincpro/web-ui/foundations/layout";
 import { stickyTop, useScrollBox } from "@sincpro/web-ui/foundations/sticky";
 import { IconButton } from "@sincpro/web-ui/primitives/button/Button";
-import { NoteCard } from "@sincpro/web-ui/primitives/field/note";
+import {
+  type FieldNote,
+  NoteCard,
+  NoteRegistryContext,
+} from "@sincpro/web-ui/primitives/field/note";
 import { Flag, type FlagProps } from "@sincpro/web-ui/primitives/notice/Flag";
+import { useRowWindow, type WindowedRow } from "@sincpro/web-ui/primitives/table/rowWindow";
 import { HEADER_TEXT } from "@sincpro/web-ui/primitives/table/Table";
-import { GripVertical, Plus, Trash2 } from "lucide-react";
+import { AlertCircle, GripVertical, Plus, Trash2 } from "lucide-react";
 import {
   type DragEvent,
   Fragment,
   type HTMLAttributes,
   type ReactNode,
+  useContext,
   useEffect,
+  useId,
   useLayoutEffect,
   useMemo,
   useRef,
@@ -196,6 +204,37 @@ export type EditBands<T> = {
   total?: (column: EditColumn<T>, lines: readonly T[]) => ReactNode | null;
 };
 
+/** A warning drawn as a `Flag`: on a row (`flag`) or on one cell (`EditCellState.flag`). */
+export type EditFlag = Omit<FlagProps, "children"> & { detail?: ReactNode; owner?: string };
+
+/**
+ * What ONE cell of one row is right now — said by whoever knows the record: the states the
+ * backend sends per line and field. Every key left out keeps the column as declared.
+ *
+ * Context: a column declares what it is for every row (`edit`), but an ERP line decides
+ * per row — a delivered line keeps its quantity, a service line has no lot, a discount is
+ * required only past a threshold. The table does not know why; it is told, cell by cell.
+ */
+export type EditCellState = {
+  /** Not written in on this row: the cell reads while the row is edited. */
+  readonly?: boolean;
+  /** Has to have a value: marked while the row is edited, and said to its control. */
+  required?: boolean;
+  /** Not there on this row (Odoo's per-row `invisible`): the cell is drawn empty. */
+  hidden?: boolean;
+  /** What is wrong with this value, said as what to put — under the value, with an icon,
+   *  and the control is `aria-invalid` and described by it. `null` when nothing is. */
+  error?: string | null;
+  /** A warning about THIS value — «precio bajo el costo» on the price, not on the line. */
+  flag?: EditFlag | null;
+};
+
+/** What a whole row is right now. A row that should not be seen is not passed at all. */
+export type EditRowState = {
+  /** Read, not written: walked with the arrows, never opened to edit. */
+  readonly?: boolean;
+};
+
 /** One more way to add, beside «add a line»: a section, a note. */
 export type EditAdd = {
   label: string;
@@ -259,6 +298,56 @@ function pileTag<T>(pile: Pile<T>, locale: string): ReactNode {
       <span className="inline-flex shrink-0 items-center rounded-pill border border-line-strong bg-ink/5 px-2 py-0.5 text-micro tabular-nums text-muted">
         {pile.count.toLocaleString(locale)}
       </span>
+    </span>
+  );
+}
+
+/** The note a flag stands for, as the record lists it. */
+function noteOf(said: EditFlag): FieldNote {
+  return {
+    tone: said.tone,
+    label: said.label,
+    ...(said.detail === undefined ? {} : { detail: said.detail }),
+  };
+}
+
+/** A cell's value as words, when it is words — what a note says it belongs to when the row
+ *  is not drawn to read it from. */
+function plainText(node: ReactNode): string {
+  return typeof node === "string" || typeof node === "number"
+    ? String(node).slice(0, 60)
+    : "";
+}
+
+/** The ids of the notes a row registers with its record — one for the row, one per cell. */
+const rowNoteId = (rowId: string) => `flag-${rowId}`;
+const cellNoteId = (rowId: string, columnId: string) => `flag-${rowId}-${columnId}`;
+
+/** A cell's error, under its value: an icon and the sentence, in danger — the same shape as
+ *  a field's. No `role="alert"`: errors that arrive with a save land on many rows at once,
+ *  and each would interrupt the others; the control is described by it instead. */
+function CellError({
+  id,
+  numeric,
+  children,
+}: {
+  id: string;
+  numeric?: boolean | undefined;
+  children: ReactNode;
+}) {
+  return (
+    <span
+      id={id}
+      className={`mt-1 flex items-start gap-1 text-left text-micro font-normal whitespace-normal text-danger ${
+        numeric === true ? "justify-end" : ""
+      }`}
+    >
+      <AlertCircle
+        aria-hidden
+        className="mt-px size-(--size-icon-sm) shrink-0"
+        strokeWidth={2}
+      />
+      <span className="min-w-0">{children}</span>
     </span>
   );
 }
@@ -361,6 +450,7 @@ export function EditRow({
   onMove,
   onFocusRow,
   onTabOut,
+  windowed,
   children,
 }: {
   as: "tr" | "li";
@@ -378,6 +468,9 @@ export function EditRow({
   /** `Tab` left the row by one of its edges. `true` = the table took it (opened another
    *  row, added one); `false` = the browser moves the focus as usual. */
   onTabOut: (direction: "next" | "prev") => boolean;
+  /** Past a few hundred rows the table draws only the ones in view (`rowWindow`): this row's
+   *  measure, its index, and the focus that keeps it drawn. */
+  windowed?: WindowedRow | undefined;
   children: ReactNode;
 }) {
   const leaving = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -483,13 +576,34 @@ export function EditRow({
     className,
     "data-row-id": rowId,
   };
+  if (windowed !== undefined) {
+    /* The row that holds the focus stays drawn wherever it scrolls: a control being written
+       in must not be unmounted under the person's hands. */
+    const own = props.onFocus;
+    props.onFocus = (event) => {
+      windowed.onFocus();
+      own?.(event);
+    };
+  }
 
   return as === "li" ? (
     <li ref={rowRef} {...props}>
       {children}
     </li>
   ) : (
-    <tr ref={rowRef} {...props}>
+    <tr
+      ref={(node) => {
+        rowRef(node);
+        windowed?.ref(node);
+      }}
+      {...(windowed === undefined
+        ? {}
+        : {
+            "data-index": windowed["data-index"],
+            "aria-rowindex": windowed["aria-rowindex"],
+          })}
+      {...props}
+    >
       {children}
     </tr>
   );
@@ -533,15 +647,21 @@ export function EditableTable<T>({
   adds,
   flag,
   onReorder,
+  cellState,
+  rowState,
 }: {
   rows: readonly T[];
   columns: readonly EditColumn<T>[];
+  /** The row's key on this screen, stable for as long as the row is drawn — a local key for
+   *  a row the backend has not made yet, kept after it is saved. A key that changes is a new
+   *  row to React: the row being written is unmounted and loses the focus. */
   getRowId: (row: T) => string;
   onChange?: (id: string, next: T) => void;
   onRemove?: (id: string) => void;
   /** «Add a line». Return the new row's id —or a promise of it, when the backend makes
    *  the record— and the table opens that row with the focus on its first control.
-   *  Return nothing and the row just appears, closed. */
+   *  Return nothing and the row just appears, closed. The id is the row's KEY (`getRowId`):
+   *  give a line the backend has not made a local one, and keep it after the save. */
   onAdd?: () => string | void | Promise<string | void>;
   addLabel?: string;
   totals?: readonly (ReactNode | null)[];
@@ -582,9 +702,13 @@ export function EditableTable<T>({
    *  `null` for the rows with nothing to say, which should be most of them. `owner` is what
    *  the record's activity says it belongs to («Línea 3 · Impresora…»); without it, the
    *  row's first value. */
-  flag?: (
-    row: T,
-  ) => (Omit<FlagProps, "children"> & { detail?: ReactNode; owner?: string }) | null;
+  flag?: (row: T) => EditFlag | null;
+  /** What each cell is on each row — readonly, required, hidden, its error, its warning —
+   *  as the backend says it per line. `null` keeps the column as declared. See
+   *  `EditCellState`. */
+  cellState?: (row: T, columnId: string) => EditCellState | null;
+  /** What a whole row is: `readonly` is read, not opened. See `EditRowState`. */
+  rowState?: (row: T) => EditRowState | null;
   /** The rows have an order of their own — the lines of an order, Odoo's `sequence` — and it
    *  is changed by dragging the grip at the start of a row, or with Alt + ↑ / ↓ on it. `before`
    *  is the row it lands in front of; `null`, the end. Off while grouped (the piles decide the
@@ -593,27 +717,104 @@ export function EditableTable<T>({
 }) {
   const copy = useUiCopy();
   const bandOf = (row: T) => bands?.kind(row) ?? null;
+  const uid = useId();
+  /* A mark, and —in a record— its card, which registers the note with the record. */
+  const marked = (said: EditFlag, noteId: string, withCard: boolean): ReactNode => (
+    <>
+      <Flag tone={said.tone} label={said.label}>
+        {said.detail}
+      </Flag>
+      {withCard ? (
+        <NoteCard
+          id={noteId}
+          {...(said.owner === undefined ? {} : { owner: said.owner })}
+          note={noteOf(said)}
+        />
+      ) : null}
+    </>
+  );
   /* The row's mark, before its first value — and, in a record's margin, its card. */
   const flagOf = (row: T, withCard = false): ReactNode => {
     const said = flag?.(row) ?? null;
-    if (said === null) return null;
+    return said === null ? null : marked(said, rowNoteId(getRowId(row)), withCard);
+  };
+  /* What the backend says of each cell on each row. A hidden cell says nothing else: no
+     error and no warning about a value that is not there. */
+  const stateOf = (row: T, column: EditColumn<T>): EditCellState | null => {
+    const said = cellState?.(row, column.id) ?? null;
+    return said?.hidden === true ? { hidden: true } : said;
+  };
+  const locked = (row: T) => rowState?.(row)?.readonly === true;
+  /* Whether a cell becomes a control while its row is edited. */
+  const writes = (row: T, column: EditColumn<T>, state: EditCellState | null) =>
+    editable &&
+    column.edit !== undefined &&
+    state?.hidden !== true &&
+    state?.readonly !== true &&
+    !locked(row);
+  /* Ids built from a row id: `aria-describedby` is a list split on spaces, so an id that
+     carries one would describe the control with two ids that do not exist. */
+  const cellId = (rowId: string, columnId: string, what: string) =>
+    `${uid}-${rowId.replace(/[^\w-]/g, "_")}-${columnId.replace(/[^\w-]/g, "_")}-${what}`;
+  const cellFlagOf = (
+    row: T,
+    column: EditColumn<T>,
+    state: EditCellState | null,
+    withCard = false,
+  ): ReactNode => {
+    const said = state?.flag ?? null;
+    return said === null
+      ? null
+      : marked(said, cellNoteId(getRowId(row), column.id), withCard);
+  };
+  /* The control of a cell, wired through the form contract: its error and «required» reach
+     whatever control the column wrote — the package's or the application's own. */
+  const controlOf = (
+    row: T,
+    column: EditColumn<T>,
+    state: EditCellState | null,
+    set: (next: T) => void,
+  ): ReactNode => {
+    const id = getRowId(row);
+    const error = state?.error ?? null;
+    const required = state?.required === true;
+    const describedBy = [
+      error === null ? null : cellId(id, column.id, "error"),
+      required ? cellId(id, column.id, "required") : null,
+    ]
+      .filter((one) => one !== null)
+      .join(" ");
     return (
-      <>
-        <Flag tone={said.tone} label={said.label}>
-          {said.detail}
-        </Flag>
-        {withCard ? (
-          <NoteCard
-            id={`flag-${getRowId(row)}`}
-            {...(said.owner === undefined ? {} : { owner: said.owner })}
-            note={{
-              tone: said.tone,
-              label: said.label,
-              ...(said.detail === undefined ? {} : { detail: said.detail }),
-            }}
-          />
-        ) : null}
-      </>
+      <ControlStateContext
+        value={{
+          ...(describedBy === "" ? {} : { describedBy }),
+          invalid: error !== null,
+        }}
+      >
+        {required ? (
+          <span className="flex min-w-0 items-start gap-1">
+            <span className="min-w-0 flex-1">{column.edit?.(row, set)}</span>
+            {/* Ink, not danger — as a field's: «still to fill» is not «wrong». */}
+            <span aria-hidden className="pt-1 text-meta text-ink">
+              *
+            </span>
+            <span id={cellId(id, column.id, "required")} className="sr-only">
+              {copy.field.required}
+            </span>
+          </span>
+        ) : (
+          column.edit?.(row, set)
+        )}
+      </ControlStateContext>
+    );
+  };
+  /* The error of a cell, under its value — read with the cell, and describing its control. */
+  const errorOf = (row: T, column: EditColumn<T>, state: EditCellState | null): ReactNode => {
+    const error = state?.error ?? null;
+    return error === null ? null : (
+      <CellError id={cellId(getRowId(row), column.id, "error")} numeric={column.numeric}>
+        {error}
+      </CellError>
     );
   };
   const underSection = useMemo(
@@ -654,6 +855,10 @@ export function EditableTable<T>({
   const [arriving, setArriving] = useState<string | null>(null);
   const addButton = useRef<HTMLButtonElement>(null);
 
+  const rowById = useMemo(
+    () => new Map(rows.map((row) => [getRowId(row), row])),
+    [rows, getRowId],
+  );
   /* La secuencia que se dibuja: montones y filas intercalados. Sin agrupado, las
      filas tal cual — una tabla que no agrupa no paga nada por poder hacerlo. */
   const drawn = useMemo<{ pile?: Pile<T>; row?: T }[]>(() => {
@@ -692,6 +897,20 @@ export function EditableTable<T>({
   }, [layout]);
   const stacked = layout === "stacked" || (layout === "auto" && narrow);
 
+  /* Past a few hundred rows only the ones in view are drawn — see `rowWindow.tsx`. Measured
+     at 2,000 lines, drawing them all cost a quarter of a second per keystroke in the row
+     being written: every row re-rendered for one letter. The window counts what is DRAWN —
+     group bands included, folded rows left out. The cards of a phone are not windowed: a
+     phone does not hold a document of two thousand lines being written. */
+  const view = useRowWindow({
+    count: stacked ? 0 : drawn.length,
+    getKey: (index) => {
+      const entry = drawn[index];
+      if (entry?.pile !== undefined) return `pile:${pathKey(entry.pile.path)}`;
+      return entry?.row === undefined ? String(index) : getRowId(entry.row);
+    },
+  });
+
   const editable = onChange !== undefined;
   /* A card that opens the consumer's form is operable even with nothing to edit in
      place: it has a tab stop, takes Enter and answers a press. */
@@ -709,7 +928,69 @@ export function EditableTable<T>({
 
   /* REORDER — a grip at the start of each row. Dragged, the row shows where it would land (a
      line over the row it goes in front of); Alt + ↑ / ↓ on the grip does the same by keyboard. */
+  /* The notes of the rows the window does not draw. A drawn row's mark registers its note
+     with the record (`NoteCard`); one scrolled out of the window would vanish from the
+     record's activity — «2 avisos» for a document that has nine. The table registers those
+     itself, and «take me there» brings the row into the window. Every render, like a
+     `NoteCard`: a drawn row's card takes over its note, and gives it back when it leaves. */
+  const registry = useContext(NoteRegistryContext);
+  const ownNotes = useRef(new Set<string>());
+  useLayoutEffect(() => {
+    if (registry === null) return;
+    const now = new Set<string>();
+    const theirs = new Set<string>();
+    if (view.on) {
+      const inWindow = new Set(
+        view.rows.flatMap((slot) => {
+          const row = drawn[slot.index]?.row;
+          return row === undefined ? [] : [getRowId(row)];
+        }),
+      );
+      for (const [index, entry] of drawn.entries()) {
+        const row = entry.row;
+        if (row === undefined || bandOf(row) !== null) continue;
+        const id = getRowId(row);
+        const said: { noteId: string; flag: EditFlag }[] = [];
+        const own = flag?.(row) ?? null;
+        if (own !== null) said.push({ noteId: rowNoteId(id), flag: own });
+        for (const column of columns) {
+          const cellFlag = stateOf(row, column)?.flag ?? null;
+          if (cellFlag !== null)
+            said.push({ noteId: cellNoteId(id, column.id), flag: cellFlag });
+        }
+        for (const one of said) {
+          if (inWindow.has(id)) {
+            theirs.add(one.noteId);
+            continue;
+          }
+          registry.put({
+            id: one.noteId,
+            note: noteOf(one.flag),
+            owner: one.flag.owner ?? plainText(columns[0]?.render(row)),
+            anchor: () => {
+              view.reveal(index);
+              return null;
+            },
+          });
+          now.add(one.noteId);
+        }
+      }
+    }
+    for (const noteId of ownNotes.current) {
+      if (!now.has(noteId) && !theirs.has(noteId)) registry.drop(noteId);
+    }
+    ownNotes.current = now;
+  });
+  useLayoutEffect(
+    () => () => {
+      for (const noteId of ownNotes.current) registry?.drop(noteId);
+    },
+    [registry],
+  );
+
   const reorderable = onReorder !== undefined && grouping === undefined && !stacked;
+  /* Every cell of a row, the grip and the trash: what a spacer row spans. */
+  const width = columns.length + (onRemove === undefined ? 0 : 1) + (reorderable ? 1 : 0);
   /* A ref and not state: `dragover` can arrive before React re-renders after `dragstart`. */
   const dragged = useRef<string | null>(null);
   const [landing, setLanding] = useState<string | null | undefined>(undefined);
@@ -765,15 +1046,33 @@ export function EditableTable<T>({
     </td>
   );
 
+  /* The focus a row is waiting for, once it is drawn: opened by the keyboard (its first or
+     last control), or reached by a jump (`Home`, `End`) past what the window draws. Every
+     render and not on `editing` alone: a row outside the window shows up a render or two
+     after it was asked for. */
+  const focusWhenDrawn = useRef<string | null>(null);
+  const indexOf = (id: string) =>
+    drawn.findIndex((entry) => entry.row !== undefined && getRowId(entry.row) === id);
   useEffect(() => {
     const target = focusOnOpen.current;
-    if (target === null || target.id !== editing) return;
-    focusOnOpen.current = null;
-    const node = rowNodes.current.get(target.id);
+    if (target !== null && target.id === editing) {
+      const node = rowNodes.current.get(target.id);
+      if (node === undefined) {
+        view.reveal(indexOf(target.id));
+        return;
+      }
+      focusOnOpen.current = null;
+      const control = target.at === "last" ? lastControl(node) : firstControl(node);
+      (control ?? node).focus();
+      return;
+    }
+    const waiting = focusWhenDrawn.current;
+    if (waiting === null) return;
+    const node = rowNodes.current.get(waiting);
     if (node === undefined) return;
-    const control = target.at === "last" ? lastControl(node) : firstControl(node);
-    (control ?? node).focus();
-  }, [editing]);
+    focusWhenDrawn.current = null;
+    node.focus();
+  });
 
   const start = (
     id: string,
@@ -786,6 +1085,11 @@ export function EditableTable<T>({
     if (opens && !added && bandOf(row) === null) {
       setActive(id);
       onOpen?.(id);
+      return;
+    }
+    /* Read, not written: the row keeps the focus and opens nothing. */
+    if (locked(row)) {
+      setActive(id);
       return;
     }
     before.current = { id, row, touched: false, added };
@@ -861,14 +1165,26 @@ export function EditableTable<T>({
   const tabOut = (from: string, direction: "next" | "prev"): boolean => {
     const was = before.current;
     const blank = was !== null && was.id === from && was.added && !was.touched;
-    const target = tabTarget(order, from, direction, { canAdd: onAdd !== undefined, blank });
+    /* `Tab` walks the rows that can be written: a locked one is passed over, as a
+       read-only field is in a form. */
+    const writable =
+      rowState === undefined
+        ? order
+        : order.filter((id) => {
+            const row = rowById.get(id);
+            return id === from || row === undefined || !locked(row);
+          });
+    const target = tabTarget(writable, from, direction, {
+      canAdd: onAdd !== undefined,
+      blank,
+    });
     if (target.kind === "leave") return false;
     commit(from, false);
     if (target.kind === "add") {
       add();
       return true;
     }
-    const row = rows.find((r) => getRowId(r) === target.id);
+    const row = rowById.get(target.id);
     if (row === undefined) return false;
     start(target.id, row, true, { at: direction === "next" ? "first" : "last" });
     return true;
@@ -911,7 +1227,13 @@ export function EditableTable<T>({
     const id = order[to];
     if (id === undefined) return;
     setActive(id);
-    rowNodes.current.get(id)?.focus();
+    const node = rowNodes.current.get(id);
+    if (node !== undefined) {
+      node.focus();
+      return;
+    }
+    focusWhenDrawn.current = id;
+    view.reveal(indexOf(id));
   };
 
   /* ── the stacked list: one card per row, below `--container-handheld` ── */
@@ -928,7 +1250,9 @@ export function EditableTable<T>({
     const id = getRowId(row);
     const isEditing = editing === id;
     const set = setter(id);
-    const parts = details.flatMap((c) => {
+    const states = new Map(columns.map((c) => [c.id, stateOf(row, c)]));
+    const shown = (c: EditColumn<T>) => states.get(c.id)?.hidden !== true;
+    const parts = details.filter(shown).flatMap((c) => {
       const said = c.brief === undefined ? null : c.brief(row);
       if (c.brief !== undefined) return says(said) ? [{ id: c.id, node: said }] : [];
       return [
@@ -942,7 +1266,14 @@ export function EditableTable<T>({
         },
       ];
     });
-    const controls = editable && isEditing ? columns.filter((c) => c.edit !== undefined) : [];
+    const controls = isEditing
+      ? columns.filter((c) => writes(row, c, states.get(c.id) ?? null))
+      : [];
+    /* The errors of the cells that are not a control right now: under the card. A control
+       carries its own, under it. */
+    const loose = columns.filter(
+      (c) => !controls.includes(c) && (states.get(c.id)?.error ?? null) !== null,
+    );
     return (
       <EditRow
         key={id}
@@ -951,19 +1282,28 @@ export function EditableTable<T>({
         className={`group/row flex min-w-0 flex-col gap-1 rounded-control border-b border-line ${pad} ${
           isEditing ? "bg-primary/5" : "hover:bg-ink/4"
         } ${operable ? RING : ""} ${
-          operable && !isEditing ? (opens ? "cursor-pointer" : "cursor-text") : ""
+          operable && !isEditing
+            ? opens
+              ? "cursor-pointer"
+              : locked(row)
+                ? ""
+                : "cursor-text"
+            : ""
         }`}
       >
         <div className="flex min-w-0 items-start gap-2">
           {flagOf(row)}
+          {columns.map((c) => (
+            <Fragment key={c.id}>{cellFlagOf(row, c, states.get(c.id) ?? null)}</Fragment>
+          ))}
           <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-meta text-ink">
-            {titles.map((c) => (
+            {titles.filter(shown).map((c) => (
               <div key={c.id} className="min-w-0">
                 {c.render(row)}
               </div>
             ))}
           </div>
-          {trails.map((c) => (
+          {trails.filter(shown).map((c) => (
             <div key={c.id} className="shrink-0">
               {c.render(row)}
             </div>
@@ -991,7 +1331,7 @@ export function EditableTable<T>({
                 </Fragment>
               ))}
             </span>
-            {amounts.map((c) => (
+            {amounts.filter(shown).map((c) => (
               /* The amount is read by its figure on screen and by its name aloud: a
                  lone «Bs. 1.296,00» at the end of a card does not say what it is. */
               <span
@@ -1019,8 +1359,20 @@ export function EditableTable<T>({
                 <span aria-hidden="true" className="text-micro text-muted">
                   {c.header}
                 </span>
-                {c.edit?.(row, set)}
+                {controlOf(row, c, states.get(c.id) ?? null, set)}
+                {errorOf(row, c, states.get(c.id) ?? null)}
               </div>
+            ))}
+          </div>
+        )}
+
+        {loose.length === 0 ? null : (
+          /* Under a card there is no column to stand under: each error says its column. */
+          <div className="flex flex-col">
+            {loose.map((c) => (
+              <CellError key={c.id} id={cellId(id, c.id, "error")}>
+                {c.header}: {states.get(c.id)?.error}
+              </CellError>
             ))}
           </div>
         )}
@@ -1145,9 +1497,16 @@ export function EditableTable<T>({
         {stacked ? (
           list
         ) : (
-          <table className="w-full border-separate border-spacing-0 px-1 text-left">
+          <table
+            className="w-full border-separate border-spacing-0 px-1 text-left"
+            /* Windowed, the table says how many rows it really has: the header, every row
+               drawn or not, and the footer. */
+            {...(view.on
+              ? { "aria-rowcount": 1 + drawn.length + (totals === undefined ? 0 : 1) }
+              : {})}
+          >
             <thead className="sticky z-10 bg-ground" style={stickyTop}>
-              <tr>
+              <tr {...(view.on ? { "aria-rowindex": 1 } : {})}>
                 {reorderable ? <td className="w-0 border-b border-line-strong" /> : null}
                 {/* A column of buttons has no header: its top is a cell, not an empty one. */}
                 {columns.map((c) =>
@@ -1176,6 +1535,7 @@ export function EditableTable<T>({
             </thead>
 
             <tbody
+              ref={view.body.ref}
               {...(reorderable
                 ? {
                     onDragOver: overRow,
@@ -1203,17 +1563,30 @@ export function EditableTable<T>({
                   </td>
                 </tr>
               ) : (
-                drawn.map((entry) => {
+                view.rows.flatMap((slot, at) => {
+                  const entry = drawn[slot.index];
+                  if (entry === undefined) return [];
+                  const windowed = view.windowed(slot.index);
+                  /* What is not drawn is a spacer of its height: the rows above the window
+                     before the first, and the gap before a row kept only because it holds
+                     the focus. */
+                  const gap = view.pad(
+                    at === 0 ? 0 : view.rows[at - 1]!.end,
+                    slot.start,
+                    width,
+                    `gap:${slot.index}`,
+                  );
                   if (entry.pile !== undefined) {
                     const pile = entry.pile;
                     const inside =
                       pile.piles.length === 0 ? pile.items : pileItems(pile.piles);
-                    return (
+                    return [
+                      gap,
                       /* La banda respeta la cuadrícula: el rótulo en la primera
                        columna y cada total bajo la suya. Un total en un rincón
                        obliga a buscar de qué columna es; alineado no hay nada que
                        buscar. */
-                      <tr key={`pile:${pathKey(pile.path)}`}>
+                      <tr key={`pile:${pathKey(pile.path)}`} {...windowed}>
                         {reorderable ? <td className="w-0 bg-ground" /> : null}
                         {columns.map((c, ci) => (
                           <td
@@ -1235,8 +1608,8 @@ export function EditableTable<T>({
                           </td>
                         ))}
                         {onRemove === undefined ? null : <td className="w-0 bg-ground" />}
-                      </tr>
-                    );
+                      </tr>,
+                    ];
                   }
                   const row = entry.row as T;
                   const id = getRowId(row);
@@ -1251,11 +1624,13 @@ export function EditableTable<T>({
                         : "group-hover/row:bg-ink/4";
                     const bandMark = `border-b border-line first:rounded-l-control last:rounded-r-control ${bandWash}`;
                     const control = isEditing && editable && bands?.edit !== undefined;
-                    return (
+                    return [
+                      gap,
                       <EditRow
                         key={id}
                         as="tr"
                         {...rowWiring(id, row)}
+                        windowed={windowed}
                         className={`group/row ${editable ? RING : ""} ${
                           editable && !isEditing ? "cursor-text" : ""
                         }`}
@@ -1301,31 +1676,41 @@ export function EditableTable<T>({
                             </span>
                           </td>
                         )}
-                      </EditRow>
-                    );
+                      </EditRow>,
+                    ];
                   }
                   /* The wash lives on the cells. A background on the row paints
                    edge to edge, and `border-collapse` would ignore a radius. */
                   const wash = isEditing ? "bg-primary/5" : "group-hover/row:bg-ink/4";
                   const mark = `border-b border-line first:rounded-l-control last:rounded-r-control ${wash}`;
                   const set = setter(id);
-                  return (
+                  return [
+                    gap,
                     <EditRow
                       key={id}
                       as="tr"
                       {...rowWiring(id, row)}
+                      windowed={windowed}
                       /* The focus ring is drawn on the row, inset, so it is not cut by
                        the box and does not move the cells. */
                       className={`group/row ${editable ? RING : ""} ${
-                        editable && !isEditing ? "cursor-text" : ""
+                        editable && !isEditing && !locked(row) ? "cursor-text" : ""
                       }`}
                     >
                       {reorderable ? grip(id, mark) : null}
                       {columns.map((c, ci) => {
-                        const control = isEditing && c.edit !== undefined && editable;
+                        const state = stateOf(row, c);
+                        const control = isEditing && writes(row, c, state);
                         /* Not `mark`: that name is the row's border and wash, above. Shadowed,
                            the cells were drawn with the class «null» — no hairline, no hover. */
                         const flagged = ci === 0 ? flagOf(row, true) : null;
+                        const cellFlag = cellFlagOf(row, c, state, true);
+                        const value =
+                          state?.hidden === true
+                            ? null
+                            : control
+                              ? controlOf(row, c, state, set)
+                              : c.render(row);
                         return (
                           <td
                             key={c.id}
@@ -1334,20 +1719,16 @@ export function EditableTable<T>({
                               c.numeric === true ? "text-right tabular-nums" : ""
                             }`}
                           >
-                            {flagged === null ? (
-                              control ? (
-                                c.edit?.(row, set)
-                              ) : (
-                                c.render(row)
-                              )
+                            {flagged === null && cellFlag === null ? (
+                              value
                             ) : (
                               <span className="flex min-w-0 items-start gap-1.5">
                                 {flagged}
-                                <span className="min-w-0 flex-1">
-                                  {control ? c.edit?.(row, set) : c.render(row)}
-                                </span>
+                                {cellFlag}
+                                <span className="min-w-0 flex-1">{value}</span>
                               </span>
                             )}
+                            {errorOf(row, c, state)}
                           </td>
                         );
                       })}
@@ -1374,10 +1755,11 @@ export function EditableTable<T>({
                           </span>
                         </td>
                       )}
-                    </EditRow>
-                  );
+                    </EditRow>,
+                  ];
                 })
               )}
+              {rows.length === 0 ? null : view.tail(width)}
             </tbody>
 
             {totals === undefined ? null : (

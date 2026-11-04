@@ -34,31 +34,35 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 
 ## 2. Una colección de registros
 
-| Necesidad                                                                          | Estado   | Pieza / dueño                                                                |
-| ---------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------- |
-| Filas, tabla, tablero, planilla, informe, pivote                                   | ✅       | `List.*`                                                                     |
-| Solo lectura vs. abrible; vista previa 👁 y abrir ↗                                 | ✅ 10-31 | `List readOnly`, `onPeek`, `onOpen`                                          |
-| Encabezado de filas alineado al píxel                                              | ✅ 10-31 | `List.Rows header`                                                           |
-| Lista embebida con título cuando está suelta                                       | ✅ 10-31 | `List.Identity` en `embedded`                                                |
-| Tablero POR ETAPAS con arrastrar entre columnas                                    | ✅ 10-31 | `List.Board stages` (`BoardColumns`), Alt + ← / →                            |
-| Reordenar filas arrastrando (secuencia)                                            | ✅ 10-31 | `EditableTable` / `LineItems` `onReorder`                                    |
-| Elegir «los 187 que coinciden», no solo la página                                  | ✅ 10-31 | `selection.matching`                                                         |
-| Vista calendario de registros                                                      | ✅ 10-31 | `List.Calendar` (`RecordCalendar`, FullCalendar v7)                          |
-| Gantt de proyecto (tareas, dependencias, avance)                                   | ✅ 10-31 | `List.Gantt` (`RecordGantt`, SVAR)                                           |
-| Planificación agrupada (el «Gantt» de Odoo)                                        | ✅ 10-31 | `List.Timeline` (`RecordTimeline`), `TimelineToolbar`                        |
-| Kanban: crear rápido, total, barra de actividades, plegar, agregar etapa           | ✅ 10-31 | `List.Board stages`                                                          |
-| Calendario por recurso, planificación automática, ruta crítica                     | 💲       | licencia: FullCalendar scheduler / SVAR PRO                                  |
-| Exportar lo que se ve (xlsx)                                                       | ✅       | `foundations/xlsx`                                                           |
-| Una presentación propia (mapa, galería, plano) con el mismo conjunto               | ✅ 11-03 | `List.Present` (`ListSet`: orden, montones, selección)                       |
-| Una operación sobre N registros elegidos (el «wizard» de Odoo)                     | ✅ 11-03 | `5 · Plantillas/Operación`: `Record` en modal + `api.pick`                   |
-| Una operación en VARIOS pasos de una sentada (importar: subir › mapear › revisar)  | ❌       | web-ui: falta la pieza; `Steps` es para trabajo de días                      |
-| Miles de filas en la tabla: dibuja sólo las que se ven (desde 200)                 | ✅ 11-03 | `DataTable` (`primitives/table/rowWindow`)                                   |
-| La tabla dibuja los montones que contó el servidor, con «Ver N más»                | ✅ 11-03 | `DataTable piles`, `Grouping.onMore` (filas, tablero, tabla, `ListSet.more`) |
-| «Ver más» de un montón dice lo que trae («Ver 50 más de 49.950») y para en el tope | ✅ 11-03 | `Pile.more`, `pileFoot`, `PileFootLine` (filas, tablero, tabla, propias)     |
-| Una tarjeta propia del tablero abre como la del sistema                            | ✅ 11-03 | `List.Board card(item, ways)` (`CardWays`, como `ListSet`)                   |
-| Volver a preguntar sin que las filas desaparezcan                                  | ✅ 11-03 | `List state.refreshing`: las filas quedan, una barra discreta y `aria-busy`  |
-| La tarjeta de una persona dibuja su cara                                           | ✅ 11-03 | `RecordCard media.person`, como `RelationCard`                               |
-| Varios conjuntos a la vez (la conciliación), cada uno con su búsqueda              | ✅ 11-03 | `Panes` / `Pane`; `5 · Plantillas/Conciliación`                              |
+| Necesidad                                                                            | Estado   | Pieza / dueño                                                                  |
+| ------------------------------------------------------------------------------------ | -------- | ------------------------------------------------------------------------------ |
+| Filas, tabla, tablero, planilla, informe, pivote                                     | ✅       | `List.*`                                                                       |
+| Solo lectura vs. abrible; vista previa 👁 y abrir ↗                                   | ✅ 10-31 | `List readOnly`, `onPeek`, `onOpen`                                            |
+| Encabezado de filas alineado al píxel                                                | ✅ 10-31 | `List.Rows header`                                                             |
+| Lista embebida con título cuando está suelta                                         | ✅ 10-31 | `List.Identity` en `embedded`                                                  |
+| Tablero POR ETAPAS con arrastrar entre columnas                                      | ✅ 10-31 | `List.Board stages` (`BoardColumns`), Alt + ← / →                              |
+| Reordenar filas arrastrando (secuencia)                                              | ✅ 10-31 | `EditableTable` / `LineItems` `onReorder`                                      |
+| Estado por celda y por línea (readonly, required, hidden), como lo manda el servidor | ✅ 11-03 | `EditableTable` / `LineItems` `cellState`, `rowState`                          |
+| Error por celda: debajo del valor, `aria-invalid` y `aria-describedby` en su control | ✅ 11-03 | `EditCellState.error` + `ControlStateContext` (contrato de `foundations/form`) |
+| Aviso sobre UN valor de la línea, en su celda                                        | ✅ 11-03 | `EditCellState.flag` (el de la línea sigue siendo `flag`)                      |
+| 2.000 líneas escribiéndose sin trabarse (36 ms por tecla; antes 273)                 | ✅ 11-03 | `EditableTable` con `rowWindow` desde 200 filas; `reveal` para `Home`/`End`    |
+| Elegir «los 187 que coinciden», no solo la página                                    | ✅ 10-31 | `selection.matching`                                                           |
+| Vista calendario de registros                                                        | ✅ 10-31 | `List.Calendar` (`RecordCalendar`, FullCalendar v7)                            |
+| Gantt de proyecto (tareas, dependencias, avance)                                     | ✅ 10-31 | `List.Gantt` (`RecordGantt`, SVAR)                                             |
+| Planificación agrupada (el «Gantt» de Odoo)                                          | ✅ 10-31 | `List.Timeline` (`RecordTimeline`), `TimelineToolbar`                          |
+| Kanban: crear rápido, total, barra de actividades, plegar, agregar etapa             | ✅ 10-31 | `List.Board stages`                                                            |
+| Calendario por recurso, planificación automática, ruta crítica                       | 💲       | licencia: FullCalendar scheduler / SVAR PRO                                    |
+| Exportar lo que se ve (xlsx)                                                         | ✅       | `foundations/xlsx`                                                             |
+| Una presentación propia (mapa, galería, plano) con el mismo conjunto                 | ✅ 11-03 | `List.Present` (`ListSet`: orden, montones, selección)                         |
+| Una operación sobre N registros elegidos (el «wizard» de Odoo)                       | ✅ 11-03 | `5 · Plantillas/Operación`: `Record` en modal + `api.pick`                     |
+| Una operación en VARIOS pasos de una sentada (importar: subir › mapear › revisar)    | ❌       | web-ui: falta la pieza; `Steps` es para trabajo de días                        |
+| Miles de filas en la tabla: dibuja sólo las que se ven (desde 200)                   | ✅ 11-03 | `DataTable` (`primitives/table/rowWindow`)                                     |
+| La tabla dibuja los montones que contó el servidor, con «Ver N más»                  | ✅ 11-03 | `DataTable piles`, `Grouping.onMore` (filas, tablero, tabla, `ListSet.more`)   |
+| «Ver más» de un montón dice lo que trae («Ver 50 más de 49.950») y para en el tope   | ✅ 11-03 | `Pile.more`, `pileFoot`, `PileFootLine` (filas, tablero, tabla, propias)       |
+| Una tarjeta propia del tablero abre como la del sistema                              | ✅ 11-03 | `List.Board card(item, ways)` (`CardWays`, como `ListSet`)                     |
+| Volver a preguntar sin que las filas desaparezcan                                    | ✅ 11-03 | `List state.refreshing`: las filas quedan, una barra discreta y `aria-busy`    |
+| La tarjeta de una persona dibuja su cara                                             | ✅ 11-03 | `RecordCard media.person`, como `RelationCard`                                 |
+| Varios conjuntos a la vez (la conciliación), cada uno con su búsqueda                | ✅ 11-03 | `Panes` / `Pane`; `5 · Plantillas/Conciliación`                                |
 
 ## 3. Elegir y buscar
 

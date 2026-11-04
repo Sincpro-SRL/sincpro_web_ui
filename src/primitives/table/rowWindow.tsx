@@ -112,6 +112,9 @@ export function useRowWindow({
   pad: (from: number, to: number, columns: number, key: string) => ReactNode;
   /** The spacer after the last drawn row. */
   tail: (columns: number) => ReactNode;
+  /** Scrolls row `index` into the window, so it gets drawn — for a jump past what is drawn
+   *  (`Home`, `End`, «take me to it»). Nothing when the window is off: every row is there. */
+  reveal: (index: number) => void;
 } {
   const on = count >= WINDOW_FROM;
   const body = useRef<HTMLTableSectionElement>(null);
@@ -211,6 +214,9 @@ export function useRowWindow({
       if (!on) return null;
       const end = rows.length === 0 ? 0 : rows[rows.length - 1]!.end;
       return spacer(total - end, columns, "\u0000tail");
+    },
+    reveal: (index) => {
+      if (on && scroller !== null) v.scrollToIndex(index, { align: "auto" });
     },
   };
 }
