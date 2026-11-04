@@ -15,10 +15,12 @@ export {
 } from "@sincpro/web-ui/components/listing/ColumnsMenu";
 export { Listing } from "@sincpro/web-ui/components/listing/Listing";
 export { type ListIdentity, ListingBar } from "@sincpro/web-ui/components/listing/ListingBar";
+export { type ModelCellKind } from "@sincpro/web-ui/components/listing/modelCells";
 export {
   type ClaimedField,
   claimedFields,
   columnsFromModel,
+  modelCellKind,
   readModelValue,
 } from "@sincpro/web-ui/components/listing/modelColumns";
 export {

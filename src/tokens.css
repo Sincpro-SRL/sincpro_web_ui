@@ -1237,3 +1237,106 @@
   writing-mode: vertical-rl;
   transform: rotate(180deg);
 }
+
+/* ==================================================================== *
+ *  RICH TEXT — the HTML of a note, a description, an email body.
+ *
+ *  The SAME rules for the editor (`RichTextInput`, Tiptap) and for reading it
+ *  (`RichTextValue`): what is written is what is read, to the line. HTML that
+ *  arrives from an engine (Odoo `html` fields) has no classes, so the look is
+ *  given by the element — and only with tokens, so it follows the theme.
+ * ==================================================================== */
+@utility rich-text {
+  font-size: var(--text-meta);
+  line-height: var(--text-meta--line-height);
+  color: var(--color-ink);
+  overflow-wrap: anywhere;
+  & > * + * {
+    margin-top: calc(var(--spacing) * 2);
+  }
+  & h2 {
+    font-size: var(--text-lead);
+    line-height: var(--text-lead--line-height);
+    font-weight: 600;
+  }
+  & h3 {
+    font-size: var(--text-body);
+    line-height: var(--text-body--line-height);
+    font-weight: 600;
+  }
+  & ul {
+    list-style: disc;
+    padding-left: calc(var(--spacing) * 5);
+  }
+  & ol {
+    list-style: decimal;
+    padding-left: calc(var(--spacing) * 5);
+  }
+  & li > p {
+    margin: 0;
+  }
+  & blockquote {
+    border-left: calc(var(--spacing) * 0.5) solid var(--color-line-strong);
+    padding-left: calc(var(--spacing) * 3);
+    color: var(--color-muted);
+  }
+  & a {
+    color: var(--color-primary);
+    text-decoration: underline;
+    text-underline-offset: calc(var(--spacing) * 0.5);
+  }
+  & code {
+    font-family: var(--font-mono);
+    background: color-mix(in oklab, var(--color-ink) 6%, transparent);
+    border-radius: var(--radius-mark);
+    padding: 0 calc(var(--spacing) * 1);
+  }
+  & pre {
+    font-family: var(--font-mono);
+    background: color-mix(in oklab, var(--color-ink) 6%, transparent);
+    border-radius: var(--radius-control);
+    padding: calc(var(--spacing) * 2) calc(var(--spacing) * 3);
+    overflow-x: auto;
+  }
+  & pre code {
+    background: none;
+    padding: 0;
+  }
+  & hr {
+    border: none;
+    border-top: calc(var(--spacing) * 0.25) solid var(--color-line);
+  }
+  & table {
+    border-collapse: collapse;
+    width: 100%;
+  }
+  & th,
+  & td {
+    border: calc(var(--spacing) * 0.25) solid var(--color-line-strong);
+    padding: calc(var(--spacing) * 1) calc(var(--spacing) * 2);
+    text-align: left;
+    vertical-align: top;
+  }
+  & th {
+    font-weight: 600;
+    background: var(--color-ground);
+  }
+  /* A person named in the text: the same tint as a link, so it reads as «someone», and a
+     box so it is one thing that is deleted at once. */
+  & [data-type="mention"] {
+    color: var(--color-primary);
+    background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+    border-radius: var(--radius-mark);
+    padding: 0 calc(var(--spacing) * 0.5);
+  }
+  & p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: var(--color-muted);
+    float: left;
+    height: 0;
+    pointer-events: none;
+  }
+  & .selectedCell {
+    background: color-mix(in oklab, var(--color-primary) 10%, transparent);
+  }
+}

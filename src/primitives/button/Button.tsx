@@ -361,8 +361,10 @@ const TONE: Record<IconTone, Record<Surface, string>> = {
   },
 };
 
+/* `aria-pressed` is a TOGGLE's state — bold on, a filter applied: it reads as the action
+   tint, the same as a chosen option, so «on» is seen and not only heard. */
 const BOX =
-  "inline-flex shrink-0 items-center justify-center rounded-pill transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary";
+  "inline-flex shrink-0 items-center justify-center rounded-pill transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary aria-pressed:bg-primary/12 aria-pressed:text-primary";
 
 const SQUARE: Record<ButtonSize, string> = {
   sm: "size-(--size-control-sm)",

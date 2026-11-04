@@ -7,30 +7,30 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 
 ## 1. Un registro
 
-| Necesidad                                                                | Estado   | Pieza / dueño                                                                 |
-| ------------------------------------------------------------------------ | -------- | ----------------------------------------------------------------------------- |
-| Identidad, riel, migas, paginador, acciones, etapas                      | ✅       | `Record`, `Record.Rail`, `StatusBar`                                          |
-| Barra y hoja en una sola columna; ancho completo                         | ✅ 10-31 | `Record.Paper width`                                                          |
-| Jerarquía: título › grupo › etiqueta › valor                             | ✅ 10-31 | `SheetGroup` (título con regla), `HEADER_TEXT`                                |
-| Lo que el registro ES (pagada, archivada, cancelada)                     | ✅ 10-31 | `Record.Ribbon`                                                               |
-| Editar sin `Record.Actions` no pierde el foco                            | ✅ 11-03 | `RecordHeader`: `dirty` ya no decide el papel                                 |
-| Qué cambió, mientras se edita: marca por campo y «2 cambios sin guardar» | ✅ 11-03 | `Field changed`, `DirtyState.changes`                                         |
-| Guardar sin perder el foco ni guardar dos veces                          | ✅ 11-03 | `Button busy` (en `DirtyActions`); al terminar, el foco vuelve al nombre      |
-| Saber que se guardó, sin que la app lo escriba                           | ✅ 11-03 | «✓ Guardado» en el riel (`useJustSaved`, región `status`)                     |
-| Por qué no se puede guardar, a la vista y no en un `title`               | ✅ 11-03 | `DirtyState.blocked` en lugar de «sin guardar», y describe el botón           |
-| El foco se ve llegar y la etiqueta lo acompaña                           | ✅ 11-03 | `focus-in` (sólo con movimiento permitido), `Field` con `focus-within`        |
-| Una carga rápida no destella un esqueleto                                | ✅ 11-03 | `animate-reveal-late` (aparece a los 200 ms) en `Skeleton` y `RecordSkeleton` |
-| Un hecho largo (un email) no pisa al de al lado                          | ✅ 11-03 | `Sheet` (`wrap-anywhere`); la densidad la da `DensityProvider`                |
-| Quién lo creó y quién lo tocó por última vez                             | ✅ 10-31 | `Record.Audit`                                                                |
-| Avisos, notas de campo, actividad, historia                              | ✅       | `Record.Notice`, `note`, `Record.Activity`                                    |
-| Abrir un registro desde otro (sub-contexto)                              | ✅       | composer (modal, vista previa, al costado, página)                            |
-| Prioridad (estrellas)                                                    | ✅ 10-31 | `Priority`                                                                    |
-| Estado kanban (semáforo) editable                                        | ✅ 10-31 | `KanbanState`                                                                 |
-| Próxima actividad en la tarjeta (reloj por urgencia)                     | ✅ 10-31 | `ActivityBadge`                                                               |
-| Campo de texto enriquecido (html)                                        | ❌       | web-ui (necesita decidir editor: Tiptap/Lexical)                              |
-| Adjuntos del registro (lista, vista previa, bajar)                       | 🟡       | `DropZone` sube; falta `Attachments` que liste                                |
-| Imagen / avatar editable                                                 | 🟡       | `Thumb`, `Avatar` muestran; falta subir y recortar                            |
-| Firma                                                                    | ❌       | web-ui, baja prioridad                                                        |
+| Necesidad                                                                | Estado   | Pieza / dueño                                                                      |
+| ------------------------------------------------------------------------ | -------- | ---------------------------------------------------------------------------------- |
+| Identidad, riel, migas, paginador, acciones, etapas                      | ✅       | `Record`, `Record.Rail`, `StatusBar`                                               |
+| Barra y hoja en una sola columna; ancho completo                         | ✅ 10-31 | `Record.Paper width`                                                               |
+| Jerarquía: título › grupo › etiqueta › valor                             | ✅ 10-31 | `SheetGroup` (título con regla), `HEADER_TEXT`                                     |
+| Lo que el registro ES (pagada, archivada, cancelada)                     | ✅ 10-31 | `Record.Ribbon`                                                                    |
+| Editar sin `Record.Actions` no pierde el foco                            | ✅ 11-03 | `RecordHeader`: `dirty` ya no decide el papel                                      |
+| Qué cambió, mientras se edita: marca por campo y «2 cambios sin guardar» | ✅ 11-03 | `Field changed`, `DirtyState.changes`                                              |
+| Guardar sin perder el foco ni guardar dos veces                          | ✅ 11-03 | `Button busy` (en `DirtyActions`); al terminar, el foco vuelve al nombre           |
+| Saber que se guardó, sin que la app lo escriba                           | ✅ 11-03 | «✓ Guardado» en el riel (`useJustSaved`, región `status`)                          |
+| Por qué no se puede guardar, a la vista y no en un `title`               | ✅ 11-03 | `DirtyState.blocked` en lugar de «sin guardar», y describe el botón                |
+| El foco se ve llegar y la etiqueta lo acompaña                           | ✅ 11-03 | `focus-in` (sólo con movimiento permitido), `Field` con `focus-within`             |
+| Una carga rápida no destella un esqueleto                                | ✅ 11-03 | `animate-reveal-late` (aparece a los 200 ms) en `Skeleton` y `RecordSkeleton`      |
+| Un hecho largo (un email) no pisa al de al lado                          | ✅ 11-03 | `Sheet` (`wrap-anywhere`); la densidad la da `DensityProvider`                     |
+| Quién lo creó y quién lo tocó por última vez                             | ✅ 10-31 | `Record.Audit`                                                                     |
+| Avisos, notas de campo, actividad, historia                              | ✅       | `Record.Notice`, `note`, `Record.Activity`                                         |
+| Abrir un registro desde otro (sub-contexto)                              | ✅       | composer (modal, vista previa, al costado, página)                                 |
+| Prioridad (estrellas)                                                    | ✅ 10-31 | `Priority`                                                                         |
+| Estado kanban (semáforo) editable                                        | ✅ 10-31 | `KanbanState`                                                                      |
+| Próxima actividad en la tarjeta (reloj por urgencia)                     | ✅ 10-31 | `ActivityBadge`                                                                    |
+| Campo de texto enriquecido (html)                                        | ✅ 11-04 | `RichTextInput` (Tiptap v3, se carga al editar), `RichTextValue` (DOMPurify)       |
+| Adjuntos del registro (lista, vista previa, bajar)                       | ✅ 11-04 | `Attachments` (`components/attachments`): subir, abrir, bajar, quitar con deshacer |
+| Imagen / avatar editable                                                 | ✅ 11-04 | `ImageInput` (elegir/soltar/pegar, recorte con teclado)                            |
+| Firma                                                                    | ✅ 11-04 | `SignatureInput` (dibujar, o escribir el nombre)                                   |
 
 ## 2. Una colección de registros
 
@@ -55,7 +55,7 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 | Exportar lo que se ve (xlsx)                                                         | ✅       | `foundations/xlsx`                                                             |
 | Una presentación propia (mapa, galería, plano) con el mismo conjunto                 | ✅ 11-03 | `List.Present` (`ListSet`: orden, montones, selección)                         |
 | Una operación sobre N registros elegidos (el «wizard» de Odoo)                       | ✅ 11-03 | `5 · Plantillas/Operación`: `Record` en modal + `api.pick`                     |
-| Una operación en VARIOS pasos de una sentada (importar: subir › mapear › revisar)    | ❌       | web-ui: falta la pieza; `Steps` es para trabajo de días                        |
+| Una operación en VARIOS pasos de una sentada (importar: subir › mapear › revisar)    | ✅ 11-04 | `StepFlow` (`components/flow`); `5 · Plantillas/Importar`                      |
 | Miles de filas en la tabla: dibuja sólo las que se ven (desde 200)                   | ✅ 11-03 | `DataTable` (`primitives/table/rowWindow`)                                     |
 | La tabla dibuja los montones que contó el servidor, con «Ver N más»                  | ✅ 11-03 | `DataTable piles`, `Grouping.onMore` (filas, tablero, tabla, `ListSet.more`)   |
 | «Ver más» de un montón dice lo que trae («Ver 50 más de 49.950») y para en el tope   | ✅ 11-03 | `Pile.more`, `pileFoot`, `PileFootLine` (filas, tablero, tabla, propias)       |
@@ -69,23 +69,25 @@ los datos). Lo marcado ✅ con fecha se hizo en la ronda del 2026-10-31.
 Cada control escribe y se lee igual: en edición pide el valor como la gente lo escribe, en
 lectura (`mode="read"`) lo dibuja como dato, en el idioma de la copia.
 
-| Necesidad                                                                                   | Estado   | Pieza                                                                    |
-| ------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ |
-| Monto con moneda, porcentaje, número con unidad, decimales fijos (editar y leer)            | ✅       | `NumberInput format/unit/step`                                           |
-| El mismo formato fuera del formulario (celda, cifra), en el idioma del `UiCopyProvider`     | ✅ 11-04 | `Numeric format={Intl.NumberFormatOptions}`, `formatWith`                |
-| Un campo `monetary`/`float`/`decimal` del modelo es columna numérica, alineada y formateada | ✅ 11-04 | `columnsFromModel`, `isNumericType`                                      |
-| Contraseña: ojo para mostrar, aviso de Bloq Mayús, nunca visible en lectura                 | ✅ 11-04 | `PasswordInput`                                                          |
-| Número de tarjeta: grupos por marca, marca, Luhn, cursor estable, `•••• 4242` en lectura    | ✅ 11-04 | `CardNumberInput`, `card.ts` (`isValidCardNumber`, `cardBrand`…)         |
-| Ordenar por varios campos: Mayús+clic en encabezados y panel en la barra (arrastrar)        | ✅ 11-04 | `sort: SortState[]`, `Th`, `SortMenu` (`GridList` + `useDragAndDrop`)    |
-| Correo, teléfono, web: teclado y autocompletar correctos; en lectura, un enlace             | ✅ 11-04 | `EmailInput`, `PhoneInput`, `UrlInput` (+ `isEmail`, `isUrl`, `urlHref`) |
-| Tarjeta completa: vencimiento MM/AA (no vencida) y código de seguridad (3/4 por marca)      | ✅ 11-04 | `CardExpiryInput`, `CardCodeInput` (+ `isExpiryValid`, `cardCodeLength`) |
-| Duración en horas («8:30» ↔ 8,5 h), como el `float_time` de Odoo                            | ✅ 11-04 | `DurationInput`, `formatDuration`, `parseDuration`                       |
-| Elegir la unidad o la moneda en la misma caja del número (kg / t, Bs / USD)                 | ✅ 11-04 | `NumberInput units` (nombrado por su campo)                              |
-| Redondeo explícito: al múltiplo (0,05 de caja, la precisión de la unidad), y cómo           | ✅ 11-04 | `roundTo(value, increment, method)`; `NumberInput`/`Numeric` `rounding`  |
-| Un identificador con máscara (NIT, CI, cuenta bancaria, IBAN) con el cursor estable         | ✅ 11-04 | `PatternInput`, `isPatternComplete` (cursor compartido: `mask.ts`)       |
-| Código de verificación de N dígitos (OTP), pegado entero                                    | ✅ 11-04 | `CodeInput` (un solo campo, `one-time-code`)                             |
-| Un monto con signo que se lee: negativos en rojo con su signo, contable entre paréntesis    | ✅ 11-04 | `Numeric signed`                                                         |
-| Color: paleta de etiquetas (el índice de color de Odoo) y hex                               | ✅ 11-04 | `ColorInput` (React Aria `ColorField` + `ColorSwatchPicker`)             |
+| Necesidad                                                                                          | Estado   | Pieza                                                                    |
+| -------------------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ |
+| Monto con moneda, porcentaje, número con unidad, decimales fijos (editar y leer)                   | ✅       | `NumberInput format/unit/step`                                           |
+| El mismo formato fuera del formulario (celda, cifra), en el idioma del `UiCopyProvider`            | ✅ 11-04 | `Numeric format={Intl.NumberFormatOptions}`, `formatWith`                |
+| Un campo `monetary`/`float`/`decimal` del modelo es columna numérica, alineada y formateada        | ✅ 11-04 | `columnsFromModel`, `isNumericType`                                      |
+| Contraseña: ojo para mostrar, aviso de Bloq Mayús, nunca visible en lectura                        | ✅ 11-04 | `PasswordInput`                                                          |
+| Número de tarjeta: grupos por marca, marca, Luhn, cursor estable, `•••• 4242` en lectura           | ✅ 11-04 | `CardNumberInput`, `card.ts` (`isValidCardNumber`, `cardBrand`…)         |
+| Ordenar por varios campos: Mayús+clic en encabezados y panel en la barra (arrastrar)               | ✅ 11-04 | `sort: SortState[]`, `Th`, `SortMenu` (`GridList` + `useDragAndDrop`)    |
+| Correo, teléfono, web: teclado y autocompletar correctos; en lectura, un enlace                    | ✅ 11-04 | `EmailInput`, `PhoneInput`, `UrlInput` (+ `isEmail`, `isUrl`, `urlHref`) |
+| Tarjeta completa: vencimiento MM/AA (no vencida) y código de seguridad (3/4 por marca)             | ✅ 11-04 | `CardExpiryInput`, `CardCodeInput` (+ `isExpiryValid`, `cardCodeLength`) |
+| Duración en horas («8:30» ↔ 8,5 h), como el `float_time` de Odoo                                   | ✅ 11-04 | `DurationInput`, `formatDuration`, `parseDuration`                       |
+| Elegir la unidad o la moneda en la misma caja del número (kg / t, Bs / USD)                        | ✅ 11-04 | `NumberInput units` (nombrado por su campo)                              |
+| Redondeo explícito: al múltiplo (0,05 de caja, la precisión de la unidad), y cómo                  | ✅ 11-04 | `roundTo(value, increment, method)`; `NumberInput`/`Numeric` `rounding`  |
+| Un identificador con máscara (NIT, CI, cuenta bancaria, IBAN) con el cursor estable                | ✅ 11-04 | `PatternInput`, `isPatternComplete` (cursor compartido: `mask.ts`)       |
+| Código de verificación de N dígitos (OTP), pegado entero                                           | ✅ 11-04 | `CodeInput` (un solo campo, `one-time-code`)                             |
+| Un monto con signo que se lee: negativos en rojo con su signo, contable entre paréntesis           | ✅ 11-04 | `Numeric signed`                                                         |
+| Color: paleta de etiquetas (el índice de color de Odoo) y hex                                      | ✅ 11-04 | `ColorInput` (React Aria `ColorField` + `ColorSwatchPicker`)             |
+| Un listado del modelo dibuja cada tipo: correo, web y teléfono como enlace, duración, sí/no, fecha | ✅ 11-04 | `columnsFromModel` (`modelCellKind`)                                     |
+| Una ficha real con todos estos controles, en lectura y edición                                     | ✅ 11-04 | `5 · Plantillas/Ficha de contacto`                                       |
 
 ## 3. Elegir y buscar
 

@@ -1,10 +1,11 @@
+import { ModelCell, type ModelCellKind } from "@sincpro/web-ui/components/listing/modelCells";
 import {
   fieldLabel,
   isNumericType,
   type ModelDefinition,
 } from "@sincpro/web-ui/components/search/model";
+import { formatDuration } from "@sincpro/web-ui/primitives/field/duration";
 import type { DataColumn } from "@sincpro/web-ui/primitives/table/DataTable";
-import { Numeric } from "@sincpro/web-ui/primitives/value/Value";
 
 /* ====================================================================== *
  *  LAS COLUMNAS QUE NADIE DECLARÓ, LEÍDAS DEL MODELO.
@@ -68,12 +69,44 @@ export function readModelValue(raw: unknown): string | number | boolean | null {
   return JSON.stringify(raw);
 }
 
+/** The names an engine publishes for each kind it knows how to draw — Odoo's (`char` with a
+ *  widget aside, `float_time`, `boolean`, `date`, `datetime`) and the plain ones a schema
+ *  uses (`email`, `url`, `phone`, `duration`, `bool`, `timestamp`). */
+const KIND_OF_TYPE: Readonly<Record<string, ModelCellKind>> = {
+  email: "email",
+  mail: "email",
+  url: "url",
+  uri: "url",
+  website: "url",
+  phone: "phone",
+  tel: "phone",
+  float_time: "duration",
+  duration: "duration",
+  boolean: "boolean",
+  bool: "boolean",
+  date: "date",
+  datetime: "datetime",
+  timestamp: "datetime",
+};
+
+/** How a field of the model is drawn, by its `type` and in any case — «Email» and `email` are
+ *  the same field. A type not known here stays `text`, exactly as before.
+ *
+ *      in    "monetary"      out  "number"
+ *      in    "float_time"    out  "duration"   «8:30», not «8.5»
+ *      in    "jsonb"         out  "text"
+ */
+export function modelCellKind(type: string): ModelCellKind {
+  if (isNumericType(type)) return "number";
+  return KIND_OF_TYPE[type.toLowerCase()] ?? "text";
+}
+
 /** Cuánto ancho merece un campo, por su tipo. Una huella son 64 caracteres y
  *  una cuenta son seis: darles el mismo ancho arruina las dos. */
-function widthFor(type: string): number {
-  if (isNumericType(type)) return 120;
-  if (type === "datetime" || type === "date") return 190;
-  if (type === "boolean") return 90;
+function widthFor(kind: ModelCellKind): number {
+  if (kind === "number" || kind === "duration") return 120;
+  if (kind === "datetime" || kind === "date") return 190;
+  if (kind === "boolean") return 90;
   return 260;
 }
 
@@ -108,34 +141,38 @@ export function columnsFromModel<T extends object>(
 
   for (const [field, definition] of Object.entries(model.fields)) {
     if (claimed.has(field)) continue;
-    const numeric = isNumericType(definition.type);
+    const kind = modelCellKind(definition.type);
+    /* A duration is a number of hours: it sorts, sums and aligns as one. */
+    const numeric = kind === "number" || kind === "duration";
+    const read = (row: T) => readModelValue((row as Record<string, unknown>)[field]);
     extra.push({
       id: field,
       field,
       header: fieldLabel(model, field, locale),
-      value: (row) => readModelValue((row as Record<string, unknown>)[field]),
-      /* El valor entero en el `title`: una huella de 64 caracteres no entra en
-         ninguna celda, y cortada no sirve para nada — salvo para pasar el mouse
-         por encima y leerla. */
+      value: read,
+      /* Drawn by what the model says the field IS (`modelCells.tsx`); a plain text keeps
+         its whole value in the `title` — a 64 character fingerprint fits no cell. */
       cell: (row) => {
-        const value = readModelValue((row as Record<string, unknown>)[field]);
+        const value = read(row);
         if (value === null) return <span className="text-subtle">—</span>;
-        /* A figure in the locale's digits and right aligned, so a column of amounts lines up
-           — never «1234.5» as text. */
-        if (numeric && typeof value === "number")
-          return <Numeric value={value} format="decimal" />;
-        const text = String(value);
-        return (
-          <span className="block truncate text-muted" title={text}>
-            {text}
-          </span>
-        );
+        return <ModelCell kind={kind} value={value} />;
       },
+      /* Where a node cannot be drawn — the sheet, the footer's total — a duration still
+         reads «42:30» and never «42.5». */
+      ...(kind === "duration"
+        ? {
+            format: formatDuration,
+            text: (row: T) => {
+              const value = read(row);
+              return typeof value === "number" ? formatDuration(value) : String(value ?? "");
+            },
+          }
+        : {}),
       ...(numeric ? { numeric: true } : {}),
       sortable: definition.sortable,
       optional: true,
       defaultHidden: true,
-      width: widthFor(definition.type),
+      width: widthFor(kind),
     });
   }
 

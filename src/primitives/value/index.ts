@@ -36,6 +36,13 @@ export {
   RelationValue,
   type RelationValueProps,
 } from "@sincpro/web-ui/primitives/value/Relation";
+/* The HTML of a note, read — cleaned of anything that runs. */
+export {
+  isRichTextEmpty,
+  richTextPlain,
+  RichTextValue,
+  sanitizeRichText,
+} from "@sincpro/web-ui/primitives/value/RichText";
 export {
   type Rounding,
   type RoundingMethod,
