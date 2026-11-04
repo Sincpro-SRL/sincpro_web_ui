@@ -359,6 +359,8 @@ export type UiCopy = {
     field: string;
     /** A field with nothing in it: said, not a silent success. */
     empty: string;
+    /** On an error: copies the whole report (what it said, the detail, when, where). */
+    report: string;
   };
   /** The rich-text editor: its toolbar, its link form, its list of people to mention. */
   richText: {
@@ -793,6 +795,52 @@ export type UiCopy = {
     failed: string;
     retry: string;
   };
+  /** The file preview a person opens from a file: the kind decides the renderer. */
+  preview: {
+    label: string;
+    download: string;
+    /** No renderer for this kind: said, with the download still there. */
+    unsupported: string;
+    loading: string;
+    /** The renderer failed. The technical text goes in the error report. */
+    failed: string;
+    /** `{page}` and `{total}`. */
+    page: string;
+    previousPage: string;
+    nextPage: string;
+    fit: string;
+    actualSize: string;
+    /** `{size}` is the file size, already written for the locale. */
+    kind: { image: string; pdf: string; text: string; markdown: string; other: string };
+  };
+  /** A conversation: the thread of messages and the composer under it. */
+  chat: {
+    thread: string;
+    empty: string;
+    loadOlder: string;
+    loadingOlder: string;
+    jumpLatest: string;
+    today: string;
+    yesterday: string;
+    /** The composer's accessible name and its placeholder. */
+    composer: string;
+    placeholder: string;
+    send: string;
+    /** `{count}` is the number of unread messages. */
+    unread: string;
+    conversations: string;
+    newMessages: string;
+    /** A message that is written but not yet confirmed by the server. */
+    sending: string;
+  };
+  /** A canvas of nodes and connections (a diagram, a flow). */
+  canvas: {
+    label: string;
+    zoomIn: string;
+    zoomOut: string;
+    fit: string;
+    readOnly: string;
+  };
   /** The theme switch: the three choices an app offers for the palette. */
   theme: {
     /** The name of the control — what a screen reader says for the group. */
@@ -1102,6 +1150,7 @@ export const ENGLISH_COPY: UiCopy = {
     failed: "Could not copy",
     field: "Copy «{label}»",
     empty: "Nothing to copy",
+    report: "Copy the error",
   },
   richText: {
     toolbar: "Text formatting",
@@ -1428,6 +1477,42 @@ export const ENGLISH_COPY: UiCopy = {
     cancelUpload: "Cancel the upload",
     failed: "The file could not be uploaded.",
     retry: "Try again",
+  },
+  preview: {
+    label: "Preview",
+    download: "Download",
+    unsupported: "There is no preview for this kind of file. You can still download it.",
+    loading: "Loading the preview…",
+    failed: "The file could not be shown.",
+    page: "Page {page} of {total}",
+    previousPage: "Previous page",
+    nextPage: "Next page",
+    fit: "Fit",
+    actualSize: "Actual size",
+    kind: { image: "Image", pdf: "PDF", text: "Text", markdown: "Document", other: "File" },
+  },
+  chat: {
+    thread: "Conversation",
+    empty: "No messages yet. Write the first one.",
+    loadOlder: "Load earlier messages",
+    loadingOlder: "Loading earlier messages…",
+    jumpLatest: "Jump to the latest",
+    today: "Today",
+    yesterday: "Yesterday",
+    composer: "Message",
+    placeholder: "Write a message… Enter sends, Shift+Enter starts a new line",
+    send: "Send",
+    unread: "{count} unread",
+    conversations: "Conversations",
+    newMessages: "New messages",
+    sending: "Sending…",
+  },
+  canvas: {
+    label: "Canvas",
+    zoomIn: "Zoom in",
+    zoomOut: "Zoom out",
+    fit: "Fit to screen",
+    readOnly: "Read only",
   },
   theme: {
     label: "Theme",

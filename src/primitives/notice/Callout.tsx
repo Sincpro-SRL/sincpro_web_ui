@@ -2,6 +2,11 @@
 
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
+import {
+  currentPage,
+  ErrorCopy,
+  errorReport,
+} from "@sincpro/web-ui/primitives/notice/Notice";
 import type { LucideIcon } from "lucide-react";
 import { AlertTriangle, CheckCircle2, Info, OctagonAlert, X } from "lucide-react";
 import type { ReactNode } from "react";
@@ -51,6 +56,9 @@ export type CalloutProps = {
   dismissLabel?: string;
   /** Un ícono propio, cuando el del tono no dice lo suficiente. */
   icon?: LucideIcon;
+  /** Lo que se copia con «Copiar el error» cuando el tono es `bad`. Sin esto, la
+   *  oración (si es texto) con el título. Para un aviso con detalle técnico, pasarlo acá. */
+  report?: string;
 };
 
 const ICON: Record<NonNullable<CalloutProps["tone"]>, LucideIcon> = {
@@ -78,9 +86,14 @@ export function Callout({
   onDismiss,
   dismissLabel,
   icon,
+  report,
 }: CalloutProps) {
   const d = useDensity();
   const Icon = icon ?? ICON[tone];
+  /* The text a person would paste: the sentence, or what the caller names. A title that
+     is text becomes the report's heading; without one the sentence is the heading. */
+  const sentence = report ?? (typeof children === "string" ? children : "");
+  const copyable = tone === "bad" && sentence !== "";
 
   return (
     <div
@@ -112,6 +125,20 @@ export function Callout({
         </div>
 
         {action === undefined ? null : <span className="shrink-0">{action}</span>}
+        {copyable ? (
+          <span className="shrink-0">
+            <ErrorCopy
+              report={() =>
+                errorReport({
+                  heading: typeof title === "string" ? title : "",
+                  sentence: typeof title === "string" ? sentence : undefined,
+                  at: new Date(),
+                  page: currentPage(),
+                })
+              }
+            />
+          </span>
+        ) : null}
       </div>
 
       {onDismiss === undefined ? null : (

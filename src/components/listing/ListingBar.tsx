@@ -355,7 +355,7 @@ export function ListingBar({
     return (
       <SurfaceProvider value="canvas">
         <div
-          className={`flex min-w-0 flex-col border-b border-line bg-surface ${byDensity(d, "px-3.5 py-2.5", "px-2.5 py-2")}`}
+          className={`flex min-w-0 flex-col border-b border-line bg-surface ${byDensity(d, "px-5 py-3", "px-2.5 py-2")}`}
         >
           {bar}
         </div>
@@ -370,7 +370,7 @@ export function ListingBar({
   return (
     <SurfaceProvider value="chrome">
       <div
-        className={`flex min-w-0 flex-col bg-chrome ${byDensity(d, "px-3.5 py-2.5", "px-2.5 py-2")}`}
+        className={`flex min-w-0 flex-col bg-chrome ${byDensity(d, "px-5 py-3", "px-2.5 py-2")}`}
       >
         {bar}
       </div>

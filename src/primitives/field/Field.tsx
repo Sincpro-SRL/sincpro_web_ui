@@ -26,6 +26,7 @@ import {
 } from "@sincpro/web-ui/primitives/field/note";
 import { Hint } from "@sincpro/web-ui/primitives/hint/Hint";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
+import { CopyButton } from "@sincpro/web-ui/primitives/value/Copyable";
 import { type Rounding, roundTo } from "@sincpro/web-ui/primitives/value/rounding";
 import { AlertCircle, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { type ReactNode, useId, useRef } from "react";
@@ -228,6 +229,8 @@ export function Field({
             aria-hidden
           />
           <span className="max-w-prose">{error}</span>
+          {/* The message is copyable with its field's name: what went wrong, where, in one paste. */}
+          <CopyButton label={copy.copyable.report} value={() => `${label}: ${error}`} />
         </p>
       )}
     </>
