@@ -77,6 +77,7 @@ export function RecordHeader({
   ribbon,
   blocking,
   indicator,
+  paper: onPaper,
   children,
 }: {
   crumbs?: readonly Crumb[];
@@ -143,6 +144,10 @@ export function RecordHeader({
   /** The rest of the record's notices, as one indicator — `RecordNoticeIndicator`. In the
    *  rail next to the counters; without a rail, first in the record, next to them. */
   indicator?: ReactNode;
+  /** Whether the record sits on paper — a fact of WHERE it is mounted (`Record`'s
+   *  `placement`). Only in comfortable: compact (the peek) is always one surface. Omitted, it
+   *  is guessed from the rail: crumbs, pager or actions mean a page. */
+  paper?: boolean;
   /** The record body. It sits IN the paper with the title, so groups, tabs
    *  and the page are one white sheet on the ground — Odoo's `<sheet>`. */
   children?: ReactNode;
@@ -206,9 +211,15 @@ export function RecordHeader({
      is mounted, and that does not change while someone types; `dirty` does, with the first
      letter. Deciding by it swapped the whole tree under the paper at that letter — the field
      being written was unmounted and lost the focus. Save and Discard still appear: in the
-     rail, which is a sibling and moves nothing. */
+     rail, which is a sibling and moves nothing.
+
+     Crumbs, pager and actions are only the GUESS for when the mount is not said: they can
+     arrive late (loaded, allowed) and the guess flips with them. `paper`, when given, is the
+     answer — the rail's contents no longer decide it. */
   const paper =
-    withRail && (crumbs !== undefined || pager !== undefined || actions !== undefined);
+    onPaper === undefined
+      ? withRail && (crumbs !== undefined || pager !== undefined || actions !== undefined)
+      : onPaper && d === "comfortable";
 
   /* ONE column for the rail and the page: the rail used to span the screen while the sheet
      stopped at 72rem, so on a wide desk the buttons sat 250 px left of the paper they act on
