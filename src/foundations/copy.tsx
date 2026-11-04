@@ -795,6 +795,28 @@ export type UiCopy = {
     failed: string;
     retry: string;
   };
+  /** The field picker that walks relations: «Líneas > Impuestos > Monto». */
+  fieldPath: {
+    /** The trigger with nothing chosen. */
+    choose: string;
+    search: string;
+    back: string;
+    loading: string;
+    failed: string;
+    failedHint: string;
+    empty: string;
+    /** The first option inside a relation: choosing the relation itself. `{label}`. */
+    self: string;
+    /** Said after a relation's name: pressing it shows its fields. */
+    opens: string;
+    /** Add a column or a grouping level from a related field. */
+    addColumn: string;
+    addLevel: string;
+    /** How many of the records reached through a to-many relation must match. */
+    match: { label: string; any: string; none: string; all: string };
+    /** A filter through a relation said in words. `{relation}` and `{inner}`. */
+    say: { any: string; none: string; all: string; one: string };
+  };
   /** The file preview a person opens from a file: the kind decides the renderer. */
   preview: {
     label: string;
@@ -1477,6 +1499,26 @@ export const ENGLISH_COPY: UiCopy = {
     cancelUpload: "Cancel the upload",
     failed: "The file could not be uploaded.",
     retry: "Try again",
+  },
+  fieldPath: {
+    choose: "Choose a field",
+    search: "Search a field",
+    back: "Back",
+    loading: "Loading the fields…",
+    failed: "The fields could not be loaded.",
+    failedHint: "Try again in a moment, or copy the error for whoever maintains the model.",
+    empty: "No field matches.",
+    self: "«{label}» itself",
+    opens: "shows its fields",
+    addColumn: "Add a column",
+    addLevel: "Group by another field",
+    match: { label: "How many of «{relation}»", any: "some", none: "none", all: "all" },
+    say: {
+      any: "some of {relation} with {inner}",
+      none: "none of {relation} with {inner}",
+      all: "all of {relation} with {inner}",
+      one: "{relation} > {inner}",
+    },
   },
   preview: {
     label: "Preview",

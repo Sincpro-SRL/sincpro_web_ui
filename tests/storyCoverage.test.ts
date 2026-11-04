@@ -16,7 +16,6 @@ import { test } from "vitest";
  * must leave the list — a stale excuse is how the list grows forever.
  */
 const SHOWN_THROUGH: Readonly<Record<string, string>> = {
-  ColumnsMenu: "the list bar — 4 · Vistas/Lista",
   SortMenu: "the list bar — 4 · Vistas/Lista",
   CriteriaChips: "SearchBar — 3 · Componentes/Búsqueda",
   JsonEditor: "CriteriaBuilder and FilterBuilder",

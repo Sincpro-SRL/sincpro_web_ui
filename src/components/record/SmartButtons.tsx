@@ -113,12 +113,15 @@ export function SmartButtons({ children }: { children: ReactNode }) {
   const items = Children.toArray(children);
   return (
     <SmartGroup.Provider value={true}>
-      <div className="flex min-w-0 items-stretch overflow-hidden rounded-control border border-chrome-ink/15 bg-chrome-ink/8">
+      {/* The cells do not shrink: a cell narrower than its button let the button spill over
+          the next one, and the last was clipped («devoluciones» cut on a phone). When the
+          group does not fit, it scrolls — every counter stays whole and reachable. */}
+      <div className="scroll-quiet flex max-w-full min-w-0 items-stretch rounded-control border border-chrome-ink/15 bg-chrome-ink/8">
         {items.map((child, i) => (
           <div
             key={i}
             className={
-              i === 0 ? "flex min-w-0" : "flex min-w-0 border-l border-chrome-ink/20"
+              i === 0 ? "flex shrink-0" : "flex shrink-0 border-l border-chrome-ink/20"
             }
           >
             {child}

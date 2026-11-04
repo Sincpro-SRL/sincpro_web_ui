@@ -572,7 +572,11 @@ export function SearchBar({
     <div
       ref={box}
       onKeyDown={closePanelOnEscape}
-      className="relative flex min-w-0 items-center gap-2"
+      /* `min-w-48`: placed in a flex row without a width, the bar used to collapse to its
+         narrowest and the input slid UNDER the filters button («bu⊞car»). 12rem is the
+         magnifier, a word of input and the buttons; a narrower container scrolls, it does
+         not stack controls on top of each other. */
+      className="relative flex min-w-48 items-center gap-2"
     >
       {/* Three columns: the magnifier, what is set plus the input (the only part that wraps),
           and the buttons. The two ends sit on the FIRST line: when the middle wraps they
@@ -597,7 +601,9 @@ export function SearchBar({
             aria-hidden
           />
         </span>
-        <div className="flex min-w-0 flex-1 flex-wrap items-center gap-1 py-0.75">
+        {/* `min-w-24`: the input's own minimum. Below it the input overflowed this column
+            and was drawn under the buttons of the next one. */}
+        <div className="flex min-w-24 flex-1 flex-wrap items-center gap-1 py-0.75">
           {/* LO PUESTO. Una sola pieza para las dos clases: los de grupo a la
               izquierda, encadenados; los de filtro después, con su anidado y su
               conjunción tocable. Todo abre el constructor parado sobre lo que se

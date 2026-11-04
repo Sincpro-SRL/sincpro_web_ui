@@ -552,6 +552,27 @@ export const SPANISH_COPY: UiCopyOverride = {
     failed: "No se pudo subir el archivo.",
     retry: "Reintentar",
   },
+  fieldPath: {
+    choose: "Elegir un campo",
+    search: "Buscar un campo",
+    back: "Volver",
+    loading: "Cargando los campos…",
+    failed: "No se pudieron cargar los campos.",
+    failedHint:
+      "Probá de nuevo en un momento, o copiá el error para quien mantiene el modelo.",
+    empty: "Ningún campo coincide.",
+    self: "«{label}» (el registro)",
+    opens: "muestra sus campos",
+    addColumn: "Agregar columna",
+    addLevel: "Agrupar por otro campo",
+    match: { label: "Cuántos de «{relation}»", any: "alguno", none: "ninguno", all: "todos" },
+    say: {
+      any: "alguno de {relation} con {inner}",
+      none: "ninguno de {relation} con {inner}",
+      all: "todos los de {relation} con {inner}",
+      one: "{relation} > {inner}",
+    },
+  },
   preview: {
     label: "Vista previa",
     download: "Descargar",

@@ -77,3 +77,36 @@ tabla de copia (inglés y español), historia en su carpeta y un test que falla 
 - **Licencias**: `tldraw` y `excalidraw` no se verificaron en esta sesión.
 - **Verificación pendiente**: `make smoke` (todas las historias en Chrome, claro y oscuro)
   antes de entregar los cambios de errores y padding.
+
+## 5. Barrido de layout — 332 historias, escritorio (1360 px) y teléfono (390 px)
+
+Medido con Playwright sobre el DOM real: scroll horizontal de la página, texto cortado sin
+elipsis, solapamientos entre textos y controles en el flujo normal, y la distancia real del
+texto al borde de su caja (padding). Las demos de fundamentos (leyendas `figcaption` puestas
+encima a propósito) y las librerías externas (FullCalendar, Gantt, React Flow) quedan fuera.
+
+**Padding**: sano en escritorio después de llevar `ListingBar` a 20 px; lo que el barrido marca
+(6 casos) son contenedores sin caja propia o la mención `@persona`, angosta a propósito.
+
+**Corregido**
+
+| Dónde                                | Qué pasaba                                                                                                 | Arreglo                                                        |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `SearchBar` (escritorio)             | En una fila `flex` sin ancho, la barra colapsaba y el input quedaba debajo del botón de filtros («bu⊞car») | La barra no baja de `min-w-48` y el input de `min-w-24`        |
+| `TopBar` (teléfono)                  | Los menús se recortaban: «Cl» pegado a los íconos y el resto inalcanzable                                  | La franja de menús se desplaza (`scroll-quiet`)                |
+| `SmartButtons` en el riel (teléfono) | Cada contador se salía de su celda, pisaba el siguiente y el último se recortaba                           | Las celdas no se achican y el grupo se desplaza                |
+| `ChatComposer` (angosto)             | El cuadro colapsaba y «Enviar» se montaba encima                                                           | «Enviar» queda sólo ícono bajo 20 rem (consulta de contenedor) |
+| Historia «Tablero»                   | El título largo de la tarjeta propia salía de su tarjeta                                                   | `min-w-0` + `max-w-full` en la historia                        |
+
+**Pendiente (teléfono, 390 px)** — no se corrigió en esta vuelta:
+
+- Formularios con controles anchos que desbordan la página: «Controles · Números» (61 px),
+  «Mirar y editar» (107 px), «Unidad y redondeo» (147 px), «Elecciones · en un formulario»
+  (26 px).
+- `SearchBar` con muchas fichas («Probar», «Búsqueda literal») desborda ~110 px.
+- Tabla editable en la lista («Facturas editables», 187 px): la tabla no está en un contenedor
+  con scroll propio.
+- Relacional en una tabla: el enlace y el NIT se pisan en celdas angostas.
+- Barra de estados del registro: el botón de acción queda encima de las etapas.
+- `SheetTable`: el encabezado «TRASPASO CTA PROPIA BNB» se corta 22 px sin elipsis.
+- `Peek`: «Abrir como panel» se recorta 16 px contra el borde del cajón.

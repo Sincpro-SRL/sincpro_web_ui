@@ -1187,6 +1187,25 @@
  *  100% is a dialog without a scrim**, and then it is not understood that what
  *  is behind can still be used.
  * ------------------------------------------------------------------ */
+/* ------------------------------------------------------------------ *
+ *  A strip that scrolls without drawing a scrollbar.
+ *
+ *  The menus of the app bar on a phone: they used to be clipped (`overflow:
+ *  hidden`), which left half a word against the icons — «Cl» — and the rest
+ *  of the menus out of reach. Scrolling keeps every menu reachable with the
+ *  finger, the wheel or Tab (the focused one scrolls into view); the word cut
+ *  at the edge is the sign that there is more. No bar: on the dark app bar a
+ *  scrollbar is a grey stripe across the brand.
+ * ------------------------------------------------------------------ */
+@utility scroll-quiet {
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
 @utility peek-width {
   width: min(var(--container-peek), calc(100% - 2rem));
 }
