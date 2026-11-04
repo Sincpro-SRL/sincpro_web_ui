@@ -18,7 +18,7 @@ import {
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useRef, useState } from "react";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 const FACETAS = [
   { id: "number", label: "número" },
@@ -615,4 +615,105 @@ export const ElConstructor: Story = {
       />
     </div>
   ),
+};
+
+/**
+ * **Dentro de un diálogo, Escape cierra la capa de más arriba.** El panel de filtros y
+ * agrupado es una capa de React Aria, la misma pila en la que están la lista de un `Select` o
+ * de un `Picker`: Escape —con el foco en el panel o en el campo— y un clic afuera del panel
+ * cierran el panel y dejan el diálogo abierto, con el foco de vuelta en el botón del panel.
+ * Recién el siguiente Escape cierra el diálogo. Antes la misma tecla cerraba los dos, y quien
+ * quería guardar el panel perdía el selector.
+ */
+export const EnUnDialogo: Story = {
+  args: { facets: FACETAS, criteria: [], onCriteriaChange: () => {} },
+  play: async () => {
+    const page = within(document.body);
+    const dialog = await page.findByRole("dialog", { name: "Elegir un cliente" });
+    const tools = within(dialog).getByRole("button", {
+      name: /Filtrar, agrupar y favoritos/,
+    });
+
+    /* Escape con el foco en el panel: se va el panel, queda el diálogo. */
+    await userEvent.click(tools);
+    /* A filter applied from the panel: the focus stays on it, inside the panel. */
+    const panel = within(document.getElementById(tools.getAttribute("aria-controls")!)!);
+    const option = panel.getByRole("button", { name: /borradores/ });
+    await userEvent.click(option);
+    await expect(option).toHaveFocus();
+    await userEvent.keyboard("{Escape}");
+    await expect(tools).toHaveAttribute("aria-expanded", "false");
+    await expect(page.getByRole("dialog", { name: "Elegir un cliente" })).toBeVisible();
+    await expect(tools).toHaveFocus();
+
+    /* Escape con el foco en el campo y el panel abierto: lo mismo. */
+    await userEvent.click(tools);
+    await userEvent.click(within(dialog).getByRole("combobox"));
+    await userEvent.keyboard("{Escape}");
+    await expect(tools).toHaveAttribute("aria-expanded", "false");
+    await expect(page.getByRole("dialog", { name: "Elegir un cliente" })).toBeVisible();
+
+    /* Un clic afuera del panel pero adentro del diálogo: se va el panel, queda el diálogo. */
+    await userEvent.click(tools);
+    await userEvent.click(within(dialog).getByText(/Elegí a quién facturar/));
+    await expect(tools).toHaveAttribute("aria-expanded", "false");
+    await expect(page.getByRole("dialog", { name: "Elegir un cliente" })).toBeVisible();
+
+    /* Con el panel cerrado, Escape es del diálogo. */
+    await userEvent.click(tools);
+    await userEvent.keyboard("{Escape}");
+    await userEvent.keyboard("{Escape}");
+    /* It leaves with its exit transition. */
+    await waitFor(() =>
+      expect(page.queryByRole("dialog", { name: "Elegir un cliente" })).toBeNull(),
+    );
+  },
+  render: function Render() {
+    const [abierto, setAbierto] = useState(true);
+    const [criteria, setCriteria] = useState<SearchCriteria[]>([]);
+    return (
+      <div className="min-h-96 p-4">
+        <button
+          type="button"
+          onClick={() => setAbierto(true)}
+          className="rounded-control border border-line-strong px-3 py-1 text-meta"
+        >
+          Abrir el selector
+        </button>
+        <Dialog
+          open={abierto}
+          width="lg"
+          title="Elegir un cliente"
+          subtitle="Elegí a quién facturar."
+          onClose={() => setAbierto(false)}
+        >
+          <div className="min-h-80">
+            <SearchBar
+              facets={FACETAS}
+              criteria={criteria}
+              onCriteriaChange={setCriteria}
+              placeholder="buscar un cliente…"
+              filters={[
+                {
+                  label: "mostrar sólo",
+                  options: [
+                    { id: "draft", label: "borradores" },
+                    { id: "posted", label: "publicadas" },
+                  ],
+                },
+              ]}
+              onFilterSelect={(id) =>
+                setCriteria((current) =>
+                  toggleNamed(current, {
+                    id,
+                    label: id === "draft" ? "borradores" : "publicadas",
+                  }),
+                )
+              }
+            />
+          </div>
+        </Dialog>
+      </div>
+    );
+  },
 };

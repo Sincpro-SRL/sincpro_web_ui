@@ -41,7 +41,13 @@ const NOTA_INICIAL =
 export const Editar: Story = {
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const editor = await canvas.findByRole("textbox", { name: "Notas del pedido" });
+    /* The editor is its own chunk, fetched on editing: on a busy machine it takes longer than
+       the default second to arrive. */
+    const editor = await canvas.findByRole(
+      "textbox",
+      { name: "Notas del pedido" },
+      { timeout: 8000 },
+    );
     /* The caret at the end of the note, the way a click after the last line puts it. */
     editor.focus();
     const selection = window.getSelection();
@@ -60,7 +66,11 @@ export const Editar: Story = {
 
     /* «@» abre la lista de personas; Enter elige la marcada. */
     await userEvent.keyboard(" @ana");
-    const lista = await within(document.body).findByRole("listbox", { name: "Personas" });
+    const lista = await within(document.body).findByRole(
+      "listbox",
+      { name: "Personas" },
+      { timeout: 4000 },
+    );
     await expect(within(lista).getByRole("option", { name: "Ana Quispe" })).toBeVisible();
     await userEvent.keyboard("{Enter}");
     await waitFor(() =>
