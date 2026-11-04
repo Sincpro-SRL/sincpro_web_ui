@@ -15,15 +15,8 @@ import { EditRow, firstControl } from "@sincpro/web-ui/primitives/table/Editable
 import { PileFootLine } from "@sincpro/web-ui/primitives/table/PileFootLine";
 import { type RowAction, RowActions } from "@sincpro/web-ui/primitives/table/RowActions";
 import { useRowWindow } from "@sincpro/web-ui/primitives/table/rowWindow";
-import {
-  SelectBox,
-  type SortState,
-  Table,
-  Td,
-  Th,
-  THead,
-  Tr,
-} from "@sincpro/web-ui/primitives/table/Table";
+import type { SortState } from "@sincpro/web-ui/primitives/table/sorting";
+import { SelectBox, Table, Td, Th, THead, Tr } from "@sincpro/web-ui/primitives/table/Table";
 import {
   aggregationFns,
   type ColumnDef,
@@ -416,8 +409,10 @@ export function DataTable<T extends object>({
   data: readonly T[];
   columns: readonly DataColumn<T>[];
   getRowId: (row: T) => string;
-  sort?: SortState | null;
-  onSortChange?: (next: SortState | null) => void;
+  /** The order, outermost first: the second criterion decides only between rows the first
+   *  leaves equal. Empty or absent is «as they came». */
+  sort?: readonly SortState[];
+  onSortChange?: (next: SortState[]) => void;
   /**
    * Los NIVELES por los que se parte, de afuera hacia adentro. Vacío o ausente
    * es «sin agrupar».
@@ -551,10 +546,7 @@ export function DataTable<T extends object>({
     columns: defs,
     getRowId: (row) => getRowId(row),
     state: {
-      sorting:
-        sort === null || sort === undefined
-          ? []
-          : [{ id: sort.key, desc: sort.direction === "desc" }],
+      sorting: (sort ?? []).map((one) => ({ id: one.key, desc: one.direction === "desc" })),
       /* Counted elsewhere, the tree comes made: grouping the page again would undo it. */
       grouping: piles === undefined ? (levels ?? []).map((level) => level.id) : [],
     },

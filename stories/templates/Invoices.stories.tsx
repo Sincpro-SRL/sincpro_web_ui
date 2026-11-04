@@ -408,7 +408,7 @@ function InvoiceList({ api }: ViewProps) {
   const crumbs = useCrumbs(api);
   const [criteria, setCriteria] = useState<SearchCriteria[]>([]);
   const [present, setPresent] = useState<ListPresent>("table");
-  const [sort, setSort] = useState<SortState | null>(null);
+  const [sort, setSort] = useState<SortState[]>([]);
   const [quick, setQuick] = useState<Quick>("all");
   const [page, setPage] = useState(0);
   const onNew = () => api.open(newInvoiceRef);

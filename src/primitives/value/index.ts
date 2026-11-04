@@ -37,6 +37,11 @@ export {
   type RelationValueProps,
 } from "@sincpro/web-ui/primitives/value/Relation";
 export {
+  type Rounding,
+  type RoundingMethod,
+  roundTo,
+} from "@sincpro/web-ui/primitives/value/rounding";
+export {
   Totals,
   type TotalsCredit,
   type TotalsDeduction,
@@ -49,6 +54,7 @@ export {
   formatCount,
   formatDistance,
   formatNumber,
+  formatWith,
   KeyValue,
   Numeric,
 } from "@sincpro/web-ui/primitives/value/Value";

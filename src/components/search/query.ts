@@ -2,6 +2,7 @@ import {
   type FieldDefinition,
   fieldLabel,
   isFilterable,
+  isNumericType,
   type ModelDefinition,
 } from "@sincpro/web-ui/components/search/model";
 import { currentCopy, fillCopy } from "@sincpro/web-ui/foundations/copy";
@@ -199,8 +200,6 @@ export function globToLike(value: string): string {
   return value.replace(/\*/g, "%");
 }
 
-const NUMERIC = new Set(["integer", "number", "float", "decimal", "monetary", "money"]);
-
 /** Qué clase de valor es un campo, leída del tipo que publica el modelo. */
 function kindOf(definition: FieldDefinition): QueryKind {
   if (definition.kind === "relation") return "relation";
@@ -208,7 +207,7 @@ function kindOf(definition: FieldDefinition): QueryKind {
   const type = definition.type.toLowerCase();
   /* An amount is a number: «decimal» and «monetary» read as text made «total <= 1000»
      impossible to ask of an invoice. */
-  if (NUMERIC.has(type)) return "number";
+  if (isNumericType(type)) return "number";
   if (type === "date" || type === "datetime") return "date";
   if (type === "boolean" || type === "bool") return "boolean";
   return "text";

@@ -36,12 +36,12 @@ export {
 export { type RowAction, RowActions } from "@sincpro/web-ui/primitives/table/RowActions";
 export { type SheetColumn, SheetTable } from "@sincpro/web-ui/primitives/table/SheetTable";
 export {
-  CELL_TONE,
+  compareBy,
+  flipSort,
+  moveSort,
+  pressSort,
   type SortDirection,
+  sortPosition,
   type SortState,
-  Table,
-  Td,
-  Th,
-  THead,
-  Tr,
-} from "@sincpro/web-ui/primitives/table/Table";
+} from "@sincpro/web-ui/primitives/table/sorting";
+export { CELL_TONE, Table, Td, Th, THead, Tr } from "@sincpro/web-ui/primitives/table/Table";

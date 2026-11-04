@@ -25,6 +25,7 @@ import {
 } from "@sincpro/web-ui/primitives/field/note";
 import { Hint } from "@sincpro/web-ui/primitives/hint/Hint";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
+import { type Rounding, roundTo } from "@sincpro/web-ui/primitives/value/rounding";
 import { AlertCircle, Check, ChevronDown, ChevronUp } from "lucide-react";
 import { type ReactNode, useId, useRef } from "react";
 import {
@@ -394,8 +395,9 @@ export function controlClasses(invalid = false): string {
   }`;
 }
 
-/** What every text control shares: the field's wiring, overridable prop by prop. */
-type ControlProps = {
+/** What every text control shares: the field's wiring, overridable prop by prop. Exported for
+ *  the family's other controls (`PasswordInput`, `CardNumberInput`), not from the barrel. */
+export type ControlProps = {
   id?: string;
   describedBy?: string;
   invalid?: boolean;
@@ -415,7 +417,11 @@ type ControlProps = {
  *  the consumer's `aria-label`, and as a last resort the placeholder — which is what a
  *  browser reads for a bare `<input placeholder>` anyway, so a control outside a form is
  *  never nameless. */
-function nameOf(labelledBy: string | undefined, ariaLabel?: string, placeholder?: string) {
+export function nameOf(
+  labelledBy: string | undefined,
+  ariaLabel?: string,
+  placeholder?: string,
+) {
   return labelledBy === undefined ? (ariaLabel ?? placeholder) : ariaLabel;
 }
 
@@ -511,6 +517,8 @@ export function NumberInput({
   max,
   step,
   unit,
+  units,
+  rounding,
   format,
   placeholder,
   describedBy: ownDescribedBy,
@@ -527,6 +535,17 @@ export function NumberInput({
   /** The unit, attached to the field: "días", "u.", "kg". A number without a unit in a
    *  form is half a question. For money, prefer `format` with a currency. */
   unit?: string;
+  /** The unit (or the currency) is CHOSEN, in the same box: «12 · kg ▾», «500 · USD ▾». The
+   *  number does not convert — what a kilo is in tonnes is the application's — it only says
+   *  which one was meant. Takes the place of `unit`. */
+  units?: {
+    options: readonly { id: string; label: string }[];
+    value: string;
+    onChange: (id: string) => void;
+  };
+  /** The VALUE is rounded when it is committed — to 0,05 for cash, to the unit's precision —
+   *  so what the form submits is what is drawn. See `roundTo`. */
+  rounding?: Rounding;
   /** How the number is written: `{ style: "currency", currency: "BOB" }`,
    *  `{ style: "percent" }`, `{ minimumFractionDigits: 2 }`. In the copy's locale. */
   format?: Intl.NumberFormatOptions;
@@ -537,7 +556,11 @@ export function NumberInput({
     describedBy: ownDescribedBy,
     invalid: ownInvalid,
   });
+  const unitId = `${useId()}-unit`;
+  const copy = useUiCopy();
   const read = useReadNumber(format);
+  const unitLabel =
+    units === undefined ? unit : units.options.find((one) => one.id === units.value)?.label;
   if (useFormMode(mode) === "read") {
     return (
       <ReadValue
@@ -545,7 +568,7 @@ export function NumberInput({
           value === "" ? null : (
             <span className="tabular-nums">
               {read(value)}
-              {unit === undefined ? "" : ` ${unit}`}
+              {unitLabel === undefined ? "" : ` ${unitLabel}`}
             </span>
           )
         }
@@ -560,7 +583,15 @@ export function NumberInput({
         aria-labelledby={labelledBy}
         aria-label={nameOf(labelledBy, ariaLabel, placeholder)}
         value={value === "" ? Number.NaN : value}
-        onChange={(next) => onChange?.(Number.isNaN(next) ? "" : next)}
+        onChange={(next) =>
+          onChange?.(
+            Number.isNaN(next)
+              ? ""
+              : rounding === undefined
+                ? next
+                : roundTo(next, rounding.increment, rounding.method),
+          )
+        }
         minValue={min}
         maxValue={max}
         step={step}
@@ -583,8 +614,34 @@ export function NumberInput({
               <ChevronDown aria-hidden className="size-(--size-icon-sm)" strokeWidth={2} />
             </AriaButton>
           </span>
+          {units === undefined ? null : (
+            /* A native select: a short closed list inside a box, where a popover would be one
+               more layer over the form for three options. */
+            <select
+              /* Named «Unidad» AND by its field: two amounts with a unit in one form are two
+                 different choosers, and a list of controls must tell them apart. */
+              {...(labelledBy === undefined
+                ? { "aria-label": copy.field.unit }
+                : { "aria-labelledby": `${unitId} ${labelledBy}` })}
+              value={units.value}
+              disabled={disabled}
+              onChange={(event) => units.onChange(event.target.value)}
+              className="h-full shrink-0 cursor-pointer border-l border-line bg-transparent px-2 text-meta text-ink outline-0 focus-visible:bg-primary/8 disabled:cursor-not-allowed"
+            >
+              {units.options.map((one) => (
+                <option key={one.id} value={one.id}>
+                  {one.label}
+                </option>
+              ))}
+            </select>
+          )}
+          {units === undefined ? null : (
+            <span id={unitId} hidden>
+              {copy.field.unit}
+            </span>
+          )}
         </FieldGroup>
-        {unit === undefined ? null : (
+        {unit === undefined || units !== undefined ? null : (
           <span className="shrink-0 text-meta whitespace-nowrap text-muted">{unit}</span>
         )}
       </AriaNumberField>

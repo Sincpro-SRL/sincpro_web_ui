@@ -126,6 +126,22 @@ export type UiCopy = {
     none: string;
     /** Next to the label of a field whose value changed and is not saved yet. */
     changed: string;
+    /** The eye button of a password: show it… */
+    showSecret: string;
+    /** …and hide it again. */
+    hideSecret: string;
+    /** Under a password while Caps Lock is on: the most common reason a right password fails. */
+    capsLock: string;
+    /** What a stored password says in read mode, for a screen reader: there is one, not which. */
+    secretSet: string;
+    /** Said after a link that leaves for another tab — a website, WhatsApp. */
+    newTab: string;
+    /** The unit after a duration: «8:30 h». */
+    hours: string;
+    /** The name of the unit (or currency) chooser inside a number field. */
+    unit: string;
+    /** The row of colours a colour field offers. */
+    palette: string;
   };
   /** The choice controls: combo boxes, selects, suggestion lists. */
   choice: {
@@ -350,6 +366,24 @@ export type UiCopy = {
     asc: string;
     desc: string;
     clear: string;
+    /** On a sortable header: how to add it as a tie-breaker instead of replacing the order. */
+    addHint: string;
+    /** What a tie-breaker header says of itself: «sort 2, descending». */
+    place: string;
+    /** Adds one more criterion at the end of the order. */
+    add: string;
+    /** Where the criteria are listed when there are none: the rows go as they came. */
+    none: string;
+    /** The direction button of a criterion, named by its field. */
+    flip: string;
+    /** Takes one criterion out, named by its field. */
+    remove: string;
+    /** The handle a criterion is dragged by, named by its field. */
+    move: string;
+    /** The trigger with more than one criterion: «Fecha +2». */
+    more: string;
+    /** The second and later criteria: they only decide between rows the first leaves equal. */
+    then: string;
   };
   /** Los recortes de fecha RELATIVOS. Las unidades van en singular y plural
    *  porque «1 mes» y «3 meses» no se resuelven con una `s` en todos los
@@ -840,6 +874,14 @@ export const ENGLISH_COPY: UiCopy = {
     unset: "not set",
     none: "None",
     changed: "changed",
+    showSecret: "Show password",
+    hideSecret: "Hide password",
+    capsLock: "Caps Lock is on",
+    secretSet: "password set",
+    newTab: "opens in a new tab",
+    hours: "h",
+    unit: "Unit",
+    palette: "Palette",
   },
   choice: {
     noResults: "No results",
@@ -969,6 +1011,15 @@ export const ENGLISH_COPY: UiCopy = {
     asc: "ascending",
     desc: "descending",
     clear: "no order",
+    addHint: "Shift+click to add as a tie-breaker",
+    place: "sort {place}, {direction}",
+    add: "Add a criterion",
+    none: "No order: the rows go as they came.",
+    flip: "Flip the order by {field}",
+    remove: "Remove the order by {field}",
+    move: "Move the order by {field}",
+    more: "{label} +{count}",
+    then: "then by",
   },
   dates: {
     last: "last {count} {unit}",

@@ -14,7 +14,7 @@ import type { DataColumn, DataTableCreate } from "@sincpro/web-ui/primitives/tab
 import type { ReportColumn, ReportRow } from "@sincpro/web-ui/primitives/table/ReportTable";
 import type { RowAction } from "@sincpro/web-ui/primitives/table/RowActions";
 import type { SheetColumn } from "@sincpro/web-ui/primitives/table/SheetTable";
-import type { SortState } from "@sincpro/web-ui/primitives/table/Table";
+import type { SortState } from "@sincpro/web-ui/primitives/table/sorting";
 import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -275,11 +275,11 @@ export type ListViewProps<T extends object> = {
    *  Owned by the view when omitted — catalog filters must not reset them. */
   visibleColumnIds?: readonly string[];
   onVisibleColumnIdsChange?: (ids: readonly string[]) => void;
-  /** The sorting of the table. It lives outside because it belongs to the SET
-   *  and not to the presentation: switching from table to rows has no reason to
-   *  lose it. */
-  sort?: SortState | null;
-  onSortChange?: (next: SortState | null) => void;
+  /** The order of the set, outermost first: «by date, then by customer». It lives outside
+   *  because it belongs to the SET and not to the presentation: switching from table to
+   *  rows has no reason to lose it. Empty or absent is «as they came». */
+  sort?: readonly SortState[];
+  onSortChange?: (next: SortState[]) => void;
   /**
    * Por qué campos se puede ordenar, para las presentaciones que NO tienen
    * encabezados donde hacer clic.

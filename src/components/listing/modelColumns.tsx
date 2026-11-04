@@ -1,5 +1,10 @@
-import { fieldLabel, type ModelDefinition } from "@sincpro/web-ui/components/search/model";
+import {
+  fieldLabel,
+  isNumericType,
+  type ModelDefinition,
+} from "@sincpro/web-ui/components/search/model";
 import type { DataColumn } from "@sincpro/web-ui/primitives/table/DataTable";
+import { Numeric } from "@sincpro/web-ui/primitives/value/Value";
 
 /* ====================================================================== *
  *  LAS COLUMNAS QUE NADIE DECLARÓ, LEÍDAS DEL MODELO.
@@ -66,7 +71,7 @@ export function readModelValue(raw: unknown): string | number | boolean | null {
 /** Cuánto ancho merece un campo, por su tipo. Una huella son 64 caracteres y
  *  una cuenta son seis: darles el mismo ancho arruina las dos. */
 function widthFor(type: string): number {
-  if (type === "integer" || type === "number") return 120;
+  if (isNumericType(type)) return 120;
   if (type === "datetime" || type === "date") return 190;
   if (type === "boolean") return 90;
   return 260;
@@ -103,7 +108,7 @@ export function columnsFromModel<T extends object>(
 
   for (const [field, definition] of Object.entries(model.fields)) {
     if (claimed.has(field)) continue;
-    const numeric = definition.type === "integer" || definition.type === "number";
+    const numeric = isNumericType(definition.type);
     extra.push({
       id: field,
       field,
@@ -115,6 +120,10 @@ export function columnsFromModel<T extends object>(
       cell: (row) => {
         const value = readModelValue((row as Record<string, unknown>)[field]);
         if (value === null) return <span className="text-subtle">—</span>;
+        /* A figure in the locale's digits and right aligned, so a column of amounts lines up
+           — never «1234.5» as text. */
+        if (numeric && typeof value === "number")
+          return <Numeric value={value} format="decimal" />;
         const text = String(value);
         return (
           <span className="block truncate text-muted" title={text}>

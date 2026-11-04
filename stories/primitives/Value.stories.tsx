@@ -76,6 +76,103 @@ export const Numeros: Story = {
   ),
 };
 
+/** **Con formato propio.** `format` también toma cualquier `Intl.NumberFormatOptions` — las
+ *  mismas que `NumberInput` —, así que un importe se lee igual en el formulario y en la celda
+ *  que lo muestra: moneda, porcentaje, o redondeado a los decimales que la unidad pide. Todo en
+ *  el idioma de la copia (`es-BO`: «Bs 1.234,50»), no en el del navegador. */
+export const ConFormato: Story = {
+  args: { label: "", value: "" },
+  render: () => (
+    <div className="bg-ground p-8">
+      <table className="w-full max-w-lg rounded-box border border-line bg-surface">
+        <tbody>
+          {(
+            [
+              [
+                "total de la factura",
+                31490.5,
+                undefined,
+                { style: "currency", currency: "BOB" },
+              ],
+              ["saldo en dólares", 1250, undefined, { style: "currency", currency: "USD" }],
+              ["descuento", 0.125, undefined, { style: "percent", maximumFractionDigits: 1 }],
+              [
+                "peso neto",
+                2.5,
+                "kg",
+                { minimumFractionDigits: 3, maximumFractionDigits: 3 },
+              ],
+              ["cemento despachado", 1234.567, "t", { maximumFractionDigits: 1 }],
+            ] as const
+          ).map(([label, valor, unidad, formato]) => (
+            <tr key={label}>
+              <td className="px-4 py-2 text-meta text-muted">{label}</td>
+              <td className="px-4 py-2">
+                <Numeric
+                  value={valor}
+                  {...(unidad === undefined ? {} : { unit: unidad })}
+                  format={formato}
+                />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  ),
+};
+
+/** **Con signo y redondeado.** Un saldo, una diferencia, una variación: el signo ES el dato, así
+ *  que `signed` lo escribe siempre («+» o «−») y un negativo va en rojo — con su signo, nunca
+ *  sólo el color. `rounding` redondea el VALOR antes de escribirlo: el formato sólo redondea lo
+ *  que se dibuja. */
+export const ConSignoYRedondeo: Story = {
+  args: { label: "", value: "" },
+  render: () => (
+    <div className="bg-ground p-8">
+      <table className="w-full max-w-lg rounded-box border border-line bg-surface">
+        <tbody>
+          <tr>
+            <td className="px-4 py-2 text-meta text-muted">diferencia de caja</td>
+            <td className="px-4 py-2">
+              <Numeric value={-48.5} signed format={{ style: "currency", currency: "BOB" }} />
+            </td>
+          </tr>
+          <tr>
+            <td className="px-4 py-2 text-meta text-muted">variación contra octubre</td>
+            <td className="px-4 py-2">
+              <Numeric
+                value={0.084}
+                signed
+                format={{ style: "percent", maximumFractionDigits: 1 }}
+              />
+            </td>
+          </tr>
+          <tr>
+            <td className="px-4 py-2 text-meta text-muted">a cobrar en efectivo (a 0,05)</td>
+            <td className="px-4 py-2">
+              <Numeric
+                value={127.33}
+                rounding={{ increment: 0.05 }}
+                format={{ minimumFractionDigits: 2, maximumFractionDigits: 2 }}
+                unit="Bs."
+              />
+            </td>
+          </tr>
+          <tr>
+            <td className="px-4 py-2 text-meta text-muted">
+              horas a facturar (por hora iniciada)
+            </td>
+            <td className="px-4 py-2">
+              <Numeric value={3.2} rounding={{ increment: 1, method: "up" }} unit="h" />
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  ),
+};
+
 const AHORA = new Date("2026-10-30T14:00:00Z");
 
 function Caja({ label, children }: { label: string; children: React.ReactNode }) {

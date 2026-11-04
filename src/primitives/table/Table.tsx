@@ -1,8 +1,14 @@
 "use client";
 
+import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { stickyTop, useScrollBox } from "@sincpro/web-ui/foundations/sticky";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
 import type { WindowedRow } from "@sincpro/web-ui/primitives/table/rowWindow";
+import {
+  pressSort,
+  sortPosition,
+  type SortState,
+} from "@sincpro/web-ui/primitives/table/sorting";
 import { ArrowDown, ArrowUp, ChevronRight, ChevronsUpDown } from "lucide-react";
 import { createContext, type ReactNode, useContext, useId } from "react";
 
@@ -28,6 +34,13 @@ import { createContext, type ReactNode, useContext, useId } from "react";
  *  not being able to get it back is the number one complaint about any
  *  sortable table.
  *
+ *  ── And more than one column ────────────────────────────────────────
+ *
+ *  Shift+click adds the column as a TIE-BREAKER instead of replacing the order:
+ *  «by date, then by customer». Each sorted header then carries its place (1,
+ *  2, 3) next to the arrow, because two arrows alone do not say which one
+ *  decides. The model is in `sorting.ts`.
+ *
  *  ── The header stays pinned ─────────────────────────────────────────
  *
  *  It is the difference between a long table you can read and one where, by
@@ -35,13 +48,6 @@ import { createContext, type ReactNode, useContext, useId } from "react";
  *  the box to have a height: without `height` there is no scroll of its own
  *  and nothing to stick to.
  * ==================================================================== */
-
-export type SortDirection = "asc" | "desc";
-
-export interface SortState {
-  key: string;
-  direction: SortDirection;
-}
 
 export function Table({
   children,
@@ -107,7 +113,7 @@ export function THead({
 
 /** A column. If it gets a `sortKey`, it can be sorted.
  *
- *  The icon is ALWAYS there, dimmed when the column is not the sorted one: an
+ *  The icon is ALWAYS there, dimmed when the column is not sorted: an
  *  indicator that only shows up once you sort does not say which columns are
  *  sortable, and then you have to try them one by one. */
 export function Th({
@@ -121,8 +127,9 @@ export function Th({
 }: {
   children: ReactNode;
   sortKey?: string;
-  sort?: SortState | null;
-  onSort?: (next: SortState | null) => void;
+  /** The order of the set, outermost first. Empty is «as they came». */
+  sort?: readonly SortState[];
+  onSort?: (next: SortState[]) => void;
   /** Numbers align to the right: that is what lets you compare orders of
    *  magnitude without reading the figures. */
   numeric?: boolean;
@@ -135,16 +142,13 @@ export function Th({
    *  system scale instead of pinning a size in pixels. */
   width?: number | string;
 }) {
-  const active = sortKey !== undefined && sort?.key === sortKey;
-  const dir = active ? sort.direction : undefined;
-
-  function nextSort() {
-    if (sortKey === undefined || onSort === undefined) return;
-    // asc → desc → unsorted. The third click puts the table back the way it was.
-    if (!active) onSort({ key: sortKey, direction: "asc" });
-    else if (dir === "asc") onSort({ key: sortKey, direction: "desc" });
-    else onSort(null);
-  }
+  const copy = useUiCopy();
+  const at = sortKey === undefined ? null : sortPosition(sort, sortKey);
+  const dir = at?.direction;
+  /* The place is drawn only when there is more than one criterion: «1» alone says nothing
+     the arrow did not. */
+  const ranked = at !== null && (sort?.length ?? 0) > 1;
+  const right = (align ?? (numeric ? "right" : "left")) === "right";
 
   const Icon = dir === "asc" ? ArrowUp : dir === "desc" ? ArrowDown : ChevronsUpDown;
 
@@ -152,9 +156,22 @@ export function Th({
     <th
       scope="col"
       style={width === undefined ? undefined : { width }}
-      aria-sort={active ? (dir === "asc" ? "ascending" : "descending") : "none"}
+      /* ARIA asks for `aria-sort` on ONE header at a time: the primary. A tie-breaker says
+         its place in its own name instead (below), and an unsorted sortable column says
+         `none`. */
+      aria-sort={
+        sortKey === undefined
+          ? undefined
+          : at === null
+            ? "none"
+            : at.index > 0
+              ? undefined
+              : dir === "asc"
+                ? "ascending"
+                : "descending"
+      }
       className={`border-b border-line-strong px-3 py-2 ${HEADER_TEXT} ${
-        (align ?? (numeric ? "right" : "left")) === "right" ? "text-right" : "text-left"
+        right ? "text-right" : "text-left"
       }`}
     >
       {sortKey === undefined ? (
@@ -162,17 +179,37 @@ export function Th({
       ) : (
         <button
           type="button"
-          onClick={nextSort}
-          className={`inline-flex items-center gap-1 rounded-control transition-colors duration-(--duration-instant) hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${
-            (align ?? (numeric ? "right" : "left")) === "right" ? "flex-row-reverse" : ""
-          } ${active ? "text-ink" : ""}`}
+          title={copy.sorting.addHint}
+          /* Shift+click selects the header's text in some browsers before the click lands. */
+          onMouseDown={(event) => {
+            if (event.shiftKey) event.preventDefault();
+          }}
+          onClick={(event) => onSort?.(pressSort(sort ?? [], sortKey, event.shiftKey))}
+          className={`inline-flex items-center gap-1 rounded-control transition-colors duration-(--duration-instant) select-none hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${
+            right ? "flex-row-reverse" : ""
+          } ${at === null ? "" : "text-ink"}`}
         >
           {children}
-          <Icon
-            className={`size-(--size-icon-sm) shrink-0 ${active ? "text-primary" : "text-line-strong"}`}
-            strokeWidth={2}
-            aria-hidden
-          />
+          <span className="inline-flex shrink-0 items-center gap-px">
+            <Icon
+              className={`size-(--size-icon-sm) shrink-0 ${at === null ? "text-line-strong" : "text-primary"}`}
+              strokeWidth={2}
+              aria-hidden
+            />
+            {ranked ? (
+              <span aria-hidden className="text-micro text-primary tabular-nums">
+                {at.index + 1}
+              </span>
+            ) : null}
+          </span>
+          {ranked ? (
+            <span className="sr-only">
+              {fillCopy(copy.sorting.place, {
+                place: String(at.index + 1),
+                direction: dir === "asc" ? copy.sorting.asc : copy.sorting.desc,
+              })}
+            </span>
+          ) : null}
         </button>
       )}
     </th>

@@ -14,7 +14,7 @@ import {
 import type { Surface } from "@sincpro/web-ui/foundations/types";
 import type { DataColumn, DataTableCreate } from "@sincpro/web-ui/primitives/table/DataTable";
 import type { RowAction } from "@sincpro/web-ui/primitives/table/RowActions";
-import type { SortState } from "@sincpro/web-ui/primitives/table/Table";
+import type { SortState } from "@sincpro/web-ui/primitives/table/sorting";
 import { ListView } from "@sincpro/web-ui/views/list/ListView";
 import {
   type CardWays,
@@ -359,9 +359,10 @@ export type ListProps<T extends object> = {
     matching?: { total: number; onSelect: () => void };
   };
 
-  /** El orden, que también es del conjunto. */
-  sort?: SortState | null;
-  onSortChange?: (next: SortState | null) => void;
+  /** El orden, que también es del conjunto: una lista de criterios, el primero manda y los
+   *  demás desempatan. Vacío es «como llegaron». */
+  sort?: readonly SortState[];
+  onSortChange?: (next: SortState[]) => void;
   /** Por qué campos se puede ordenar en las caras que NO tienen encabezados
    *  donde hacer clic. */
   sortable?: readonly SortField<T>[];

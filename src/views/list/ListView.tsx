@@ -262,7 +262,7 @@ export function ListView<T extends object>({
     present === "pivot" ? null : (
       <SortMenu
         fields={sortable as readonly SortField<never>[]}
-        sort={sort ?? null}
+        sort={sort ?? []}
         onSortChange={(next) => onSortChange?.(next)}
         {...(surface === undefined ? {} : { surface })}
       />
@@ -367,7 +367,7 @@ export function ListView<T extends object>({
     () =>
       present === "table" || sortable === undefined
         ? items
-        : sortItems(items, sortable, sort ?? null),
+        : sortItems(items, sortable, sort),
     [items, present, sortable, sort],
   );
 

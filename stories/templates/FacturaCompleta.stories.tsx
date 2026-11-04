@@ -428,7 +428,7 @@ const JOURNAL_COLUMNS: DataColumn<JournalRow>[] = [
  *  because a one2many with forty rows is a list too. */
 function JournalItems({ lines }: { lines: readonly FullLine[] }) {
   const [present, setPresent] = useState<ListPresent>("table");
-  const [sort, setSort] = useState<SortState | null>(null);
+  const [sort, setSort] = useState<SortState[]>([]);
   const [query, setQuery] = useState("");
   const q = query.trim().toLocaleLowerCase("es-BO");
   const items = journalOf(lines).filter(

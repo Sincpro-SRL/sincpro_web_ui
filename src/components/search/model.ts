@@ -40,6 +40,15 @@ export interface FieldDefinition {
   choices?: readonly unknown[];
 }
 
+/** The types an engine publishes for an AMOUNT — integer, float, decimal, money. A search
+ *  compares them as numbers and a listing aligns and formats them as numbers: «monetary»
+ *  read as text made «total <= 1000» impossible and drew «1234.5» flush left. */
+const NUMERIC_TYPES = new Set(["integer", "number", "float", "decimal", "monetary", "money"]);
+
+export function isNumericType(type: string): boolean {
+  return NUMERIC_TYPES.has(type.toLowerCase());
+}
+
 /** Si este campo se puede usar en un `where`, un `order` o un `grouping.by` directamente.
  *  `ops.length === 0` alcanza como señal: la publican tanto `embedded` como los tres
  *  relacionales, así que no hace falta mirar `kind` aparte. */
