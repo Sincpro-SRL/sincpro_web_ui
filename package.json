@@ -26,7 +26,8 @@
       "types": "./dist/views/index.d.ts",
       "default": "./dist/views/index.js"
     },
-    "./tokens.css": "./dist/tokens.css"
+    "./tokens.css": "./dist/tokens.css",
+    "./*.css": "./dist/*.css"
   },
   "publishConfig": {
     "access": "public"
