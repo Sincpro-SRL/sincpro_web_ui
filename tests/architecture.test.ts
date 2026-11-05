@@ -37,6 +37,7 @@ const TIER_OF: Readonly<Record<string, Tier>> = {
   choice: "input",
   date: "input",
   picker: "input",
+  chart: "collection",
   table: "collection",
   tree: "collection",
 };

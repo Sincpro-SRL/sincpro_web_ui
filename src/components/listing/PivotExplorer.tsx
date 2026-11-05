@@ -1,10 +1,9 @@
 "use client";
 
-import { grainName } from "@sincpro/web-ui/foundations/calendar";
-import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { AxisLevels, levelLabeler } from "@sincpro/web-ui/components/listing/AxisLevels";
+import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import type {
   GroupableField,
-  GroupGrain,
   GroupLevel,
   PileOf,
 } from "@sincpro/web-ui/foundations/grouping";
@@ -13,8 +12,7 @@ import { downloadPivot } from "@sincpro/web-ui/foundations/pivotSheet";
 import { Button, IconButton } from "@sincpro/web-ui/primitives/button/Button";
 import { Menu } from "@sincpro/web-ui/primitives/menu/Menu";
 import { PivotTable } from "@sincpro/web-ui/primitives/table/PivotTable";
-import { Tags } from "@sincpro/web-ui/primitives/tag/Tags";
-import { ArrowLeftRight, Download, Plus, Sigma } from "lucide-react";
+import { ArrowLeftRight, Download, Sigma } from "lucide-react";
 import { useMemo, useState } from "react";
 
 export type PivotExplorerProps<T> = {
@@ -36,12 +34,6 @@ export type PivotExplorerProps<T> = {
   height?: number | string;
   /** The file's name when downloaded. */
   fileName?: string;
-};
-
-const levelId = (level: GroupLevel) => `${level.field}:${level.grain ?? ""}`;
-const fromId = (id: string): GroupLevel => {
-  const [field = "", grain = ""] = id.split(":");
-  return grain === "" ? { field } : { field, grain: grain as GroupGrain };
 };
 
 /**
@@ -78,67 +70,12 @@ export function PivotExplorer<T>({
   const rows = outerRows ?? ownRows;
   const following = outerRows !== undefined;
 
-  const labelOf = (level: GroupLevel) => {
-    const field = fields.find((one) => one.field === level.field)?.label ?? level.field;
-    return level.grain === undefined
-      ? field
-      : `${field} · ${grainName(level.grain).toLowerCase()}`;
-  };
+  const labelOf = levelLabeler(fields);
   const shownMeasures = measures.filter((one) => chosen.has(one.id));
   const pivot = useMemo(
     () => pivotFrom(items, { rows, columns, of, measures: shownMeasures, labelOf }),
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [items, rows, columns, of, shownMeasures.map((one) => one.id).join("|")],
-  );
-
-  /* What can be added to an axis: every field (each grain of a date) not on either axis. */
-  const used = new Set([...rows, ...columns].map(levelId));
-  const options = fields.flatMap((field) =>
-    (field.grains ?? [undefined]).map((grain) => {
-      const level: GroupLevel =
-        grain === undefined ? { field: field.field } : { field: field.field, grain };
-      return {
-        id: levelId(level),
-        label: labelOf(level),
-        disabled: used.has(levelId(level)),
-      };
-    }),
-  );
-
-  const axis = (
-    name: string,
-    levels: readonly GroupLevel[],
-    set: ((next: readonly GroupLevel[]) => void) | null,
-  ) => (
-    <div className="flex min-w-0 flex-wrap items-center gap-1.5">
-      <span className="text-micro font-medium text-muted">{name}</span>
-      <Tags
-        label={name}
-        items={levels.map((level) => ({
-          id: levelId(level),
-          label: labelOf(level),
-          ...(set === null
-            ? {}
-            : {
-                onRemove: () => set(levels.filter((one) => levelId(one) !== levelId(level))),
-                removeLabel: fillCopy(words.removeLevel, { level: labelOf(level) }),
-              }),
-        }))}
-      />
-      {set === null ? (
-        <span className="text-micro text-muted italic">{words.fromSearch}</span>
-      ) : (
-        <Menu
-          label={fillCopy(words.addLevel, { axis: name })}
-          icon={Plus}
-          iconOnly
-          chevron={false}
-          variant="text"
-          groups={[{ options }]}
-          onSelect={(id) => set([...levels, fromId(id)])}
-        />
-      )}
-    </div>
   );
 
   return (
@@ -165,8 +102,20 @@ export function PivotExplorer<T>({
             })
           }
         />
-        {axis(words.rowsAxis, rows, following ? null : setOwnRows)}
-        {axis(words.columnsAxis, columns, setColumns)}
+        <AxisLevels
+          name={words.rowsAxis}
+          levels={rows}
+          onChange={following ? null : setOwnRows}
+          fields={fields}
+          used={columns}
+        />
+        <AxisLevels
+          name={words.columnsAxis}
+          levels={columns}
+          onChange={setColumns}
+          fields={fields}
+          used={rows}
+        />
         <div className="ml-auto flex items-center gap-1">
           {following ? null : (
             <IconButton

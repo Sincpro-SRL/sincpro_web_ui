@@ -2,6 +2,7 @@
 export * from "@sincpro/web-ui/primitives/block/index";
 export * from "@sincpro/web-ui/primitives/button/index";
 export * from "@sincpro/web-ui/primitives/cell/index";
+export * from "@sincpro/web-ui/primitives/chart/index";
 export * from "@sincpro/web-ui/primitives/choice/index";
 export * from "@sincpro/web-ui/primitives/date/index";
 export * from "@sincpro/web-ui/primitives/dialog/index";

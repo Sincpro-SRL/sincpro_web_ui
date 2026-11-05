@@ -1,9 +1,10 @@
 "use client";
 
-import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
-import type { LucideIcon } from "lucide-react";
+import { ArrowDownRight, ArrowUpRight, type LucideIcon } from "lucide-react";
+import { useMemo } from "react";
 
 /**
  * A metric that also FILTERS: «2 por confirmar», «41 por entregar».
@@ -38,6 +39,13 @@ export type MetricProps = {
   onClick?: () => void;
   /** This narrowing is applied. */
   active?: boolean;
+  /**
+   * How it moved against a NAMED period: `{ by: 0.18, against: "2025" }` draws «↗ +18 % vs
+   * 2025». Whether up is good is the domain's (`better`, up by default): more sales is
+   * good news, more overdue invoices is not. The arrow carries the direction and the word
+   * the period, so the colour is never the only channel.
+   */
+  change?: { by: number; against: string; better?: "up" | "down" };
 };
 
 const TONE: Record<Tone, { background: string; text: string; edge: string }> = {
@@ -58,10 +66,20 @@ export function Metric({
   icon: Icon,
   onClick,
   active = false,
+  change,
 }: MetricProps) {
   const copy = useUiCopy();
   const sup = useSurface();
   const t = TONE[tone];
+  const percent = useMemo(
+    () =>
+      new Intl.NumberFormat(copy.locale, {
+        style: "percent",
+        maximumFractionDigits: 1,
+        signDisplay: "exceptZero",
+      }),
+    [copy.locale],
+  );
 
   /* At rest the box is the sheet with a hair of border: that is what makes four
      metrics read as one row and not as four notices. Lit up it gets tinted, and
@@ -89,6 +107,7 @@ export function Metric({
       <span className={`text-micro ${bySurface(sup, "text-muted", "text-chrome-muted")}`}>
         {label}
       </span>
+      {change === undefined ? null : <Change change={change} format={percent.format} />}
     </>
   );
 
@@ -104,6 +123,37 @@ export function Metric({
     <button type="button" onClick={onClick} aria-pressed={active} className={box}>
       {content}
     </button>
+  );
+}
+
+function Change({
+  change,
+  format,
+}: {
+  change: NonNullable<MetricProps["change"]>;
+  format: (value: number) => string;
+}) {
+  const copy = useUiCopy();
+  const sup = useSurface();
+  const up = change.by > 0;
+  const flat = change.by === 0;
+  const good = flat ? null : up === ((change.better ?? "up") === "up");
+  const Arrow = up ? ArrowUpRight : ArrowDownRight;
+  /* On the chrome the states have their own steps; on the canvas, the usual ones. */
+  const color =
+    good === null
+      ? bySurface(sup, "text-muted", "text-chrome-muted")
+      : good
+        ? bySurface(sup, "text-good", "text-chrome-good")
+        : bySurface(sup, "text-bad", "text-chrome-bad");
+  return (
+    <span className={`flex items-center gap-1 text-micro tabular-nums ${color}`}>
+      {flat ? null : <Arrow className="size-(--size-icon-sm)" strokeWidth={2} aria-hidden />}
+      {format(change.by)}
+      <span className={bySurface(sup, "text-muted", "text-chrome-muted")}>
+        {fillCopy(copy.chart.against, { name: change.against })}
+      </span>
+    </span>
   );
 }
 

@@ -41,6 +41,8 @@ import { useState } from "react";
  *     pivot          dos EJES a la vez. Una fila es un montón y una columna
  *                    también; lo que se lee está en el cruce. Tampoco se
  *                    ordena: el orden de cada eje es el de sus claves.
+ *     chart          el mismo pivote, dibujado: barras, líneas o torta. El
+ *                    primer agrupado es el eje y el segundo, las series.
  */
 export type BuiltInPresent =
   | "rows"
@@ -49,6 +51,7 @@ export type BuiltInPresent =
   | "sheet"
   | "report"
   | "pivot"
+  | "chart"
   | "calendar"
   | "gantt"
   | "timeline";

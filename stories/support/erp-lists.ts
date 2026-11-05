@@ -655,3 +655,58 @@ export const PRICE_LIST: readonly (string | number | null)[][] = [
   ["CER-PIS-45", "Cerámica de piso 45 × 45 beige (caja 2 m²)", "Santa Cruz", 530, 88.9],
   ["IMP-ASF-4", "Impermeabilizante asfáltico 4 L", "Cochabamba", 7, 126.0],
 ];
+
+/* ==================================================================== *
+ *  SALES WITH A DATE: what is looked at on a chart over time
+ *
+ *  Twenty-two months, January 2025 to October 2026, a few sales per branch per month. It
+ *  lives here because a list chart, a board and its comparison with the year before read
+ *  it, and it carries the three things a time axis has to survive:
+ *
+ *   - a month with NOTHING in it — August 2025, when invoicing was down — that the axis
+ *     must still show, or July sits next to September as if they were one month apart;
+ *   - a branch that opens late (Oruro, March 2026) and one that closes for a month
+ *     (Tarija, June 2026, inventory);
+ *   - growth: 2026 sells more than 2025, so «compared with last year» says something.
+ * ==================================================================== */
+
+export type DatedSale = {
+  id: string;
+  /** ISO date, `2026-03-14`. */
+  date: string;
+  branch: string;
+  payment: "contado" | "crédito";
+  channel: "mostrador" | "vendedor en ruta" | "tienda en línea";
+  amount: number;
+};
+
+const CHANNELS = ["mostrador", "vendedor en ruta", "tienda en línea"] as const;
+
+export const DATED_SALES: DatedSale[] = (() => {
+  const out: DatedSale[] = [];
+  let n = 0;
+  for (let m = 0; m < 22; m += 1) {
+    const year = 2025 + Math.floor(m / 12);
+    const month = (m % 12) + 1;
+    if (year === 2025 && month === 8) continue;
+    BRANCHES.forEach((branch, b) => {
+      if (branch === "Oruro" && (year === 2025 || month < 3)) return;
+      if (branch === "Tarija" && year === 2026 && month === 6) return;
+      const count = 2 + ((m * 7 + b * 3) % 4);
+      for (let i = 0; i < count; i += 1) {
+        n += 1;
+        const day = 1 + ((i * 11 + b * 5 + m) % 27);
+        const base = 400 + ((m * 131 + b * 977 + i * 389) % 4600);
+        out.push({
+          id: `d${String(n)}`,
+          date: `${String(year)}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+          branch,
+          payment: (i + b + m) % 3 === 0 ? "crédito" : "contado",
+          channel: CHANNELS[(i + m + b * 2) % CHANNELS.length] ?? "mostrador",
+          amount: Math.round(year === 2026 ? base * 1.18 : base),
+        });
+      }
+    });
+  }
+  return out;
+})();

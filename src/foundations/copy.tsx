@@ -646,6 +646,45 @@ export type UiCopy = {
     download: string;
     fromSearch: string;
   };
+  /** The chart of a set (`Chart`, `ChartExplorer`): Odoo's graph view. */
+  chart: {
+    /** The count of rows, offered as a measure. */
+    count: string;
+    /** The tail gathered into one bar or slice. */
+    rest: string;
+    empty: string;
+    /** A pie cannot draw a negative part. */
+    pieNegative: string;
+    /** Series (or slices) left out because the measure does not add up. */
+    hidden: string;
+    kind: string;
+    bar: string;
+    line: string;
+    pie: string;
+    measure: string;
+    categoriesAxis: string;
+    seriesAxis: string;
+    stacked: string;
+    cumulative: string;
+    ascending: string;
+    descending: string;
+    /** A legend entry is a toggle: it hides or shows its series. */
+    hideSeries: string;
+    showSeries: string;
+    /** What a press on a bar, a point or a slice does. */
+    open: string;
+    /** The measures a frame offers for each numeric column. */
+    sumOf: string;
+    averageOf: string;
+    /** The tooltip of a comparison: now against before, as a change. */
+    change: string;
+    /** The toggle that draws the previous period: «Comparar con {name}». */
+    compareWith: string;
+    /** The measure menu's label with more than one on: «importe +1». */
+    moreMeasures: string;
+    /** A metric's change, against a named period: «vs 2025». */
+    against: string;
+  };
   /** A person as a value: who is not there, and the ways to reach who is. */
   person: {
     unassigned: string;
@@ -1391,6 +1430,34 @@ export const ENGLISH_COPY: UiCopy = {
     swap: "Swap rows and columns",
     download: "Download",
     fromSearch: "from the search's grouping",
+  },
+  chart: {
+    count: "count",
+    rest: "others ({count})",
+    empty: "Nothing to chart.",
+    pieNegative: "A pie cannot show negative values — try bars.",
+    hidden:
+      "{count} more not drawn: this measure does not add up, so they cannot be gathered into «others». The pivot shows them all.",
+    kind: "Chart type",
+    bar: "Bars",
+    line: "Lines",
+    pie: "Pie",
+    measure: "Measure",
+    categoriesAxis: "Axis",
+    seriesAxis: "Series",
+    stacked: "Stack",
+    cumulative: "Cumulative",
+    ascending: "Smallest first",
+    descending: "Largest first",
+    hideSeries: "Hide {name}",
+    showSeries: "Show {name}",
+    open: "Open {name}",
+    sumOf: "sum of {name}",
+    averageOf: "average of {name}",
+    change: "change",
+    compareWith: "Compare with {name}",
+    moreMeasures: "{name} +{count}",
+    against: "vs {name}",
   },
   person: {
     unassigned: "unassigned",

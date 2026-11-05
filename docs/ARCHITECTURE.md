@@ -27,7 +27,7 @@ se ordenan en tres tiers, y un tier importa sólo de los de abajo:
 | -------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
 | **display**    | Mostrar: un dato, un estado, un aviso | `block` `button` `cell` `dialog` `disclosure` `hint` `menu` `notice` `overlay` `surface` `tabs` `tag` `toolbar` `value` |
 | **input**      | Preguntar: un control de formulario   | `field` `choice` `date` `picker`                                                                                        |
-| **collection** | Mostrar N cosas a la vez              | `table` `tree`                                                                                                          |
+| **collection** | Mostrar N cosas a la vez              | `table` `tree` `chart`                                                                                                  |
 
 Un dato que se muestra no depende de un control (un `Tag` no sabe que existe un formulario); un
 control no depende de una colección (un `Picker` no arrastra una tabla); una colección puede usar

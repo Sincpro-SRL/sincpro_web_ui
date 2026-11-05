@@ -22,6 +22,9 @@ const SHOWN_THROUGH: Readonly<Record<string, string>> = {
   RowActions: "DataTable rows — 3 · Componentes/Datos/Tabla",
   RecordLink: "the rows of Listing — 4 · Vistas/Lista",
   PivotExplorer: "List.Pivot fields — 4 · Vistas/Lista · Pivote explorado",
+  ChartExplorer:
+    "List.Chart — 4 · Vistas/Lista · Gráfico, and FrameView — 3 · Componentes/Datos/Marco · Gráfico",
+  AxisLevels: "the axes of PivotExplorer and ChartExplorer — 4 · Vistas/Lista · Gráfico",
   TimelineToolbar: "RecordTimeline and RecordGantt — 3 · Componentes/Línea de tiempo, Gantt",
   BoardColumns: "List.Board stages — 4 · Vistas/Lista · Tablero por etapas",
   RecordRibbon: "Record.Ribbon — 4 · Vistas/Registro · Archivado",

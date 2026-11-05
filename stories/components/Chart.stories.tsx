@@ -2,32 +2,24 @@ import { columnSeries, type FrameColumn, frameFromRows, SeriesChart } from "@sin
 import type { Meta, StoryObj } from "@storybook/react-vite";
 
 /**
- * Context: **la sexta manera de mirar N cosas.** Las otras cinco muestran cada
- * fila; ésta las CUENTA y dibuja la forma de una columna.
+ * Context: **la forma de UNA columna** —«cómo se reparten sus valores»—, la pregunta que en
+ * un ERP se hace todo el tiempo (¿de qué ciudad vienen las ventas?, ¿son muchas chicas o
+ * pocas grandes?).
  *
- * Vive en `Datos` y no aparte porque contesta la misma pregunta que las demás
- * —«qué hay en este conjunto»— sobre los mismos datos. Es una presentación más
- * del marco, igual que la tabla: se cambia con el mismo conmutador y el cromo de
- * arriba no se mueve.
+ * ── Lo que ya NO es ─────────────────────────────────────────────────
  *
- * ── Lo que NO es ────────────────────────────────────────────────────
- *
- * No es una librería de gráficos. No hay tortas, ni líneas, ni ejes
- * configurables, ni leyendas que se arrastran. Es UNA pregunta —«cómo se
- * reparten los valores de esta columna»— que en un ERP se hace todo el tiempo
- * (¿de qué ciudad vienen las ventas?, ¿son muchas chicas o pocas grandes?) y que
- * hasta acá obligaba a bajar el Excel a otra herramienta.
- *
- * El día que haga falta una serie temporal o una comparación de dos columnas,
- * eso es otra pieza con su propia pregunta, no una prop más de ésta.
+ * Era su propio dibujo: barras de progreso de 6 px estiradas a lo ancho, el número a 1.200 px
+ * de su barra, y un tramo vacío dibujado con un trocito como si tuviera filas. Ahora es el
+ * mismo `Chart` que usa todo conjunto, y la pregunta más amplia —partir por un campo y medir,
+ * con barras, líneas o torta— es de `ChartExplorer`, la vista gráfica de la lista y del marco
+ * (ver «2 · Primitivas/Gráfico»).
  *
  * ── Y por eso los datos entran como SERIE y no como frame ───────────
  *
- * `SeriesBar` es `{ label, count }` y nada más. Quien sabe cómo se agrupa una
- * columna es `columnSeries`, que además decide los cortes: una columna numérica
- * se reparte en tramos y una categórica se cuenta por valor, tomando los más
- * frecuentes. Esas dos decisiones son del dominio del dato, no del dibujo — por
- * eso el gráfico no las toma.
+ * `SeriesBar` es `{ label, count, bin? }`. Quien sabe cómo se agrupa una columna es
+ * `columnSeries`, que además decide los cortes: una columna numérica se reparte en tramos de
+ * bordes redondos y una categórica se cuenta por valor, juntando la cola en «otros». Esas
+ * decisiones son del dominio del dato, no del dibujo — por eso el gráfico no las toma.
  */
 const meta: Meta<typeof SeriesChart> = {
   title: "3 · Componentes/Datos/Serie · la forma de una columna",
@@ -37,7 +29,7 @@ const meta: Meta<typeof SeriesChart> = {
     docs: {
       description: {
         component:
-          "La sexta manera de mirar N cosas: no muestra cada fila, las CUENTA. Es una presentación del marco y no una librería de gráficos — contesta una sola pregunta, «cómo se reparten los valores de esta columna».",
+          "La forma de UNA columna: no muestra cada fila, las CUENTA — tramos redondos si es numérica, los valores más frecuentes (y «otros») si es texto. Dibujada con el mismo `Chart` de todo conjunto.",
       },
     },
   },
@@ -75,18 +67,16 @@ function Caja({ label, children }: { label: string; children: React.ReactNode })
       <figcaption className="font-mono text-micro tracking-[0.1em] text-muted uppercase">
         {label}
       </figcaption>
-      <div className="overflow-hidden rounded-box border border-line bg-surface">
-        {children}
-      </div>
+      <div className="rounded-box border border-line bg-surface p-5">{children}</div>
     </figure>
   );
 }
 
 /**
- * **Una columna categórica se cuenta por valor.** Cada barra es un valor y su
- * alto es cuántas filas lo tienen. Los valores se ordenan por frecuencia y se
- * cortan en los más comunes: una columna con cuatrocientos valores distintos
- * dibujada entera son cuatrocientas barras de un píxel, que no es un gráfico.
+ * **Una columna categórica se cuenta por valor.** Cada barra, acostada, es un valor
+ * con su conteo en la punta. Los valores se ordenan por frecuencia y la cola se JUNTA en
+ * «otros (n)»: una columna con cuatrocientos valores distintos dibujada entera son
+ * cuatrocientas barras de un píxel, y tirar la cola haría que las barras no sumen las filas.
  */
 export const Categorica: Story = {
   args: { series: [] },
@@ -100,9 +90,10 @@ export const Categorica: Story = {
 };
 
 /**
- * **Una columna numérica se reparte en TRAMOS.** No tiene sentido contar por
- * valor cuando casi todos son distintos: lo que se quiere ver es la forma —si se
- * amontona abajo, si es pareja, si hay una cola larga—.
+ * **Una columna numérica se reparte en TRAMOS** de bordes redondos (0–1.000,
+ * 1.000–2.000…), tantos como pide la cantidad de valores y nunca más de doce. No tiene
+ * sentido contar por valor cuando casi todos son distintos: lo que se quiere ver es la
+ * forma —si se amontona abajo, si es pareja, si hay una cola larga—.
  *
  * Esta columna tiene la cola larga a propósito: pocas ventas muy grandes y
  * muchas chicas, que es lo que pasa con casi cualquier importe real. Es

@@ -2,6 +2,7 @@
 export * from "@sincpro/web-ui/components/activity/index";
 export * from "@sincpro/web-ui/components/assist/index";
 export * from "@sincpro/web-ui/components/attachments/index";
+export * from "@sincpro/web-ui/components/board/index";
 export * from "@sincpro/web-ui/components/calendar/index";
 export * from "@sincpro/web-ui/components/canvas/index";
 export * from "@sincpro/web-ui/components/chat/index";

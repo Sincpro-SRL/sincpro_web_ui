@@ -2,6 +2,8 @@ import {
   Button,
   type CardWays,
   compareBy,
+  COUNT_MEASURE,
+  dateKey,
   downloadPivot,
   filterCriteria,
   GroupingLevels,
@@ -36,13 +38,15 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { LayoutDashboard, Users } from "lucide-react";
 import { useMemo, useState } from "react";
-import { expect, userEvent, within } from "storybook/test";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { money } from "../support/erp";
 import {
   BALANCE_COLUMNS,
   BALANCE_ROWS,
   BRANCHES,
+  DATED_SALES,
+  type DatedSale,
   type Delivery,
   ORDER_COUNTERS as COUNTERS,
   orderMeta,
@@ -1193,6 +1197,399 @@ export const PivoteExplorado: StoryObj<typeof List<Sale>> = {
 };
 
 /**
+ * **El GRÁFICO: la vista gráfica de Odoo.** Lee lo mismo que el pivote —las ventas, plegadas
+ * con el mismo `spec`—, así que el número de una barra y el de un cruce nunca pueden decir
+ * cosas distintas. Sus niveles siguen al agrupado del buscador: el primero es el eje y el
+ * segundo las series (agregá «año» desde el panel del buscador y aparecen). Barras, líneas o
+ * torta; la medida; apilado, acumulado y orden; y tocar una barra abre lo que cayó ahí.
+ */
+export const Grafico: StoryObj<typeof List<Sale>> = {
+  render: function Render() {
+    const CAMPOS = [
+      { field: "branch", label: "sucursal" },
+      { field: "payment", label: "forma de pago" },
+      { field: "year", label: "año" },
+      { field: "quarter", label: "trimestre" },
+    ];
+    const grouping = useGroupingControl({ levels: [{ field: "branch" }] });
+    const [abierto, setAbierto] = useState<string | null>(null);
+    const [criteria, setCriteria] = useState<SearchCriteria[]>([]);
+    const wanted = criteria
+      .flatMap((one) =>
+        one.kind === "filter" && one.where !== undefined && "value" in one.where
+          ? [String(one.where.value)]
+          : [],
+      )
+      .map((v) => v.toLocaleLowerCase("es"));
+    const ventas = SALES.filter((v) =>
+      wanted.every((w) => v.branch.toLocaleLowerCase("es").includes(w)),
+    );
+    const de = (sale: Sale, level: GroupLevel): string =>
+      level.field === "payment" ? sale.payment : PIVOTE_DE(sale, level);
+    const IMPORTE_SUMA: PivotFold<Sale> = { ...IMPORTE, additive: true };
+    const PROMEDIO: PivotFold<Sale> = {
+      id: "average",
+      header: "ticket promedio",
+      fold: (all) =>
+        all.length === 0 ? null : all.reduce((a, b) => a + b.amount, 0) / all.length,
+      format: (n) => `Bs. ${n.toLocaleString("es-BO", { maximumFractionDigits: 0 })}`,
+    };
+    return (
+      <div className="bg-ground p-8">
+        <div className="@container overflow-clip rounded-box border border-line-strong bg-surface">
+          <List<Sale>
+            items={ventas}
+            keyOf={(m) => m.id}
+            present="chart"
+            group={{ levels: grouping.levels, of: de }}
+            empty={{ sentence: "El período no tiene ventas." }}
+          >
+            <List.Bar>
+              <List.Identity
+                title="Ventas por sucursal"
+                description={
+                  abierto === null
+                    ? "tocá una barra para abrir sus ventas"
+                    : `abierto: ${abierto}`
+                }
+              />
+              <List.Search>
+                <SearchBar
+                  facets={[{ id: "branch", label: "en la sucursal" }]}
+                  criteria={criteria}
+                  onCriteriaChange={setCriteria}
+                  placeholder="buscar una sucursal…"
+                  grouping={<GroupingLevels fields={CAMPOS} control={grouping} />}
+                />
+              </List.Search>
+            </List.Bar>
+            <List.Pivot<Sale>
+              spec={{
+                rows: [],
+                columns: [{ field: "year" }],
+                of: de,
+                measures: [IMPORTE_SUMA, PROMEDIO],
+              }}
+              fields={CAMPOS}
+            />
+            <List.Chart<Sale>
+              spec={{ rows: [], columns: [], of: de, measures: [IMPORTE_SUMA, PROMEDIO] }}
+              fields={CAMPOS}
+              onPoint={(category, series) =>
+                setAbierto([...category, ...(series ?? [])].join(" · "))
+              }
+            />
+          </List>
+        </div>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    /* The levels follow the search bar's grouping, and the chart says so. */
+    await expect(await canvas.findByText("del agrupado del buscador")).toBeVisible();
+    /* No second level, no series control: one «del agrupado del buscador», not two. */
+    await expect(canvas.queryByText("Series")).toBeNull();
+    await expect(await canvas.findByText("La Paz")).toBeVisible();
+    /* A bar opens what fell there. */
+    const bar = canvasElement.querySelector(".recharts-bar-rectangle path");
+    await expect(bar).not.toBeNull();
+    await userEvent.click(bar!);
+    await expect(await canvas.findByText("abierto: La Paz")).toBeVisible();
+    /* Lines, then the pie: the same numbers, another form. */
+    await userEvent.click(canvas.getByRole("radio", { name: "Torta" }));
+    await expect(await canvas.findByText("La Paz")).toBeVisible();
+  },
+};
+
+/* ── La galería: cada forma de gráfico, sobre los datos de prueba ───────────────── */
+
+const ROTULO_VENTA: Record<string, string> = {
+  branch: "sucursal",
+  year: "año",
+  quarter: "trimestre",
+  payment: "forma de pago",
+  date: "fecha",
+  channel: "canal",
+};
+
+const deVenta = (sale: Sale, level: GroupLevel): string =>
+  level.field === "payment" ? sale.payment : PIVOTE_DE(sale, level);
+
+const deVentaFechada = (sale: DatedSale, level: GroupLevel): string =>
+  level.field === "date"
+    ? dateKey(sale.date, level.grain ?? "month")
+    : level.field === "branch"
+      ? sale.branch
+      : level.field === "payment"
+        ? sale.payment
+        : sale.channel;
+
+const rotulo = (level: GroupLevel) => ROTULO_VENTA[level.field] ?? level.field;
+
+/* What each tile can be re-split by, with the controls above its chart. */
+const CAMPOS_VENTA = [
+  { field: "branch", label: "sucursal" },
+  { field: "payment", label: "forma de pago" },
+  { field: "year", label: "año" },
+  { field: "quarter", label: "trimestre" },
+];
+const CAMPOS_FECHADA = [
+  { field: "date", label: "fecha", grains: ["month", "quarter", "year"] as const },
+  { field: "branch", label: "sucursal" },
+  { field: "payment", label: "forma de pago" },
+  { field: "channel", label: "canal" },
+];
+
+const bs = (n: number) => `Bs. ${n.toLocaleString("es-BO", { maximumFractionDigits: 0 })}`;
+
+const SUMA_VENTA: PivotFold<Sale> = { ...IMPORTE, additive: true };
+const SUMA_FECHADA: PivotFold<DatedSale> = {
+  id: "amount",
+  header: "importe",
+  additive: true,
+  fold: (all) => (all.length === 0 ? null : all.reduce((a, b) => a + b.amount, 0)),
+  format: bs,
+};
+const PROMEDIO_FECHADA: PivotFold<DatedSale> = {
+  id: "average",
+  header: "ticket promedio",
+  fold: (all) =>
+    all.length === 0 ? null : all.reduce((a, b) => a + b.amount, 0) / all.length,
+  format: bs,
+};
+
+const DE_2026 = DATED_SALES.filter((sale) => sale.date.startsWith("2026"));
+const DE_2025 = DATED_SALES.filter((sale) => sale.date.startsWith("2025"));
+
+/** One tile of the gallery: a list drawn as a chart, its title saying which form it is. */
+function Muestra<T extends object>({
+  titulo,
+  bajada,
+  items,
+  children,
+}: {
+  titulo: string;
+  bajada: string;
+  items: readonly T[];
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="@container min-w-0 overflow-clip rounded-box border border-line-strong bg-surface">
+      <List<T> items={items} keyOf={(one) => (one as { id: string }).id} present="chart">
+        <List.Bar>
+          <List.Identity title={titulo} description={bajada} />
+        </List.Bar>
+        {children}
+      </List>
+    </div>
+  );
+}
+
+/**
+ * **Todos los gráficos, sobre los datos de prueba.** Cada recuadro es una LISTA dibujada
+ * como gráfico (`present="chart"`), con los mismos registros que miran el pivote y la
+ * tabla. Lo que cambia entre uno y otro es cómo abre —`kind`, `stacked`, `cumulative`,
+ * `order`, `compare`, `defaultMeasures`—, y todo eso lo puede cambiar después quien mira,
+ * con los controles de arriba de cada gráfico.
+ *
+ * - **Barras**: una serie, un solo color, el número en la punta.
+ * - **Agrupadas / apiladas**: el segundo agrupado son las series, al lado o una sobre otra.
+ * - **Acostadas**: con muchas categorías o nombres largos se acuestan solas.
+ * - **Líneas**: el tiempo en el eje, con el mes vacío (agosto 2025) DIBUJADO como hueco.
+ * - **Comparado**: 2026 contra 2025, mes contra mes, el anterior en gris.
+ * - **Área apilada y acumulado**: cuánto aporta cada sucursal, y cuánto llevamos.
+ * - **Torta**: una sola totalidad, partida.
+ * - **Varias medidas**: cada medida su propio gráfico, nunca dos escalas en un eje.
+ */
+export const TodosLosGraficos: Story = {
+  render: () => (
+    <div className="grid grid-cols-1 gap-6 bg-ground p-8 xl:grid-cols-2">
+      <Muestra titulo="Barras" bajada="importe por sucursal, de mayor a menor" items={SALES}>
+        <List.Chart<Sale>
+          fields={CAMPOS_VENTA}
+          spec={{
+            rows: [{ field: "branch" }],
+            columns: [],
+            of: deVenta,
+            labelOf: rotulo,
+            measures: [SUMA_VENTA],
+          }}
+          order="desc"
+        />
+      </Muestra>
+      <Muestra titulo="Barras agrupadas" bajada="sucursal × año, lado a lado" items={SALES}>
+        <List.Chart<Sale>
+          fields={CAMPOS_VENTA}
+          spec={{
+            rows: [{ field: "branch" }],
+            columns: [{ field: "year" }],
+            of: deVenta,
+            labelOf: rotulo,
+            measures: [SUMA_VENTA],
+          }}
+          stacked={false}
+        />
+      </Muestra>
+      <Muestra
+        titulo="Barras apiladas"
+        bajada="contado y crédito, una sobre otra"
+        items={SALES}
+      >
+        <List.Chart<Sale>
+          fields={CAMPOS_VENTA}
+          spec={{
+            rows: [{ field: "branch" }],
+            columns: [{ field: "payment" }],
+            of: deVenta,
+            labelOf: rotulo,
+            measures: [SUMA_VENTA],
+          }}
+        />
+      </Muestra>
+      <Muestra
+        titulo="Barras acostadas"
+        bajada="veinte categorías: se acuestan solas"
+        items={SALES}
+      >
+        <List.Chart<Sale>
+          fields={CAMPOS_VENTA}
+          spec={{
+            rows: [{ field: "branch" }, { field: "quarter" }],
+            columns: [],
+            of: deVenta,
+            labelOf: rotulo,
+            measures: [SUMA_VENTA],
+          }}
+          order="desc"
+        />
+      </Muestra>
+      <Muestra
+        titulo="Líneas"
+        bajada="por mes: agosto 2025 no tuvo ventas y igual está en el eje"
+        items={DATED_SALES}
+      >
+        <List.Chart<DatedSale>
+          fields={CAMPOS_FECHADA}
+          spec={{
+            rows: [{ field: "date", grain: "month" }],
+            columns: [],
+            of: deVentaFechada,
+            labelOf: rotulo,
+            measures: [SUMA_FECHADA],
+          }}
+          kind="line"
+        />
+      </Muestra>
+      <Muestra
+        titulo="Comparado con el año anterior"
+        bajada="2026 contra 2025, mes contra mes"
+        items={DE_2026}
+      >
+        <List.Chart<DatedSale>
+          fields={CAMPOS_FECHADA}
+          spec={{
+            rows: [{ field: "date", grain: "month" }],
+            columns: [],
+            of: deVentaFechada,
+            labelOf: rotulo,
+            measures: [SUMA_FECHADA],
+          }}
+          kind="line"
+          compare={{ current: "2026", previous: "2025", items: DE_2025, defaultOn: true }}
+        />
+      </Muestra>
+      <Muestra
+        titulo="Área apilada"
+        bajada="lo que aporta cada sucursal, mes a mes"
+        items={DATED_SALES}
+      >
+        <List.Chart<DatedSale>
+          fields={CAMPOS_FECHADA}
+          spec={{
+            rows: [{ field: "date", grain: "quarter" }],
+            columns: [{ field: "branch" }],
+            of: deVentaFechada,
+            labelOf: rotulo,
+            measures: [SUMA_FECHADA],
+          }}
+          kind="line"
+        />
+      </Muestra>
+      <Muestra titulo="Acumulado" bajada="cuánto llevamos vendido en 2026" items={DE_2026}>
+        <List.Chart<DatedSale>
+          fields={CAMPOS_FECHADA}
+          spec={{
+            rows: [{ field: "date", grain: "month" }],
+            columns: [],
+            of: deVentaFechada,
+            labelOf: rotulo,
+            measures: [SUMA_FECHADA],
+          }}
+          kind="line"
+          cumulative
+        />
+      </Muestra>
+      <Muestra
+        titulo="Torta"
+        bajada="ventas por canal: una totalidad, partida"
+        items={DATED_SALES}
+      >
+        <List.Chart<DatedSale>
+          fields={CAMPOS_FECHADA}
+          spec={{
+            rows: [{ field: "channel" }],
+            columns: [],
+            of: deVentaFechada,
+            labelOf: rotulo,
+            measures: [SUMA_FECHADA],
+          }}
+          kind="pie"
+          defaultMeasure={COUNT_MEASURE}
+        />
+      </Muestra>
+      <Muestra
+        titulo="Varias medidas"
+        bajada="importe y ticket promedio: un gráfico por medida"
+        items={DATED_SALES}
+      >
+        <List.Chart<DatedSale>
+          fields={CAMPOS_FECHADA}
+          spec={{
+            rows: [{ field: "branch" }],
+            columns: [],
+            of: deVentaFechada,
+            labelOf: rotulo,
+            measures: [SUMA_FECHADA, PROMEDIO_FECHADA],
+          }}
+          defaultMeasures={["amount", "average"]}
+        />
+      </Muestra>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      await canvas.findByRole("heading", { name: "Barras agrupadas" }),
+    ).toBeVisible();
+    /* Every tile drew its chart (the lazy chunk arrives once for all of them). */
+    await waitFor(
+      () =>
+        expect(
+          canvasElement.querySelectorAll("svg.recharts-surface").length,
+        ).toBeGreaterThanOrEqual(10),
+      { timeout: 5000 },
+    );
+    /* The comparison names both periods on its legend. */
+    await expect(
+      (await canvas.findAllByRole("button", { name: "Esconder 2025" })).length,
+    ).toBeGreaterThanOrEqual(2);
+    /* Two measures, two charts, each one named. */
+    await expect(canvas.getByRole("heading", { name: "ticket promedio" })).toBeVisible();
+  },
+};
+
+/**
  * **El PIVOTE: la lista partida por DOS ejes.** Sexta presentación, y la única
  * en la que las filas de la pantalla dejan de ser los registros: una fila es un
  * montón y una columna también, así que lo que se lee está en el cruce.
@@ -1305,7 +1702,8 @@ export const Pivote: StoryObj<typeof List<Sale>> = {
 };
 
 /**
- * **Las seis, con el conmutador puesto.** Es el punto del arquetipo: lo de
+ * **Todas, con el conmutador puesto** —filas, tabla, tablero, planilla, informe, pivote y
+ * gráfico—. Es el punto del arquetipo: lo de
  * arriba no se mueve al cambiar de presentación, y lo que se pierde al cambiar
  * se pierde porque la presentación nueva no puede contestar esa pregunta, no
  * porque se haya olvidado.
@@ -1396,10 +1794,38 @@ export const LasSeis: Story = {
                 labelOf: (level) => (level.field === "stage" ? "estado" : "entregas"),
               }}
             />
+            {/* And the same pivot, DRAWN: the orders by state, split by deliveries. */}
+            <List.Chart<Item>
+              spec={{
+                rows: [{ field: "stage" }],
+                columns: [{ field: "deliveries" }],
+                of: pileOf,
+                measures: [
+                  {
+                    id: "total",
+                    header: "total",
+                    additive: true,
+                    fold: (items) =>
+                      items.length === 0
+                        ? null
+                        : items.reduce((total, one) => total + one.total, 0),
+                    format: money,
+                  },
+                ],
+                labelOf: (level) => (level.field === "stage" ? "estado" : "entregas"),
+              }}
+              fields={AGRUPABLES}
+            />
           </List>
         </div>
       </div>
     );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    /* The seventh face, on the same switcher: the set drawn. */
+    await userEvent.click(await canvas.findByRole("button", { name: "Gráfico" }));
+    await expect(await canvas.findByRole("radio", { name: "Barras" })).toBeVisible();
   },
 };
 

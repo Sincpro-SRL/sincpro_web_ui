@@ -228,8 +228,8 @@ function Pipeline({ api, resource }: ViewProps) {
   const crumbs = useCrumbs(api);
   const onOpen = (o: Opportunity) => api.open(opportunityRef(o));
   const [query, setQuery] = useState("");
-  const [shown, setShown] = useState<"board" | "table" | "calendar" | "rows">(
-    (resource.params?.["present"] as "calendar" | undefined) ?? "board",
+  const [shown, setShown] = useState<"board" | "table" | "calendar" | "rows" | "chart">(
+    (resource.params?.["present"] as "calendar" | "chart" | undefined) ?? "board",
   );
   const wanted = query.trim().toLocaleLowerCase("es");
   const visible = items.filter((o) =>
@@ -376,6 +376,48 @@ function Pipeline({ api, resource }: ViewProps) {
         metaOf={(o) => o.customer}
         date={new Date(2026, 10, 2)}
         onMove={(o, start) => update({ ...o, activityAt: start })}
+      />
+      {/* Odoo's CRM graph: the pipeline by stage, stacked by salesperson. */}
+      <List.Chart<Opportunity>
+        spec={{
+          rows: [{ field: "stage" }],
+          columns: [{ field: "salesperson" }],
+          of: (o, level) =>
+            level.field === "stage"
+              ? (CRM_STAGES.find((s) => s.id === o.stage)?.label ?? o.stage)
+              : level.field === "salesperson"
+                ? o.salesperson
+                : level.field === "customer"
+                  ? o.customer
+                  : `${"★".repeat(o.priority)}${"☆".repeat(3 - o.priority)}`,
+          measures: [
+            {
+              id: "expected",
+              header: "esperado",
+              additive: true,
+              fold: (all) =>
+                all.length === 0 ? null : all.reduce((sum, o) => sum + o.expected, 0),
+              format: bolivianos,
+            },
+            {
+              id: "weighted",
+              header: "ponderado por probabilidad",
+              additive: true,
+              fold: (all) =>
+                all.length === 0
+                  ? null
+                  : all.reduce((sum, o) => sum + (o.expected * o.probability) / 100, 0),
+              format: bolivianos,
+            },
+          ],
+        }}
+        fields={[
+          { field: "stage", label: "etapa" },
+          { field: "salesperson", label: "vendedor" },
+          { field: "customer", label: "cliente" },
+          { field: "priority", label: "prioridad" },
+        ]}
+        fileName="pipeline"
       />
     </List>
   );
@@ -685,6 +727,24 @@ export const Pipeline_: Story = {
 /** La misma cartera en el calendario de sus próximas actividades: arrastrar una la reprograma. */
 export const Actividades: Story = {
   render: () => <Crm start={pipelineRef("calendar")} />,
+};
+
+/** La cartera como GRÁFICO: lo esperado por etapa, apilado por vendedor. «Medida» suma lo
+ *  ponderado por probabilidad como un segundo gráfico, nunca como un segundo eje. */
+export const Grafico: Story = {
+  name: "Gráfico",
+  render: () => <Crm start={pipelineRef("chart")} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByRole("radio", { name: "Barras" })).toBeVisible();
+    await waitFor(() =>
+      expect(canvasElement.querySelector("svg.recharts-surface")).not.toBeNull(),
+    );
+    /* Stacked by salesperson: the legend names them. */
+    await expect(
+      await canvas.findByRole("button", { name: "Esconder Andrés Gutiérrez" }),
+    ).toBeVisible();
+  },
 };
 
 /** Una oportunidad: las etapas se eligen en el riel, «Ganado» pone la cinta, y la actividad
