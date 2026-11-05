@@ -15,6 +15,7 @@ import {
   Button,
   Calendar,
   ChangeReview,
+  dateKey,
   DatePicker,
   Field,
   FormActions,
@@ -431,7 +432,9 @@ function InvoiceList({ api }: ViewProps) {
        `overflow-hidden` around it — that makes a scroll container and the sticky list bar would
        stick INSIDE it, pushed down by the application bar. */
     <List<Invoice>
-      items={visible}
+      /* A chart counts the whole filtered set, not the page on screen: twelve invoices of
+         thirty-two would draw a month that sold a third of what it did. */
+      items={present === "chart" ? filtered : visible}
       keyOf={(i) => i.id}
       present={present}
       onPresentChange={setPresent}
@@ -593,6 +596,48 @@ function InvoiceList({ api }: ViewProps) {
         })}
       />
       <List.Board<Invoice> />
+      {/* Odoo's graph view of invoices: invoiced per week, split by whatever the person asks. */}
+      <List.Chart<Invoice>
+        spec={{
+          rows: [{ field: "date", grain: "week" }],
+          columns: [],
+          of: (i, level) =>
+            level.field === "state"
+              ? STATE_LABEL[i.state]
+              : level.field === "customer"
+                ? i.customer
+                : level.field === "salesperson"
+                  ? i.salesperson
+                  : dateKey(i.date, level.grain ?? "month"),
+          measures: [
+            {
+              id: "total",
+              header: "facturado",
+              additive: true,
+              fold: (all) =>
+                all.length === 0 ? null : all.reduce((sum, i) => sum + subtotalOf(i), 0),
+              format: money,
+            },
+          ],
+        }}
+        fields={[
+          { field: "date", label: "fecha", grains: ["week", "month"] },
+          { field: "state", label: "estado" },
+          { field: "customer", label: "cliente" },
+          { field: "salesperson", label: "vendedor" },
+        ]}
+        onPoint={(category) => {
+          /* A bar of a state narrows the list to it, as the metrics above do. */
+          const state = Object.entries(STATE_LABEL).find(
+            ([, label]) => label === category[0],
+          );
+          if (state !== undefined && state[0] in QUICK) {
+            setQuick(state[0] as Quick);
+            setPresent("table");
+          }
+        }}
+        fileName="facturado"
+      />
     </List>
   );
 }
@@ -1402,6 +1447,24 @@ export const Modulo: Story = {
 /** **La lista.** Tabla por defecto, con totales; las filas y el tablero están a un clic. */
 export const Lista: Story = {
   render: () => <Sales start={invoicesRef} />,
+};
+
+/**
+ * **El gráfico de la lista** —la vista gráfica de Odoo—: lo facturado por semana, de TODAS
+ * las facturas que dejó el filtro y no sólo de la página. Partilo por estado, cliente o
+ * vendedor con el «+»; tocá la barra de un estado y la lista se filtra por él.
+ */
+export const Grafico: Story = {
+  name: "Gráfico",
+  render: () => <Sales start={invoicesRef} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Gráfico" }));
+    await expect(await canvas.findByRole("radio", { name: "Barras" })).toBeVisible();
+    await waitFor(() =>
+      expect(canvasElement.querySelector("svg.recharts-surface")).not.toBeNull(),
+    );
+  },
 };
 
 /** **Una factura publicada** con saldo pendiente: las acciones del riel cambian con el estado.

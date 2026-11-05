@@ -73,7 +73,16 @@ export function dateKey(
   grain: GroupGrain,
 ): string {
   if (when === null || when === undefined || when === "") return "";
-  const date = when instanceof Date ? when : new Date(when);
+  /* A date WITHOUT a time («2025-01-01») is a day of the calendar, not an instant: `new Date`
+     reads it as midnight UTC, which in La Paz (UTC−4) is the 31st of December — and January's
+     sales landed in last year's December. It is read as a local day instead. */
+  const day = typeof when === "string" ? /^(\d{4})-(\d{2})-(\d{2})$/.exec(when) : null;
+  const date =
+    day !== null
+      ? new Date(Number(day[1]), Number(day[2]) - 1, Number(day[3]))
+      : when instanceof Date
+        ? when
+        : new Date(when);
   if (Number.isNaN(date.getTime())) return "";
 
   const year = date.getFullYear();
@@ -156,6 +165,63 @@ export function dateLabel(
       ...(said("year") ? {} : { year: "numeric" }),
     }).format(when),
   );
+}
+
+/**
+ * La clave SIGUIENTE en el mismo grano: «2026-09» → «2026-10», «2026-Q4» → «2027-Q1»,
+ * «2026-W52» → la semana ISO que sigue. `null` si la clave no tiene la forma de su grano —
+ * una contada afuera, que esta capa no escribió y entonces no puede continuar.
+ */
+export function nextDateKey(key: string, grain: GroupGrain): string | null {
+  const parts = KEY_SHAPES[grain].exec(key);
+  if (parts === null) return null;
+  const year = Number(key.slice(0, 4));
+  if (grain === "year") return String(year + 1);
+  if (grain === "quarter") {
+    const quarter = Number(key.slice(6));
+    return quarter === 4 ? `${year + 1}-Q1` : `${year}-Q${quarter + 1}`;
+  }
+  if (grain === "month") {
+    const month = Number(key.slice(5, 7));
+    return month === 12 ? `${year + 1}-01` : `${year}-${pad(month + 1)}`;
+  }
+  if (grain === "week") {
+    /* The Monday of ISO week 1 is the Monday of the week holding 4 January. */
+    const week = Number(key.slice(6));
+    const fourth = new Date(year, 0, 4);
+    const monday = new Date(year, 0, 4 - ((fourth.getDay() + 6) % 7) + (week - 1) * 7);
+    return dateKey(
+      new Date(monday.getFullYear(), monday.getMonth(), monday.getDate() + 7),
+      "week",
+    );
+  }
+  const date = new Date(year, Number(key.slice(5, 7)) - 1, Number(key.slice(8, 10)) + 1);
+  return dateKey(date, "day");
+}
+
+/**
+ * Todas las claves de un grano entre dos, las dos incluidas: el EJE de tiempo entero.
+ *
+ * Un eje que salta el mes en que no pasó nada miente sobre el tiempo —agosto pegado a
+ * octubre se lee como un mes— y ese hueco suele ser justo lo que alguien busca. `null` si
+ * alguna clave no se puede continuar o si serían más de `max`: un eje por día de diez años
+ * no es un gráfico.
+ */
+export function dateKeysBetween(
+  first: string,
+  last: string,
+  grain: GroupGrain,
+  max = 1000,
+): string[] | null {
+  const out = [first];
+  let key = first;
+  while (key < last) {
+    const next = nextDateKey(key, grain);
+    if (next === null || out.length >= max) return null;
+    out.push(next);
+    key = next;
+  }
+  return key === last ? out : null;
 }
 
 /** El nombre de un mes —1 a 12— en el idioma activo. Lo usa el que ofrece meses

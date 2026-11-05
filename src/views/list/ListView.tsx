@@ -3,6 +3,7 @@
 import type { RecordCalendar as EagerCalendar } from "@sincpro/web-ui/components/calendar/RecordCalendar";
 import type { RecordGantt as EagerGantt } from "@sincpro/web-ui/components/gantt/RecordGantt";
 import { BoardColumns } from "@sincpro/web-ui/components/listing/BoardColumns";
+import type { ChartExplorer as EagerChart } from "@sincpro/web-ui/components/listing/ChartExplorer";
 import { useColumnControl, visibleColumns } from "@sincpro/web-ui/components/listing/columns";
 import {
   ColumnsMenu,
@@ -63,6 +64,7 @@ import type { LucideIcon } from "lucide-react";
 import {
   CalendarDays,
   CalendarRange,
+  ChartColumnBig,
   ChartGantt,
   Grid3x3,
   LayoutGrid,
@@ -87,6 +89,13 @@ const RecordGantt = lazy(() =>
     default: module.RecordGantt,
   })),
 ) as unknown as typeof EagerGantt;
+/* The chart (Recharts) is its own chunk too: a list that is never drawn as a chart never
+   downloads it. */
+const ChartExplorer = lazy(() =>
+  import("@sincpro/web-ui/components/listing/ChartExplorer").then((module) => ({
+    default: module.ChartExplorer,
+  })),
+) as unknown as typeof EagerChart;
 
 /**
  * EL DIBUJO de una lista. **La puerta es `List`**, que se escribe como árbol y
@@ -123,6 +132,8 @@ const PRESENT_ICONS: readonly { id: BuiltInPresent; icon: LucideIcon }[] = [
   { id: "report", icon: Sigma },
   /* La cuadrícula: dos ejes, y lo que importa está adentro. */
   { id: "pivot", icon: Grid3x3 },
+  /* El mismo pivote, dibujado. */
+  { id: "chart", icon: ChartColumnBig },
   { id: "calendar", icon: CalendarDays },
   { id: "gantt", icon: ChartGantt },
   { id: "timeline", icon: CalendarRange },
@@ -153,6 +164,7 @@ export function ListView<T extends object>({
   sheet,
   report,
   pivot,
+  chart,
   faces,
   present: requested = "rows",
   presents,
@@ -274,7 +286,8 @@ export function ListView<T extends object>({
     sortable === undefined ||
     sortable.length === 0 ||
     declaredReport ||
-    present === "pivot" ? null : (
+    present === "pivot" ||
+    present === "chart" ? null : (
       <SortMenu
         fields={sortable as readonly SortField<never>[]}
         sort={sort ?? []}
@@ -411,7 +424,9 @@ export function ListView<T extends object>({
     error === null &&
     (present === "pivot" && pivotShown !== undefined
       ? pivotIsEmpty(pivotShown)
-      : items.length === 0) &&
+      : present === "chart" && chart?.folded !== undefined
+        ? pivotIsEmpty(chart.folded)
+        : items.length === 0) &&
     /* The first record of an empty list is written in the table, not under a sentence
        saying there is nothing. */
     !(present === "table" && create?.draft != null);
@@ -596,6 +611,49 @@ export function ListView<T extends object>({
         {...(pivot?.onCell === undefined ? {} : { onCell: pivot.onCell })}
         {...(pivot?.height === undefined ? {} : { height: pivot.height })}
       />
+    ) : present === "chart" &&
+      chart !== undefined &&
+      (chart.folded !== undefined || chart.spec !== undefined) ? (
+      /* Odoo's graph view. Its levels follow the search bar's grouping, like the pivot's
+         rows: the first along the axis, the rest as series. */
+      <div className="p-3">
+        <Suspense fallback={<Skeleton label={copy.failed.loading} />}>
+          <ChartExplorer<T>
+            {...(chart.folded === undefined ? {} : { folded: chart.folded })}
+            {...(chart.spec === undefined
+              ? {}
+              : {
+                  items: ordered,
+                  of: chart.spec.of,
+                  measures: chart.spec.measures,
+                  defaultCategories: chart.spec.rows,
+                  defaultSeries: chart.spec.columns,
+                  ...(chart.spec.labelOf === undefined
+                    ? {}
+                    : { labelOf: chart.spec.labelOf }),
+                })}
+            {...(chart.fields === undefined ? {} : { fields: chart.fields })}
+            {...(chart.defaultMeasure === undefined
+              ? {}
+              : { defaultMeasure: chart.defaultMeasure })}
+            {...(chart.kind === undefined ? {} : { defaultKind: chart.kind })}
+            {...(chart.defaultMeasures === undefined
+              ? {}
+              : { defaultMeasures: chart.defaultMeasures })}
+            {...(chart.stacked === undefined ? {} : { defaultStacked: chart.stacked })}
+            {...(chart.cumulative === undefined
+              ? {}
+              : { defaultCumulative: chart.cumulative })}
+            {...(chart.order === undefined ? {} : { defaultOrder: chart.order })}
+            {...(chart.compare === undefined ? {} : { compare: chart.compare })}
+            {...((group?.levels.length ?? 0) > 0 ? { levels: group!.levels } : {})}
+            {...(chart.onPoint === undefined ? {} : { onPoint: chart.onPoint })}
+            {...(chart.height === undefined ? {} : { height: chart.height })}
+            {...(chart.fileName === undefined ? {} : { fileName: chart.fileName })}
+            {...(identity?.title === undefined ? {} : { label: identity.title })}
+          />
+        </Suspense>
+      </div>
     ) : present === "calendar" && calendar !== undefined ? (
       <div className="p-3">
         <Suspense fallback={<Skeleton label={copy.failed.loading} />}>

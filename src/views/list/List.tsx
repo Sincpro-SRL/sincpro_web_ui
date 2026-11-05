@@ -19,6 +19,7 @@ import { ListView } from "@sincpro/web-ui/views/list/ListView";
 import {
   type CardWays,
   type ListCalendar,
+  type ListChart,
   type ListCrumb,
   type ListEmpty,
   type ListFace,
@@ -139,6 +140,7 @@ type SlotName =
   | "sheet"
   | "report"
   | "pivot"
+  | "chart"
   | "calendar"
   | "gantt"
   | "timeline"
@@ -252,6 +254,14 @@ const Pivot = slot("pivot", (_props: ListPivot<never>): ReactNode => null) as <T
   props: ListPivot<T>,
 ) => ReactNode;
 
+/** The pivot, drawn — Odoo's graph view (`ChartExplorer`). `unknown` in between: the
+ *  comparison's records make the props invariant in `T`, and the slot never reads them. */
+const ChartSlot = slot("chart", (_props: ListChart<never>): ReactNode => null) as unknown as <
+  T,
+>(
+  props: ListChart<T>,
+) => ReactNode;
+
 /* El orden en que se OFRECEN cuando están escritas de otra manera. El conmutador
    respeta el orden del árbol; esto sólo nombra a qué presentación corresponde
    cada ranura. */
@@ -262,6 +272,7 @@ const PRESENT_OF: Readonly<Record<string, BuiltInPresent>> = {
   sheet: "sheet",
   report: "report",
   pivot: "pivot",
+  chart: "chart",
   calendar: "calendar",
   gantt: "gantt",
   timeline: "timeline",
@@ -274,6 +285,7 @@ const FACES: readonly SlotName[] = [
   "sheet",
   "report",
   "pivot",
+  "chart",
   "calendar",
   "gantt",
   "timeline",
@@ -447,6 +459,7 @@ export function List<T extends object>({
   const sheet = propsOf<SheetProps<T>>(pick(top, "sheet"));
   const report = propsOf<ListReport>(pick(top, "report"));
   const pivot = propsOf<ListPivot<T>>(pick(top, "pivot"));
+  const chart = propsOf<ListChart<T>>(pick(top, "chart"));
   const calendar = propsOf<ListCalendar<T>>(pick(top, "calendar"));
   const gantt = propsOf<ListGantt<T>>(pick(top, "gantt"));
   const timeline = propsOf<ListTimeline<T>>(pick(top, "timeline"));
@@ -516,6 +529,7 @@ export function List<T extends object>({
         : { sheet: sheet as ListSheet<T> })}
       {...(report === undefined ? {} : { report })}
       {...(pivot === undefined ? {} : { pivot })}
+      {...(chart === undefined ? {} : { chart })}
       {...(calendar === undefined ? {} : { calendar })}
       {...(gantt === undefined ? {} : { gantt })}
       {...(timeline === undefined ? {} : { timeline })}
@@ -556,6 +570,7 @@ List.Board = Board;
 List.Sheet = SheetSlot;
 List.Report = Report;
 List.Pivot = Pivot;
+List.Chart = ChartSlot;
 List.Calendar = CalendarSlot;
 List.Gantt = GanttSlot;
 List.Timeline = TimelineSlot;

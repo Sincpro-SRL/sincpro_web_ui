@@ -51,10 +51,20 @@ export {
 
 /* El control de los niveles. El vocabulario está en `system/grouping.ts`. */
 export {
+  AxisLevels,
+  levelId,
+  levelLabeler,
+} from "@sincpro/web-ui/components/listing/AxisLevels";
+export {
   type BoardColumn,
   BoardColumns,
   type BoardStages,
 } from "@sincpro/web-ui/components/listing/BoardColumns";
+export {
+  type ChartComparison,
+  ChartExplorer,
+  type ChartExplorerProps,
+} from "@sincpro/web-ui/components/listing/ChartExplorer";
 export {
   type GroupingControl,
   useGroupingControl,

@@ -71,9 +71,11 @@ export {
    y el trimestre son las dos únicas palabras que hay que escribir. */
 export {
   dateKey,
+  dateKeysBetween,
   dateLabel,
   grainName,
   monthName,
+  nextDateKey,
 } from "@sincpro/web-ui/foundations/calendar";
 /* LA AGRUPACIÓN — el vocabulario, que hablan las dos capas: la lista arma el
    árbol de montones y la tabla lo dibuja. Vive acá y no en `contexts/list`
@@ -124,6 +126,23 @@ export {
   type PivotSource,
   type PivotSpec,
 } from "@sincpro/web-ui/foundations/pivot";
+/* EL GRÁFICO — un pivote leído como marcas. Lee el mismo `Pivot`, así que sirve igual para
+   registros, un dataset o lo plegado en el servidor; un diccionario entra por su helper. */
+export {
+  chartCompare,
+  type ChartData,
+  chartFromPivot,
+  chartFromRecord,
+  type ChartKind,
+  type ChartMeasure,
+  chartMeasures,
+  type ChartOrder,
+  type ChartPoint,
+  type ChartReading,
+  COUNT_MEASURE,
+  orderChart,
+  SERIES_COLORS,
+} from "@sincpro/web-ui/foundations/chart";
 /* LA PLANILLA: la misma grilla, en un archivo. El escritor es genérico y no
    sabe de pivotes; `pivotSheet` es el que traduce uno. */
 export {

@@ -1,11 +1,13 @@
 import type { RecordCalendarProps } from "@sincpro/web-ui/components/calendar/RecordCalendar";
 import type { RecordGanttProps } from "@sincpro/web-ui/components/gantt/RecordGantt";
 import type { BoardStages } from "@sincpro/web-ui/components/listing/BoardColumns";
+import type { ChartComparison } from "@sincpro/web-ui/components/listing/ChartExplorer";
 import type { ListIdentity } from "@sincpro/web-ui/components/listing/ListingBar";
 import type { ListPresent } from "@sincpro/web-ui/components/listing/set";
 import type { SortField } from "@sincpro/web-ui/components/listing/SortMenu";
 import type { ViewIcon } from "@sincpro/web-ui/components/listing/ViewSwitcher";
 import type { RecordTimelineProps } from "@sincpro/web-ui/components/timeline/RecordTimeline";
+import type { ChartKind, ChartOrder } from "@sincpro/web-ui/foundations/chart";
 import type { GroupableField } from "@sincpro/web-ui/foundations/grouping";
 import type { Grouping, GroupLevel, Pile } from "@sincpro/web-ui/foundations/grouping";
 import type { Pivot, PivotKey, PivotSpec } from "@sincpro/web-ui/foundations/pivot";
@@ -230,6 +232,37 @@ export type ListPivot<T> = {
   defaultMeasures?: readonly string[];
 };
 
+/**
+ * EL GRÁFICO de una lista: la vista gráfica de Odoo. Lee lo mismo que el pivote —un
+ * `Pivot`, plegado acá con `spec` o afuera con `folded`— y lo dibuja como barras, líneas o
+ * torta. Sus niveles SIGUEN al agrupado del buscador: el primero va en el eje y los demás
+ * son las series, como en Odoo.
+ */
+export type ListChart<T> = {
+  /** Plegado por quien guarda los datos. Sus ejes son los suyos y no se editan acá. */
+  folded?: Pivot;
+  /** Cómo plegarlo acá, con las filas en la mano: `rows` es el eje, `columns` las series. */
+  spec?: PivotSpec<T>;
+  /** Por qué campos se puede partir. Con esto los ejes se eligen sobre el gráfico. */
+  fields?: readonly GroupableField[];
+  /** La medida con la que abre. La primera de `spec.measures`; `COUNT_MEASURE` para el conteo. */
+  defaultMeasure?: string;
+  /** Varias medidas, cada una su propio gráfico (nunca dos escalas en un eje). */
+  defaultMeasures?: readonly string[];
+  kind?: ChartKind;
+  /** Cómo abre: apilado (por defecto, como Odoo), acumulado, ordenado. */
+  stacked?: boolean;
+  cumulative?: boolean;
+  order?: ChartOrder;
+  /** El período anterior, para dibujarlo al lado: los registros de entonces y sus nombres. */
+  compare?: ChartComparison<T>;
+  /** Una barra, un punto o una porción: abrir los registros que cayeron ahí. */
+  onPoint?: (category: PivotKey, series?: PivotKey) => void;
+  height?: number | string;
+  /** Con qué nombre se baja. */
+  fileName?: string;
+};
+
 export type ListViewProps<T extends object> = {
   items: readonly T[];
   keyOf: (item: T) => string;
@@ -341,6 +374,8 @@ export type ListViewProps<T extends object> = {
    * elegirlo acá sería adivinar la pregunta.
    */
   pivot?: ListPivot<T>;
+  /** El GRÁFICO: el pivote dibujado. Con esto, `present="chart"` dibuja un `ChartExplorer`. */
+  chart?: ListChart<T>;
   /** The presentations the application wrote (`List.Present`), by id. */
   faces?: readonly ListFace<T>[];
   present?: ListPresent;

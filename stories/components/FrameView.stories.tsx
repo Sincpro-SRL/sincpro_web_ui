@@ -36,7 +36,7 @@ type Story = StoryObj<typeof FrameView>;
  * El vistazo de la lista de precios que mandó un proveedor, recién importada:
  * filas × columnas, con el recuento abajo. Un costo que no vino es un faltante y
  * un almacén en blanco es una celda vacía — no son lo mismo.
- * Cambiá a gráfico y elegí `almacén` o `costo` en «serie».
+ * Cambiá a gráfico: es la misma vista gráfica que la de una lista.
  */
 export const Tabla: Story = {
   render: () => (
@@ -62,7 +62,12 @@ export const Tabla: Story = {
   ),
 };
 
-/** La misma matriz, leída como barras: histograma si la columna es numérica. */
+/**
+ * La misma matriz, leída como GRÁFICO: la vista gráfica de una lista, sobre las filas del
+ * archivo. Las columnas de texto parten (el eje arranca en la que agrupa —`almacén`—, no
+ * en un identificador que daría una barra por fila) y las numéricas se miden: suma o
+ * promedio de `costo`, o la cantidad de filas. Un costo que no vino es un agujero, no un 0.
+ */
 export const Grafico: Story = {
   render: () => (
     <div className="bg-ground p-8">

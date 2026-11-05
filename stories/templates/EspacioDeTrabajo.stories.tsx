@@ -98,7 +98,7 @@ const CUSTOMER_COLUMNS: DataColumn<CustomerCard>[] = [
 function Pedidos({ api }: ViewProps) {
   const crumbs = useCrumbs(api);
   const [orders, setOrders] = useState<SalesOrder[]>(SALES_ORDERS);
-  const [present, setPresent] = useState<"table" | "board">("table");
+  const [present, setPresent] = useState<"table" | "board" | "chart">("table");
   return (
     <List<SalesOrder>
       items={orders}
@@ -108,7 +108,7 @@ function Pedidos({ api }: ViewProps) {
       onOpen={(o) => api.open(orderRef(o))}
       onPeek={(o) => api.open(orderRef(o), { to: Destination.Peek })}
       present={present}
-      onPresentChange={(next) => setPresent(next as "table" | "board")}
+      onPresentChange={(next) => setPresent(next as "table" | "board" | "chart")}
     >
       <List.Bar>
         <List.Crumbs crumbs={crumbs} />
@@ -177,6 +177,35 @@ function Pedidos({ api }: ViewProps) {
               ),
             ),
         }}
+      />
+      {/* The same orders, drawn: the amount by state, split by salesperson. Moving a card
+          on the board moves its bar here — it is the same set. */}
+      <List.Chart<SalesOrder>
+        spec={{
+          rows: [{ field: "stage" }],
+          columns: [{ field: "salesperson" }],
+          of: (o, level) =>
+            level.field === "stage"
+              ? STAGE_LABEL[o.stage]
+              : level.field === "customer"
+                ? o.customer
+                : o.salesperson,
+          measures: [
+            {
+              id: "total",
+              header: "total",
+              additive: true,
+              fold: (all) =>
+                all.length === 0 ? null : all.reduce((sum, o) => sum + o.total, 0),
+              format: (n) => `Bs. ${n.toLocaleString("es-BO")}`,
+            },
+          ],
+        }}
+        fields={[
+          { field: "stage", label: "estado" },
+          { field: "salesperson", label: "vendedor" },
+          { field: "customer", label: "cliente" },
+        ]}
       />
     </List>
   );

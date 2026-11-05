@@ -119,6 +119,15 @@ export type PivotMeasure = {
    * sigue pudiendo sumar, que es lo que no se puede perder.
    */
   numberFormat?: string;
+  /**
+   * La medida SE SUMA: el pliegue de dos montones juntos es la suma de sus pliegues —un
+   * importe, un conteo—. Un promedio no, y una mediana tampoco.
+   *
+   * Lo lee el gráfico, que a veces tiene que juntar una cola en «otros» o acumular una
+   * línea: con esto la suma dice la verdad, y sin esto la cola se deja afuera y se avisa,
+   * porque sumar promedios inventa un número que nadie plegó (la regla 2 de arriba).
+   */
+  additive?: boolean;
 };
 
 /**
@@ -339,6 +348,7 @@ export function pivotFrom<T>(items: readonly T[], spec: PivotSpec<T>): Pivot {
       header: one.header,
       ...(one.format === undefined ? {} : { format: one.format }),
       ...(one.numberFormat === undefined ? {} : { numberFormat: one.numberFormat }),
+      ...(one.additive === undefined ? {} : { additive: one.additive }),
     })),
     cell: (row, column) => crossings.get(crossKey(row, column)),
     rowTotal: (row) => rowMargins.get(pathKey(row)),

@@ -3,6 +3,7 @@
 export { List, type ListPresentProps, type ListProps } from "@sincpro/web-ui/views/list/List";
 export {
   type CardWays,
+  type ListChart,
   type ListCrumb,
   type ListEmpty,
   type ListGroup,
