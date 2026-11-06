@@ -11,6 +11,7 @@ import {
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 /**
  * Context: **las fechas de un ERP.** El valor es un ISO —`"2026-10-30"`—, lo que manda
@@ -193,4 +194,44 @@ export const CalendarioSuelto: Story = {
       <Calendar aria-label="Agenda" />
     </div>
   ),
+};
+
+/**
+ * **El hoy de la empresa.** `today` dice qué día es para el negocio: el calendario lo marca y
+ * abre ahí. Sin `today`, el día del navegador — que es otro cuando la empresa está en otra zona
+ * o ya pasó la medianoche en otro lado.
+ */
+export const ElHoyEsElDeLaEmpresa: Story = {
+  render: () => (
+    <div className="w-fit rounded-box border border-line bg-surface p-3">
+      <Calendar aria-label="Agenda" today="2026-03-12" />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const grid = await within(canvasElement).findByRole("grid");
+    await expect(within(grid).getByText("12").className).toMatch(/underline/);
+    await expect(within(grid).getByText("13").className).not.toMatch(/underline/);
+  },
+};
+
+/**
+ * **Una fecha guardada abre en su mes.** Con `today`, el calendario de un `DatePicker` vacío abre
+ * en el hoy de la empresa; con un valor, en el mes de ese valor — nunca lo esconde detrás de hoy.
+ */
+export const UnaFechaGuardadaAbreEnSuMes: Story = {
+  render: () => (
+    <Box>
+      <DatePicker aria-label="Vencimiento" value="2019-03-15" today="2026-11-06" />
+    </Box>
+  ),
+  play: async ({ canvasElement }) => {
+    await userEvent.click(within(canvasElement).getByRole("button"));
+    const dialog = await within(canvasElement.ownerDocument.body).findByRole("dialog");
+    // The month on screen is the value's: the grid is named after it (React Aria), and the
+    // hidden list of years holds both 2019 and 2026 — never ask the text alone.
+    await waitFor(() =>
+      expect(within(dialog).getByRole("grid")).toHaveAccessibleName(/2019/),
+    );
+    await expect(within(dialog).getByRole("grid")).not.toHaveAccessibleName(/2026/);
+  },
 };

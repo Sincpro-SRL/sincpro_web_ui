@@ -1,3 +1,3 @@
-/* LOS WIDGETS DE CELDA — lo que va adentro de una celda, una fila o una tarjeta con jerarquía:
-   lo principal en tinta, lo que lo distingue chico y callado, y la foto si la hay. */
+/* THE CELL WIDGETS — what goes inside a cell, a row or a card with hierarchy:
+   the main thing in ink, what tells it apart small and quiet, and the photo if there is one. */
 export { CellStack, Thumb } from "@sincpro/web-ui/primitives/cell/CellStack";

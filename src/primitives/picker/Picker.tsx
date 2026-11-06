@@ -24,6 +24,7 @@ import {
   PanelRight,
   PictureInPicture2,
   SquareArrowOutUpRight,
+  X,
 } from "lucide-react";
 import { type ReactNode, useContext, useMemo, useRef, useState } from "react";
 import {
@@ -235,6 +236,12 @@ export type PickerProps = {
   value?: string;
   onChange?: (id: string) => void;
   /**
+   * The field may be empty: a × beside the chosen name empties it, and so does erasing the name
+   * and leaving the field — the way a person says «none». Without it the choice can only be
+   * changed, never removed (a required field).
+   */
+  onClear?: () => void;
+  /**
    * The options are SEARCHED by whoever gives them — the server's literal search — and this
    * hears what is typed (and `""` when the list starts over). With it the picker filters
    * nothing itself and caps nothing: `items` is the answer, all of it drawn, with the typed
@@ -318,6 +325,7 @@ function EditablePicker({
   items,
   value,
   onChange,
+  onClear,
   onSearch,
   valueLabel,
   placeholder,
@@ -416,6 +424,8 @@ function EditablePicker({
   const listed: readonly PickerItem[] = [...visible, ...actions];
 
   const closeList = useRef<(() => void) | null>(null);
+  /** The person erased the chosen name (and did not take it back with Escape). */
+  const erased = useRef(false);
 
   const take = (key: Key | null) => {
     if (key === null) return;
@@ -454,6 +464,8 @@ function EditablePicker({
       onChange={take}
       inputValue={text}
       onInputChange={(next) => {
+        // What the person typed down to nothing — not a field whose name is still unknown.
+        erased.current = next.trim() === "" && text.trim() !== "";
         setText(next);
         setQuery(next);
       }}
@@ -461,7 +473,19 @@ function EditablePicker({
         setOpen(isOpen);
         if (isOpen && trigger !== "input") setQuery("");
         if (!isOpen) {
-          setText(chosenName);
+          // The name erased BY THE PERSON and the field left: «none», when the field may be
+          // empty. Only then: a field passed through whose name is not known yet shows no text
+          // too, and Escape means «leave it as it was».
+          if (
+            onClear !== undefined &&
+            erased.current &&
+            value !== undefined &&
+            value !== "" &&
+            text.trim() === ""
+          )
+            onClear();
+          else setText(chosenName);
+          erased.current = false;
           setQuery("");
         }
       }}
@@ -494,6 +518,10 @@ function EditablePicker({
              and selecting again then would swallow every second letter. */
           onFocus={(event) => {
             if (!open) event.currentTarget.select();
+          }}
+          onKeyDown={(event) => {
+            // Escape puts the name back: never an emptied choice.
+            if (event.key === "Escape") erased.current = false;
           }}
           className="h-full min-w-0 flex-1 bg-transparent px-2.5 text-meta text-ink outline-0 placeholder:text-muted disabled:cursor-not-allowed"
         />
@@ -532,6 +560,18 @@ function EditablePicker({
             )}
           </>
         ) : null}
+        {onClear === undefined || value === undefined || value === "" || disabled ? null : (
+          <IconButton
+            icon={X}
+            label={copy.picker.clear}
+            size="sm"
+            onClick={() => {
+              setText("");
+              setQuery("");
+              onClear();
+            }}
+          />
+        )}
         <FieldButton className="mr-1">
           <ChevronDown aria-hidden className="size-(--size-icon-md)" strokeWidth={2} />
         </FieldButton>

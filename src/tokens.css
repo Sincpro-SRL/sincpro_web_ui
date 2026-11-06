@@ -461,19 +461,19 @@
      `ListingBar`. */
   --container-search: 30rem;
 
-  /* Lo que PIDE una miga antes de recortarse, y lo que pide el rastro entero.
-     Los dos son pedidos y no anchos: una línea más angosta se los baja, y una
-     más ancha se los deja crecer.
+  /* What a crumb ASKS for before being clipped, and what the whole trail asks for.
+     Both are requests and not widths: a narrower line drops them, and a
+     wider one lets them grow.
 
-     Hacen falta los dos porque son dos problemas distintos. Un nombre de este
-     producto llega a cincuenta caracteres, así que UNA miga puede comerse la
-     línea entera aunque el rastro tenga tres: `--container-crumb` es lo que
-     cada una pide antes de terminar en «…», y ahí la que manda es la última
-     —dónde estoy— que nunca se recorta del todo.
+     Both are needed because they are two different problems. A name in this
+     product reaches fifty characters, so ONE crumb can eat the whole
+     line even if the trail has three: `--container-crumb` is what
+     each one asks for before ending in «…», and there the last one rules
+     —where I am— which is never clipped entirely.
 
-     `--container-trail` es lo que pide el rastro COMPLETO en la línea de la
-     banda. Sin él, «de dónde vengo» le saca el lugar a lo que cuelga del
-     registro y el centro deja de estar en el centro. */
+     `--container-trail` is what the COMPLETE trail asks for in the band's
+     line. Without it, «de dónde vengo» takes the room from what hangs off the
+     record and the centre stops being in the centre. */
   --container-crumb: 12rem;
   --container-trail: 20rem;
 
@@ -987,10 +987,10 @@
     color: var(--color-ink);
     font-family: var(--font-sans);
     -webkit-font-smoothing: antialiased;
-    /* Sólo horizontal. Sacar el `overflow: hidden` entero destapó algo que se
-     * desborda a los costados —un panel oculto fuera de pantalla, medido para
-     * un ancho que ya no es el suyo— y sin este freno se podía scrollear hacia
-     * la derecha para verlo. El alto sigue libre: es lo que se vino a arreglar. */
+    /* Horizontal only. Removing `overflow: hidden` entirely uncovered something that
+     * overflows sideways —a panel hidden off-screen, measured for
+     * a width that is no longer its own— and without this brake one could scroll to
+     * the right to see it. The height stays free: that is what was being fixed. */
     overflow-x: hidden;
   }
 

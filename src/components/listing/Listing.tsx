@@ -72,20 +72,20 @@ export function Listing({
   /** The `ListingBar`: actions, title, search, pagination and views. */
   bar?: ReactNode;
   /**
-   * La barra se queda arriba al scrollear, debajo de lo que ya esté pegado.
+   * The bar stays at the top on scroll, below whatever is already stuck.
    *
-   * Es opt-in y no el default porque el fondo tiene que ser el de lo que hay
-   * DETRÁS, y eso depende de dónde esté puesta: el arquetipo de lista vive
-   * sobre el piso de la página, pero un `FrameView` —«el vistazo» de un
-   * registro— vive sobre el PAPEL blanco, y ahí la banda color piso se ve como
-   * una mancha. Se descubrió comparando historias, no razonando.
+   * It is opt-in and not the default because the background has to be that of what is
+   * BEHIND, and that depends on where it is placed: the list archetype lives
+   * on the page floor, but a `FrameView` —a record's «glance»— lives on the white
+   * PAPER, and there the floor-coloured band looks like a
+   * stain. It was discovered by comparing stories, not by reasoning.
    */
   sticky?: boolean;
-  /** Sobre qué está puesta la lista. Sólo se usa para el fondo de la banda que
-   *  se pega: `chrome` pinta el mismo azul que ya pinta la barra —o sea,
-   *  invisible— y cualquier otra pinta el PISO, que es lo que hay detrás de una
-   *  lista de página. Las que viven adentro de algo blanco —un cajón, una vista
-   *  previa— son compactas, y en compacto la barra no se pega. */
+  /** What the list is placed on. It is used only for the background of the band that
+   *  sticks: `chrome` paints the same blue the bar already paints —that is,
+   *  invisible— and any other paints the FLOOR, which is what is behind a
+   *  page list. Those living inside something white —a drawer, a preview—
+   *  are compact, and in compact the bar does not stick. */
   surface?: Surface;
   /** The metrics that also narrow down. They go BELOW the bar and above the
    *  rows: they belong to the set I am looking at, not to the frame that frames
@@ -94,19 +94,19 @@ export function Listing({
   children: ReactNode;
 }) {
   const d = useDensity();
-  /* La barra se PEGA arriba y las filas se van debajo de ella.
-     Context: con 187 filas, scrollear para ver la última dejaba sin buscador,
-     sin paginador y sin el conmutador de presentación — o sea que recortar
-     después de mirar obligaba a subir de nuevo. Se pega debajo de lo que ya
-     esté pegado (la barra de la aplicación) y empuja la pila para el
-     encabezado de la tabla, que se pega debajo de ella. Ver `system/sticky.tsx`. */
+  /* The bar STICKS to the top and the rows go beneath it.
+     Context: with 187 rows, scrolling to see the last one left you without search,
+     without pager and without the presentation switcher — so cutting
+     after looking forced you to scroll up again. It sticks below whatever is already
+     stuck (the application bar) and pushes the stack down for the
+     table's header, which sticks below it. See `system/sticky.tsx`. */
   const band = useStickyLayer<HTMLDivElement>();
 
-  /* En compacto NO se pega, y no es por falta de espacio: compacto es un cajón
-     o una vista previa, o sea una caja corta con su propia cabecera y su propio
-     scroll. Una banda pegada ahí se pinta encima del papel blanco del cajón —se
-     ve como una mancha— para resolver un scroll que en cinco filas no existe.
-     Es la misma razón por la que `ListingBar` tampoco dibuja la identidad ahí. */
+  /* In compact it does NOT stick, and not for lack of space: compact is a drawer
+     or a preview, that is a short box with its own header and its own
+     scroll. A band stuck there is painted over the drawer's white paper —it
+     looks like a stain— to solve a scroll that does not exist in five rows.
+     It is the same reason `ListingBar` does not draw the identity there either. */
   const pegada = sticky && d === "comfortable";
   /* With a sidebar the bar is the screen's header: it goes in the frame's full-width slot,
      above the sidebar (see `shell/headerSlot.ts`), and the frame does the sticking. */
@@ -119,13 +119,13 @@ export function Listing({
        already inside a framed panel is a nested rectangle, and nested
        rectangles are what make a product read like a cloud console. */
     <div className={`flex min-w-0 flex-col ${byDensity(d, "gap-2.5", "gap-2")}`}>
-      {/* Se pega la BARRA, no las métricas. El fondo es obligatorio y no
-          estético: sin él las filas se ven pasar por debajo del texto. Las
-          métricas se quedan afuera porque son las únicas que en una lista sin
-          cromo tendrían que pintar un fondo propio, y el color depende de sobre
-          qué esté puesta la lista — el piso de la página o el papel blanco de
-          un registro. Contestan «de qué está hecho esto», no «qué estoy
-          mirando»: se pueden ir. */}
+      {/* The BAR sticks, not the metrics. The background is mandatory and not
+          aesthetic: without it the rows are seen passing under the text. The
+          metrics stay out because they are the only ones that in a chromeless list
+          would have to paint a background of their own, and the colour depends on what
+          the list is placed on — the page floor or a record's white paper.
+          They answer «what is this made of», not «what am I
+          looking at»: they can go. */}
       {/* No bar, no band: an empty sticky box would still take a gap above the rows. */}
       {bar === undefined || bar === null ? null : inSlot ? (
         createPortal(bar, slot)
@@ -143,11 +143,11 @@ export function Listing({
       {/* Out of the slot the bar is a sibling and the column gap separates it from the
           metrics; in the slot it is not, so the gap is put back. */}
       {inSlot && metrics !== undefined ? <div className="pt-2">{metrics}</div> : metrics}
-      {/* `overflow-clip` y NO `overflow-hidden`: los dos recortan las esquinas
-          redondeadas igual, pero `hidden` crea un contenedor de scroll, y
-          entonces el `sticky` del encabezado de la tabla se pega al borde de
-          ESTA caja —que no scrollea— en vez de al de la página. O sea que se
-          iba con las filas. `clip` recorta sin ser un scroller. */}
+      {/* `overflow-clip` and NOT `overflow-hidden`: both clip the rounded
+          corners the same, but `hidden` creates a scroll container, and
+          then the table header's `sticky` sticks to the edge of
+          THIS box —which does not scroll— instead of the page's. So it
+          went away with the rows. `clip` clips without being a scroller. */}
       <div
         className="min-w-0 overflow-clip rounded-box bg-surface"
         style={pegada && !inSlot ? band.below : undefined}

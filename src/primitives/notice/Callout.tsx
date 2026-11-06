@@ -12,52 +12,52 @@ import { AlertTriangle, CheckCircle2, Info, OctagonAlert, X } from "lucide-react
 import type { ReactNode } from "react";
 
 /**
- * UN AVISO sobre lo que se está mirando.
+ * A NOTICE about what is being looked at.
  *
- * Context: `Empty`, `Failed` y `Missing` dicen que NO HAY contenido y ocupan el
- * lugar de la vista. Esto es lo contrario: hay contenido, se ve, y hace falta
- * decir algo ADEMÁS —«hay asientos sin registrar en este período», «este período
- * está cerrado», «se guardó»—. Sin esta pieza, cada pantalla se lo inventaba
- * con un `div` y un color a ojo, y así es como el mismo grado de urgencia
- * terminaba pintado de tres maneras.
+ * Context: `Empty`, `Failed` and `Missing` say there is NO content and take the
+ * place of the view. This is the opposite: there is content, it is visible, and something
+ * ELSE has to be said —«there are unregistered entries in this period», «this period
+ * is closed», «saved»—. Without this piece, every screen invented its own
+ * with a `div` and a colour by eye, and that is how the same degree of urgency
+ * ended up painted in three ways.
  *
- * ── El tono es la ÚNICA decisión ────────────────────────────────────
+ * ── The tone is the ONLY decision ───────────────────────────────────
  *
- *     info     un dato que cambia cómo se lee lo de abajo
- *     warn     algo que conviene mirar antes de seguir
- *     bad      algo que está mal y ya tuvo consecuencias
- *     good     algo salió bien y no hay nada que hacer
+ *     info     a fact that changes how what is below is read
+ *     warn     something worth looking at before going on
+ *     bad      something that is wrong and has already had consequences
+ *     good     something went well and there is nothing to do
  *
- * El ícono sale del tono y no se elige: un aviso rojo con un tilde verde adentro
- * es una contradicción que alguien va a escribir si se lo dejamos escribir.
+ * The icon comes from the tone and is not chosen: a red notice with a green tick inside
+ * is a contradiction that someone will write if we let them write it.
  *
- * ── Lo que NO hace ──────────────────────────────────────────────────
+ * ── What it does NOT do ─────────────────────────────────────────────
  *
- * No se cierra solo, no tiene temporizador y no se apila. Un aviso que
- * desaparece a los cuatro segundos es un aviso que alguien no llegó a leer — eso
- * es un `Toast`, que es otra pieza y otra pregunta («pasó algo lejos de acá»).
- * Éste habla de lo que está en pantalla, así que se queda mientras sea cierto.
+ * It does not close by itself, has no timer and does not stack. A notice that
+ * disappears after four seconds is a notice someone did not get to read — that
+ * is a `Toast`, which is another piece and another question («something happened away from here»).
+ * This one speaks about what is on screen, so it stays as long as it is true.
  */
 
 export type CalloutProps = {
-  /** Qué pasa. Una oración, en la voz del producto. */
+  /** What is happening. One sentence, in the product's voice. */
   children: ReactNode;
-  /** Sin esto, `info`. */
+  /** Without this, `info`. */
   tone?: Extract<Tone, "info" | "warn" | "bad" | "good">;
-  /** El encabezado, cuando la oración sola no alcanza. La mayoría no lo
-   *  necesita: un aviso de dos renglones con título es un cartel. */
+  /** The heading, when the sentence alone is not enough. Most do not
+   *  need it: a two-line notice with a title is a poster. */
   title?: ReactNode;
-  /** Lo que resuelve el aviso, si hay algo que apretar. */
+  /** What resolves the notice, if there is something to press. */
   action?: ReactNode;
-  /** Presente = se puede cerrar. Ausente = no, porque lo que dice sigue siendo
-   *  cierto lo mire quien lo mire. */
+  /** Present = it can be closed. Absent = it cannot, because what it says stays
+   *  true whoever looks at it. */
   onDismiss?: () => void;
-  /** El rótulo accesible de la ×. */
+  /** The accessible label of the ×. */
   dismissLabel?: string;
-  /** Un ícono propio, cuando el del tono no dice lo suficiente. */
+  /** An icon of its own, when the tone's does not say enough. */
   icon?: LucideIcon;
-  /** Lo que se copia con «Copiar el error» cuando el tono es `bad`. Sin esto, la
-   *  oración (si es texto) con el título. Para un aviso con detalle técnico, pasarlo acá. */
+  /** What is copied with «Copiar el error» when the tone is `bad`. Without this, the
+   *  sentence (if it is text) with the title. For a notice with technical detail, pass it here. */
   report?: string;
 };
 
@@ -68,9 +68,9 @@ const ICON: Record<NonNullable<CalloutProps["tone"]>, LucideIcon> = {
   good: CheckCircle2,
 };
 
-/* El fondo es una capa del color sobre el papel y no un color propio: así el
-   aviso se lee sobre el piso y sobre el papel blanco sin dos juegos de tokens, y
-   sigue funcionando el día que cambie la paleta. */
+/* The background is a layer of the colour over the paper and not a colour of its own: so the
+   notice reads on the floor and on white paper without two sets of tokens, and
+   keeps working the day the palette changes. */
 const SKIN: Record<NonNullable<CalloutProps["tone"]>, string> = {
   info: "border-info/25 bg-info/8 text-info",
   warn: "border-warn/30 bg-warn/10 text-warn",
@@ -97,9 +97,9 @@ export function Callout({
 
   return (
     <div
-      /* `status` y no `alert`: `alert` interrumpe al lector de pantalla y se
-         reserva para lo que pasó JUSTO AHORA. Un aviso que ya estaba cuando la
-         pantalla abrió no interrumpe nada. */
+      /* `status` and not `alert`: `alert` interrupts the screen reader and is
+         reserved for what happened RIGHT NOW. A notice that was already there when the
+         screen opened interrupts nothing. */
       role="status"
       className={`flex min-w-0 items-start gap-2.5 rounded-box border ${SKIN[tone]} ${byDensity(
         d,
@@ -118,9 +118,9 @@ export function Callout({
           {title === undefined ? null : (
             <p className="text-meta font-medium text-ink">{title}</p>
           )}
-          {/* El texto va en tinta normal y no en el color del tono: un párrafo
-              entero pintado se lee peor, y el color ya lo pone el marco. El tono
-              se queda en el ícono y en el borde, que es donde alcanza. */}
+          {/* The text goes in normal ink and not in the tone's colour: a whole
+              painted paragraph reads worse, and the frame already brings the colour. The tone
+              stays on the icon and the border, which is where it is enough. */}
           <div className="min-w-0 text-meta text-ink">{children}</div>
         </div>
 

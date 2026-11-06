@@ -110,9 +110,9 @@ export function TablePresentation<T extends object>({
       {...(totals ? { totals: true } : {})}
       {...(withOpeners === undefined ? {} : { rowActions: withOpeners })}
       {...(create === undefined ? {} : { create })}
-      /* `onPeek` con `onOpen` de reserva — ver el mismo comentario en
-         `Listing.tsx`: sin vista previa encendida, un click en la fila
-         tiene que abrir cuando es lo único que declararon. */
+      /* `onPeek` with `onOpen` as a fallback — see the same comment in
+         `Listing.tsx`: without peek turned on, a click on the row
+         has to open when it is the only thing they declared. */
       {...(press === undefined ? {} : { onRowClick: press })}
     />
   );
@@ -141,9 +141,9 @@ export function SheetPresentation<T extends object>({
   group,
 }: SheetProps<T>) {
   const copy = useUiCopy();
-  /** Qué ítem hay en este índice de la planilla. Con montones, un índice puede
-   *  ser una banda y no una fila — y entonces no hay ítem. Una sola vez, porque
-   *  las seis funciones que la planilla recibe hacen la misma pregunta. */
+  /** Which item is at this index of the sheet. With buckets, an index may
+   *  be a band and not a row — and then there is no item. Once only, because
+   *  the six functions the sheet receives ask the same question. */
   const sheetItemAt = (index: number): T | undefined =>
     entries === null ? ordered[index] : entries[index]?.item;
 

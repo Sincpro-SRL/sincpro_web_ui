@@ -6,8 +6,8 @@ export {
   Rule,
 } from "@sincpro/web-ui/primitives/block/Block";
 export { FullWidth, SectionGrid } from "@sincpro/web-ui/primitives/block/SectionGrid";
-/* La línea de tres zonas: lo que centra el centro contra la LÍNEA y no contra
-   lo que sobra. La usan las dos bandas — la del registro y la de la lista. */
+/* The three-zone line: what centres the centre against the LINE and not against
+   what is left over. Both bands use it — the record's and the list's. */
 export { Line } from "@sincpro/web-ui/primitives/block/Line";
 export {
   Step,

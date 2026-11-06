@@ -36,13 +36,13 @@ import {
 import type { ReactNode } from "react";
 
 /**
- * ARQUETIPO 1 — N cosas, escritas como un ÁRBOL.
+ * ARCHETYPE 1 — N things, written as a TREE.
  *
- * Context: una lista tiene la misma clase de forma opcional que un registro —
- * ¿hay buscador? ¿hay paginador? ¿esto se puede mirar como tabla?— y una lista
- * de props la contesta con `pagination={undefined}` y con una SEGUNDA prop que
- * declara qué caras se ofrecen. Las dos se pueden contradecir: pedir la tabla
- * sin columnas es ofrecer una vista que no se puede dibujar, y nadie se queja.
+ * Context: a list has the same kind of optional shape as a record —
+ * is there a search? is there a pager? can this be seen as a table?— and a list
+ * of props answers it with `pagination={undefined}` and with a SECOND prop that
+ * declares which faces are offered. The two can contradict each other: asking for the table
+ * without columns is offering a view that cannot be drawn, and nobody complains.
  *
  *     <List items={invoices} keyOf={(i) => i.id} group={grouping}>
  *       <List.Bar>
@@ -58,28 +58,28 @@ import type { ReactNode } from "react";
  *       <List.Pivot spec={salesBySeller} />
  *     </List>
  *
- * ── Las caras que hay son las que están ESCRITAS ────────────────────
+ * ── The faces there are, are the ones WRITTEN ───────────────────────
  *
- * El conmutador ofrece las presentaciones que aparecen en el árbol, en el orden
- * en que se escribieron. No hay una lista aparte que declare cuáles son, porque
- * esa lista es la que se desincroniza: **si no hay `<List.Table>`, no hay
- * tabla**, y no se puede pedir una que no se puede dibujar.
+ * The switcher offers the presentations that appear in the tree, in the order
+ * they were written. There is no separate list declaring which they are, because
+ * that list is the one that gets out of sync: **if there is no `<List.Table>`, there is no
+ * table**, and one that cannot be drawn cannot be asked for.
  *
- * ── La cara dice DE QUÉ es la lista ─────────────────────────────────
+ * ── The face says WHAT the list is OF ───────────────────────────────
  *
  *     <List.Table<Invoice> columns={…} />
  *
- * Una ranura no puede heredar el tipo del padre —TypeScript no liga el genérico
- * de `<List>` con el de un hijo— así que la cara lo declara, una vez, y todo lo
- * de adentro se infiere: `columns` queda tipado contra `Invoice` y `row` recibe
- * un `Invoice`. Es una anotación por cara y es la única que hace falta.
+ * A slot cannot inherit the parent's type —TypeScript does not link `<List>`'s
+ * generic with a child's— so the face declares it, once, and everything
+ * inside is inferred: `columns` is typed against `Invoice` and `row` receives
+ * an `Invoice`. It is one annotation per face and it is the only one needed.
  *
- * ── Lo que NO se volvió árbol ───────────────────────────────────────
+ * ── What did NOT become a tree ──────────────────────────────────────
  *
- * `items`, `keyOf`, `group`, `selection`, `sort`, `state`: son estados del
- * CONJUNTO y no regiones de la pantalla. Dejarlos afuera no cambia la forma de
- * nada — es la misma regla por la que `identity` y `dirty` siguen siendo props
- * en `Record`.
+ * `items`, `keyOf`, `group`, `selection`, `sort`, `state`: they are states of the
+ * SET and not regions of the screen. Leaving them out changes the shape of
+ * nothing — it is the same rule by which `identity` and `dirty` remain props
+ * on `Record`.
  *
  * ── A list INSIDE a record: `embedded` ──────────────────────────────
  *
@@ -147,38 +147,38 @@ type SlotName =
   | "present";
 
 /* ---------------------------------------------------------------- *
- *  Las piezas de la barra
+ *  The bar's pieces
  * ---------------------------------------------------------------- */
 
 type BarProps = { children?: ReactNode };
 type CrumbsProps = { crumbs: readonly ListCrumb[] };
 type NodeProps = { children?: ReactNode };
 
-/** La barra: todo lo que es del CONJUNTO y no de una fila. Sin ella no hay
- *  banda — que es lo que quiere una lista metida adentro de un diálogo. */
+/** The bar: everything that belongs to the SET and not to a row. Without it there is no
+ *  band — which is what a list put inside a dialog wants. */
 const Bar = slot("bar", (_props: BarProps): ReactNode => null);
 
-/** De dónde vengo. Va arriba de la barra, y sólo cuando la barra es cromo. */
+/** Where I came from. It goes above the bar, and only when the bar is chrome. */
 const Crumbs = slot("crumbs", (_props: CrumbsProps): ReactNode => null);
 
-/** Cómo se llama esta lista y cuánto tiene. */
+/** What this list is called and how much it holds. */
 const Identity = slot("identity", (_props: ListIdentity): ReactNode => null);
 
-/** El campo de búsqueda, ya armado: lo arma quien tiene las declaraciones del
- *  dominio — el sistema no sabe qué es un NIT. */
+/** The search field, already assembled: it is assembled by whoever holds the domain's
+ *  declarations — the system does not know what a NIT is. */
 const Search = slot("search", (_props: NodeProps): ReactNode => null);
 
-/** Lo que EMPIEZA algo nuevo. Sigue visible cuando hay una selección. */
+/** What STARTS something new. It stays visible when there is a selection. */
 const Actions = slot("actions", (_props: NodeProps): ReactNode => null);
 
 const Pagination = slot("pagination", (_props: NodeProps): ReactNode => null);
 
-/** La escotilla del conmutador: un selector propio. Casi nunca hace falta —
- *  las caras escritas ya lo dibujan. */
+/** The switcher's escape hatch: a selector of one's own. Almost never needed —
+ *  the written faces already draw it. */
 const Views = slot("views", (_props: NodeProps): ReactNode => null);
 
-/** Las medidas que además RECORTAN: «2 por confirmar». Van debajo de la barra y
- *  arriba de las filas, porque son del conjunto y no del marco. */
+/** The metrics that also NARROW: «2 por confirmar». They go below the bar and
+ *  above the rows, because they belong to the set and not to the frame. */
 const Metrics = slot("metrics", (_props: NodeProps): ReactNode => null);
 
 /* ---------------------------------------------------------------- *
@@ -188,34 +188,34 @@ const Metrics = slot("metrics", (_props: NodeProps): ReactNode => null);
 type RowsProps<T> = {
   row: (item: T) => RowOf;
   /**
-   * Los rótulos de las zonas de una fila, arriba de todas. Sin esto no hay
-   * encabezado: una lista de cinco archivos con el nombre y nada más no lo
-   * necesita.
+   * The labels of a row's zones, above all of them. Without this there is no
+   * header: a list of five files with the name and nothing else does not
+   * need it.
    *
-   * No son columnas. Una fila tiene un nombre, UNA cadena de `meta` ya formateada
-   * y una columna de fichas: eso es lo que se rotula.
+   * They are not columns. A row has a name, ONE already formatted `meta` string
+   * and a column of chips: that is what is labelled.
    */
   header?: { name: string; meta?: string; tags?: string };
 };
 
 type TableProps<T extends object> = {
   columns: readonly DataColumn<T>[];
-  /** Cuáles están en pantalla. Las obligatorias se quedan aunque se omitan. */
+  /** Which ones are on screen. Required ones stay even if omitted. */
   visibleColumnIds?: readonly string[];
   onVisibleColumnIdsChange?: (ids: readonly string[]) => void;
-  /** El pie con los agregados de las columnas que declararon uno. */
+  /** The footer with the aggregates of the columns that declared one. */
   totals?: boolean;
-  /** Lo que se le hace a UNA fila sin entrar. Se dibujan escondidas y aparecen
-   *  sobre la fila que se está apuntando. */
+  /** What is done to ONE row without entering it. They are drawn hidden and appear
+   *  on the row being pointed at. */
   rowActions?: (item: T) => readonly RowAction[];
-  /** Escribir un registro nuevo como una fila más de la tabla (la lista editable de
-   *  Odoo). Ver la cabecera de `DataTable`. */
+  /** Write a new record as one more row of the table (Odoo's editable
+   *  list). See `DataTable`'s header. */
   create?: DataTableCreate<T>;
 };
 
-/** El tablero. Sin `card`, la tarjeta sale de lo que ya dice `List.Rows`: el
- *  nombre, el `meta` y las fichas. Escribirla igual es declarar que ESTA lista
- *  se puede ver como tablero. */
+/** The board. Without `card`, the card comes from what `List.Rows` already says: the
+ *  name, the `meta` and the chips. Writing it anyway is declaring that THIS list
+ *  can be seen as a board. */
 type BoardProps<T> = {
   /** `ways` carries the list's rule of what a press does — call `ways.press` from the card. */
   card?: (item: T, ways: CardWays) => ReactNode;
@@ -223,9 +223,9 @@ type BoardProps<T> = {
   stages?: BoardStages<T>;
 };
 
-/** La planilla. Sin columnas propias, sale de las que declaró `List.Table` — la
- *  de datos CRUDOS sí las trae, porque ahí salen del archivo y el código no sabe
- *  cuáles son. */
+/** The sheet. Without columns of its own, it comes from those `List.Table` declared — the
+ *  one for RAW data does bring them, because there they come from the file and the code does not know
+ *  which they are. */
 type SheetProps<T> = Partial<ListSheet<T>>;
 
 const Rows = slot("rows", (_props: RowsProps<never>): ReactNode => null) as <T>(
@@ -262,9 +262,9 @@ const ChartSlot = slot("chart", (_props: ListChart<never>): ReactNode => null) a
   props: ListChart<T>,
 ) => ReactNode;
 
-/* El orden en que se OFRECEN cuando están escritas de otra manera. El conmutador
-   respeta el orden del árbol; esto sólo nombra a qué presentación corresponde
-   cada ranura. */
+/* The order in which they are OFFERED when written another way. The switcher
+   respects the tree's order; this only names which presentation each slot
+   corresponds to. */
 const PRESENT_OF: Readonly<Record<string, BuiltInPresent>> = {
   rows: "rows",
   table: "table",
@@ -352,14 +352,14 @@ export type ListProps<T extends object> = {
    *  one-line bar that does not stick. See «A list INSIDE a record» above. */
   embedded?: boolean;
 
-  /** En qué superficie se apoya la BARRA. `canvas` (el default) es una barra
-   *  de control clara; `chrome` la convierte en una banda oscura, una opción
-   *  explícita: la barra de la aplicación es la única banda oscura de la
-   *  pantalla, igual que el riel de un registro. */
+  /** Which surface the BAR sits on. `canvas` (the default) is a light control
+   *  bar; `chrome` turns it into a dark band, an explicit choice: the
+   *  application bar is the screen's only dark band, same as a record's
+   *  rail. */
   surface?: Surface;
 
-  /** Cómo se parte el conjunto. Es del CONJUNTO y no de una cara: cambiar de
-   *  presentación no puede perderlo. */
+  /** How the set is split. It belongs to the SET and not to a face: switching
+   *  presentation cannot lose it. */
   group?: ListGroup<T>;
   selection?: {
     has: (id: string) => boolean;
@@ -371,15 +371,15 @@ export type ListProps<T extends object> = {
     matching?: { total: number; onSelect: () => void };
   };
 
-  /** El orden, que también es del conjunto: una lista de criterios, el primero manda y los
-   *  demás desempatan. Vacío es «como llegaron». */
+  /** The order, which also belongs to the set: a list of criteria, the first rules and the
+   *  rest break ties. Empty is «como llegaron». */
   sort?: readonly SortState[];
   onSortChange?: (next: SortState[]) => void;
-  /** Por qué campos se puede ordenar en las caras que NO tienen encabezados
-   *  donde hacer clic. */
+  /** Which fields can be sorted by in the faces that do NOT have headers
+   *  to click on. */
   sortable?: readonly SortField<T>[];
 
-  /** Cuál cara se está mirando. Sin esto, la primera que esté escrita. */
+  /** Which face is being looked at. Without this, the first one written. */
   present?: ListPresent;
   onPresentChange?: (next: ListPresent) => void;
 
@@ -400,16 +400,16 @@ export type ListProps<T extends object> = {
    *  passes the handlers generically does not have to strip them one by one. */
   readOnly?: boolean;
 
-  /** Los estados del conjunto, en un solo lugar.
+  /** The set's states, in a single place.
    *
-   *  `loading` es la PRIMERA lectura: no hay filas todavía, y se dibuja el esqueleto.
-   *  `refreshing` es volver a preguntar con filas en la mano —se tipeó en la búsqueda, se
-   *  cambió de página—: las filas se quedan y una barra discreta dice que se está
-   *  preguntando. Cambiarlas por un esqueleto en cada pregunta hacía parpadear la tabla, y un
-   *  clic podía caer sobre una fila que ya no estaba. */
+   *  `loading` is the FIRST reading: there are no rows yet, and the skeleton is drawn.
+   *  `refreshing` is asking again with rows in hand —something was typed in the search, the
+   *  page changed—: the rows stay and a discreet bar says that a question is
+   *  being asked. Swapping them for a skeleton on every question made the table flicker, and a
+   *  click could land on a row that was no longer there. */
   state?: { loading?: boolean; refreshing?: boolean; error?: string | null };
-  /** Vacía POR UN FILTRO es otra situación: no falta contenido, sobra un
-   *  recorte. */
+  /** Empty BECAUSE OF A FILTER is another situation: content is not missing, a
+   *  cut is in excess. */
   filtered?: boolean;
   empty?: ListEmpty;
 
@@ -464,9 +464,9 @@ export function List<T extends object>({
   const gantt = propsOf<ListGantt<T>>(pick(top, "gantt"));
   const timeline = propsOf<ListTimeline<T>>(pick(top, "timeline"));
 
-  /* Las caras que hay son las que están escritas, EN ESE ORDEN. El conmutador
-     no puede ofrecer una que no se pueda dibujar, porque la que se dibuja y la
-     que se ofrece son el mismo nodo. */
+  /* The faces there are, are the ones written, IN THAT ORDER. The switcher
+     cannot offer one that cannot be drawn, because the one drawn and the
+     one offered are the same node. */
   const faces = facesOf<T>(top);
   const presents = top.flatMap((node): ListPresent[] => {
     const name = slotOf<SlotName>(node);
@@ -475,8 +475,8 @@ export function List<T extends object>({
     return builtIn === undefined ? [] : [builtIn];
   });
 
-  /* La escotilla: lo que el arquetipo no previó se dibuja igual, debajo. Que
-     aparezca algo acá es la señal de que al arquetipo le falta una pieza. */
+  /* The escape hatch: what the archetype did not foresee is drawn anyway, below.
+     Something showing up here is the sign that the archetype is missing a piece. */
   const rest = loose(top, ["bar", "metrics", "present", ...FACES]);
 
   return (

@@ -300,13 +300,13 @@ export function ReportTable({
   }
 
   return (
-    /* Misma decisión que las otras dos tablas, en el mismo lugar: con alto la
-       caja scrollea y la pila arranca de cero adentro; sin alto y entrando, no
-       hay caja y el encabezado se pega debajo de la barra de la lista. Antes
-       esto era `overflow-auto` siempre, así que el encabezado heredaba el
-       desplazamiento de la barra y quedaba empujado 68 px hacia adentro de su
-       propia caja — banda en blanco arriba y títulos de columna cayendo entre
-       las filas. */
+    /* Same decision as the other two tables, in the same place: with a height the
+       box scrolls and the stack starts from zero inside; without a height and fitting, there is no
+       box and the header sticks below the list's bar. This used
+       to be `overflow-auto` always, so the header inherited the
+       bar's offset and ended up pushed 68 px into its
+       own box — a blank band on top and column titles falling between
+       the rows. */
     <div
       ref={caja.ref}
       tabIndex={caja.tabIndex}

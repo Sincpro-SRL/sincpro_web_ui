@@ -1,46 +1,46 @@
-# Arquitectura — dónde va cada pieza de @sincpro/web-ui
+# Architecture — where each piece of @sincpro/web-ui goes
 
-`PRINCIPLES.md` dice cómo se tiene que ver y comportar una pantalla. Este documento dice
-**dónde vive cada pieza y de qué puede depender**, para que quien agregue algo —una persona,
-un agente, la aplicación que lo extiende— no tenga que adivinarlo. Como en `PRINCIPLES.md`,
-cada regla dice qué la hace cumplir: una regla que nadie verifica es una sugerencia.
+`PRINCIPLES.md` says how a screen has to look and behave. This document says
+**where each piece lives and what it may depend on**, so that whoever adds something — a person,
+an agent, the application that extends it — does not have to guess. As in `PRINCIPLES.md`,
+each rule says what enforces it: a rule nobody checks is a suggestion.
 
-## 1. Cuatro niveles
+## 1. Four levels
 
-| Nivel       | Qué es                                                              | Ejemplos                                        |
-| ----------- | ------------------------------------------------------------------- | ----------------------------------------------- |
-| Foundations | Lo que TODAS las piezas hablan: decisiones, contratos y lógica pura | tokens, copia, densidad, modo de formulario     |
-| Primitives  | Una pieza que no sabe en qué pantalla está                          | `Button`, `TextInput`, `Picker`, `DataTable`    |
-| Components  | Primitivas compuestas para contestar UNA pregunta del producto      | `SearchBar`, `LineItems`, `Activity`, `Listing` |
-| Views       | Los dos arquetipos: un registro (`Record`) o N registros (`List`)   | `Record`, `List`                                |
+| Level       | What it is                                                      | Examples                                        |
+| ----------- | --------------------------------------------------------------- | ----------------------------------------------- |
+| Foundations | What ALL the pieces speak: decisions, contracts and pure logic  | tokens, copy, density, form mode                |
+| Primitives  | A piece that does not know which screen it is on                | `Button`, `TextInput`, `Picker`, `DataTable`    |
+| Components  | Primitives composed to answer ONE product question              | `SearchBar`, `LineItems`, `Activity`, `Listing` |
+| Views       | The two archetypes: one record (`Record`) or N records (`List`) | `Record`, `List`                                |
 
-Un nivel importa sólo de los de abajo. **Se verifica**: `make doctor`.
+A level imports only from the ones below it. **Enforced by**: `make doctor`.
 
-## 2. Tres tiers dentro de las primitivas
+## 2. Three tiers inside the primitives
 
-«No sabe en qué pantalla está» junta un `Button` de 30 líneas con un `EditableTable` de 1.400.
-Las dos cosas son primitivas, pero no se usan igual: para armar algo propio se empieza por los
-ladrillos, y entre 90 archivos hay que poder encontrarlos. Por eso las familias de primitivas
-se ordenan en tres tiers, y un tier importa sólo de los de abajo:
+«Does not know which screen it is on» puts a 30-line `Button` and a 1,400-line `EditableTable`
+together. Both are primitives, but they are not used the same way: to build something of your own
+you start from the bricks, and among 90 files you must be able to find them. That is why the
+primitive families are sorted into three tiers, and a tier imports only from the ones below it:
 
-| Tier           | Qué contesta                          | Familias                                                                                                                |
-| -------------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
-| **display**    | Mostrar: un dato, un estado, un aviso | `block` `button` `cell` `dialog` `disclosure` `hint` `menu` `notice` `overlay` `surface` `tabs` `tag` `toolbar` `value` |
-| **input**      | Preguntar: un control de formulario   | `field` `choice` `date` `picker`                                                                                        |
-| **collection** | Mostrar N cosas a la vez              | `table` `tree` `chart`                                                                                                  |
+| Tier           | What it answers                  | Families                                                                                                                |
+| -------------- | -------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| **display**    | Show: a datum, a state, a notice | `block` `button` `cell` `dialog` `disclosure` `hint` `menu` `notice` `overlay` `surface` `tabs` `tag` `toolbar` `value` |
+| **input**      | Ask: a form control              | `field` `choice` `date` `picker`                                                                                        |
+| **collection** | Show N things at once            | `table` `tree` `chart`                                                                                                  |
 
-Un dato que se muestra no depende de un control (un `Tag` no sabe que existe un formulario); un
-control no depende de una colección (un `Picker` no arrastra una tabla); una colección puede usar
-los dos — una celda que se edita es un control dentro de una tabla. **Se verifica**:
+A datum that is shown does not depend on a control (a `Tag` does not know a form exists); a
+control does not depend on a collection (a `Picker` does not drag a table along); a collection may use
+both — an editable cell is a control inside a table. **Enforced by**:
 `tests/architecture.test.ts`.
 
-### El contrato de los controles vive en `foundations`
+### The controls' contract lives in `foundations`
 
-Lo que conecta un control con su formulario —los ids que le da `Field` (`useFieldIds`) y si se
-mira o se escribe (`useFormMode`)— no es un control: es el contrato que todos los controles
-hablan, como la densidad o la superficie. Vive en `foundations/form.tsx`. Así un dato que se
-muestra distinto en lectura (`RelationValue`) lo lee sin depender de `Field`, y **un control
-propio de la aplicación** se conecta igual que los del paquete:
+What connects a control to its form — the ids `Field` gives it (`useFieldIds`) and whether it is
+looked at or written to (`useFormMode`) — is not a control: it is the contract every control
+speaks, like density or the surface. It lives in `foundations/form.tsx`. That way a datum that is
+shown differently when reading (`RelationValue`) reads it without depending on `Field`, and **a
+control of the application's own** plugs in the same way as the package's:
 
 ```tsx
 function Signature({ id, invalid }: { id?: string; invalid?: boolean }) {
@@ -52,107 +52,107 @@ function Signature({ id, invalid }: { id?: string; invalid?: boolean }) {
 <Field label="Firma del cliente"><Signature /></Field>
 ```
 
-## 3. Sin ciclos
+## 3. No cycles
 
-Ningún módulo de `src/` termina importándose a sí mismo por otro camino, ni siquiera por tipos:
-un ciclo de tipos es la señal de que la dirección está al revés — el modelo (`criteria.ts`)
-pidiéndole sus formas a la interfaz (`FilterBuilder`). Las formas son del modelo; la interfaz
-las usa. **Se verifica**: `tests/architecture.test.ts`.
+No module in `src/` ends up importing itself by another path, not even through types:
+a type cycle is the sign that the direction is backwards — the model (`criteria.ts`)
+asking the interface (`FilterBuilder`) for its shapes. The shapes belong to the model; the interface
+uses them. **Enforced by**: `tests/architecture.test.ts`.
 
-## 4. ¿Dónde va lo que voy a escribir?
+## 4. Where does what I am about to write go?
 
-1. ¿Sabe qué es una factura, un cliente, un dataset? → **No va en el paquete**: es de la aplicación.
-2. ¿Es una decisión, un contrato que hablan varias piezas, o lógica sin dibujo? → **foundations**.
-3. ¿Contesta una pregunta del producto componiendo primitivas (buscar, las líneas, la actividad)? → **components**.
-4. ¿Es una de las dos maneras de mirar registros? → **views** — y no hay una tercera: buscá cuál es.
-5. Si no, es una **primitiva**, y su tier lo dice lo que hace: muestra → display, pregunta → input, muestra N → collection.
+1. Does it know what an invoice, a customer, a dataset is? → **It does not go in the package**: it belongs to the application.
+2. Is it a decision, a contract several pieces speak, or logic with no drawing? → **foundations**.
+3. Does it answer a product question by composing primitives (search, the lines, the activity)? → **components**.
+4. Is it one of the two ways of looking at records? → **views** — and there is no third: find out which one it is.
+5. Otherwise it is a **primitive**, and its tier is told by what it does: shows → display, asks → input, shows N → collection.
 
-Lo que dos vistas necesitan baja a `components/`; lo que dos tiers necesitan baja al de abajo o a
+What two views need goes down to `components/`; what two tiers need goes down to the one below or to
 `foundations`.
 
-## 5. Abierto para extender
+## 5. Open to extension
 
-La aplicación arma lo suyo con la API pública (`@sincpro/web-ui`), sin forks ni clases sueltas:
+The application builds its own with the public API (`@sincpro/web-ui`), with no forks or loose classes:
 
-| Quiero…                                        | Con                                                                                          |
-| ---------------------------------------------- | -------------------------------------------------------------------------------------------- |
-| Un control propio dentro de un `Field`         | `useFieldIds`, `useFormMode` (`foundations/form`)                                            |
-| Una celda con lo que sea adentro               | `DataColumn.cell`, `edit.render`, `rowActions`                                               |
-| Otra manera de mirar una lista (mapa, galería) | `List.Present` → recibe el conjunto (`ListSet`)                                              |
-| Una pieza compuesta escrita como árbol         | `slot()`, `pick`, `propsOf` (`foundations/slots`)                                            |
-| Una operación sobre N registros (el «wizard»)  | `Record` en un modal + `api.pick` / `api.answer` (composer) — ver `5 · Plantillas/Operación` |
-| Mis componentes con el mismo aspecto           | las clases de los tokens (`bg-surface text-ink …`)                                           |
-| Las palabras de mi aplicación, en su idioma    | `createCopy` → `install`, `Provider`, `useCopy` (`foundations/catalog`)                      |
-| Varios conjuntos a la vez (la conciliación)    | `Panes` / `Pane` — ver `5 · Plantillas/Conciliación`                                         |
+| I want…                                         | With                                                                                        |
+| ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| A control of my own inside a `Field`            | `useFieldIds`, `useFormMode` (`foundations/form`)                                           |
+| A cell with anything inside                     | `DataColumn.cell`, `edit.render`, `rowActions`                                              |
+| Another way of looking at a list (map, gallery) | `List.Present` → receives the set (`ListSet`)                                               |
+| A composed piece written as a tree              | `slot()`, `pick`, `propsOf` (`foundations/slots`)                                           |
+| An operation over N records (the «wizard»)      | `Record` in a modal + `api.pick` / `api.answer` (composer) — see `5 · Plantillas/Operación` |
+| My components with the same look                | the token classes (`bg-surface text-ink …`)                                                 |
+| My application's words, in its language         | `createCopy` → `install`, `Provider`, `useCopy` (`foundations/catalog`)                     |
+| Several sets at once (reconciliation)           | `Panes` / `Pane` — see `5 · Plantillas/Conciliación`                                        |
 
-Lo que está cerrado a propósito: el aspecto de un componente (no hay `className` ni `style`) y
-el dominio. Lo abierto es la estructura.
+What is closed on purpose: a component's look (there is no `className` or `style`) and
+the domain. What is open is the structure.
 
-## 6. Plan de refactor
+## 6. Refactor plan
 
-Por fases, cada una del tamaño de un PR, sin romper a quien importa desde `@sincpro/web-ui`
-(web-framework y composer importan sólo de ahí). Los caminos profundos (`…/primitives/field/mode`)
-no son públicos: `package.json` exporta los niveles, no los archivos.
+In phases, each the size of a PR, without breaking whoever imports from `@sincpro/web-ui`
+(web-framework and composer import only from there). Deep paths (`…/primitives/field/mode`)
+are not public: `package.json` exports the levels, not the files.
 
-### Fase 1 — las capas, explícitas y verificadas ✅ 2026-11-03
+### Phase 1 — the layers, explicit and enforced ✅ 2026-11-03
 
-- El contrato de los controles (`FieldIds`, `FormMode`) baja de `primitives/field` a
-  `foundations/form.tsx`. Corta la dependencia de `value` sobre `field`.
-- `TagsField` (el many2many) pasa de `tag` a `picker`, al lado del many2one: elegir registros —
-  uno o varios— es una familia. `tag` queda en lo que muestra.
-- Los dos ciclos: `GroupGrain` pasa a `calendar` (un grano es del calendario); `BuiltCondition` y
-  `BuiltFilter` pasan a `criteria.ts` (son el modelo, la interfaz las dibuja).
-- Nombres en inglés: `value/Fecha.tsx` → `value/DateValue.tsx`; `field/copy.tsx` →
-  `field/clipboard.tsx` (era el botón de copiar, no la copia de textos).
-- `tests/architecture.test.ts`: tiers y ciclos, para que no vuelvan.
+- The controls' contract (`FieldIds`, `FormMode`) moves down from `primitives/field` to
+  `foundations/form.tsx`. It cuts `value`'s dependency on `field`.
+- `TagsField` (the many2many) moves from `tag` to `picker`, next to the many2one: choosing records —
+  one or several — is one family. `tag` stays with what it shows.
+- The two cycles: `GroupGrain` moves to `calendar` (a grain belongs to the calendar); `BuiltCondition` and
+  `BuiltFilter` move to `criteria.ts` (they are the model, the interface draws them).
+- Names in English: `value/Fecha.tsx` → `value/DateValue.tsx`; `field/copy.tsx` →
+  `field/clipboard.tsx` (it was the copy button, not the text copy).
+- `tests/architecture.test.ts`: tiers and cycles, so they do not come back.
 
-### Fase 2 — la copia: un mecanismo, no un archivo por familia ✅ 2026-11-03
+### Phase 2 — copy: one mechanism, not one file per family ✅ 2026-11-03
 
-Se pensó repartir los 1.400 textos por familia. Se descartó: un catálogo por paquete es lo
-estándar (React Aria, MUI) y moverlo era mucho churn por poco. Los problemas reales eran otros y
-se cerraron:
+Splitting the 1,400 texts by family was considered. It was dropped: one catalog per package is
+standard (React Aria, MUI) and moving it was a lot of churn for little. The real problems were elsewhere and
+were closed:
 
-- **El mecanismo, una vez** (`foundations/catalog.tsx`): `createCopy(english)` → `install`,
-  `Provider`, `useCopy`, `current`, `merge`. El de web-ui es uno; el de una aplicación, otro.
-- **Un `Provider` cambia su rama y nunca la copia instalada.** Antes la escribía al dibujarse:
-  un rincón en otro idioma cambiaba toda la pantalla, y un test pasaba porque otro anterior había
-  dejado el castellano puesto.
-- **Un `Provider` se apoya en lo que lo rodea**, no en el inglés, y **la mezcla es profunda**:
-  renombrar una palabra no vacía a sus hermanas. Agregar una sección ya no toca cinco lugares.
-- Lo que no es un componente (una frase armada en una función, un mes) lee la copia instalada;
-  un componente le pasa la de su rama (`formatRelative`, `writeANote`).
+- **The mechanism, once** (`foundations/catalog.tsx`): `createCopy(english)` → `install`,
+  `Provider`, `useCopy`, `current`, `merge`. web-ui's is one; an application's is another.
+- **A `Provider` changes its branch and never the installed copy.** Before, it wrote it while rendering:
+  one corner in another language changed the whole screen, and a test passed because an earlier one
+  had left Spanish installed.
+- **A `Provider` leans on what surrounds it**, not on English, and **the merge is deep**:
+  renaming one word does not empty its siblings. Adding a section no longer touches five places.
+- What is not a component (a sentence built in a function, a month) reads the installed copy;
+  a component passes it the one of its branch (`formatRelative`, `writeANote`).
 
-composer y web-framework pueden adoptar `createCopy` para sus tablas después de este release.
+composer and web-framework can adopt `createCopy` for their tables after this release.
 
-### Fase 3 — «Extender», recetas que son pruebas ✅ 2026-11-03
+### Phase 3 — «Extend», recipes that are tests ✅ 2026-11-03
 
-`stories/Extender.mdx` y `6 · Extender/Recetas`: un control propio en un `Field`, una celda
-propia, una pieza compuesta con `slot()`, textos propios. Importan sólo `@sincpro/web-ui`
-(`tests/templates.test.ts`): si algo deja de ser público, dejan de compilar.
+`stories/Extender.mdx` and `6 · Extender/Recetas`: a control of your own in a `Field`, a cell
+of your own, a composed piece with `slot()`, texts of your own. They import only `@sincpro/web-ui`
+(`tests/templates.test.ts`): if something stops being public, they stop compiling.
 
-### Fase 4 — pantallas de varios conjuntos: la conciliación ✅ 2026-11-03
+### Phase 4 — screens with several sets: reconciliation ✅ 2026-11-03
 
-`Panes` / `Pane` (`components/shell`): cada panel scrollea solo y lo que se pega adentro se pega
-a su borde, no al encabezado de la pantalla; angosto, se apilan. `5 · Plantillas/Conciliación`
-lo usa con dos `List` y un `Record`, cada lista con su búsqueda.
+`Panes` / `Pane` (`components/shell`): each pane scrolls on its own and what is pinned inside is pinned
+to its edge, not to the screen header; when narrow, they stack. `5 · Plantillas/Conciliación`
+uses it with two `List`s and a `Record`, each list with its search.
 
-### Fase 5 — accesibilidad como error ✅ 2026-11-03
+### Phase 5 — accessibility as an error ✅ 2026-11-03
 
-axe falla la historia (`.storybook/preview.ts`). Las 314 violaciones se cerraron en la raíz:
-nombres que escondían el texto visible (celdas del pivote, la celda editable, las opciones del
-`Picker` y del `ComboBox`, las pestañas), encabezados de tabla vacíos (una columna de botones
-lleva una celda), títulos que salteaban un nivel, cajas con scroll que el teclado no alcanzaba,
-tintes que perdían contraste sobre un fondo de color (`Avatar`), la pestaña que apuntaba a un
-panel que no existía (`TabsScope` / `TabsPanel`).
+axe fails the story (`.storybook/preview.ts`). The 314 violations were closed at the root:
+names that hid the visible text (pivot cells, the editable cell, the options of the
+`Picker` and the `ComboBox`, the tabs), empty table headers (a column of buttons
+carries a cell), titles that skipped a level, scroll boxes the keyboard could not reach,
+tints that lost contrast over a colored background (`Avatar`), the tab that pointed to a
+panel that did not exist (`TabsScope` / `TabsPanel`).
 
-### Lo que no se mueve, y por qué
+### What does not move, and why
 
-- **Los niveles y sus nombres.** Están bien y `make doctor` los cuida; renombrarlos es churn.
-- **`DataTable`, `EditableTable` y `Picker` siguen siendo primitivas.** No saben en qué pantalla
-  están; el tier `collection`/`input` ya dice que no son ladrillos.
-- **`Dialog` trae `Wizard`** para pasos en un diálogo suelto. Dentro del espacio de trabajo de
-  composer, un modal es una vista de composer (`stories/Estilo.mdx`), y una operación de varios
-  pasos se escribe ahí con `StepFlow` (`components/flow`), que no dibuja diálogo propio:
+- **The levels and their names.** They are fine and `make doctor` looks after them; renaming them is churn.
+- **`DataTable`, `EditableTable` and `Picker` remain primitives.** They do not know which screen
+  they are on; the `collection`/`input` tier already says they are not bricks.
+- **`Dialog` brings `Wizard`** for steps in a standalone dialog. Inside composer's workspace,
+  a modal is a composer view (`stories/Estilo.mdx`), and a multi-step operation is written
+  there with `StepFlow` (`components/flow`), which draws no dialog of its own:
   `5 · Plantillas/Importar`.
-- **La lógica de `components/search` y `components/listing`** (`query.ts`, `pages.ts`, …) queda
-  junto a su interfaz: la usa sólo su familia. Baja a `foundations` el día que la use otra.
+- **The logic of `components/search` and `components/listing`** (`query.ts`, `pages.ts`, …) stays
+  next to its interface: only its family uses it. It goes down to `foundations` the day another uses it.

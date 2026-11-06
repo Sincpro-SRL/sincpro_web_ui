@@ -24,12 +24,12 @@ import type { ListGroup, ListSheet, RowOf } from "@sincpro/web-ui/views/list/typ
  */
 
 /**
- * Los niveles, como los necesita la tabla: uno por NIVEL y no uno por campo.
+ * The levels, as the table needs them: one per LEVEL and not one per field.
  *
- * La clave sale de `group.of` —la misma que arman las otras cinco
- * presentaciones— así que los montones de la tabla son los mismos y lo plegado
- * vale para todas. El rótulo sale de la misma regla que el árbol: un nivel no
- * repite lo que el de arriba, del mismo campo, ya dijo.
+ * The key comes from `group.of` —the same one the other five
+ * presentations build— so the table's buckets are the same and what is folded
+ * holds for all of them. The label comes from the same rule as the tree: a level does not
+ * repeat what the one above, of the same field, already said.
  */
 export function groupLevelsOf<T extends object>(
   group: ListGroup<T> | undefined,
@@ -43,8 +43,8 @@ export function groupLevelsOf<T extends object>(
       one.field === level.field && one.grain !== undefined ? [one.grain] : [],
     );
     above.push(level);
-    /* Cómo se llama el corte: como lo llama la columna que contesta por ese
-       campo, que es el único rótulo humano que esta capa tiene. */
+    /* What the cut is called: as the column that answers for that
+       field calls it, which is the only human label this layer has. */
     const column = columns?.find(
       (one) => one.id === level.field || one.field === level.field,
     );
@@ -58,14 +58,14 @@ export function groupLevelsOf<T extends object>(
 }
 
 /**
- * La planilla de un conjunto de REGISTROS sale de las columnas que la lista
- * ya declaró. Sin esto, ofrecer `sheet` obligaba a escribir las columnas dos
- * veces —una como `DataColumn` y otra como `SheetColumn`— y entonces nadie la
- * ofrecía: la presentación existía en el arquetipo y no estaba en ninguna
- * pantalla.
+ * The sheet of a set of RECORDS comes from the columns the list
+ * already declared. Without this, offering `sheet` meant writing the columns twice
+ * —once as `DataColumn` and once as `SheetColumn`— and then nobody
+ * offered it: the presentation existed in the archetype and was on no
+ * screen.
  *
- * `sheet` explícita sigue siendo para los DATOS CRUDOS, donde las columnas
- * salen del archivo y el código no sabe cuáles son.
+ * An explicit `sheet` remains for RAW DATA, where the columns
+ * come from the file and the code does not know which they are.
  */
 export function sheetFromColumns<T extends object>(
   shownColumns: readonly DataColumn<T>[] | undefined,
@@ -81,21 +81,21 @@ export function sheetFromColumns<T extends object>(
     })),
     cell: (item, column) => {
       const declared = byId.get(column.id);
-      /* `text` primero: `value` es la clave de ORDEN, no lo que se lee. Sin
-         esto la planilla mostraba `computed` donde la tabla muestra
+      /* `text` first: `value` is the SORT key, not what is read. Without
+         this the sheet showed `computed` where the table shows
          «calculado». */
       if (declared?.text !== undefined) return declared.text(item);
       const raw = declared?.value(item);
-      /* Un booleano no es una celda: la cuadrícula dibuja texto o número, y
-         `false` se vería como una celda vacía, que significa otra cosa. */
+      /* A boolean is not a cell: the grid draws text or a number, and
+         `false` would look like an empty cell, which means something else. */
       return typeof raw === "boolean" ? String(raw) : (raw ?? null);
     },
     tone: (item, column) => byId.get(column.id)?.tone?.(item),
     note: (item, column) => byId.get(column.id)?.note?.(item),
-    /* Crece con la página en vez de abrir una caja con scroll adentro de otra
-       que ya scrollea. La lista ya vino paginada, así que son ochenta filas y
-       no ciento ochenta y siete — el caso de un millón es el de los datos
-       crudos, y ése declara su propio alto. */
+    /* Grows with the page instead of opening a scroll box inside another
+       that already scrolls. The list already came paginated, so it is eighty rows and
+       not one hundred eighty-seven — the million case is that of raw
+       data, and that one declares its own height. */
     height: "auto",
   };
 }
@@ -111,26 +111,26 @@ export type SheetEntry<T> = {
     total?: (column: SheetColumn, columnIndex: number) => string | number | null;
   };
   item?: T;
-  /* El número de fila cuenta FILAS, no posiciones de la secuencia: con las
-     bandas ocupando un índice, numerar por posición saltaba —1, 2…11, 13—
-     y un número de fila que saltea no sirve para nada. */
+  /* The row number counts ROWS, not positions in the sequence: with the
+     bands taking an index, numbering by position skipped —1, 2…11, 13—
+     and a row number that skips is useless. */
   n?: number;
 };
 
 /**
- * La planilla, cuando hay montones: una SECUENCIA donde cada índice es una
- * fila o la cabecera del montón que empieza ahí.
+ * The sheet, when there are buckets: a SEQUENCE where each index is a
+ * row or the header of the bucket that starts there.
  *
- * **Acá decía que la planilla no agrupa y estaba mal razonado.** El argumento
- * —una banda corre la cuadrícula y mirar datos crudos es seguir una fila a lo
- * ancho— vale para los datos crudos, donde las columnas salen del archivo y
- * no hay ningún eje del dominio por el que agrupar. Pero la planilla DERIVADA
- * es el mismo conjunto de registros que la tabla, con los mismos ejes: que
- * agrupe la tabla y no ella es exactamente el drift que este arquetipo existe
- * para impedir — cambiar de presentación perdía la agrupación.
+ * **This used to say the sheet does not group, and that was badly reasoned.** The argument
+ * —a band shifts the grid and looking at raw data is following a row
+ * across— holds for raw data, where the columns come from the file and
+ * there is no domain axis to group by. But the DERIVED sheet
+ * is the same set of records as the table, with the same axes: the table grouping
+ * and it not is exactly the drift this archetype exists
+ * to prevent — switching presentation lost the grouping.
  *
- * La regla queda en manos de la vista, como corresponde: si declara `group`,
- * agrupa; si no, no hay montones que dibujar.
+ * The rule stays in the view's hands, as it should: if it declares `group`,
+ * it groups; if not, there are no buckets to draw.
  */
 export function sheetRowsOf<T extends object>(
   piles: readonly Pile<T>[] | null,
@@ -141,9 +141,9 @@ export function sheetRowsOf<T extends object>(
   const out: SheetEntry<T>[] = [];
   let n = 0;
 
-  /* Aplanar es recursivo porque el árbol lo es. La planilla no puede recibir
-     el árbol: está virtualizada por índice, y un índice es una posición en una
-     secuencia — así que la jerarquía se expresa en la sangría de cada banda. */
+  /* Flattening is recursive because the tree is. The sheet cannot receive
+     the tree: it is virtualised by index, and an index is a position in a
+     sequence — so the hierarchy is expressed in each band's indentation. */
   const walk = (list: readonly Pile<T>[]) => {
     for (const pile of list) {
       const open = isOpen(pile);
@@ -156,12 +156,12 @@ export function sheetRowsOf<T extends object>(
           open,
           key: pathKey(pile.path),
           depth: pile.depth,
-          /* El total de cada columna, en la posición de esa columna. Sale de
-             las `columns` de la lista —las mismas que suma el pie de la
-             tabla— para que la planilla y la tabla no digan números distintos
-             del mismo montón. La planilla declara SUS columnas aparte, así que
-             se busca por id. Y se ESCRIBE como el pie: con el `format` de la
-             columna, para que el montón no diga «78752,9» debajo de «Bs.». */
+          /* The total of each column, at that column's position. It comes from
+             the list's `columns` —the same ones the table's footer sums—
+             so the sheet and the table do not give different numbers for
+             the same bucket. The sheet declares ITS columns separately, so
+             it is looked up by id. And it is WRITTEN like the footer: with the column's
+             `format`, so the bucket does not say «78752,9» under «Bs.». */
           total: (column: SheetColumn) => {
             const declared = columns?.find((one) => one.id === column.id);
             const value = declared === undefined ? null : aggregateOf(declared, inside);
@@ -187,14 +187,14 @@ export function sheetRowsOf<T extends object>(
 }
 
 /**
- * El informe armado a partir de los montones, cuando el dominio no declaró
- * líneas.
+ * The report built from the buckets, when the domain did not declare
+ * lines.
  *
- * Cada montón es una línea con los agregados de las columnas que declararon
- * uno, y el nivel más profundo cuelga sus filas. Las columnas del informe las
- * pone `report.columns`; los números salen de las `columns` de la lista, que
- * son las mismas que suma el pie de la tabla — para que el informe y la tabla
- * no digan totales distintos del mismo conjunto.
+ * Each bucket is a line with the aggregates of the columns that declared
+ * one, and the deepest level hangs its rows. The report's columns are
+ * set by `report.columns`; the numbers come from the list's `columns`, which
+ * are the same ones the table's footer sums — so the report and the table
+ * do not give different totals for the same set.
  */
 export function reportRowsOf<T extends object>(
   piles: readonly Pile<T>[] | null,

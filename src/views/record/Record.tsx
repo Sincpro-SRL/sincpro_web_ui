@@ -87,10 +87,10 @@ import { type ReactNode, useEffect, useId, useState, useSyncExternalStore } from
  */
 
 /* ---------------------------------------------------------------- *
- *  Las ranuras
+ *  The slots
  *
- *  El mecanismo vive en `system/slots.ts` y lo hablan los dos arquetipos que
- *  se escriben como árbol. Acá quedan sólo los NOMBRES, que son de un registro.
+ *  The mechanism lives in `system/slots.ts` and is spoken by the two archetypes that
+ *  are written as a tree. Only the NAMES stay here, which belong to a record.
  * ---------------------------------------------------------------- */
 
 type SlotName =
@@ -112,7 +112,7 @@ type SlotName =
 const pick = (nodes: readonly ReactNode[], name: SlotName) => pickSlot(nodes, name);
 
 /* ---------------------------------------------------------------- *
- *  Los tipos que el árbol usa
+ *  The types the tree uses
  * ---------------------------------------------------------------- */
 
 export type RecordIdentity = {
@@ -153,7 +153,7 @@ export type { SheetField };
 export type RecordNotice = RecordNoticeSpec;
 
 /* ---------------------------------------------------------------- *
- *  Las piezas del riel
+ *  The rail's pieces
  * ---------------------------------------------------------------- */
 
 type RailProps = {
@@ -168,17 +168,17 @@ type SmartProps = { links: readonly SmartLink[] };
 type ActionsProps = { children?: ReactNode };
 type StatusProps = {
   stages?: readonly Stage[];
-  /** Cuál de las etapas es la de ahora. Sin esto, la primera. */
+  /** Which of the stages is the current one. Without this, the first. */
   current?: string;
   failed?: boolean;
   /** The stages can be chosen: pressing one moves the record there (a CRM's pipeline). */
   onSelect?: (id: string) => void;
-  /** La escotilla del estado, para lo que no es ninguna de las dos. */
+  /** The status escape hatch, for whatever is neither of the two. */
   children?: ReactNode;
 };
 
-/** El riel: mi lugar delante del registro. Sin él, no hay banda — y eso
- *  es exactamente lo que un diálogo quiere. */
+/** The rail: my place in front of the record. Without it, there is no band — and that
+ *  is exactly what a dialog wants. */
 const Rail = slot("rail", (_props: RailProps): ReactNode => null);
 
 const Crumbs = slot("crumbs", (_props: CrumbsProps): ReactNode => null);
@@ -187,9 +187,9 @@ const PagerSlot = slot("pager", (_props: RecordPager): ReactNode => null);
 
 const Smart = slot("smart", (_props: SmartProps): ReactNode => null);
 
-/** Los botones de acción. A lo sumo tres visibles + un `Menu` con `iconOnly`, y
- *  la regla de cuáles tres: los que PRODUCEN algo nuevo, nunca los de navegar.
- *  Van sin `surface`: lo toman del riel (claro por defecto; oscuro con `Rail surface="chrome"`).
+/** The action buttons. At most three visible + a `Menu` with `iconOnly`, and
+ *  the rule for which three: the ones that PRODUCE something new, never the ones that navigate.
+ *  They go without `surface`: they take it from the rail (light by default; dark with `Rail surface="chrome"`).
  *
  *  Context: on a narrow record (a phone, below `--container-handheld`) the one written
  *  with `role="primary"` leaves the rail for a bar stuck to the bottom of the screen,
@@ -197,18 +197,18 @@ const Smart = slot("smart", (_props: SmartProps): ReactNode => null);
  *  rest stay here. Nothing to declare: see THE THUMB BAR in `RecordHeader`. */
 const Actions = slot("actions", (_props: ActionsProps): ReactNode => null);
 
-/** El estado, como DATOS y no como nodo: la barra vive en el riel y
- *  quien la pasaba armada tenía que acordarse de la superficie del riel. Olvidarlo
- *  pintaba la paleta del lienzo encima del chrome, y pasó. */
+/** The status, as DATA and not as a node: the bar lives in the rail and
+ *  whoever passed it already built had to remember the rail's surface. Forgetting it
+ *  painted the canvas palette on top of the chrome, and it happened. */
 const Status = slot("status", (_props: StatusProps): ReactNode => null);
 
 /* ---------------------------------------------------------------- *
- *  Las piezas del papel
+ *  The paper's pieces
  * ---------------------------------------------------------------- */
 
 type PaperProps = {
-  /** Cómo ponen la etiqueta los campos de adentro. `horizontal` es etiqueta |
-   *  valor, que es la forma de Odoo. */
+  /** How the fields inside place their label. `horizontal` is label |
+   *  value, which is Odoo's form. */
   layout?: SheetLayout;
   columns?: 1 | 2 | 3 | 4;
   /** `reading` (default): the sheet stops at a reading width, centred, with the rail lined
@@ -225,14 +225,14 @@ type PagesProps = {
 type PageProps = {
   id: string;
   label: string;
-  /** La marca de la cara. Con tres o más pestañas, el ícono es lo que se
-   *  reconoce sin leer. */
+  /** The face's mark. With three or more tabs, the icon is what is
+   *  recognised without reading. */
   icon?: LucideIcon;
-  /** Cuántas cosas hay detrás. `0` se dibuja apagado: «no hay ninguna» es una
-   *  respuesta, y esconderla obliga a abrir la pestaña para averiguarla. */
+  /** How many things there are behind. `0` is drawn muted: «no hay ninguna» is an
+   *  answer, and hiding it forces opening the tab to find out. */
   count?: number;
-  /** Que algo de esta cara PIDE que lo mires — falló, cambió, llegó. Aparte del
-   *  contador, porque son dos preguntas: ver `TabNotice`. */
+  /** That something on this face ASKS you to look at it — it failed, changed, arrived. Separate from
+   *  the counter, because they are two questions: see `TabNotice`. */
   notice?: TabNotice;
   children?: ReactNode;
 };
@@ -268,7 +268,7 @@ const AuditSlot = slot(
   (_props: { created?: RecordStamp; updated?: RecordStamp }): ReactNode => null,
 );
 
-/** El papel: el registro. El `<sheet>` blanco sobre el piso. */
+/** The paper: the record. The white `<sheet>` on the floor. */
 const Paper = slot("paper", (_props: PaperProps): ReactNode => null);
 
 /** The record's ACTIVITY panel, as DATA: its conversation, its history, its composer.
@@ -294,27 +294,27 @@ export type RecordActivityProps = Omit<
 
 const ActivitySlot = slot("activity", (_props: RecordActivityProps): ReactNode => null);
 
-/** Los hechos globales del registro. Están en TODAS las páginas, y por eso van
- *  arriba del cuaderno y no adentro de una. */
+/** The record's global facts. They are on ALL the pages, and that is why they go
+ *  above the notebook and not inside one. */
 const Facts = slot("facts", (_props: FactsProps): ReactNode => null);
 
-/** El cuaderno. Las solapas salen de las páginas que tenga adentro: una página
- *  que no está escrita no tiene solapa, y ésa es toda la declaración. */
+/** The notebook. The tabs come from the pages it holds: a page
+ *  that is not written has no tab, and that is the whole declaration. */
 const Pages = slot("pages", (_props: PagesProps): ReactNode => null);
 
 const Page = slot("page", (_props: PageProps): ReactNode => null);
 
 /* ---------------------------------------------------------------- *
- *  El registro
+ *  The record
  * ---------------------------------------------------------------- */
 
 export type RecordProps = {
   identity: RecordIdentity;
-  /** Lo que falló al operar sobre el registro. Va con los avisos que bloquean, primero:
-   *  entre el riel y el papel, siempre a la vista (ver `Record.Notice`). */
+  /** What failed when operating on the record. It goes with the blocking notices, first:
+   *  between the rail and the paper, always in view (see `Record.Notice`). */
   error?: string | null;
-  /** Hay cambios sin guardar. Su presencia REEMPLAZA los botones de acción por
-   *  guardar y descartar — ver la nota en `RecordHeader`. */
+  /** There are unsaved changes. Its presence REPLACES the action buttons with
+   *  save and discard — see the note in `RecordHeader`. */
   dirty?: DirtyState;
   /**
    * Where the record is mounted — and so whether it sits on paper.
@@ -346,8 +346,8 @@ export function Record({ identity, error = null, dirty, placement, children }: R
   const railNode = pick(top, "rail");
   const paperNode = pick(top, "paper");
   const activitySlot = propsOf<RecordActivityProps>(pick(top, "activity"));
-  /* La escotilla: lo que el arquetipo no previó se dibuja igual, en el papel.
-     Que aparezca algo acá es la señal de que al arquetipo le falta una pieza. */
+  /* The escape hatch: what the archetype did not foresee is drawn anyway, on the paper.
+     Something showing up here is the sign that the archetype is missing a piece. */
   const loose = top.filter(
     (node) =>
       slotOf(node) !== "rail" && slotOf(node) !== "paper" && slotOf(node) !== "activity",
@@ -360,8 +360,8 @@ export function Record({ identity, error = null, dirty, placement, children }: R
   const actions = propsOf<ActionsProps>(pick(rail, "actions"))?.children;
   const status = propsOf<StatusProps>(pick(rail, "status"));
 
-  /* Las dos preguntas del estado, con la superficie ya resuelta: «¿dónde
-     está?» y «¿qué pasó para llegar acá?». */
+  /* The status's two questions, with the surface already resolved: «¿dónde
+     está?» and «¿qué pasó para llegar acá?». */
   /* The same question `RecordHeader` asks to draw the rail (`status` included): asked
      differently here, a record with only a status drew a `chrome` rail light until the first
      keystroke, and dark from then on. */
@@ -376,9 +376,9 @@ export function Record({ identity, error = null, dirty, placement, children }: R
 
   const statusBlock =
     status === undefined ? undefined : (
-      /* Apiladas en un bloque: arriba dónde está, abajo qué pasó para llegar.
-         Lado a lado competían por el ancho con los botones y quedaban las dos
-         truncadas; una debajo de la otra, cada una tiene su línea entera. */
+      /* Stacked in one block: above where it is, below what happened to get there.
+         Side by side they competed for width with the buttons and both ended up
+         truncated; one under the other, each has its whole line. */
       <div className="flex min-w-0 flex-col items-end gap-1.5">
         {status.stages === undefined ? null : (
           <StatusBar
@@ -452,10 +452,10 @@ export function Record({ identity, error = null, dirty, placement, children }: R
     .map((node) => propsOf<PageProps>(node))
     .find((page) => page?.id === current)?.children;
 
-  /* El orden de lectura es el orden de la pantalla: lo escrito ARRIBA del
-     cuaderno se dibuja arriba —lo que antes era `sheetBody`—, lo escrito
-     debajo se dibuja debajo de la página en curso. Sin cuaderno, el papel es
-     sus hijos en orden y no hay una segunda regla. */
+  /* The reading order is the screen order: what is written ABOVE the
+     notebook is drawn above —what used to be `sheetBody`—, what is written
+     below is drawn below the current page. With no notebook, the paper is
+     its children in order and there is no second rule. */
   const notebookAt = inPaper.findIndex((node) => slotOf(node) === "pages");
   const free = (nodes: readonly ReactNode[]) =>
     nodes.filter((node) => slotOf(node) === undefined);

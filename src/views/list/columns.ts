@@ -2,18 +2,18 @@ import type { ListPresent } from "@sincpro/web-ui/components/listing/set";
 import type { DataColumn } from "@sincpro/web-ui/primitives/table/DataTable";
 import type { ListGroup } from "@sincpro/web-ui/views/list/types";
 
-/** Las columnas que una tabla agrupada tiene que MOSTRAR, en orden.
+/** The columns a grouped table has to SHOW, in order.
  *
- *  No son por las que agrupa —eso lo hacen los niveles, con la clave del motor—
- *  sino las que no pueden quedar escondidas: un montón «Septiembre» con la
- *  columna «registrado» apagada es un corte cuyo criterio no está en la
- *  pantalla.
+ *  They are not the ones it groups by —the levels do that, with the engine's key—
+ *  but the ones that cannot stay hidden: a «Septiembre» bucket with the
+ *  «registrado» column turned off is a cut whose criterion is not on
+ *  screen.
  *
- *  **El nombre de una columna y el de un campo no son el mismo, y suponerlo fue
- *  lo que rompió la tabla.** Una columna puede llamarse `registered` y contestar
- *  por el `registered_at` del modelo — que es justo lo que declara
- *  `DataColumn.field`. Lee las columnas en orden —la que SE LLAMA como el campo,
- *  después la que lo declara— y `columnOf` gana si la vista sabe más. */
+ *  **A column's name and a field's name are not the same, and assuming so was
+ *  what broke the table.** A column may be called `registered` and answer
+ *  for the model's `registered_at` — which is exactly what
+ *  `DataColumn.field` declares. It reads the columns in order —the one that IS CALLED like the field,
+ *  then the one that declares it— and `columnOf` wins if the view knows more. */
 export function groupedColumnIds<T extends object>(
   group: ListGroup<T>,
   columns: readonly DataColumn<T>[] | undefined,

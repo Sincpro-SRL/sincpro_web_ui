@@ -15,49 +15,49 @@ import { ChevronRight, Layers, X } from "lucide-react";
 import { Fragment, type ReactNode, useState } from "react";
 
 /* ==================================================================== *
- *  LO PUESTO, DIBUJADO EN LA BARRA.
+ *  WHAT IS SET, DRAWN IN THE BAR.
  *
  *      [ año › mes › día ]   [ todas: (sólo vencidas) [ cualquiera: (A) (B) ] ]
- *        ↑ los de GRUPO        ↑ los de FILTRO, con su anidado
+ *        ↑ the GROUP ones      ↑ the FILTER ones, with their nesting
  *
- *  ── Los de grupo van SIEMPRE a la izquierda ─────────────────────────
+ *  ── The group ones ALWAYS go on the left ───────────────────────────
  *
- *  Y encadenados con «›» y no con una conjunción: no se cruzan, se ANIDAN. «Año
- *  y mes» no quiere decir nada; «año, y adentro mes» sí, y el orden ES la
- *  pregunta. Van primero porque cambian la FORMA de lo que se está mirando —una
- *  lista o montones— y eso se lee antes que cuáles filas quedaron.
+ *  And chained with «›» and not with a conjunction: they do not cross, they NEST. «Year
+ *  and month» means nothing; «year, and inside it month» does, and the order IS
+ *  the question. They go first because they change the SHAPE of what is being looked at —a
+ *  list or heaps— and that is read before which rows are left.
  *
- *  ── Los de filtro se anidan, y cada nodo dice cómo ──────────────────
+ *  ── The filter ones nest, and each node says how ────────────────────
  *
- *  La palabra de cada nodo se toca y se cambia ahí mismo —todas, cualquiera,
- *  ninguna— sin abrir nada. Es la misma lista que el selector de atributos, por
- *  la misma razón: con tres opciones, un botón que rota no dice cuáles hay ni
- *  cuál está puesta.
+ *  Each node's word is touched and changed right there —all, any,
+ *  none— without opening anything. It is the same list as the attribute selector, for
+ *  the same reason: with three options, a rotating button does not say which there are nor
+ *  which one is set.
  *
- *  ── Todo se toca, y todo abre lo mismo ──────────────────────────────
+ *  ── Everything is touched, and everything opens the same thing ──────
  *
- *  Cualquier instancia abre el constructor parada sobre ella. No hay una que se
- *  edite acá y otra allá: lo que se ve en la barra y lo que se edita en el
- *  diálogo son el mismo objeto.
+ *  Any instance opens the builder standing on it. There is not one that is
+ *  edited here and another there: what you see in the bar and what is edited in the
+ *  dialog are the same object.
  * ==================================================================== */
 
 export type CriteriaChipsProps = {
-  /** Lo que la barra tiene puesto. Grupos y filtros mezclados: acá se separan. */
+  /** What the bar has set. Groups and filters mixed: here they are separated. */
   criteria: readonly SearchCriteria[];
-  /** Abrir el constructor sobre una instancia. */
+  /** Open the builder on an instance. */
   onOpen?: (path: CriteriaPath) => void;
-  /** Cambiar cómo se juntan los de un nodo. */
+  /** Change how a node's ones are joined. */
   onJoin?: (path: CriteriaPath, join: CriteriaJoin) => void;
-  /** Sacar una instancia, o una rama entera. */
+  /** Remove an instance, or a whole branch. */
   onRemove?: (path: CriteriaPath) => void;
-  /** Sacar varias de una vez: the × of the grouping chain drops every level. */
+  /** Remove several at once: the × of the grouping chain drops every level. */
   onRemoveMany?: (paths: readonly CriteriaPath[]) => void;
   /**
-   * Cuál nodo está ABIERTO: dónde va a caer lo próximo que se escriba.
+   * Which node is OPEN: where the next thing written will land.
    *
-   * Se marca porque si no, escribir `#and` y después una condición la mete en un
-   * lugar que nadie eligió mirando: el grupo existe, la condición entra, y el
-   * único que sabía dónde era el que la escribió.
+   * It is marked because otherwise, writing `#and` and then a condition puts it in a
+   * place nobody chose by looking: the group exists, the condition goes in, and the
+   * only one who knew where it was is the one who wrote it.
    */
   open?: CriteriaPath;
   /** How many facets show before the rest fold into «+N» (the grouping chain counts as one).
@@ -81,9 +81,9 @@ export function CriteriaChips({
   const [expanded, setExpanded] = useState(false);
   const groups = groupsOf(criteria);
   const filters = filtersOf(criteria);
-  /* La ruta se cuenta sobre la lista ENTERA y no sobre la mitad dibujada: es la
-     identidad de la instancia, y una identidad que cambia según de qué lado se
-     la mire no identifica nada. */
+  /* The path is counted over the WHOLE list and not over the drawn half: it is the
+     instance's identity, and an identity that changes depending on which side
+     you look at it from identifies nothing. */
   const pathOf = (one: SearchCriteria): CriteriaPath => [
     criteria.findIndex((each) => each.id === one.id),
   ];
@@ -318,9 +318,9 @@ function Node({
   const copy = useUiCopy();
 
   if (node.kind !== "join") {
-    /* Una instancia que no lleva expresión no tiene qué editar: el constructor
-       edita lo que VIAJA, y ésta la contesta quien la declaró. Se ve y se saca
-       como cualquiera; lo que no hace es prometer una puerta que da a nada. */
+    /* An instance that carries no expression has nothing to edit: the builder
+       edits what TRAVELS, and this one is answered by whoever declared it. It is seen and removed
+       like any other; what it does not do is promise a door that opens onto nothing. */
     const editable = node.kind === "group" || node.selection !== undefined;
     return (
       <Chip
@@ -333,8 +333,8 @@ function Node({
     );
   }
 
-  /* El nodo abierto se marca: es donde va a caer lo próximo. Un anillo y no un
-     fondo, porque adentro hay fichas que ya tienen el suyo. */
+  /* The open node is marked: it is where the next thing will land. A ring and not a
+     background, because inside there are chips that already have their own. */
   const isOpen = open !== undefined && open.join(".") === path.join(".");
 
   return (
@@ -351,8 +351,8 @@ function Node({
         surface={surface}
       />
       {node.of.length === 0 ? (
-        /* Un nodo recién abierto no tiene nada adentro, y un corchete vacío se
-           lee como un error. Dice que está esperando. */
+        /* A newly opened node has nothing inside, and an empty bracket reads
+           as an error. It says it is waiting. */
         <span
           className={`shrink-0 text-micro italic ${bySurface(surface, "text-muted", "text-chrome-muted")}`}
         >
@@ -400,8 +400,8 @@ function Chip({
       <button
         type="button"
         onClick={(event) => {
-          /* Sin esto, sacarla también la abre: el click llega acá y después
-             sube. */
+          /* Without this, removing it also opens it: the click arrives here and then
+             bubbles up. */
           event.stopPropagation();
           onRemove(path);
         }}

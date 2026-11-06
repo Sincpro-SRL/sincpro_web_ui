@@ -3,15 +3,15 @@
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 
 /* ==================================================================== *
- *  LA FICHA, MIENTRAS LLEGA.
+ *  THE RECORD'S SHEET, WHILE IT ARRIVES.
  *
- *  Factura y cliente contestaban la espera con `Empty`: «Cargando…» en el
- *  medio de la página. Eso es la frase de «no hay nada», y el registro sí
- *  está — todavía no llegó. La silueta es la de la ficha: el riel, el nombre,
- *  los cuatro hechos, las solapas y el cuerpo. Cuando el registro aparece,
- *  cae en el mismo lugar.
+ *  Invoice and customer answered the wait with `Empty`: «Cargando…» in the
+ *  middle of the page. That is the phrase for «there is nothing», and the record
+ *  does exist — it has not arrived yet. The silhouette is the sheet's: the rail, the name,
+ *  the four facts, the tabs and the body. When the record appears,
+ *  it lands in the same place.
  *
- *  Sin brillo. Un pulso ya quiere decir «este estado está vivo».
+ *  No shimmer. A pulse already means «this state is alive».
  * ==================================================================== */
 
 const HECHOS = ["w-16", "w-12", "w-20", "w-24"] as const;

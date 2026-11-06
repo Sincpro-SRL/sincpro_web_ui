@@ -359,6 +359,7 @@ export const SPANISH_COPY: UiCopyOverride = {
       window: "Abrir en una ventana",
     },
     openMore: "Abrir en…",
+    clear: "Quitar",
   },
   cell: { empty: "—", missing: "falta", emptyBin: "(vacío)" },
   dialog: {

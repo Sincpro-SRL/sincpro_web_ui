@@ -27,11 +27,11 @@ export type UiCopy = {
     rows: string;
     table: string;
     board: string;
-    /** La planilla: los datos crudos, con las columnas del archivo. */
+    /** The sheet: the raw data, with the file's columns. */
     sheet: string;
-    /** El que SUMA: una jerarquía que termina en totales. */
+    /** The one that SUMS: a hierarchy that ends in totals. */
     report: string;
-    /** Dos preguntas a la vez: montones cruzados por montones. */
+    /** Two questions at once: buckets crossed by buckets. */
     pivot: string;
     calendar: string;
     gantt: string;
@@ -168,10 +168,10 @@ export type UiCopy = {
     removeGroup: string;
     and: string;
     or: string;
-    /** Lo que encabeza las fichas del agrupado: «agrupado por». No lleva el
-     *  nivel adentro porque los niveles son N y van como fichas aparte. */
+    /** What heads the grouping chips: «agrupado por». It does not carry the
+     *  level inside because the levels are N and go as separate chips. */
     groupedBy: string;
-    /** Lo que encabeza el corchete de los recortes. */
+    /** What heads the bracket of the cuts. */
     narrowedBy: string;
     /** The «+N» chip that unfolds the facets the bar folded away. */
     moreFacets: string;
@@ -181,54 +181,54 @@ export type UiCopy = {
     removeGrouping: string;
     /** The × at the end of the bar: drops every filter and level. */
     clearAll: string;
-    /** Cambiar la conjunción entre búsquedas: todas a la vez, o cualquiera. */
+    /** Changing the conjunction between searches: all at once, or any. */
     switchJoin: string;
     /**
-     * Cómo se juntan las búsquedas, en palabras y no en símbolos.
+     * How searches are joined, in words and not in symbols.
      *
-     * «Y» y «O» son de quien escribe consultas; «todas» y «cualquiera» son de
-     * quien busca — y son las mismas tres que el constructor pone arriba de un
-     * grupo, así que la barra y el árbol dicen lo mismo.
+     * «Y» and «O» belong to whoever writes queries; «todas» and «cualquiera» belong to
+     * whoever searches — and they are the same three the builder puts above a
+     * group, so the bar and the tree say the same thing.
      */
     joins: { all: string; any: string; none: string };
-    /** El grupo negado, que el constructor sabe mostrar y la barra dibuja. */
+    /** The negated group, which the builder knows how to show and the bar draws. */
     notWord: string;
-    /** Lo que dice un nodo recién abierto, que todavía no tiene nada adentro: lo
-     *  próximo que se escriba cae ahí. Sin esto, un corchete vacío se lee como un
-     *  error y no como una invitación. */
+    /** What a freshly opened node says, which has nothing inside yet: whatever
+     *  is typed next lands there. Without this, an empty bracket reads as an
+     *  error and not as an invitation. */
     landsHere: string;
-    /** Cerrar el nodo abierto: lo que siga vuelve a caer afuera. */
+    /** Closing the open node: whatever follows lands outside again. */
     closeGroup: string;
-    /** Sacar del borrador el campo o la comparación ya elegidos. */
-    /** El aviso del campo cuando lo que falta es el valor. */
+    /** Removing from the draft the field or comparison already chosen. */
+    /** The field's notice when what is missing is the value. */
     typeValue: string;
     dropField: string;
     dropOp: string;
-    /** Abrir el constructor con TODO lo que la barra tiene puesto. */
+    /** Opening the builder with EVERYTHING the bar has set. */
     openBuilder: string;
-    /** Abrir el constructor SOBRE esta condición. */
+    /** Opening the builder ON this condition. */
     openBuilderHere: string;
-    /** El encabezado de cada paso de la pregunta: contra qué campo, con qué
-     *  comparación, contra qué valor. Sin él, una lista de operadores arriba de
-     *  una de campos son dos listas iguales que no dicen qué se está eligiendo. */
+    /** The heading of each step of the question: against which field, with which
+     *  comparison, against which value. Without it, a list of operators above
+     *  one of fields are two identical lists that do not say what is being chosen. */
     askField: string;
-    /** Cuando se escribió `#`: lo que sigue es el nombre de un campo. */
+    /** When `#` was typed: what follows is a field's name. */
     askAttribute: string;
     /** The set's own search over what was typed — every field it searches, at once — as it
      *  is offered («Buscar») and as the chip reads once put («Buscar «Globex»»). */
     literal: string;
     literalChip: string;
     askOp: string;
-    /** El encabezado de un nodo del árbol: cómo se juntan las reglas de abajo. */
+    /** The heading of a tree node: how the rules below are joined. */
     askJoin: string;
-    /** Lo que se dice cuando el filtro no se puede leer como árbol: se muestra
-     *  como está y se sigue editando en el JSON. */
+    /** What is said when the filter cannot be read as a tree: it is shown
+     *  as is and editing continues in the JSON. */
     unreadable: string;
     askValue: string;
-    /** Cómo se lee una pregunta ya hecha: «el nombre · contiene · test». */
+    /** How an already-made question reads: «el nombre · contiene · test». */
     condition: string;
-    /** El corte de una frase larga: una ficha que no entra en la barra no dice
-     *  nada, y para verlo entero está el constructor. */
+    /** The cut of a long phrase: a chip that does not fit in the bar says
+     *  nothing, and the builder is there to see it whole. */
     andMore: string;
     placeholder: string;
     /** The titles of the three columns of the tools panel. */
@@ -265,21 +265,21 @@ export type UiCopy = {
     empty: string;
   };
   /**
-   * Una lista sin nada que mostrar.
+   * A list with nothing to show.
    *
-   * Existe porque declarar el aviso es OPCIONAL y una lista vacía que no lo
-   * declaró no dibujaba nada: un panel en blanco, sin filas y sin explicación,
-   * que no dice si no hay nada o si el recorte se comió todo.
+   * It exists because declaring the notice is OPTIONAL and an empty list that did not
+   * declare it drew nothing: a blank panel, no rows and no explanation,
+   * that does not say whether there is nothing or the cut ate everything.
    *
-   * Lo declarado gana siempre: «importá tus facturas» es mejor que cualquier frase
-   * general, porque sabe qué se puede hacer. Esto es lo que se dice cuando nadie
-   * sabía qué decir.
+   * What is declared always wins: «importá tus facturas» is better than any general
+   * phrase, because it knows what can be done. This is what is said when nobody
+   * knew what to say.
    */
   list: {
     empty: string;
-    /** Vacía POR EL RECORTE es otra situación: no falta contenido, sobra un
-     *  filtro. Decir «todavía no hay nada» a quien tiene ciento ochenta y
-     *  escribió mal un nombre es contestar otra pregunta. */
+    /** Empty BECAUSE OF THE CUT is another situation: content is not missing, a
+     *  filter is in excess. Saying «todavía no hay nada» to someone who has one hundred eighty and
+     *  mistyped a name is answering another question. */
     emptyFiltered: string;
     /** How many records an embedded list holds, on its one-line bar. Two keys and not
      *  one: «1 records» is wrong in every language this ships in. */
@@ -292,26 +292,26 @@ export type UiCopy = {
     /** Asked again while the rows stay: the name of the discreet bar over them. */
     refreshing: string;
   };
-  /** La historia de un registro: eventos y mensajes. */
+  /** A record's history: events and messages. */
   /** The panel of everything around a record: its notices, its conversation and its
    *  history (`Activity`). */
   activity: {
-    /** Quién hizo algo que no hizo nadie. Es una respuesta, no un hueco. */
+    /** Who did something nobody did. It is an answer, not a blank. */
     bySystem: string;
-    /** Abrir y cerrar el error completo. */
+    /** Opening and closing the full error. */
     more: string;
     less: string;
-    /** La marca de una nota que no sale de acá, y lo que explica la marca. Van
-     *  juntas porque la palabra sola no dice qué implica. */
+    /** The mark of a note that does not leave here, and what the mark explains. They go
+     *  together because the word alone does not say what it implies. */
     internal: string;
     internalNote: string;
-    /** Escribir una nota: cómo se llama la manera, y qué dice su campo vacío. */
+    /** Writing a note: what the way is called, and what its empty field says. */
     writeNote: string;
     notePlaceholder: string;
-    /** A quiénes les llega lo que se escriba, y qué se dice cuando a nadie. */
+    /** Who receives what is written, and what is said when nobody does. */
     recipients: string;
     noRecipients: string;
-    /** El campo vacío de un mensaje que sí sale. */
+    /** The empty field of a message that does go out. */
     messagePlaceholder: string;
     /** Nobody wrote yet, and nothing was logged yet: two different answers. */
     emptyMessages: string;
@@ -349,11 +349,11 @@ export type UiCopy = {
     sending: string;
     cancel: string;
   };
-  /** Copiar un valor al portapapeles. */
+  /** Copying a value to the clipboard. */
   copyable: {
     label: string;
     done: string;
-    /** Sin portapapeles —contexto no seguro, permiso negado— se dice. */
+    /** Without a clipboard —insecure context, permission denied— it is said. */
     failed: string;
     /** The copy button of a field, named by the field: «Copiar «Cliente»». */
     field: string;
@@ -388,7 +388,7 @@ export type UiCopy = {
     mentions: string;
     noMatches: string;
   };
-  /** Ordenar, cuando la presentación no tiene encabezados donde hacer clic. */
+  /** Sorting, when the presentation has no headers to click on. */
   sorting: {
     label: string;
     by: string;
@@ -414,9 +414,9 @@ export type UiCopy = {
     /** The second and later criteria: they only decide between rows the first leaves equal. */
     then: string;
   };
-  /** Los recortes de fecha RELATIVOS. Las unidades van en singular y plural
-   *  porque «1 mes» y «3 meses» no se resuelven con una `s` en todos los
-   *  idiomas, y una interfaz que dice «3 mes» se lee como un borrador. */
+  /** The RELATIVE date cuts. The units go in singular and plural
+   *  because «1 mes» and «3 meses» are not solved with an `s` in every
+   *  language, and an interface that says «3 mes» reads like a draft. */
   dates: {
     last: string;
     prior: string;
@@ -432,15 +432,15 @@ export type UiCopy = {
     years: string;
   };
   /**
-   * Las dos piezas de calendario que ningún idioma nombra solo.
+   * The two calendar pieces that no language names on its own.
    *
-   * Los meses y los días de la semana los dice `Intl` con este mismo `locale`,
-   * así que no están acá: una tabla de doce meses en dos idiomas es una tabla
-   * que hay que escribir de nuevo para el tercero. La semana y el trimestre sí,
-   * porque «W38» no es una palabra en ningún lado.
+   * The months and the days of the week are said by `Intl` with this same `locale`,
+   * so they are not here: a table of twelve months in two languages is a table
+   * that has to be written again for the third. The week and the quarter are,
+   * because «W38» is not a word anywhere.
    *
-   * `OfYear` es la variante que se planta sola, cuando no hay un año arriba que
-   * ya lo haya dicho.
+   * `OfYear` is the variant that stands alone, when there is no year above that
+   * already said it.
    */
   calendar: {
     week: string;
@@ -451,29 +451,29 @@ export type UiCopy = {
     today: string;
   };
   /**
-   * CÓMO SE LLAMA UN OPERADOR para quien lo lee.
+   * WHAT AN OPERATOR IS CALLED for whoever reads it.
    *
-   * Está acá y no en el constructor de filtros porque lo hablan los dos: la
-   * barra ofrece «contiene» al armar una pregunta y el árbol lo dibuja al
-   * mostrarla. Dos tablas es que la misma comparación se llame de dos maneras en
-   * la misma pantalla.
+   * It is here and not in the filter builder because both speak it: the
+   * bar offers «contiene» when building a question and the tree draws it when
+   * showing it. Two tables would mean the same comparison being called two ways on
+   * the same screen.
    *
-   * Un operador que el servidor agregue y que no esté acá se dibuja con su
-   * SÍMBOLO, no desaparece: verlo crudo es un rótulo que falta, y no verlo es
-   * una pregunta que no se puede hacer.
+   * An operator the server adds that is not here is drawn with its
+   * SYMBOL, it does not disappear: seeing it raw is a label missing, and not seeing it is
+   * a question that cannot be asked.
    */
   ops: Record<string, string>;
-  /** «Agrupar por», que es una LISTA de niveles y no una opción. */
+  /** «Agrupar por», which is a LIST of levels and not an option. */
   grouping: {
     label: string;
-    /** Cuando no hay ningún nivel puesto. */
+    /** When no level is set. */
     none: string;
     add: string;
     remove: string;
     up: string;
     down: string;
     clear: string;
-    /** El corte de un nivel de fecha: día, semana, mes, año. */
+    /** The cut of a date level: day, week, month, year. */
     grain: string;
   };
   editable: {
@@ -506,6 +506,8 @@ export type UiCopy = {
     /** Where a many2one's record opens (`OpenTarget`), on its buttons and its menu. */
     openIn: { modal: string; peek: string; page: string; side: string; window: string };
     openMore: string;
+    /** The button that empties the choice, when the field may be empty (`Picker onClear`). */
+    clear: string;
   };
   cell: {
     missing: string;
@@ -550,19 +552,19 @@ export type UiCopy = {
   report: {
     open: string;
     close: string;
-    /** El encabezado de la primera columna, que se lee en voz alta y no se
-     *  dibuja: sin él, un lector de pantalla anuncia una columna sin nombre. */
+    /** The header of the first column, which is read aloud and not
+     *  drawn: without it, a screen reader announces a column with no name. */
     concept: string;
   };
   /**
-   * EL CONSTRUCTOR de criteria: las palabras de sus secciones y sus controles.
+   * THE BUILDER of criteria: the words of its sections and its controls.
    *
-   * Van acá y no adentro del componente por la misma razón que las de la barra:
-   * un archivo que dibuja no es el lugar donde se decide en qué idioma habla el
-   * producto, y con el texto adentro cambiarlo es tocar el que arma la pregunta.
+   * They are here and not inside the component for the same reason as the bar's:
+   * a file that draws is not the place where the product's language is
+   * decided, and with the text inside, changing it means touching the one that builds the question.
    */
   builder: {
-    /** Los títulos de cada sección, en el orden en que se leen. */
+    /** The titles of each section, in the order they are read. */
     filter: string;
     order: string;
     groupBy: string;
@@ -571,24 +573,24 @@ export type UiCopy = {
     pileOrder: string;
     pilePage: string;
     fields: string;
-    /** Lo que se dice cuando una sección no tiene nada puesto: qué pasa
-     *  entonces. «Vacío» no dice si no ordena o si ordena por algo. */
+    /** What is said when a section has nothing set: what happens
+     *  then. «Vacío» does not say whether it does not sort or sorts by something. */
     noOrder: string;
     noGrouping: string;
     noTotals: string;
     noPileOrder: string;
     allFields: string;
     someFields: string;
-    /** Los «+» que abren la lista de lo que todavía se puede elegir. */
+    /** The «+» buttons that open the list of what can still be chosen. */
     addOrder: string;
     addGroup: string;
     addPileOrder: string;
-    /** Lo que hace una ficha al tocarla, en su `title`. */
+    /** What a chip does when touched, in its `title`. */
     ascending: string;
     descending: string;
     flip: string;
     changeGrain: string;
-    /** Sacar, uno por clase: el `aria-label` tiene que decir qué se saca. */
+    /** Removing, one per kind: the `aria-label` has to say what is removed. */
     dropOrder: string;
     dropTotal: string;
     /** The name of a total's function select: «how "{name}" is computed». */
@@ -601,14 +603,14 @@ export type UiCopy = {
     pileOrderDirection: string;
     dropRule: string;
     dropGroup: string;
-    /** Agregar, en el árbol de condiciones. */
+    /** Adding, in the condition tree. */
     addRule: string;
     addNested: string;
-    /** Lo que explica una sección que no se entiende sola. */
+    /** What explains a section that is not understood on its own. */
     pilesNote: string;
     pilePageNote: string;
     limitPiles: string;
-    /** El árbol de condiciones. */
+    /** The condition tree. */
     /** The names of a rule's two choices — the field it asks about, and how it compares. */
     ruleField: string;
     ruleOperator: string;
@@ -616,12 +618,12 @@ export type UiCopy = {
     from: string;
     to: string;
     value: string;
-    /** El editor de JSON y los botones del pie. */
+    /** The JSON editor and the footer buttons. */
     json: string;
     jsonFilter: string;
     invalidJson: string;
-    /** El editor de código: cómo se llama cuando nadie le puso nombre, y el
-     *  botón que acomoda lo escrito. */
+    /** The code editor: what it is called when nobody named it, and the
+     *  button that tidies what was written. */
     editor: string;
     format: string;
     notCriteria: string;
@@ -636,13 +638,13 @@ export type UiCopy = {
     dropOrderBy: string;
     dropLevel: string;
   };
-  /** La grilla de dos ejes. */
+  /** The two-axis grid. */
   pivot: {
-    /** El borde: la fila y la columna que pliegan todo. */
+    /** The edge: the row and the column that fold everything. */
     total: string;
-    /** El conteo, que es lo que un pivote mide cuando nadie le pidió otra cosa. */
+    /** The count, which is what a pivot measures when nobody asked for anything else. */
     rows: string;
-    /** Abrir un cruce: qué filas cayeron ahí. */
+    /** Opening a crossing: which rows fell there. */
     open: string;
     /** The pivot's own controls (`PivotExplorer`). */
     measures: string;
@@ -1336,6 +1338,7 @@ export const ENGLISH_COPY: UiCopy = {
       window: "Open in a window",
     },
     openMore: "Open in…",
+    clear: "Clear",
   },
   cell: {
     missing: "missing",

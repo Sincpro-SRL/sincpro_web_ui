@@ -57,12 +57,12 @@ export type MessageKind = {
 };
 
 /**
- * ESCRIBIR UNA NOTA, la manera que toda lista tiene.
+ * WRITE A NOTE, the way every list has.
  *
- * Es una función y no una constante porque sus palabras salen de la copia, y una
- * constante las congelaría con las que hubiera al cargar el módulo —o sea, las
- * de fábrica— por más que después se instale otra. Sin `copy`, las instaladas; un
- * componente le pasa las de su rama.
+ * It is a function and not a constant because its words come from the copy, and a
+ * constant would freeze them with whatever there was when the module loaded —that is, the
+ * factory ones— even if another is installed afterwards. Without `copy`, the installed ones; a
+ * component passes it those of its branch.
  */
 export function writeANote(copy: UiCopy = currentCopy()): MessageKind {
   return {
@@ -90,9 +90,9 @@ export function MessageComposer({
   footer,
 }: MessageComposerProps) {
   const copy = useUiCopy();
-  /* La manera por default se arma acá adentro y no en la firma: un default de
-     parámetro se evalúa en cada render, sí, pero escrito como constante del
-     módulo congelaría las palabras de fábrica. */
+  /* The default way is built in here and not in the signature: a parameter
+     default is evaluated on every render, yes, but written as a module
+     constant it would freeze the factory words. */
   const ways = kinds ?? [writeANote(copy)];
   const [writing, setWriting] = useState<MessageKind | undefined>(undefined);
   const [body, setBody] = useState("");
@@ -105,9 +105,9 @@ export function MessageComposer({
 
   return (
     <div className="flex min-w-0 flex-col gap-2">
-      {/* Los botones SIEMPRE, elegido o no: son el índice de lo que se puede
-          escribir acá, y esconderlos mientras escribís obliga a cancelar para
-          ver si había otra forma. */}
+      {/* The buttons ALWAYS, chosen or not: they are the index of what can be
+          written here, and hiding them while you write forces you to cancel to
+          see whether there was another way. */}
       <div className="flex min-w-0 flex-wrap items-center gap-1.5">
         {ways.map((kind) => (
           <Button
@@ -124,8 +124,8 @@ export function MessageComposer({
         {footer === undefined ? null : <div className="ml-auto min-w-0">{footer}</div>}
       </div>
 
-      {/* Sin marco propio: el área ya tiene borde, y una tarjeta alrededor
-          era una caja adentro de la hoja. */}
+      {/* No frame of its own: the area already has a border, and a card around it
+          was a box inside the sheet. */}
       {writing === undefined ? null : (
         <div className="flex min-w-0 flex-col gap-2">
           {writing.internal === true || writing.recipients === undefined ? null : (

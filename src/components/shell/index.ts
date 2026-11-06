@@ -1,4 +1,4 @@
-/* EL MARCO DE LA APLICACIÓN — lo que está arriba de toda vista. */
+/* THE APPLICATION FRAME — what sits above every view. */
 export { AppFrame } from "@sincpro/web-ui/components/shell/AppFrame";
 export {
   type AppEntry,

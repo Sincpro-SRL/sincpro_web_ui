@@ -79,32 +79,31 @@ import { Fragment, type ReactNode, useId, useState } from "react";
  * ==================================================================== */
 
 /**
- * Algo que el sistema anotó.
+ * Something the system noted.
  *
- * Deliberadamente NO es el evento del producto: lo que una historia necesita
- * para dibujar uno es qué pasó, cuándo, quién, y —cuando las hay— las tres cosas
- * que uno termina yendo a buscar a otro lado.
+ * Deliberately NOT the product's event: what a story needs to draw one is what happened,
+ * when, who, and —when they exist— the three things one ends up going elsewhere to look for.
  *
- *     by       QUIÉN. Ausente = lo hizo el sistema, que también es una respuesta.
- *     moved    DE QUÉ A QUÉ. «borrador → confirmado» se lee de una.
- *     error    QUÉ falló, entero y textual: quien mira esta pantalla muchas
- *              veces no tiene acceso a los logs.
+ *     by       WHO. Absent = the system did it, which is also an answer.
+ *     moved    FROM WHAT TO WHAT. «borrador → confirmado» reads at a glance.
+ *     error    WHAT failed, whole and verbatim: whoever looks at this screen many
+ *              times has no access to the logs.
  */
 export type ActivityEvent = {
   id: string;
-  /** Qué pasó, en una oración y en pasado. */
+  /** What happened, in one sentence and in the past tense. */
   label: ReactNode;
   at: Date | string | number;
   tone?: Tone;
-  /** Quién lo hizo. Ausente = el sistema. */
+  /** Who did it. Absent = the system. */
   by?: string;
-  /** El cambio de estado, cuando lo hubo. `from` ausente = nació así. */
+  /** The change of state, when there was one. `from` absent = it was born like that. */
   moved?: { from?: string; to: string };
-  /** Lo que hay que saber además del título, cuando el título no alcanza. */
+  /** What one needs to know besides the title, when the title is not enough. */
   detail?: ReactNode;
-  /** Lo que falló, textual. Se muestra la PRIMERA línea y el resto se abre. */
+  /** What failed, verbatim. The FIRST line is shown and the rest opens. */
   error?: string;
-  /** El ícono del punto, cuando el rayo no dice lo suficiente. */
+  /** The dot's icon, when the bolt does not say enough. */
   icon?: LucideIcon;
 };
 
@@ -299,7 +298,7 @@ function ErrorLine({ error }: { error: string }) {
 }
 
 /**
- * UN EVENTO: a row that opens, not a line.
+ * AN EVENT: a row that opens, not a line.
  *
  * Closed it says what happened —in up to two lines, never cut to «se envió …»— and
  * under it who and when, in the quiet size. That second line is what made the narrow

@@ -34,47 +34,47 @@ import { FolderTree, Plus, Trash2 } from "lucide-react";
 import { type ReactNode, useState } from "react";
 
 /* ====================================================================== *
- *  UN FILTRO QUE ALGUIEN ARMA, DE LO QUE EL MODELO DICE QUE ACEPTA.
+ *  A FILTER SOMEBODY BUILDS, FROM WHAT THE MODEL SAYS IT ACCEPTS.
  *
- *  Los recortes con nombre de al lado —«vencidas», «con entregas pendientes»— son las
- *  preguntas que alguien ya pensó. Esto es para las demás: elegir un campo, un
- *  operador, escribir un valor — agruparlos con Y o con O, anidar un grupo
- *  adentro de otro tantas veces como haga falta, o escribir directamente el
- *  JSON para copiar o pegar una criteria entera.
+ *  The named cuts alongside —«vencidas», «con entregas pendientes»— are the
+ *  questions somebody already thought of. This is for the rest: choose a field, an
+ *  operator, write a value — group them with AND or with OR, nest a group
+ *  inside another as many times as needed, or write the
+ *  JSON directly to copy or paste a whole criteria.
  *
- *  **Nada acá está escrito a mano.** Los campos salen de la definición del
- *  modelo que manda el servidor, y también los operadores de cada uno: un
- *  campo de texto ofrece «contiene», uno numérico ofrece «>», uno que admite
- *  vacío ofrece «está vacío». Agregar una columna la hace aparecer acá, con
- *  sus operadores correctos, sin tocar este archivo.
+ *  **Nothing here is written by hand.** The fields come from the model
+ *  definition the server sends, and so do each one's operators: a
+ *  text field offers «contiene», a numeric one offers «>», one that admits
+ *  empty offers «está vacío». Adding a column makes it appear here, with
+ *  its correct operators, without touching this file.
  *
- *  **Un árbol, no una lista.** Cada grupo —la raíz incluida— tiene su propio
- *  «todas / cualquiera» y sus propios hijos: una condición, o otro grupo
- *  anidado adentro. El ícono del árbol agrega un grupo nuevo al lado de la
- *  fila que se tocó; el `+` agrega otra condición.
+ *  **A tree, not a list.** Each group —the root included— has its own
+ *  «todas / cualquiera» and its own children: a condition, or another group
+ *  nested inside. The tree icon adds a new group beside the
+ *  row that was touched; the `+` adds another condition.
  *
- *  **Un solo componente renderiza y construye — y siempre hay un JSON al
- *  lado.** El árbol y el editor de código son dos vistas de la MISMA
- *  criteria, sincronizadas en las dos direcciones: tocar el árbol reescribe
- *  el JSON, y escribir un JSON reconocible rehace el árbol. Lo único que el
- *  árbol no sabe construir ni mostrar es un NOT: si el filtro trae uno en
- *  cualquier nivel, se dibuja de sólo lectura con `ExpressionView` en su
- *  lugar, y el JSON sigue siendo la manera de tocarlo.
+ *  **One component renders and builds — and there is always a JSON
+ *  beside it.** The tree and the code editor are two views of the SAME
+ *  criteria, synchronised in both directions: touching the tree rewrites
+ *  the JSON, and writing a recognisable JSON rebuilds the tree. The only thing the
+ *  tree does not know how to build or show is a NOT: if the filter brings one at
+ *  any level, it is drawn read-only with `ExpressionView` in its
+ *  place, and the JSON remains the way to touch it.
  * ====================================================================== */
 
-/* Cómo se llama un operador para quien lo lee: `copy.ops`, que es la MISMA tabla que usa la
-   barra al armar la pregunta. Dos tablas es que la misma comparación se llame de dos maneras
-   en la misma pantalla. */
+/* What an operator is called for whoever reads it: `copy.ops`, which is the SAME table the
+   bar uses when building the question. Two tables means the same comparison is called two ways
+   on the same screen. */
 
-/** Qué operadores no llevan valor: preguntar si algo está vacío no necesita escribir nada. */
+/** Which operators take no value: asking whether something is empty needs nothing written. */
 const WITHOUT_VALUE = new Set(["is null"]);
 
-/** Qué operadores comparan contra DOS valores. «Entre el 1 y el 31» es la pregunta que todo
- *  el mundo hace sobre fechas, y escribirla como dos reglas sueltas es la forma de
- *  equivocarse con uno de los dos extremos. */
+/** Which operators compare against TWO values. «Entre el 1 y el 31» is the question everybody
+ *  asks about dates, and writing it as two loose rules is the way to
+ *  get one of the two ends wrong. */
 const WITH_RANGE = new Set(["between"]);
 
-/** Qué clase de input pide un valor, leído del tipo del campo. */
+/** What kind of input asks for a value, read from the field's type. */
 function inputType(type: string): string {
   if (type === "integer" || type === "number") return "number";
   if (type === "date") return "date";
@@ -93,10 +93,10 @@ function isCondition(value: unknown): value is BuiltCondition {
   );
 }
 
-/** Si esto es una de las formas que el filtro reconoce — condición, o grupo `all`/`any`/
- *  `negate`. Un JSON válido que no es ninguna de éstas —`{}`, `{"foo": 1}`, un array suelto—
- *  no es un filtro que este componente sepa dibujar, y se trata como error de forma en vez de
- *  intentar mostrar cualquier cosa. */
+/** Whether this is one of the shapes the filter recognises — condition, or `all`/`any`/
+ *  `negate` group. A valid JSON that is none of these —`{}`, `{"foo": 1}`, a loose array—
+ *  is not a filter this component knows how to draw, and is treated as a shape error instead of
+ *  trying to show anything at all. */
 export function isRecognizedFilter(value: unknown): value is BuiltFilter {
   if (isCondition(value)) return true;
   if (typeof value !== "object" || value === null) return false;
@@ -168,7 +168,7 @@ function reachesOne(model: ModelDefinition | undefined, crossed: Crossed): boole
 }
 
 /* ---------------------------------------------------------------------- *
- *  EL ÁRBOL EDITABLE — una condición, o un grupo con sus hijos adentro.
+ *  THE EDITABLE TREE — a condition, or a group with its children inside.
  * ---------------------------------------------------------------------- */
 
 /** One relation crossed on the way to a condition's field: «Líneas», and how many of the
@@ -190,16 +190,16 @@ export interface TreeCondition {
   field: string;
   operator: string;
   value: string;
-  /** El otro extremo, para los operadores que comparan contra dos —hoy `between`—. Vacío en
-   *  todos los demás, donde no significa nada. */
+  /** The other end, for the operators that compare against two —today `between`—. Empty in
+   *  all the others, where it means nothing. */
   upper?: string;
 }
 
 export interface TreeGroup {
   kind: "group";
-  /** Todas, cualquiera, o NINGUNA. Las tres, y las mismas que la barra: negar
-   *  algo se podía escribir sólo en el JSON, y una pregunta que el editor no
-   *  sabe construir es una pregunta que la mayoría no va a hacer. */
+  /** All, any, or NONE. All three, and the same as the bar's: negating
+   *  something could only be written in the JSON, and a question the editor does not
+   *  know how to build is a question most people will not ask. */
   join: CriteriaJoin;
   children: TreeNode[];
 }
@@ -223,18 +223,18 @@ export function blankGroup(model: ModelDefinition, first: string | undefined): T
   return { kind: "group", join: "all", children: [blankCondition(model, first)] };
 }
 
-/** El árbol como el filtro que viaja.
+/** The tree as the filter that travels.
  *
- *      in   condición sola
- *      out  esa condición, sin envolver
+ *      in   a lone condition
+ *      out  that condition, unwrapped
  *
- *      in   grupo con dos hijos, join «any»
+ *      in   group with two children, join «any»
  *      out  {any: [ … , … ]}
  *
- *  Un grupo de un solo hijo no se envuelve —es ese hijo—, y un grupo sin hijos desaparece: ni
- *  «todas» ni «cualquiera» vacío es un filtro que alguien pidió. La regla vale en cualquier
- *  nivel, no sólo en la raíz, así que anidar un grupo de una condición sola es lo mismo que no
- *  haberlo anidado. */
+ *  A group with a single child is not wrapped —it is that child—, and a group with no children disappears: neither
+ *  an empty «todas» nor «cualquiera» is a filter anybody asked for. The rule holds at any
+ *  level, not only at the root, so nesting a single-condition group is the same as not
+ *  having nested it. */
 export function treeToFilter(node: TreeNode): BuiltFilter | undefined {
   if (node.kind === "condition") {
     const leaf = conditionToFilter(node);
@@ -261,17 +261,17 @@ function conditionToFilter(node: TreeCondition): BuiltFilter | undefined {
     }
 
     if (WITH_RANGE.has(node.operator)) {
-      /* Un rango a medio escribir no es medio rango: mientras falte un extremo, la regla no
-         viaja. */
+      /* A half-written range is not half a range: while one end is missing, the rule does not
+         travel. */
       if (node.value === "" || (node.upper ?? "") === "") return undefined;
       return { field: node.field, operator: node.operator, value: [node.value, node.upper] };
     }
 
-    /* **Una regla sin valor no filtra.** Viajaba con `value: ""`, y eso no es «todavía no
-       escribí nada»: contra un `=` es «el campo es la cadena vacía», que vacía la lista
-       mientras alguien sigue tipeando, y contra un `like` es «contiene nada», que la deja
-       igual. Para preguntar por lo que está vacío está el operador «está vacío», que el
-       modelo publica en los campos que lo admiten — explícito, y no por omisión. */
+    /* **A rule with no value does not filter.** It used to travel with `value: ""`, and that is not «not
+       written anything yet»: against an `=` it is «the field is the empty string», which empties the list
+       while somebody is still typing, and against a `like` it is «contains nothing», which leaves it
+       the same. To ask for what is empty there is the «está vacío» operator, which the
+       model publishes on the fields that admit it — explicit, and not by omission. */
     if (node.value === "") return undefined;
 
     return { field: node.field, operator: node.operator, value: node.value };
@@ -284,9 +284,9 @@ function groupToFilter(node: TreeGroup): BuiltFilter | undefined {
     .filter((one): one is BuiltFilter => one !== undefined);
 
   if (kept.length === 0) return undefined;
-  /* «Ninguna» niega el grupo ENTERO y no cada hijo por su cuenta: «ni vencida ni
-     grande» es `no (vencida o grande)`. Y un grupo de uno tampoco se desarma
-     acá —desarmarlo perdería la negación—, que es lo mismo que hace la barra. */
+  /* «Ninguna» negates the WHOLE group and not each child on its own: «ni vencida ni
+     grande» is `not (vencida or grande)`. And a group of one is not dismantled
+     here either —dismantling it would lose the negation—, which is what the bar does. */
   if (node.join === "not") {
     return { negate: kept.length === 1 ? kept[0]! : { any: kept } };
   }
@@ -294,8 +294,8 @@ function groupToFilter(node: TreeGroup): BuiltFilter | undefined {
   return node.join === "any" ? { any: kept } : { all: kept };
 }
 
-/** Una condición de vuelta a una fila editable: el valor vuelve a texto, que es lo único que
- *  un `<input>` sabe mostrar. Una lista —el valor de un `in`— se escribe separada por comas. */
+/** A condition back to an editable row: the value goes back to text, which is the only thing
+ *  an `<input>` knows how to show. A list —an `in`'s value— is written separated by commas. */
 function conditionToTree(condition: BuiltCondition): TreeCondition {
   if (WITH_RANGE.has(condition.operator) && Array.isArray(condition.value)) {
     const [from, to] = condition.value;
@@ -320,22 +320,22 @@ function conditionToTree(condition: BuiltCondition): TreeCondition {
   };
 }
 
-/** El filtro leído de vuelta a un árbol.
+/** The filter read back into a tree.
  *
  *      in   {field: "name", operator: "=", value: "labs"}
  *      out  TreeCondition
  *
- *      in   {any: [{all: [cond1, cond2]}, cond3]}       grupo adentro de grupo
- *      out  TreeGroup(any) con un TreeGroup(all) y una condición como hijos
+ *      in   {any: [{all: [cond1, cond2]}, cond3]}       group inside a group
+ *      out  TreeGroup(any) with a TreeGroup(all) and a condition as children
  *
  *      in   {negate: {any: [cond1, cond2]}}
- *      out  TreeGroup(not) con las dos condiciones como hijos
+ *      out  TreeGroup(not) with the two conditions as children
  *
- *  El `negate` de un `any` se abre en el grupo «ninguna» y no queda como un grupo
- *  adentro de otro: es lo que `treeToFilter` vuelve a escribir, así que ida y
- *  vuelta dan lo mismo. Lo que NO se puede leer —un objeto que no es ni una
- *  condición ni ninguna de las tres formas— devuelve `null`, y ahí el componente
- *  lo muestra de sólo lectura sin dejar de poder tocarlo como JSON.
+ *  An `any`'s `negate` opens into the «ninguna» group and does not stay as a group
+ *  inside another: it is what `treeToFilter` writes back, so there and
+ *  back give the same. What can NOT be read —an object that is neither a
+ *  condition nor any of the three shapes— returns `null`, and there the component
+ *  shows it read-only while still letting you touch it as JSON.
  */
 export function treeFromFilter(filter: unknown): TreeNode | null {
   if (isCondition(filter)) return conditionToTree(filter);
@@ -360,8 +360,8 @@ export function treeFromFilter(filter: unknown): TreeNode | null {
 
   if ("negate" in record) {
     const inside = record.negate;
-    /* Un `negate` de un `any` son los hijos del grupo negado; cualquier otra cosa
-       es un solo hijo. */
+    /* An `any`'s `negate` is the negated group's children; anything else
+       is a single child. */
     const raws =
       typeof inside === "object" &&
       inside !== null &&
@@ -383,8 +383,8 @@ export function treeFromFilter(filter: unknown): TreeNode | null {
   return children === null ? null : { kind: "group", join, children };
 }
 
-/** Los hijos de un grupo, o `null` si alguno no se puede leer: medio árbol es
- *  peor que ninguno, porque dibuja algo que no es lo que filtra. */
+/** A group's children, or `null` if any cannot be read: half a tree is
+ *  worse than none, because it draws something that is not what filters. */
 function readChildren(raws: readonly unknown[]): TreeNode[] | null {
   const children: TreeNode[] = [];
   for (const raw of raws) {
@@ -399,8 +399,8 @@ function stringifyFilter(filter: BuiltFilter | undefined): string {
   return filter === undefined ? "" : JSON.stringify(filter, null, 2);
 }
 
-/** Un valor de condición, legible: una lista se junta con comas, y lo que no tiene nada se
- *  dice en palabras en vez de mostrar `true`/`undefined` sueltos. */
+/** A condition value, legible: a list is joined with commas, and what has nothing is
+ *  said in words instead of showing a bare `true`/`undefined`. */
 function describeValue(value: unknown, operator?: string): string {
   const copy = currentCopy();
   if (Array.isArray(value)) {
@@ -408,15 +408,15 @@ function describeValue(value: unknown, operator?: string): string {
       ? value.join(` ${copy.search.and} `)
       : value.join(", ");
   }
-  /* Las mismas dos palabras que la tabla pone en una celda booleana: un `sí` que
-     no es el `sí` de al lado es una segunda manera de decir lo mismo. */
+  /* The same two words the table puts in a boolean cell: a `sí` that
+     is not the `sí` next door is a second way of saying the same thing. */
   if (typeof value === "boolean") return value ? copy.table.yes : copy.table.no;
   return String(value ?? "");
 }
 
-/** El filtro dicho en una línea, para una ficha o un rótulo.
+/** The filter said in one line, for a chip or a label.
  *
- *      in   {field: "row_count", operator: ">", value: 1000}, con el modelo
+ *      in   {field: "row_count", operator: ">", value: 1000}, with the model
  *      out  'filas mayor que 1000'
  *
  *      in   {all: [cond1, cond2]}
@@ -425,17 +425,17 @@ function describeValue(value: unknown, operator?: string): string {
  *      in   {any: [cond1, cond2]}
  *      out  'el nombre es a o el nombre es b'
  *
- *  Cada condición la dice `sayCondition`, que es la misma que usa la barra: sin
- *  eso, lo escrito en la barra y lo armado en el diálogo se leen distinto aunque
- *  filtren igual, y nadie sabe cuál de las dos frases es la que manda.
+ *  Each condition is said by `sayCondition`, which is the same one the bar uses: without
+ *  that, what is written in the bar and what is built in the dialog read differently even though
+ *  they filter the same, and nobody knows which of the two phrases is the one in charge.
  *
- *  **El modelo es el que sabe cómo se llama un campo.** Sin él queda el nombre
- *  crudo —`row_count`—, que es lo mejor que se puede decir sin preguntarle a
- *  nadie.
+ *  **The model is the one that knows what a field is called.** Without it the raw
+ *  name remains —`row_count`—, which is the best that can be said without asking
+ *  anybody.
  *
- *  Un grupo anidado se encierra entre paréntesis, que es lo que evita que «a y (b o c)» se
- *  lea como «(a y b) o c». Para más de tres condiciones se corta: una ficha que no entra en
- *  la barra no dice nada — para eso está abrir el constructor y verlo entero. */
+ *  A nested group is enclosed in parentheses, which is what keeps «a y (b o c)» from being
+ *  read as «(a y b) o c». Past three conditions it is cut: a chip that does not fit in
+ *  the bar says nothing — that is what opening the builder and seeing it whole is for. */
 export function describeFilter(
   node: BuiltFilter,
   model?: ModelDefinition,
@@ -490,11 +490,11 @@ function say(
   return sayCondition(label, node.operator, describeValue(node.value, node.operator));
 }
 
-/** El filtro dibujado tal como es, recursivo: una condición es una línea, `all`/`any` son un
- *  grupo con su rótulo y sus hijos adentro, `negate` es «no» envolviendo al que niega.
+/** The filter drawn as it is, recursive: a condition is a line, `all`/`any` are a
+ *  group with its label and its children inside, `negate` is «no» wrapping the one it negates.
  *
- *  Es la mitad de sólo lectura de este archivo, y también sirve sola: mostrar qué dice un
- *  filtro que ya está puesto no necesita abrir el constructor. */
+ *  It is the read-only half of this file, and it also works alone: showing what a
+ *  filter that is already set says does not need opening the builder. */
 export function ExpressionView({
   node,
   model,
@@ -503,13 +503,13 @@ export function ExpressionView({
   at = [],
 }: {
   node: BuiltFilter;
-  /** Quién sabe cómo se llama un campo. Sin él queda el nombre crudo. */
+  /** Who knows what a field is called. Without it the raw name remains. */
   model?: ModelDefinition;
   depth?: number;
-  /** El modelo al final de un camino de relaciones, si ya llegó: nombra los campos de un
+  /** The model at the end of a path of relations, if it has arrived: it names the fields of a
    *  `through`. */
   modelAt?: (path: readonly string[]) => ModelDefinition | undefined;
-  /** El camino hasta acá (por los `through` de afuera). */
+  /** The path up to here (through the outer `through`s). */
   at?: readonly string[];
 }) {
   const surface = useSurface();
@@ -542,9 +542,9 @@ export function ExpressionView({
   }
 
   if ("all" in node || "any" in node) {
-    /* LAS MISMAS TRES PALABRAS QUE LA BARRA. Un grupo que acá se llama «coincide
-       con alguna» y en la ficha «cualquiera» son dos vocabularios para una sola
-       cosa, y el que los lee tiene que aprender los dos. */
+    /* THE SAME THREE WORDS AS THE BAR. A group that is called «coincide
+       con alguna» here and «cualquiera» on the chip is two vocabularies for one
+       thing, and whoever reads them has to learn both. */
     const label = "all" in node ? copy.search.joins.all : copy.search.joins.any;
     const items = "all" in node ? node.all : node.any;
     return (
@@ -581,12 +581,12 @@ export function ExpressionView({
     );
   }
 
-  /* Y la misma frase que la ficha: una condición se lee igual esté donde esté. */
+  /* And the same phrase as the chip: a condition reads the same wherever it is. */
   return <p className={`text-meta ${indent}`}>{describeFilter(node, model)}</p>;
 }
 
 /* ---------------------------------------------------------------------- *
- *  UN GRUPO, DIBUJADO — la pieza que se llama a sí misma para anidar.
+ *  A GROUP, DRAWN — the piece that calls itself to nest.
  * ---------------------------------------------------------------------- */
 
 export function SelectionTree({
@@ -603,28 +603,28 @@ export function SelectionTree({
   onChange: (next: TreeGroup) => void;
   depth?: number;
   /**
-   * El campo de la condición que hay que mostrar PRIMERO: la que alguien tocó en
-   * la barra.
+   * The condition's field to show FIRST: the one somebody touched in
+   * the bar.
    *
-   * Sin esto, tocar una ficha abría el constructor en la regla uno y había que
-   * buscar entre doce la que uno venía mirando — que es la manera más rápida de
-   * editar la equivocada. Se marca y se lleva a la vista; no se abre en un modo
-   * distinto, porque el constructor es el mismo.
+   * Without this, touching a chip opened the builder on rule one and you had to
+   * search among twelve for the one you were looking at — which is the quickest way to
+   * edit the wrong one. It is marked and brought into view; it does not open in a different
+   * mode, because the builder is the same.
    *
-   * Marca a CUALQUIER profundidad: el árbol se lo pasa a los grupos que anida.
+   * It marks at ANY depth: the tree passes it to the groups it nests.
    *
-   * **Es un nombre de campo, no una ruta**, así que dos condiciones sobre el
-   * mismo campo en ramas distintas se marcan las dos y la vista va a la primera.
-   * Distinguirlas pide que el árbol y las instancias de la barra compartan la
-   * identidad, y hoy no la comparten: `selectionOf` arma el filtro salteándose los
-   * niveles y lo que no viaja, así que la posición en uno no es la posición en
-   * el otro.
+   * **It is a field name, not a path**, so two conditions on the
+   * same field in different branches are both marked and the view goes to the first.
+   * Telling them apart requires the tree and the bar's instances to share
+   * identity, and today they do not: `selectionOf` builds the filter skipping the
+   * levels and what does not travel, so the position in one is not the position in
+   * the other.
    */
   focus?: string;
-  /** El modelo al final de un camino de relaciones. Con esto, el campo de cada regla puede
-   *  ser uno de un registro relacionado («Líneas > Impuestos > Monto»). */
+  /** The model at the end of a path of relations. With this, each rule's field can
+   *  be one from a related record («Líneas > Impuestos > Monto»). */
   loadModel?: LoadModel;
-  /** La caché de modelos que comparten las reglas. La arma el árbol de afuera. */
+  /** The model cache the rules share. The outer tree builds it. */
   models?: ModelCache;
 }) {
   const names = filterableNames(model);
@@ -671,9 +671,9 @@ export function SelectionTree({
 
   return (
     <div className={`flex min-w-0 flex-col gap-2 rounded-control border p-2 ${box}`}>
-      {/* LA MISMA PALABRA QUE LA BARRA, y el mismo control: un `<select>` acá y
-          una lista de fichas allá son dos maneras de decidir lo mismo, y el que
-          aprendió una no reconoce la otra. */}
+      {/* THE SAME WORD AS THE BAR, and the same control: a `<select>` here and
+          a list of chips there are two ways of deciding the same thing, and whoever
+          learned one does not recognise the other. */}
       <p className="flex flex-wrap items-baseline gap-1 text-meta">
         {copy.search.askJoin}
         <JoinWord join={group.join} onChange={(join) => onChange({ ...group, join })} />
@@ -750,7 +750,7 @@ export function SelectionTree({
 }
 
 /* ---------------------------------------------------------------------- *
- *  UNA REGLA — el camino hasta el campo, cuántos de cada relación, el operador y el valor.
+ *  A RULE — the path to the field, how many of each relation, the operator and the value.
  * ---------------------------------------------------------------------- */
 
 function ConditionRow({
@@ -774,9 +774,9 @@ function ConditionRow({
   const hops = child.through ?? [];
   const path = child.field === "" ? [] : [...hops.map((hop) => hop.field), child.field];
   const steps = useFieldPathSteps(models, path);
-  /* El operador y el valor salen del ÚLTIMO campo del camino: «Monto», alcanzado por dos
-     relaciones, se compara como un número y no como la relación por la que se llegó. Una
-     regla de la raíz lo sabe sin esperar a nadie. */
+  /* The operator and the value come from the path's LAST field: «Monto», reached through two
+     relations, is compared as a number and not as the relation it was reached through. A
+     root rule knows it without waiting for anybody. */
   const leaf =
     steps?.at(-1)?.field ?? (hops.length === 0 ? model.fields[child.field] : undefined);
   const ops = leaf?.ops ?? [];
@@ -790,7 +790,7 @@ function ConditionRow({
     if (last === undefined) return;
     const nextHops = found.slice(0, -1).map((step, at) => ({
       field: step.name,
-      /* Cambiar el campo final no reinicia la ficha de una relación que sigue en el camino. */
+      /* Changing the final field does not reset the chip of a relation that remains in the path. */
       match: hops[at]?.field === step.name ? hops[at]!.match : ("any" as ThroughMatch),
     }));
     onChange({
@@ -812,8 +812,8 @@ function ConditionRow({
 
   return (
     <div
-      /* La que se vino a ver se marca y se trae a la vista. El anillo y no
-         un fondo: el fondo compite con el `select` que hay que tocar. */
+      /* The one that was come to see is marked and brought into view. A ring and not
+         a background: the background competes with the `select` that has to be touched. */
       ref={focused ? (node) => node?.scrollIntoView({ block: "nearest" }) : undefined}
       className={`flex min-w-0 flex-wrap items-center gap-2 rounded-control ${
         focused ? "-m-1 p-1 ring-1 ring-primary/60" : ""
@@ -828,11 +828,11 @@ function ConditionRow({
         onChange={choosePath}
       />
 
-      {/* UNA FICHA POR CADA RELACIÓN A MUCHOS del camino: «alguna línea», «ninguna línea»,
-          «todas las líneas» son tres preguntas distintas y el camino solo no dice cuál. Si la
-          relación llega a muchos lo dice el modelo; un cuantificador que no es «alguno» se ve
-          aunque el modelo no haya llegado, porque esconderlo es esconder lo que la regla
-          pregunta. */}
+      {/* ONE CHIP FOR EACH TO-MANY RELATION in the path: «alguna línea», «ninguna línea»,
+          «todas las líneas» are three different questions and the path alone does not say which. Whether the
+          relation reaches many is told by the model; a quantifier that is not «alguno» is shown
+          even if the model has not arrived, because hiding it is hiding what the rule
+          asks. */}
       {hops.map((hop, at) => {
         const step = steps?.[at];
         const many = step !== undefined && isToMany(step.field);
@@ -917,15 +917,15 @@ export function FilterBuilder({
   models: shared,
 }: {
   model: ModelDefinition;
-  /** El modelo al final de un camino de relaciones. Con esto, una regla puede preguntar por
-   *  un campo de un registro relacionado: «alguna línea con algún impuesto con monto > 10».
-   *  web-ui no pide nada: quien dibuja el constructor sabe de dónde salen los modelos. */
+  /** The model at the end of a path of relations. With this, a rule can ask about
+   *  a field of a related record: «alguna línea con algún impuesto con monto > 10».
+   *  web-ui asks for nothing: whoever draws the builder knows where the models come from. */
   loadModel?: LoadModel;
-  /** Una caché de modelos compartida con quien dibuja el constructor —la misma que usa para
-   *  describir el filtro aplicado con `describeFilter(…, modelAt)`—. Sin esto, una propia. */
+  /** A model cache shared with whoever draws the builder —the same one it uses to
+   *  describe the applied filter with `describeFilter(…, modelAt)`—. Without this, its own. */
   models?: ModelCache;
-  /** El filtro que ya estaba puesto, si había uno. Reabrir el constructor con esto adentro
-   *  tiene que seguir donde quedó, no empezar en blanco. */
+  /** The filter that was already set, if there was one. Reopening the builder with this inside
+   *  has to continue where it was left, not start blank. */
   initial?: BuiltFilter;
   onApply: (selection: BuiltFilter | undefined) => void;
   onCancel?: () => void;
@@ -950,8 +950,8 @@ export function FilterBuilder({
   );
   const [rawError, setRawError] = useState<string | null>(null);
 
-  /* Tocar el árbol reescribe el JSON para que muestre exactamente lo que el árbol ahora dice,
-     y suelta cualquier vista de sólo lectura que hubiera quedado. */
+  /* Touching the tree rewrites the JSON so it shows exactly what the tree now says,
+     and drops any read-only view that may have been left. */
   function updateTree(next: TreeGroup) {
     setTree(next);
     setLockedView(null);
@@ -959,10 +959,10 @@ export function FilterBuilder({
     setRawError(null);
   }
 
-  /* Escribir en el JSON intenta lo mismo al revés: si lo tipeado no trae un `negate` en
-     ningún nivel, el árbol se rehace para mostrarlo — Y y O, a cualquier profundidad. Si trae
-     uno, se dibuja de sólo lectura, pero el JSON sigue siendo lo que se va a aplicar. Si no
-     es ninguna de las dos —a medio escribir, o no es un filtro— no se toca lo que ya había. */
+  /* Writing in the JSON tries the same the other way round: if what was typed brings no `negate` at
+     any level, the tree is rebuilt to show it — AND and OR, at any depth. If it brings
+     one, it is drawn read-only, but the JSON remains what will be applied. If it is
+     neither —half-written, or not a filter— what was there is not touched. */
   function updateRaw(text: string) {
     setRawText(text);
     if (text.trim() === "") {
@@ -999,8 +999,8 @@ export function FilterBuilder({
 
   return (
     <div className="flex min-w-0 flex-col gap-3 p-3">
-      {/* El árbol tiene su propio alto y su propio scroll: anidar seis niveles no puede
-          empujar al editor de código fuera del diálogo. */}
+      {/* The tree has its own height and its own scroll: nesting six levels cannot
+          push the code editor out of the dialog. */}
       <div className="max-h-80 min-w-0 overflow-auto">
         {lockedView !== null ? (
           <>
@@ -1012,9 +1012,9 @@ export function FilterBuilder({
         )}
       </div>
 
-      {/* El filtro real, en JSON: se reescribe solo mientras se toca el árbol de arriba, y se
-          puede escribir o pegar acá en vez de armarlo con él — las dos vistas se mantienen
-          iguales mientras lo que haya sea reconocible como filtro. */}
+      {/* The real filter, in JSON: it rewrites itself while the tree above is touched, and
+          you can write or paste here instead of building it with it — the two views stay
+          equal as long as what is there is recognisable as a filter. */}
       <LazyJsonEditor
         value={rawText}
         onChange={updateRaw}

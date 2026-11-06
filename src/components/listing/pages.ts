@@ -77,10 +77,10 @@ export function usePagination<Row>(
         setPageSize(clampSize(next));
         setPage(1);
       },
-      /* Se mueve desde `current` y no desde `page`, que es el que puede haber
-         quedado alto: si estabas en la 3 y un filtro dejó dos páginas, `page`
-         sigue en 3 mientras se muestra la 2, y `p - 1` volvía a 2 — o sea que
-         «anterior» no hacía nada hasta el segundo clic. */
+      /* It moves from `current` and not from `page`, which may have been left
+         too high: if you were on 3 and a filter left two pages, `page` stays
+         at 3 while 2 is shown, and `p - 1` went back to 2 — so «previous»
+         did nothing until the second click. */
       ...(current > 1 ? { onPrev: () => setPage(current - 1) } : {}),
       ...(current < pages ? { onNext: () => setPage(current + 1) } : {}),
     },

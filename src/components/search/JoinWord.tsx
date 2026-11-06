@@ -8,26 +8,26 @@ import { Tags } from "@sincpro/web-ui/primitives/tag/Tags";
 import { useState } from "react";
 
 /* ==================================================================== *
- *  CÓMO SE JUNTA UN NODO, en una palabra que se toca.
+ *  HOW A NODE IS JOINED, in a word you touch.
  *
- *  Todas, cualquiera, ninguna. Son las tres y no dos: sin «ninguna», negar algo
- *  sólo se podía escribir en el JSON, y una pregunta que el editor no sabe
- *  construir es una pregunta que la mayoría no va a hacer.
+ *  All, any, none. They are three and not two: without «ninguna», negating something
+ *  could only be written in the JSON, and a question the editor does not know how to
+ *  build is a question most people will not ask.
  *
- *  ── Una palabra, no un símbolo ──────────────────────────────────────
+ *  ── A word, not a symbol ────────────────────────────────────────────
  *
- *  «Y» y «O» son de quien escribe consultas; «todas» y «cualquiera» son de quien
- *  busca. Y son las de la copia, así que cambiarlas las cambia en los dos lados
- *  a la vez.
+ *  «Y» and «O» belong to whoever writes queries; «todas» and «cualquiera» belong to whoever
+ *  searches. And they are the copy's, so changing them changes them on both sides
+ *  at once.
  *
- *  ── Se abre en sus opciones, no rota ────────────────────────────────
+ *  ── It opens into its options, it does not rotate ──────────────────────
  *
- *  Con tres, un botón que alterna no dice cuáles hay ni cuál está puesta: hay
- *  que apretarlo para averiguarlo, y averiguarlo cambia lo que filtra.
+ *  With three, a toggling button says neither which there are nor which is set: you
+ *  have to press it to find out, and finding out changes what it filters.
  *
- *  Vive acá y no adentro de la barra porque el constructor pregunta lo mismo. Un
- *  `<select>` allá y una lista acá son dos controles para una decisión, y el que
- *  aprendió uno no reconoce el otro.
+ *  It lives here and not inside the bar because the builder asks the same. A
+ *  `<select>` there and a list here are two controls for one decision, and whoever
+ *  learned one does not recognise the other.
  * ==================================================================== */
 
 const OPTIONS: readonly CriteriaJoin[] = ["all", "any", "not"];
@@ -38,7 +38,7 @@ export function JoinWord({
   surface,
 }: {
   join: CriteriaJoin;
-  /** Sin esto la palabra es un valor: dice cómo junta, y no se toca. */
+  /** Without this the word is a value: it says how it joins, and is not touched. */
   onChange?: (next: CriteriaJoin) => void;
   surface?: Surface;
 }) {

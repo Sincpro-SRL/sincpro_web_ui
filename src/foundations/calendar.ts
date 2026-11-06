@@ -1,55 +1,55 @@
 import { currentCopy, currentCopyLocale, fillCopy } from "@sincpro/web-ui/foundations/copy";
 
-/** El grano de un nivel de fecha. Sin grano, un campo de fecha parte por
- *  instante y cada fila termina en su propio montón, que es no agrupar. */
+/** The grain of a date level. Without a grain, a date field splits by
+ *  instant and every row ends up in its own bucket, which is not grouping. */
 export type GroupGrain = "day" | "week" | "month" | "quarter" | "year";
 
 /**
- * EL CALENDARIO: de una fecha a una CLAVE, y de una clave a un RÓTULO.
+ * THE CALENDAR: from a date to a KEY, and from a key to a LABEL.
  *
- * Context: un montón de fecha tiene dos textos y no son el mismo. «2026-09» es
- * lo que el motor escribe —lo que identifica al montón, lo que se compara con lo
- * que contó el servidor, lo que se guarda plegado— y «Septiembre» es lo que se
- * lee. Escribir uno solo obliga a elegir cuál se pierde: con la clave a la vista
- * la interfaz habla en máquina, y con el rótulo por identidad dos septiembres de
- * años distintos se funden en un montón que no existe.
+ * Context: a date bucket has two texts and they are not the same. «2026-09» is
+ * what the engine writes —what identifies the bucket, what is compared with what
+ * the server counted, what is stored folded— and «Septiembre» is what is
+ * read. Writing only one forces a choice of which one is lost: with the key in view
+ * the interface speaks machine, and with the label as identity two Septembers of
+ * different years melt into a bucket that does not exist.
  *
- * Por eso son dos funciones y no una:
+ * That is why there are two functions and not one:
  *
- *     dateKey(when, "month")      → «2026-09»     la identidad, en un solo idioma
- *     dateLabel("2026-09", …)     → «Septiembre»  el rótulo, en el idioma activo
+ *     dateKey(when, "month")      → «2026-09»     the identity, in a single language
+ *     dateLabel("2026-09", …)     → «Septiembre»  the label, in the active language
  *
- * ── El idioma no se traduce: se PIDE ────────────────────────────────
+ * ── The language is not translated: it is ASKED for ─────────────────
  *
- * Los meses y los días de la semana los dice `Intl` con el `locale` que la copia
- * tiene puesto, así que no hay acá ninguna tabla de doce meses en español ni en
- * inglés — ni la habría que escribir para un tercer idioma. Lo único que sí es
- * copia son la semana y el trimestre, porque ningún calendario los nombra: «W38»
- * no es una palabra y `Intl` no la tiene.
+ * The months and the days of the week are said by `Intl` with the `locale` the copy
+ * has set, so there is no table of twelve months here, in Spanish or in
+ * English — nor would one have to be written for a third language. The only things that
+ * are copy are the week and the quarter, because no calendar names them: «W38»
+ * is not a word and `Intl` does not have it.
  *
- * ── Un rótulo dice lo que el de arriba NO dijo ──────────────────────
+ * ── A label says what the one above did NOT say ─────────────────────
  *
- * Un árbol de fechas se lee de arriba hacia abajo, y repetir el año en cada mes
- * y el mes en cada día llena la sangría de texto que ya está dos renglones más
- * arriba:
+ * A tree of dates is read from top to bottom, and repeating the year in every month
+ * and the month in every day fills the indentation with text that is already two lines
+ * above:
  *
- *     2026                        ← el año lo dice una vez
- *       Septiembre                ← no «Septiembre de 2026»
- *         Semana 38               ← no «Semana 38 de 2026»
- *           Martes                ← no «martes, 15 sept 2026»
+ *     2026                        ← the year is said once
+ *       Septiembre                ← not «Septiembre de 2026»
+ *         Semana 38               ← not «Semana 38 de 2026»
+ *           Martes                ← not «martes, 15 sept 2026»
  *
- * De eso se ocupa `within`: los granos que los montones de arriba —del mismo
- * campo— ya dijeron. Sin nadie arriba, el rótulo se planta solo y dice la fecha
- * entera, porque un «Martes» suelto no es ningún día.
+ * `within` takes care of that: the grains that the buckets above —of the same
+ * field— already said. With nobody above, the label stands alone and says the whole
+ * date, because a bare «Martes» is not a day.
  */
 
 /**
- * La forma de la clave de cada grano. Es `GroupGrain` entero: un grano que el
- * calendario no supiera cortar sería un nivel que no parte nada.
+ * The shape of each grain's key. It is the whole `GroupGrain`: a grain the
+ * calendar could not cut would be a level that splits nothing.
  *
- * Los rangos van en la expresión y no en un `if` porque `new Date(2026, 12, 1)`
- * no falla: se corre a enero de 2027. Una clave «2026-13» dibujada como «Enero»
- * es un mes que nadie contó, y eso es peor que un rótulo ilegible.
+ * The ranges go in the expression and not in an `if` because `new Date(2026, 12, 1)`
+ * does not fail: it rolls over to January 2027. A key «2026-13» drawn as «Enero»
+ * is a month nobody counted, and that is worse than an unreadable label.
  */
 const KEY_SHAPES: Readonly<Record<GroupGrain, RegExp>> = {
   year: /^(\d{4})$/,
@@ -60,13 +60,13 @@ const KEY_SHAPES: Readonly<Record<GroupGrain, RegExp>> = {
 };
 
 /**
- * Una fecha recortada a la CLAVE de su grano.
+ * A date cut down to the KEY of its grain.
  *
- * El texto es el que produce el motor —«2026», «2026-Q3», «2026-09», «2026-W38»,
- * «2026-09-15»—, y que los dos lados lo escriban igual es lo que deja comparar
- * un agrupado hecho en el navegador con uno contado a mil kilómetros. Sin fecha
- * la clave es vacía: un montón que existe —el de los que no tienen— y que se
- * dibuja con las palabras de la copia.
+ * The text is the one the engine produces —«2026», «2026-Q3», «2026-09», «2026-W38»,
+ * «2026-09-15»—, and both sides writing it the same is what lets a grouping
+ * made in the browser be compared with one counted a thousand kilometres away. Without a date
+ * the key is empty: a bucket that exists —the one for those that have none— and that is
+ * drawn with the words of the copy.
  */
 export function dateKey(
   when: Date | string | number | null | undefined,
@@ -98,13 +98,13 @@ export function dateKey(
 }
 
 /**
- * El RÓTULO de una clave de fecha, en el idioma activo.
+ * The LABEL of a date key, in the active language.
  *
- * `within` son los granos que los montones de arriba ya dijeron: con el año
- * arriba, un mes es «Septiembre» y no «Septiembre de 2026». Una clave que no
- * tiene la forma de su grano se dibuja TAL CUAL —es lo que hace que un montón
- * contado afuera, con una clave que esta capa no escribió, siga siendo legible
- * en vez de desaparecer detrás de una fecha inventada.
+ * `within` are the grains the buckets above already said: with the year
+ * above, a month is «Septiembre» and not «Septiembre de 2026». A key that does not
+ * have the shape of its grain is drawn AS IS —that is what keeps a bucket
+ * counted elsewhere, with a key this layer did not write, readable
+ * instead of vanishing behind an invented date.
  */
 export function dateLabel(
   key: string,
@@ -132,8 +132,8 @@ export function dateLabel(
 
   if (grain === "week") {
     const week = Number(parts[2]);
-    /* El mes también alcanza: una semana adentro de septiembre ya sabe de qué
-       año es, porque el mes lo dijo. */
+    /* The month is enough too: a week inside September already knows which
+       year it is, because the month said so. */
     return said("year") || said("quarter") || said("month")
       ? fillCopy(copy.calendar.week, { n: week })
       : fillCopy(copy.calendar.weekOfYear, { n: week, year });
@@ -150,12 +150,12 @@ export function dateLabel(
 
   const day = Number(parts[3]);
   const when = new Date(year, Number(parts[2]) - 1, day);
-  /* El 31 de febrero tiene la forma de un día y no es ninguno: `Date` lo corre
-     al 3 de marzo en vez de quejarse, así que se pregunta si volvió el mismo. */
+  /* 31 February has the shape of a day and is none: `Date` rolls it over
+     to 3 March instead of complaining, so we ask whether the same day came back. */
   if (when.getDate() !== day) return key;
-  /* Adentro de una semana, el día es su NOMBRE: son siete y ninguno se repite,
-     así que «Martes» alcanza y el número de día sería ruido. Afuera no: un
-     «Martes» suelto no dice cuál de los cincuenta y dos. */
+  /* Inside a week, the day is its NAME: there are seven and none repeats,
+     so «Martes» is enough and the day number would be noise. Outside it is not: a bare
+     «Martes» does not say which of the fifty-two. */
   if (said("week")) return capitalized(format(locale, { weekday: "long" }).format(when));
   return capitalized(
     format(locale, {
@@ -168,9 +168,9 @@ export function dateLabel(
 }
 
 /**
- * La clave SIGUIENTE en el mismo grano: «2026-09» → «2026-10», «2026-Q4» → «2027-Q1»,
- * «2026-W52» → la semana ISO que sigue. `null` si la clave no tiene la forma de su grano —
- * una contada afuera, que esta capa no escribió y entonces no puede continuar.
+ * The NEXT key in the same grain: «2026-09» → «2026-10», «2026-Q4» → «2027-Q1»,
+ * «2026-W52» → the ISO week that follows. `null` if the key does not have the shape of its grain —
+ * one counted elsewhere, which this layer did not write and so cannot continue.
  */
 export function nextDateKey(key: string, grain: GroupGrain): string | null {
   const parts = KEY_SHAPES[grain].exec(key);
@@ -200,12 +200,12 @@ export function nextDateKey(key: string, grain: GroupGrain): string | null {
 }
 
 /**
- * Todas las claves de un grano entre dos, las dos incluidas: el EJE de tiempo entero.
+ * All the keys of a grain between two, both included: the whole time AXIS.
  *
- * Un eje que salta el mes en que no pasó nada miente sobre el tiempo —agosto pegado a
- * octubre se lee como un mes— y ese hueco suele ser justo lo que alguien busca. `null` si
- * alguna clave no se puede continuar o si serían más de `max`: un eje por día de diez años
- * no es un gráfico.
+ * An axis that skips the month where nothing happened lies about time —August stuck to
+ * October reads as one month— and that gap is often exactly what someone is looking for. `null` if
+ * some key cannot be continued or if there would be more than `max`: an axis by day over ten years
+ * is not a chart.
  */
 export function dateKeysBetween(
   first: string,
@@ -224,28 +224,28 @@ export function dateKeysBetween(
   return key === last ? out : null;
 }
 
-/** El nombre de un mes —1 a 12— en el idioma activo. Lo usa el que ofrece meses
- *  sin tener ninguna fecha en la mano, como el recorte por período. */
+/** The name of a month —1 to 12— in the active language. Used by whoever offers months
+ *  without holding any date, like the cut by period. */
 export function monthName(month: number): string {
   return capitalized(
     format(currentCopyLocale(), { month: "long" }).format(new Date(2000, month - 1, 1)),
   );
 }
 
-/** Cómo se llama un GRANO —«día», «semana»—, que es distinto de cómo se llama un
- *  montón suyo: el grano nombra el corte y el rótulo nombra lo cortado. Sale de
- *  la copia, que es donde ya viven las unidades de tiempo en singular. */
+/** What a GRAIN is called —«día», «semana»—, which is different from what a bucket
+ *  of it is called: the grain names the cut and the label names what was cut. It comes from
+ *  the copy, which is where the time units in the singular already live. */
 export function grainName(grain: GroupGrain): string {
   return capitalized(currentCopy().dates[grain]);
 }
 
 /**
- * El año y la semana ISO de una fecha.
+ * The ISO year and week of a date.
  *
- * La semana 1 es la que tiene el primer jueves del año, así que se calcula con
- * el jueves de la semana del dato: es él quien decide a qué año pertenece, y por
- * eso una semana de fin de diciembre puede ser la 1 del año siguiente. El año
- * que sale de acá es el de ESA semana y no el de la fecha.
+ * Week 1 is the one holding the first Thursday of the year, so it is computed with
+ * the Thursday of the datum's week: it decides which year it belongs to, and that is
+ * why a week at the end of December can be week 1 of the next year. The year
+ * that comes out of here is that of THAT week and not that of the date.
  */
 function isoWeek(date: Date): [year: number, week: number] {
   const thursday = new Date(date.getFullYear(), date.getMonth(), date.getDate());
@@ -264,9 +264,9 @@ function format(locale: string, options: Intl.DateTimeFormatOptions): Intl.DateT
   return new Intl.DateTimeFormat(locale, options);
 }
 
-/** Un rótulo encabeza un montón, y en español `Intl` devuelve «septiembre» con
- *  minúscula. Se sube la primera letra con el idioma activo, que es el que sabe
- *  cuál es la mayúscula de esa letra. */
+/** A label heads a bucket, and in Spanish `Intl` returns «septiembre» in
+ *  lowercase. The first letter is raised with the active language, which is the one that knows
+ *  what the capital of that letter is. */
 function capitalized(text: string): string {
   const first = text.charAt(0);
   return first === "" ? text : first.toLocaleUpperCase(currentCopyLocale()) + text.slice(1);

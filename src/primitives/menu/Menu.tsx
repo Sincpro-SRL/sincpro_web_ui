@@ -83,9 +83,9 @@ export interface MenuOption {
    *  quarters, years— which are one group because they combine, but read as
    *  three because they answer at three different zooms. */
   divider?: boolean;
-  /** Cómo se SACA esta opción cuando se dibuja como ficha, si sacarla no es lo mismo que
-   *  volver a elegirla. El filtro a medida es el caso: elegirlo abre el constructor, y eso
-   *  no es lo que tiene que pasar al tocar su ×. */
+  /** How this option is REMOVED when drawn as a chip, if removing it is not the same as
+   *  choosing it again. The custom filter is the case: choosing it opens the builder, and that
+   *  is not what should happen when its × is tapped. */
   onRemove?: () => void;
   disabled?: boolean;
   /** Visual mark at the end of the label. A string is drawn as a pill

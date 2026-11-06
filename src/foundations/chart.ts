@@ -10,52 +10,52 @@ import {
 } from "@sincpro/web-ui/foundations/pivot";
 
 /**
- * EL GRÁFICO: un pivote leído como marcas.
+ * THE CHART: a pivot read as marks.
  *
- * Context: un gráfico de un ERP —el de Odoo, el de cualquiera— contesta la misma pregunta
- * que un pivote: el conjunto partido por un campo (el eje), a veces por otro más (las
- * series), y en cada cruce un número plegado. Por eso esto NO trae otra manera de plegar:
- * lee un `Pivot`. Y como un `Pivot` lo arma igual quien tiene los registros en la mano
- * (`pivotFrom`), quien lo plegó en el servidor (`pivotOf`) o quien lo armó desde las celdas
- * de un archivo, el mismo gráfico sirve para registros, para un dataset y para lo agrupado
- * a mil kilómetros. Un diccionario o un `SeriesBar[]` entran por sus dos helpers de abajo.
+ * Context: an ERP chart —Odoo's, anyone's— answers the same question
+ * as a pivot: the set split by one field (the axis), sometimes by another (the
+ * series), and at each crossing a folded number. That is why this brings NO other way to fold:
+ * it reads a `Pivot`. And since a `Pivot` is built the same by whoever holds the records in hand
+ * (`pivotFrom`), whoever folded it on the server (`pivotOf`) or whoever built it from the cells
+ * of a file, the same chart serves records, a dataset and what is grouped
+ * a thousand kilometres away. A dictionary or a `SeriesBar[]` come in through the two helpers below.
  *
- * ── Las filas del pivote son el EJE; sus columnas, las SERIES ───────
+ * ── The pivot's rows are the AXIS; its columns, the SERIES ──────────
  *
- * Igual que en Odoo: el primer agrupado va abajo y el segundo se apila o se pone al lado.
+ * As in Odoo: the first grouping goes below and the second is stacked or set beside it.
  *
- * ── Tres reglas que vienen del pivote, y siguen valiendo ────────────
+ * ── Three rules that come from the pivot, and still hold ────────────
  *
- *  1. **Un agujero no es un cero.** `null` es «ahí no hay filas»: la barra no se dibuja y
- *     la línea se corta. Un cero es una barra a ras del eje.
- *  2. **No se inventan sumas.** Juntar la cola en «otros» o acumular una línea es sumar, y
- *     sólo se hace si la medida se suma (`additive`; el conteo siempre). Si no, la cola se
- *     deja afuera y se DICE (`hiddenSeries`): un promedio de promedios no es un promedio.
- *  3. **El color sigue a la serie, no a su puesto.** Las series que quedan conservan el
- *     orden del pivote; ordenar por tamaño ordena el EJE, nunca repinta.
+ *  1. **A hole is not a zero.** `null` is «there are no rows there»: the bar is not drawn and
+ *     the line breaks. A zero is a bar flush with the axis.
+ *  2. **Sums are not invented.** Gathering the tail into «otros» or accumulating a line is summing, and
+ *     it is only done if the measure sums (`additive`; the count always). Otherwise the tail is
+ *     left out and SAID (`hiddenSeries`): an average of averages is not an average.
+ *  3. **Colour follows the series, not its position.** The remaining series keep the
+ *     pivot's order; sorting by size sorts the AXIS, never repaints.
  */
 
 export type ChartKind = "bar" | "line" | "pie";
 
 export type ChartOrder = "asc" | "desc";
 
-/** El conteo de filas de cada cruce, ofrecido como una medida más: es la única que
- *  siempre se puede contestar. */
+/** The row count of each crossing, offered as one more measure: it is the only one that
+ *  can always be answered. */
 export const COUNT_MEASURE = "__count";
 
-/** Cuántas series se distinguen por color. Es el largo de la paleta (`--color-series-*`):
- *  una novena serie sería un color generado, y bajo daltonismo ése se confunde con otro. */
+/** How many series are told apart by colour. It is the palette's length (`--color-series-*`):
+ *  a ninth series would be a generated colour, and under colour blindness that one gets confused with another. */
 export const SERIES_COLORS = 8;
 
-/** Una clave de un eje del gráfico: su ruta en el pivote y cómo se lee. */
+/** A key of a chart axis: its path in the pivot and how it reads. */
 export type ChartPoint = {
   key: PivotKey;
-  /** `pathKey(key)`: la identidad estable para React y para el color. */
+  /** `pathKey(key)`: the stable identity for React and for colour. */
   id: string;
   label: string;
-  /** La cola juntada en una: «otros (12)». Se dibuja más callada y no se abre. */
+  /** The tail gathered into one: «otros (12)». Drawn quieter and does not open. */
   rest?: boolean;
-  /** El período anterior de una comparación: se dibuja callado, detrás del actual. */
+  /** The previous period of a comparison: drawn quiet, behind the current one. */
   previous?: boolean;
 };
 
@@ -69,43 +69,43 @@ export type ChartMeasure = {
 export type ChartData = {
   categories: readonly ChartPoint[];
   series: readonly ChartPoint[];
-  /** `values[categoría][serie]`; `null` es un agujero. */
+  /** `values[category][series]`; `null` is a hole. */
   values: readonly (readonly (number | null)[])[];
-  /** Lo que da cada categoría entera, plegado de la base cuando el pivote lo trae. Es lo
-   *  que mide una torta y lo que ordena el eje. */
+  /** What each whole category gives, folded from the base when the pivot brings it. It is what
+   *  a pie measures and what orders the axis. */
   totals: readonly (number | null)[];
   measure: ChartMeasure;
-  /** Cómo se llaman los cortes: «sucursal», «año · forma de pago». */
+  /** What the cuts are called: «sucursal», «año · forma de pago». */
   categoryTitle: string;
   seriesTitle: string;
-  /** Series que no entraron y no se pudieron juntar en «otros» (la medida no se suma). */
+  /** Series that did not make it and could not be gathered into «otros» (the measure does not sum). */
   hiddenSeries: number;
-  /** Lo mismo, para las categorías que una torta no puede mostrar. */
+  /** The same, for the categories a pie cannot show. */
   hiddenCategories: number;
-  /** Las dos series son el período actual y el anterior (`chartCompare`). */
+  /** The two series are the current and the previous period (`chartCompare`). */
   compare?: boolean;
 };
 
 export type ChartReading = {
-  /** El id de la medida, o `COUNT_MEASURE`. Por defecto la primera del pivote. */
+  /** The measure's id, or `COUNT_MEASURE`. By default the pivot's first. */
   measure?: string;
-  /** Ordena el EJE por lo que da cada categoría. Sin esto, el orden de sus claves. */
+  /** Sorts the AXIS by what each category gives. Without this, the order of its keys. */
   order?: ChartOrder;
-  /** Cada punto suma los anteriores: «cuánto llevamos». Sólo con una medida que se suma. */
+  /** Each point adds the previous ones: «how much we have so far». Only with a measure that sums. */
   cumulative?: boolean;
-  /** Más series que esto se juntan en «otros». Por defecto, los colores de la paleta. */
+  /** More series than this are gathered into «otros». By default, the palette's colours. */
   maxSeries?: number;
-  /** Más categorías que esto se juntan en «otros». Una torta pide seis. */
+  /** More categories than this are gathered into «otros». A pie asks for six. */
   maxCategories?: number;
   /**
-   * Con un solo nivel de FECHA en el eje, completa los períodos en que no pasó nada:
-   * agosto no queda pegado a octubre. El conteo de un período vacío es 0; cualquier otra
-   * medida es un agujero (`null`), como cualquier cruce sin filas. Encendido por defecto.
+   * With a single DATE level on the axis, fills in the periods where nothing happened:
+   * August is not left stuck to October. The count of an empty period is 0; any other
+   * measure is a hole (`null`), like any crossing without rows. On by default.
    */
   fillDates?: boolean;
 };
 
-/** Las medidas que se pueden graficar de un pivote: el conteo y las suyas. */
+/** The measures that can be charted from a pivot: the count and its own. */
 export function chartMeasures(pivot: Pivot): ChartMeasure[] {
   return [
     { id: COUNT_MEASURE, header: currentCopy().chart.count, additive: true },
@@ -166,8 +166,8 @@ function keep(
 }
 
 /**
- * El pivote como gráfico: las filas son el eje, las columnas las series, y en cada cruce
- * el número de la medida elegida.
+ * The pivot as a chart: the rows are the axis, the columns the series, and at each crossing
+ * the number of the chosen measure.
  */
 export function chartFromPivot(pivot: Pivot, reading: ChartReading = {}): ChartData {
   const words = currentCopy();
@@ -186,15 +186,15 @@ export function chartFromPivot(pivot: Pivot, reading: ChartReading = {}): ChartD
   let values = categories.map((row) =>
     series.map((column) => read(pivot.cell(row.key, column.key))),
   );
-  /* Los márgenes salen de la BASE cuando el pivote los trae; sumar celdas es la salida
-     honesta sólo cuando la medida se suma. */
+  /* The margins come from the BASE when the pivot brings them; summing cells is the honest
+     way out only when the measure sums. */
   const margin = (cell: PivotCell | undefined, inside: readonly (number | null)[]) =>
     cell !== undefined ? read(cell) : measure.additive ? sum(inside) : null;
   let totals = categories.map((row, at) =>
     margin(pivot.rowTotal?.(row.key), values[at] ?? []),
   );
 
-  /* 0 · El tiempo entero: los períodos vacíos entre el primero y el último. */
+  /* 0 · The whole time span: the empty periods between the first and the last. */
   const grain = pivot.rows.levels.length === 1 ? pivot.rows.levels[0]?.grain : undefined;
   if (grain !== undefined && reading.fillDates !== false) {
     const dated = categories
@@ -235,7 +235,7 @@ export function chartFromPivot(pivot: Pivot, reading: ChartReading = {}): ChartD
     }
   }
 
-  /* 1 · Las series que no entran en la paleta. */
+  /* 1 · The series that do not fit in the palette. */
   let hiddenSeries = 0;
   const seriesTotals = series.map((column, at) =>
     margin(
@@ -267,7 +267,7 @@ export function chartFromPivot(pivot: Pivot, reading: ChartReading = {}): ChartD
     }
   }
 
-  /* 2 · Las categorías que no entran (una torta). */
+  /* 2 · The categories that do not fit (a pie). */
   let hiddenCategories = 0;
   let restCategory: {
     point: ChartPoint;
@@ -297,7 +297,7 @@ export function chartFromPivot(pivot: Pivot, reading: ChartReading = {}): ChartD
     }
   }
 
-  /* 3 · El orden del eje. La cola juntada va siempre al final: no es una categoría más. */
+  /* 3 · The axis order. The gathered tail always goes last: it is not one more category. */
   if (reading.order !== undefined) {
     const at = categories.map((_, index) => index).sort(byTotal(totals, reading.order));
     categories = at.map((index) => categories[index]!);
@@ -310,7 +310,7 @@ export function chartFromPivot(pivot: Pivot, reading: ChartReading = {}): ChartD
     totals = [...totals, restCategory.total];
   }
 
-  /* 4 · Acumulado: un agujero arrastra lo que se llevaba, no lo corta. */
+  /* 4 · Cumulative: a hole carries over what was running, it does not cut it. */
   if (reading.cumulative === true && measure.additive) {
     const running: (number | null)[] = series.map(() => null);
     values = values.map((row) =>
@@ -340,9 +340,9 @@ export function chartFromPivot(pivot: Pivot, reading: ChartReading = {}): ChartD
 }
 
 /**
- * Ordena el EJE de un gráfico ya armado por lo que da cada categoría. La cola juntada
- * («otros») queda al final. Es lo mismo que `order` en `chartFromPivot`, para un gráfico
- * que se armó de otra manera —una comparación, un diccionario—.
+ * Sorts the AXIS of an already built chart by what each category gives. The gathered tail
+ * («otros») stays last. It is the same as `order` in `chartFromPivot`, for a chart
+ * that was built another way —a comparison, a dictionary—.
  */
 export function orderChart(data: ChartData, order: ChartOrder | undefined): ChartData {
   if (order === undefined) return data;
@@ -363,16 +363,16 @@ export function orderChart(data: ChartData, order: ChartOrder | undefined): Char
 }
 
 /**
- * EL PERÍODO ANTERIOR al lado del actual — el «comparar con» de Odoo.
+ * THE PREVIOUS PERIOD beside the current one — Odoo's «comparar con».
  *
- * Cada gráfico se arma por su lado (`chartFromPivot` sobre los registros de cada período)
- * y esto los junta en dos series: el actual y el anterior, que se dibuja callado. Lo que se
- * compara es lo que da cada categoría entera.
+ * Each chart is built on its own (`chartFromPivot` over each period's records)
+ * and this joins them into two series: the current and the previous, which is drawn quiet. What is
+ * compared is what each whole category gives.
  *
- * `by` dice cómo se encuentran: por CLAVE cuando el eje es una cosa —La Paz con La Paz— y
- * por POSICIÓN cuando es tiempo —el primer mes con el primer mes—, porque «2026-09» y
- * «2025-09» son claves distintas y lo que se compara es «el mismo momento del período».
- * Una categoría del anterior que no está en el actual no se dibuja: el eje es el de ahora.
+ * `by` says how they are matched: by KEY when the axis is a thing —La Paz with La Paz— and
+ * by POSITION when it is time —the first month with the first month—, because «2026-09» and
+ * «2025-09» are different keys and what is compared is «the same moment of the period».
+ * A category of the previous that is not in the current is not drawn: the axis is today's.
  */
 export function chartCompare(
   current: ChartData,
@@ -403,8 +403,8 @@ export function chartCompare(
 }
 
 /**
- * Un DICCIONARIO como gráfico: `{ "La Paz": 120, "Oruro": 40 }`, o sus pares. Es lo que
- * devuelve un endpoint de resumen, y no hace falta armarle un pivote.
+ * A DICTIONARY as a chart: `{ "La Paz": 120, "Oruro": 40 }`, or its pairs. It is what
+ * a summary endpoint returns, and there is no need to build a pivot for it.
  */
 export function chartFromRecord(
   entries:

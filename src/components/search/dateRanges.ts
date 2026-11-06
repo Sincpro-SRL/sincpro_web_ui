@@ -1,24 +1,24 @@
 import type { GroupGrain } from "@sincpro/web-ui/foundations/grouping";
 
 /**
- * LOS RECORTES DE FECHA, en RELATIVO.
+ * DATE CUTS, in RELATIVE terms.
  *
- * Context: un filtro de fecha escrito en absoluto —«desde el 2026-06-01»— es una
- * respuesta que envejece. Alguien guarda «los últimos tres meses» como favorito
- * en septiembre y en diciembre le sigue mostrando junio, julio y agosto: el
- * filtro dice lo que dijo, no lo que quiso decir. Lo que hay que guardar es la
- * INTENCIÓN —«los últimos 3 meses»— y resolverla cada vez que se lee.
+ * Context: a date filter written in absolute terms —«from 2026-06-01»— is an
+ * answer that ages. Somebody saves «los últimos tres meses» as a favourite
+ * in September and in December it still shows June, July and August: the
+ * filter says what it said, not what it meant. What has to be saved is the
+ * INTENT —«los últimos 3 meses»— and resolve it every time it is read.
  *
- * **Y por eso lo resuelve la UI.** No hace falta preguntarle a nadie cuándo
- * empieza el trimestre pasado: es aritmética de calendario sobre el reloj del
- * que mira. Mandar al servidor «relativo: últimos 3 meses» y que él decida
- * agrega un viaje y una segunda definición de «mes» — y la del servidor está en
- * su huso, no en el de la persona.
+ * **And that is why the UI resolves it.** There is no need to ask anyone when
+ * last quarter starts: it is calendar arithmetic on the clock of whoever
+ * looks. Sending the server «relative: last 3 months» and letting it decide
+ * adds a round trip and a second definition of «month» — and the server's is in
+ * its time zone, not the person's.
  *
- * Lo que sale de acá es un intervalo SEMIABIERTO `[desde, hasta)`. El final
- * queda AFUERA, y no es un detalle: con un `between` inclusivo, una fila guardada
- * a las 00:00:00 del primero del mes siguiente cae en los dos recortes, y dos
- * filtros contiguos devuelven la misma fila.
+ * What comes out of here is a HALF-OPEN interval `[from, to)`. The end
+ * stays OUTSIDE, and it is no detail: with an inclusive `between`, a row saved
+ * at 00:00:00 on the first of the next month falls in both cuts, and two contiguous
+ * filters return the same row.
  */
 
 export type DateRange = {
@@ -29,12 +29,12 @@ export type DateRange = {
 };
 
 /**
- * Un recorte relativo, tal como se guarda: una unidad y cuántas.
+ * A relative cut, as it is saved: a unit and how many.
  *
- * `last` cuenta hacia atrás desde ahora incluyendo el período en curso; `prior`
- * cuenta los períodos COMPLETOS anteriores, sin el que está corriendo. Son
- * distintos y la diferencia importa el día 2 del mes: «este mes» tiene un día y
- * «el mes pasado» tiene treinta.
+ * `last` counts backwards from now including the current period; `prior`
+ * counts the COMPLETE previous periods, without the one that is running. They are
+ * different and the difference matters on the 2nd of the month: «este mes» has one day and
+ * «el mes pasado» has thirty.
  */
 export type RelativeRange = {
   unit: GroupGrain | "quarter";
@@ -42,7 +42,7 @@ export type RelativeRange = {
   mode: "last" | "prior";
 };
 
-/** El id con el que viaja un recorte relativo, para guardarlo y reconocerlo. */
+/** The id a relative cut travels with, to save it and recognise it. */
 export function rangeId(range: RelativeRange): string {
   return `${range.mode}:${range.count}:${range.unit}`;
 }
@@ -64,8 +64,8 @@ export function readRangeId(id: string): RelativeRange | null {
   return { mode, count: howMany, unit };
 }
 
-/** El arranque del período que contiene a `when`. Es donde empieza «este mes»,
- *  «esta semana», «este trimestre». */
+/** The start of the period that contains `when`. It is where «este mes»,
+ *  «esta semana», «este trimestre» begin. */
 function startOf(unit: RelativeRange["unit"], when: Date): Date {
   const year = when.getFullYear();
   const month = when.getMonth();
@@ -73,9 +73,9 @@ function startOf(unit: RelativeRange["unit"], when: Date): Date {
   if (unit === "quarter") return new Date(year, Math.floor(month / 3) * 3, 1);
   if (unit === "month") return new Date(year, month, 1);
   if (unit === "week") {
-    /* La semana arranca el LUNES, que es ISO y es lo que el motor usa para
-       recortar por semana. Con domingo, dos capas partirían el mismo dato en
-       semanas distintas y los conteos no cerrarían. */
+    /* The week starts on MONDAY, which is ISO and is what the engine uses to
+       cut by week. With Sunday, two layers would split the same data into different
+       weeks and the counts would not add up. */
     const day = new Date(year, month, when.getDate());
     const weekday = (day.getDay() + 6) % 7;
     day.setDate(day.getDate() - weekday);
@@ -84,7 +84,7 @@ function startOf(unit: RelativeRange["unit"], when: Date): Date {
   return new Date(year, month, when.getDate());
 }
 
-/** Corre `count` períodos desde `from`. Negativo va para atrás. */
+/** Moves `count` periods from `from`. Negative goes backwards. */
 function shift(unit: RelativeRange["unit"], from: Date, count: number): Date {
   const out = new Date(from);
   if (unit === "year") out.setFullYear(out.getFullYear() + count);
@@ -96,17 +96,17 @@ function shift(unit: RelativeRange["unit"], from: Date, count: number): Date {
 }
 
 /**
- * Resuelve un recorte relativo contra un reloj.
+ * Resolves a relative cut against a clock.
  *
- * `now` se pasa y no se lee de adentro: una función que mira el reloj no se
- * puede probar, y la que la prueba tendría que congelar el tiempo global.
+ * `now` is passed in and not read from inside: a function that looks at the clock
+ * cannot be tested, and whoever tests it would have to freeze the global time.
  */
 export function resolveRange(range: RelativeRange, now: Date = new Date()): DateRange {
   const current = startOf(range.unit, now);
   if (range.mode === "last") {
-    /* «Los últimos 3 meses» INCLUYE el que corre: termina al final del actual.
-       Que termine «ahora» dejaría afuera lo que se guarde en el resto del día, y
-       un filtro que esconde lo que acabás de crear se lee como un error. */
+    /* «Los últimos 3 meses» INCLUDES the running one: it ends at the end of the current one.
+       Ending «now» would leave out what is saved during the rest of the day, and
+       a filter that hides what you just created reads as an error. */
     return {
       from: shift(range.unit, current, -(range.count - 1)),
       to: shift(range.unit, current, 1),
@@ -115,9 +115,9 @@ export function resolveRange(range: RelativeRange, now: Date = new Date()): Date
   return { from: shift(range.unit, current, -range.count), to: current };
 }
 
-/** Los recortes que vale la pena ofrecer, en el orden en que se leen. Es una
- *  sugerencia con nombre y no una lista cerrada: un consumidor arma la suya con
- *  `rangeId` si su dominio mira el tiempo de otra manera. */
+/** The cuts worth offering, in the order they are read. It is a
+ *  suggestion with a name and not a closed list: a consumer builds their own with
+ *  `rangeId` if their domain looks at time differently. */
 export const COMMON_RANGES: readonly RelativeRange[] = [
   { mode: "last", count: 7, unit: "day" },
   { mode: "last", count: 30, unit: "day" },

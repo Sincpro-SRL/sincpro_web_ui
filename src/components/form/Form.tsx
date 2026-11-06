@@ -7,13 +7,13 @@ import { Tag } from "@sincpro/web-ui/primitives/tag/Tag";
 import type { ReactNode } from "react";
 
 /* ==================================================================== *
- *  LA COMPOSICIÓN DE UN FORMULARIO: la sección y el pie.
+ *  THE COMPOSITION OF A FORM: the section and the footer.
  *
- *  Vive en `contexts/form` y no junto a los controles porque no es un control:
- *  es lo que los ACOMODA. `TextInput` no sabe que existe un formulario —se usa
- *  igual adentro de una celda, de un filtro o de un diálogo— y una sección no
- *  sabe qué campos le van a poner adentro. Son dos capas y por eso son dos
- *  carpetas: `primitives/field` es CON QUÉ se escribe, esto es CÓMO se arma.
+ *  It lives in `contexts/form` and not beside the controls because it is not a control:
+ *  it is what ARRANGES them. `TextInput` does not know a form exists —it is used
+ *  the same inside a cell, a filter or a dialog— and a section does not
+ *  know which fields will be put inside it. They are two layers and so they are two
+ *  folders: `primitives/field` is WITH WHAT you write, this is HOW it is put together.
  * ==================================================================== */
 
 /** A group of fields with its name and its status.
