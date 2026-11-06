@@ -591,6 +591,14 @@ export type UiCopy = {
     /** Sacar, uno por clase: el `aria-label` tiene que decir qué se saca. */
     dropOrder: string;
     dropTotal: string;
+    /** The name of a total's function select: «how "{name}" is computed». */
+    totalFunction: string;
+    /** The name of a total's field select: «field of "{name}"». */
+    totalField: string;
+    /** The name of the select that picks what the piles are ordered by. */
+    pileOrderField: string;
+    /** The name of the select that picks the piles' order direction. */
+    pileOrderDirection: string;
     dropRule: string;
     dropGroup: string;
     /** Agregar, en el árbol de condiciones. */
@@ -1388,6 +1396,10 @@ export const ENGLISH_COPY: UiCopy = {
     changeGrain: "tap to change the cut",
     dropOrder: "remove this sort",
     dropTotal: "remove this total",
+    totalFunction: "how «{name}» is computed",
+    totalField: "field of «{name}»",
+    pileOrderField: "order the piles by",
+    pileOrderDirection: "order direction",
     dropRule: "remove this rule",
     dropGroup: "remove this group",
     addRule: "add a rule after this one",
@@ -1408,7 +1420,7 @@ export const ENGLISH_COPY: UiCopy = {
     invalidJson: "this is not valid JSON",
     editor: "Code editor",
     format: "Format",
-    notCriteria: "a criteria is an object with where, order, grouping or specification",
+    notCriteria: "a criteria is an object with selection, order, grouping or specification",
     notFilter: "this is not a filter: it needs a condition or an all/any/negate",
     apply: "Apply",
     add: "Add",

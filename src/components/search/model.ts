@@ -49,7 +49,7 @@ export function isNumericType(type: string): boolean {
   return NUMERIC_TYPES.has(type.toLowerCase());
 }
 
-/** Si este campo se puede usar en un `where`, un `order` o un `grouping.by` directamente.
+/** Si este campo se puede usar en una `selection`, un `order` o un `grouping.group_by`, directo.
  *  `ops.length === 0` alcanza como señal: la publican tanto `embedded` como los tres
  *  relacionales, así que no hace falta mirar `kind` aparte. */
 export function isFilterable(field: FieldDefinition): boolean {
@@ -69,8 +69,8 @@ export interface ModelDefinition {
   aggregate: string;
   identity: string;
   fields: Record<string, FieldDefinition>;
-  /** Ausente en un modelo armado a mano —el `having` sintético de `CriteriaBuilder`, por
-   *  ejemplo—; presente en cualquier `model_meta_data` real. */
+  /** Ausente en un modelo armado a mano —el de `where_measures` que `CriteriaBuilder` arma,
+   *  por ejemplo—; presente en cualquier `model_meta_data` real. */
   translations?: ModelTranslations;
 }
 

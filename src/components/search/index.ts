@@ -7,7 +7,9 @@ export {
 } from "@sincpro/web-ui/components/search/criteria";
 export {
   type BuiltCriteria,
+  type BuiltGrouping,
   type BuiltLevel,
+  type BuiltMeasure,
   type BuiltSort,
   CriteriaBuilder,
 } from "@sincpro/web-ui/components/search/CriteriaBuilder";
@@ -70,8 +72,8 @@ export {
   removeAt,
   replaceAt,
   type SearchCriteria,
+  selectionOf,
   toggleNamed,
-  whereOf,
   withLevels,
 } from "@sincpro/web-ui/components/search/criteria";
 export {

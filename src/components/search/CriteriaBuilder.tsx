@@ -4,10 +4,10 @@ import type { BuiltFilter } from "@sincpro/web-ui/components/search/criteria";
 import {
   blankGroup,
   ExpressionView,
+  SelectionTree,
   treeFromFilter,
   type TreeGroup,
   treeToFilter,
-  WhereTree,
 } from "@sincpro/web-ui/components/search/FilterBuilder";
 import { LazyJsonEditor } from "@sincpro/web-ui/components/search/LazyJsonEditor";
 import {
@@ -29,7 +29,7 @@ import { Fragment, useMemo, useState } from "react";
  *  Una lectura son cuatro preguntas, y hasta acá sólo se podía armar la
  *  primera:
  *
- *    where          ¿qué filas?          — el árbol de condiciones
+ *    selection      ¿qué filas?          — el árbol de condiciones
  *    order          ¿en qué orden?       — N campos, cada uno asc o desc
  *    grouping       ¿partidas por qué?   — N niveles, con grano si es fecha
  *    specification  ¿qué de cada una?    — los campos que vuelven
@@ -41,6 +41,12 @@ import { Fragment, useMemo, useState } from "react";
  *  El editor de código de abajo muestra la criteria COMPLETA, no el filtro
  *  suelto: es la forma real de lo que se está armando, y se puede escribir o
  *  pegar ahí en vez de tocar los controles.
+ *
+ *  El agrupado sale con las claves de `@sincpro/criteria` 2.0 —`group_by`,
+ *  `measures` con `{function, field}`, `where_measures`, `order`, `pagination`—
+ *  y ninguna más: el `Grouping` de sincpro_framework es estricto y rechaza una
+ *  clave que no conoce. Las palabras de la pantalla («Totales por montón»,
+ *  «Filtrar los montones») son de la UI; lo que viaja es del motor.
  * ====================================================================== */
 
 export interface BuiltSort {
@@ -48,30 +54,43 @@ export interface BuiltSort {
   descending?: boolean;
 }
 
+/** Un nivel de agrupado, como el `Level` de criteria: el campo y, si es fecha, el grano. */
 export interface BuiltLevel {
   field: string;
   grain?: string | null;
 }
 
-/** Un número plegado de las filas de un montón: `["sum", "row_count"]`. */
-export type BuiltFold = [string, string];
+/**
+ * Un número que cada montón contesta, como el `Measure` de criteria:
+ * `{ function: "sum", field: "row_count" }`. Partes con nombre y no un par, igual que una
+ * condición viaja como `{field, operator, value}`.
+ */
+export interface BuiltMeasure {
+  function: string;
+  field: string;
+  /** Lo que la función necesita además del campo. Sólo `percentile`: la fracción del corte. */
+  argument?: number;
+}
 
 /** Desde dónde empieza una página de montones — la misma forma que la paginación de filas. */
-export type BuiltPageStrategy = { token?: string | null } | { rows?: number };
+export type BuiltPageStrategy = { token: string | null } | { rows: number };
 
 export interface BuiltGroupPagination {
   limit?: number;
   strategy?: BuiltPageStrategy;
 }
 
+/** El agrupado tal como lo declara `@sincpro/criteria` 2.0, clave por clave. */
 export interface BuiltGrouping {
-  by?: BuiltLevel[];
-  totals?: Record<string, BuiltFold>;
-  /** Un filtro sobre lo que los montones plegaron: `count > 10`. Los nombres que admite son
-   *  los de `totals`, más `"count"`. */
-  having?: BuiltFilter;
+  /** Los niveles, en orden: no se suman, se anidan. */
+  group_by?: BuiltLevel[];
+  /** Los números que cada montón contesta, cada uno bajo un nombre elegido. */
+  measures?: Record<string, BuiltMeasure>;
+  /** Un filtro sobre lo que los montones midieron, no sobre las filas: `count > 10`. Los
+   *  nombres que admite son los de `measures`, más `"count"`. */
+  where_measures?: BuiltFilter;
   /** En qué orden vuelven los montones: por el propio campo del nivel, por un nombre de
-   *  `totals`, o por `count`. */
+   *  `measures`, o por `count`. */
   order?: BuiltSort[];
   /** Cuántos montones del primer nivel vuelven, y desde dónde. Ausente es todos. */
   pagination?: BuiltGroupPagination;
@@ -80,7 +99,7 @@ export interface BuiltGrouping {
 /** La criteria tal como la declara el motor. Es lo que este componente arma y devuelve, y lo
  *  que el editor de código muestra. */
 export interface BuiltCriteria {
-  where?: BuiltFilter;
+  selection?: BuiltFilter;
   order?: BuiltSort[];
   grouping?: BuiltGrouping;
   specification?: Record<string, Record<string, never>>;
@@ -99,23 +118,31 @@ const GRAINS: readonly (string | null)[] = [null, ...GRAIN_ORDER];
 /** Qué tipos admiten un grano: recortar un texto por mes no significa nada. */
 const DATE_TYPES = new Set(["date", "datetime"]);
 
-/** Los operadores que un plegado —siempre un número— o `count` admiten en un `having`: los
- *  mismos que la definición del modelo publica para un campo numérico, `is null` aparte, que
- *  no significa nada sobre un número que el propio motor calculó. */
+/** Los operadores que una medida —siempre un número— o `count` admiten en un
+ *  `where_measures`: los mismos que la definición del modelo publica para un campo numérico,
+ *  `is null` aparte, que no significa nada sobre un número que el propio motor calculó. */
 const COMPARABLE = ["=", "!=", ">", ">=", "<", "<=", "between"] as const;
 
-/** Las funciones que un plegado puede pedir, cerradas del lado del servidor porque el nombre
- *  llega a SQL. */
-const FOLD_FUNCTIONS = ["sum", "avg", "min", "max", "count"] as const;
+/** Las funciones que una medida puede pedir acá, cerradas del lado del servidor porque el
+ *  nombre llega a SQL. */
+const MEASURE_FUNCTIONS = ["sum", "avg", "min", "max", "count"] as const;
 
 function isEmpty(criteria: BuiltCriteria): boolean {
   return (
-    criteria.where === undefined &&
+    criteria.selection === undefined &&
     (criteria.order ?? []).length === 0 &&
-    (criteria.grouping?.by ?? []).length === 0 &&
-    Object.keys(criteria.grouping?.totals ?? {}).length === 0 &&
+    (criteria.grouping?.group_by ?? []).length === 0 &&
+    Object.keys(criteria.grouping?.measures ?? {}).length === 0 &&
     Object.keys(criteria.specification ?? {}).length === 0
   );
+}
+
+/** El árbol del editor de `where_measures`: lo leído, envuelto en un grupo si es una sola
+ *  condición, o uno en blanco sobre `count` si no hay nada que leer. */
+function measuresTreeOf(filter: BuiltFilter | undefined, model: ModelDefinition): TreeGroup {
+  const node = filter === undefined ? null : treeFromFilter(filter);
+  if (node === null) return blankGroup(model, "count");
+  return node.kind === "group" ? node : { kind: "group", join: "all", children: [node] };
 }
 
 /**
@@ -203,7 +230,8 @@ export function CriteriaBuilder({
   const scalarNames = filterableNames(model);
   const sortable = names.filter((name) => model.fields[name]?.sortable === true);
 
-  const decomposed = initial?.where === undefined ? null : treeFromFilter(initial.where);
+  const decomposed =
+    initial?.selection === undefined ? null : treeFromFilter(initial.selection);
   const [tree, setTree] = useState<TreeGroup>(() =>
     decomposed !== null && decomposed.kind === "group"
       ? decomposed
@@ -212,44 +240,39 @@ export function CriteriaBuilder({
         : blankGroup(model, scalarNames[0]),
   );
   const copy = useUiCopy();
-  const [lockedWhere, setLockedWhere] = useState<BuiltFilter | null>(
-    initial?.where !== undefined && decomposed === null ? initial.where : null,
+  const [lockedSelection, setLockedSelection] = useState<BuiltFilter | null>(
+    initial?.selection !== undefined && decomposed === null ? initial.selection : null,
   );
   const [order, setOrder] = useState<BuiltSort[]>(initial?.order ?? []);
-  const [levels, setLevels] = useState<BuiltLevel[]>(initial?.grouping?.by ?? []);
-  const [totals, setTotals] = useState<Record<string, BuiltFold>>(
-    initial?.grouping?.totals ?? {},
+  const [levels, setLevels] = useState<BuiltLevel[]>(initial?.grouping?.group_by ?? []);
+  const [measures, setMeasures] = useState<Record<string, BuiltMeasure>>(
+    initial?.grouping?.measures ?? {},
   );
   const [groupOrder, setGroupOrder] = useState<BuiltSort[]>(initial?.grouping?.order ?? []);
   const [groupLimit, setGroupLimit] = useState<number | undefined>(
     initial?.grouping?.pagination?.limit,
   );
 
-  /* `having` es un filtro como cualquier otro, sobre un modelo sintético cuyos únicos campos
-     son los nombres que admite: los de `totals`, más `count`. Reutilizar `WhereTree` sobre ese
-     modelo es más simple y más correcto que armar un editor de condiciones aparte. */
-  const havingModel = useMemo<ModelDefinition>(
+  /* `where_measures` es un filtro como cualquier otro, sobre un modelo sintético cuyos únicos
+     campos son los nombres que admite: los de `measures`, más `count`. Reutilizar
+     `SelectionTree` sobre ese modelo es más simple y más correcto que armar un editor de
+     condiciones aparte. */
+  const measuresModel = useMemo<ModelDefinition>(
     () => ({
-      aggregate: "having",
+      aggregate: "where_measures",
       identity: "count",
       fields: Object.fromEntries([
         ["count", { type: "integer", nullable: false, sortable: false, ops: COMPARABLE }],
-        ...Object.keys(totals).map((name) => [
+        ...Object.keys(measures).map((name) => [
           name,
           { type: "number", nullable: false, sortable: false, ops: COMPARABLE },
         ]),
       ]),
     }),
-    [totals],
+    [measures],
   );
-  const havingDecomposed =
-    initial?.grouping?.having === undefined ? null : treeFromFilter(initial.grouping.having);
-  const [havingTree, setHavingTree] = useState<TreeGroup>(() =>
-    havingDecomposed !== null && havingDecomposed.kind === "group"
-      ? havingDecomposed
-      : havingDecomposed !== null
-        ? { kind: "group", join: "all", children: [havingDecomposed] }
-        : blankGroup(havingModel, "count"),
+  const [measuresTree, setMeasuresTree] = useState<TreeGroup>(() =>
+    measuresTreeOf(initial?.grouping?.where_measures, measuresModel),
   );
 
   const [fields, setFields] = useState<string[]>(Object.keys(initial?.specification ?? {}));
@@ -264,37 +287,37 @@ export function CriteriaBuilder({
     locked?: BuiltFilter | null;
     order?: BuiltSort[];
     levels?: BuiltLevel[];
-    totals?: Record<string, BuiltFold>;
-    havingTree?: TreeGroup;
+    measures?: Record<string, BuiltMeasure>;
+    measuresTree?: TreeGroup;
     groupOrder?: BuiltSort[];
     groupLimit?: number | undefined;
     fields?: string[];
   }): BuiltCriteria {
-    const where = next.locked ?? lockedWhere ?? treeToFilter(next.tree ?? tree);
+    const selection = next.locked ?? lockedSelection ?? treeToFilter(next.tree ?? tree);
     const sorts = next.order ?? order;
-    const by = next.levels ?? levels;
-    const folds = next.totals ?? totals;
-    const having = treeToFilter(next.havingTree ?? havingTree);
+    const groupBy = next.levels ?? levels;
+    const measured = next.measures ?? measures;
+    const whereMeasures = treeToFilter(next.measuresTree ?? measuresTree);
     const groupSorts = next.groupOrder ?? groupOrder;
     const limit = "groupLimit" in next ? next.groupLimit : groupLimit;
     const chosen = next.fields ?? fields;
 
-    /* Sin niveles no hay qué plegar, qué filtrar entre montones ni en qué orden o página
-       volverían — un total, un `having` o una página puestos y luego vaciados de niveles no
-       tienen que sobrevivir sueltos en la criteria que se manda. */
+    /* Sin niveles no hay qué medir, qué filtrar entre montones ni en qué orden o página
+       volverían — una medida, un `where_measures` o una página puestos y luego vaciados de
+       niveles no tienen que sobrevivir sueltos en la criteria que se manda. */
     const grouping: BuiltGrouping =
-      by.length === 0
+      groupBy.length === 0
         ? {}
         : {
-            by,
-            ...(Object.keys(folds).length === 0 ? {} : { totals: folds }),
-            ...(having === undefined ? {} : { having }),
+            group_by: groupBy,
+            ...(Object.keys(measured).length === 0 ? {} : { measures: measured }),
+            ...(whereMeasures === undefined ? {} : { where_measures: whereMeasures }),
             ...(groupSorts.length === 0 ? {} : { order: groupSorts }),
             ...(limit === undefined ? {} : { pagination: { limit } }),
           };
 
     return {
-      ...(where === undefined ? {} : { where }),
+      ...(selection === undefined ? {} : { selection }),
       ...(sorts.length === 0 ? {} : { order: sorts }),
       ...(Object.keys(grouping).length === 0 ? {} : { grouping }),
       ...(chosen.length === 0
@@ -310,11 +333,11 @@ export function CriteriaBuilder({
   /* Tocar cualquier control reescribe el JSON entero: las dos vistas son la misma criteria. */
   function push(next: Parameters<typeof assemble>[0]) {
     if (next.tree !== undefined) setTree(next.tree);
-    if (next.locked !== undefined) setLockedWhere(next.locked);
+    if (next.locked !== undefined) setLockedSelection(next.locked);
     if (next.order !== undefined) setOrder(next.order);
     if (next.levels !== undefined) setLevels(next.levels);
-    if (next.totals !== undefined) setTotals(next.totals);
-    if (next.havingTree !== undefined) setHavingTree(next.havingTree);
+    if (next.measures !== undefined) setMeasures(next.measures);
+    if (next.measuresTree !== undefined) setMeasuresTree(next.measuresTree);
     if (next.groupOrder !== undefined) setGroupOrder(next.groupOrder);
     if ("groupLimit" in next) setGroupLimit(next.groupLimit);
     if (next.fields !== undefined) setFields(next.fields);
@@ -345,33 +368,24 @@ export function CriteriaBuilder({
     }
     setRawError(null);
 
-    const node = parsed.where === undefined ? null : treeFromFilter(parsed.where);
+    const node = parsed.selection === undefined ? null : treeFromFilter(parsed.selection);
     if (node !== null) {
       setTree(
         node.kind === "group" ? node : { kind: "group", join: "all", children: [node] },
       );
-      setLockedWhere(null);
-    } else if (parsed.where !== undefined) {
-      setLockedWhere(parsed.where);
+      setLockedSelection(null);
+    } else if (parsed.selection !== undefined) {
+      setLockedSelection(parsed.selection);
     } else {
       setTree(blankGroup(model, scalarNames[0]));
-      setLockedWhere(null);
+      setLockedSelection(null);
     }
     setOrder(parsed.order ?? []);
-    setLevels(parsed.grouping?.by ?? []);
-    setTotals(parsed.grouping?.totals ?? {});
+    setLevels(parsed.grouping?.group_by ?? []);
+    setMeasures(parsed.grouping?.measures ?? {});
     setGroupOrder(parsed.grouping?.order ?? []);
     setGroupLimit(parsed.grouping?.pagination?.limit);
-
-    const havingNode =
-      parsed.grouping?.having === undefined ? null : treeFromFilter(parsed.grouping.having);
-    setHavingTree(
-      havingNode !== null && havingNode.kind === "group"
-        ? havingNode
-        : havingNode !== null
-          ? { kind: "group", join: "all", children: [havingNode] }
-          : blankGroup(havingModel, "count"),
-    );
+    setMeasuresTree(measuresTreeOf(parsed.grouping?.where_measures, measuresModel));
     setFields(Object.keys(parsed.specification ?? {}));
   }
 
@@ -387,13 +401,13 @@ export function CriteriaBuilder({
       <section className="flex min-w-0 flex-col gap-2">
         <Rule label={copy.builder.filter} />
         <div className="max-h-72 min-w-0 overflow-auto">
-          {lockedWhere !== null ? (
+          {lockedSelection !== null ? (
             <>
               <p className="mb-2 text-meta text-muted">{copy.search.unreadable}</p>
-              <ExpressionView node={lockedWhere} model={model} />
+              <ExpressionView node={lockedSelection} model={model} />
             </>
           ) : (
-            <WhereTree
+            <SelectionTree
               model={model}
               group={tree}
               onChange={(next) => push({ tree: next })}
@@ -495,36 +509,48 @@ export function CriteriaBuilder({
       </section>
 
       {/* Lo que sigue sólo importa habiendo al menos un nivel: sin montones no hay qué
-          plegar, qué filtrar entre montones, ni en qué orden ni cuántos de ellos volver. */}
+          medir, qué filtrar entre montones, ni en qué orden ni cuántos de ellos volver. */}
       {levels.length > 0 ? (
         <>
-          {/* ── qué se plega de cada montón ─────────────────────────────── */}
+          {/* ── qué se mide de cada montón ──────────────────────────────── */}
           <section className="flex min-w-0 flex-col gap-2">
             <Rule label={copy.builder.totals} />
-            {Object.keys(totals).length === 0 ? (
+            {Object.keys(measures).length === 0 ? (
               <p className="text-meta text-muted">{copy.builder.noTotals}</p>
             ) : null}
-            {Object.entries(totals).map(([name, [fn, field]]) => (
+            {Object.entries(measures).map(([name, measure]) => (
               <div key={name} className="flex min-w-0 flex-wrap items-center gap-2">
+                {/* Changing the function writes a new measure, `argument` dropped: only a
+                    percentile takes one, and none of these is a percentile. */}
                 <select
-                  value={fn}
+                  aria-label={fillCopy(copy.builder.totalFunction, { name })}
+                  value={measure.function}
                   onChange={(event) =>
                     push({
-                      totals: { ...totals, [name]: [event.target.value, field] },
+                      measures: {
+                        ...measures,
+                        [name]: { function: event.target.value, field: measure.field },
+                      },
                     })
                   }
                   className={`min-w-0 flex-1 basis-28 rounded-control border px-2 py-1 text-meta ${box}`}
                 >
-                  {FOLD_FUNCTIONS.map((one) => (
+                  {MEASURE_FUNCTIONS.map((one) => (
                     <option key={one} value={one}>
                       {one}
                     </option>
                   ))}
                 </select>
                 <select
-                  value={field}
+                  aria-label={fillCopy(copy.builder.totalField, { name })}
+                  value={measure.field}
                   onChange={(event) =>
-                    push({ totals: { ...totals, [name]: [fn, event.target.value] } })
+                    push({
+                      measures: {
+                        ...measures,
+                        [name]: { ...measure, field: event.target.value },
+                      },
+                    })
                   }
                   className={select}
                 >
@@ -541,8 +567,8 @@ export function CriteriaBuilder({
                   type="button"
                   aria-label={copy.builder.dropTotal}
                   onClick={() => {
-                    const { [name]: _dropped, ...rest } = totals;
-                    push({ totals: rest });
+                    const { [name]: _dropped, ...rest } = measures;
+                    push({ measures: rest });
                   }}
                   className="ml-auto shrink-0 text-muted"
                 >
@@ -557,9 +583,12 @@ export function CriteriaBuilder({
                 onClick={() => {
                   let name = "total";
                   let index = 2;
-                  while (name in totals) name = `total_${index++}`;
+                  while (name in measures) name = `total_${index++}`;
                   push({
-                    totals: { ...totals, [name]: ["sum", scalarNames[0] ?? ""] },
+                    measures: {
+                      ...measures,
+                      [name]: { function: "sum", field: scalarNames[0] ?? "" },
+                    },
                   });
                 }}
               >
@@ -572,10 +601,10 @@ export function CriteriaBuilder({
           <section className="flex min-w-0 flex-col gap-2">
             <Rule label={copy.builder.filterPiles} />
             <p className="text-meta text-muted">{copy.builder.pilesNote}</p>
-            <WhereTree
-              model={havingModel}
-              group={havingTree}
-              onChange={(next) => push({ havingTree: next })}
+            <SelectionTree
+              model={measuresModel}
+              group={measuresTree}
+              onChange={(next) => push({ measuresTree: next })}
             />
           </section>
 
@@ -588,6 +617,7 @@ export function CriteriaBuilder({
             {groupOrder.map((sort, index) => (
               <div key={index} className="flex min-w-0 flex-wrap items-center gap-2">
                 <select
+                  aria-label={copy.builder.pileOrderField}
                   value={sort.field}
                   onChange={(event) =>
                     push({
@@ -600,7 +630,7 @@ export function CriteriaBuilder({
                 >
                   {[
                     ...levels.map((level) => level.field),
-                    ...Object.keys(totals),
+                    ...Object.keys(measures),
                     "count",
                   ].map((name) => (
                     <option key={name} value={name}>
@@ -609,6 +639,7 @@ export function CriteriaBuilder({
                   ))}
                 </select>
                 <select
+                  aria-label={copy.builder.pileOrderDirection}
                   value={sort.descending === true ? "desc" : "asc"}
                   onChange={(event) =>
                     push({

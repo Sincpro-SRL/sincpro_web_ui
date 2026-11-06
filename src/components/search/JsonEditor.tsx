@@ -109,8 +109,11 @@ export function JsonEditor({
           height={height}
           theme={dark ? "dark" : "light"}
           extensions={[
-            /* The editable area is CodeMirror's own element: named here or nowhere. */
-            EditorView.contentAttributes.of({ "aria-labelledby": labelId }),
+            /* The editable area is CodeMirror's own element: named here or nowhere. Marked
+               tabbable too: it is already reached with Tab, but its scroller (`tabindex=-1`)
+               is a scrollable region, and an accessibility check (axe,
+               `scrollable-region-focusable`) only counts content it can see is focusable. */
+            EditorView.contentAttributes.of({ "aria-labelledby": labelId, tabindex: "0" }),
             json(),
             linter(jsonParseLinter()),
             lintGutter(),

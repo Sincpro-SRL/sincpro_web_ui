@@ -69,7 +69,7 @@ test("los niveles se encadenan, con su corte", () => {
       model={MODEL}
       initial={{
         grouping: {
-          by: [{ field: "registered_at", grain: "month" }, { field: "name" }],
+          group_by: [{ field: "registered_at", grain: "month" }, { field: "name" }],
         },
       }}
       onApply={() => {}}
@@ -78,6 +78,27 @@ test("los niveles se encadenan, con su corte", () => {
   assert.ok(out.includes("registered_at"));
   assert.ok(out.includes("month"), "el corte va adentro de la ficha");
   assert.ok(out.includes("›"));
+});
+
+/* El agrupado se lee con las claves de @sincpro/criteria 2.0 —`group_by`, y cada medida
+   con nombre como `{function, field}`—, que es lo único que el `Grouping` estricto de
+   sincpro_framework acepta. Un `{by, totals: {name: [fn, field]}}` ya no es un agrupado. */
+test("las medidas se leen como las escribe criteria: {function, field}", () => {
+  const out = draw(
+    <CriteriaBuilder
+      model={MODEL}
+      initial={{
+        grouping: {
+          group_by: [{ field: "name" }],
+          measures: { total: { function: "avg", field: "row_count" } },
+        },
+      }}
+      onApply={() => {}}
+    />,
+  );
+  assert.match(out, /<option value="avg" selected=""/);
+  assert.match(out, /<option value="row_count" selected=""/);
+  assert.ok(out.includes("«total»"), "la medida se ve con su nombre");
 });
 
 /* Nada puesto es nada puesto: no se elige un campo por nadie. */
@@ -116,7 +137,7 @@ test("la condición que se tocó se marca, aunque esté anidada", () => {
     <CriteriaBuilder
       model={MODEL}
       initial={{
-        where: {
+        selection: {
           all: [
             { field: "name", operator: "like", value: "x" },
             {
@@ -140,7 +161,7 @@ test("sin foco no hay nada marcado", () => {
   const out = draw(
     <CriteriaBuilder
       model={MODEL}
-      initial={{ where: { field: "name", operator: "like", value: "x" } }}
+      initial={{ selection: { field: "name", operator: "like", value: "x" } }}
       onApply={() => {}}
     />,
   );

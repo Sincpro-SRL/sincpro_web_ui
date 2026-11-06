@@ -58,18 +58,20 @@ const FACTURA: ModelDefinition = {
  *  grupo, o escribí la criteria entera en JSON. Lo aplicado aparece abajo. */
 export const ArmarUnFiltro: Story = {
   render: function Render() {
-    const [where, setWhere] = useState<BuiltFilter | undefined>(undefined);
+    const [selection, setSelection] = useState<BuiltFilter | undefined>(undefined);
     return (
       <div className="flex max-w-3xl flex-col gap-3">
         <div className="rounded-box border border-line bg-surface p-4">
           <FilterBuilder
             model={FACTURA}
-            onApply={setWhere}
-            onCancel={() => setWhere(undefined)}
+            onApply={setSelection}
+            onCancel={() => setSelection(undefined)}
           />
         </div>
         <pre className="overflow-auto rounded-box border border-line bg-ground p-3 font-mono text-micro text-muted">
-          {where === undefined ? "sin filtro aplicado" : JSON.stringify(where, null, 2)}
+          {selection === undefined
+            ? "sin filtro aplicado"
+            : JSON.stringify(selection, null, 2)}
         </pre>
       </div>
     );

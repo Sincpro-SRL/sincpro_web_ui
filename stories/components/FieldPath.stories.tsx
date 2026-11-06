@@ -123,22 +123,20 @@ export const FallaAlCargar: Story = {
  *  to-many relation of the path has its «alguno / ninguno / todos». */
 function EnElFiltro() {
   const models = useMemo(() => createModelCache(INVOICE_MODEL, loadInvoiceModel), []);
-  const [where, setWhere] = useState<BuiltFilter | undefined>();
+  const [selection, setSelection] = useState<BuiltFilter | undefined>();
   const initial: BuiltFilter = {
     through: "lines",
-    match: "any",
-    where: {
+    selection: {
       through: "taxes",
-      match: "any",
-      where: { field: "amount", operator: ">", value: "10" },
+      selection: { field: "amount", operator: ">", value: "10" },
     },
   };
   const rows =
-    where === undefined
+    selection === undefined
       ? INVOICES
       : keepMatching(
           INVOICES,
-          [{ id: "f", kind: "filter", label: "", where }],
+          [{ id: "f", kind: "filter", label: "", selection }],
           (row, field) => (row as Record<string, unknown>)[field],
         );
   return (
@@ -147,16 +145,16 @@ function EnElFiltro() {
         model={INVOICE_MODEL}
         models={models}
         initial={initial}
-        onApply={setWhere}
+        onApply={setSelection}
       />
       <section
         aria-label="Resultado"
         className="flex flex-col gap-1 rounded-control border border-line bg-surface px-4 py-3"
       >
         <p className="text-meta text-ink">
-          {where === undefined
+          {selection === undefined
             ? "Sin aplicar"
-            : describeFilter(where, INVOICE_MODEL, models.peek)}
+            : describeFilter(selection, INVOICE_MODEL, models.peek)}
         </p>
         <p className="text-meta text-muted">
           {rows.map((row) => row.name).join(", ") || "Ninguna factura"}
@@ -186,13 +184,19 @@ export const EnElFiltroAMedida: Story = {
     );
     await expect(result).toHaveTextContent("FAC-0418, FAC-0420");
 
-    /* «ninguna línea con algún impuesto > 10»: the same path, another question. */
+    /* «ninguna línea con algún impuesto > 10»: the same path, another question — written as
+       criteria writes it, a `negate` around the `through`, and said back with its word. */
     await userEvent.selectOptions(
       canvas.getByRole("combobox", { name: "Cuántos de «Líneas»" }),
       "none",
     );
     await userEvent.click(canvas.getByRole("button", { name: "Agregar" }));
-    await waitFor(() => expect(result).toHaveTextContent("FAC-0419"));
+    await waitFor(() =>
+      expect(result).toHaveTextContent(
+        "ninguno de Líneas con alguno de Impuestos con Monto mayor que 10",
+      ),
+    );
+    await expect(result).toHaveTextContent("FAC-0419");
   },
 };
 

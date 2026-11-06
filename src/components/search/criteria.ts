@@ -7,7 +7,7 @@ import type { GroupGrain, GroupLevel } from "@sincpro/web-ui/foundations/groupin
  *  declarados y niveles de agrupado— y las tres terminaban en el mismo lugar
  *  recién al final, cada una por su camino. Por eso una se podía editar y otra
  *  no, y por eso el anidado no se podía dibujar: no existía hasta que alguien
- *  armaba el `where`.
+ *  armaba la `selection`.
  *
  *  Acá hay UNA sola cosa. Todo lo que la barra tiene puesto es una INSTANCIA, y
  *  una instancia es de una de dos clases:
@@ -26,7 +26,7 @@ import type { GroupGrain, GroupLevel } from "@sincpro/web-ui/foundations/groupin
  *      instancia de la UI            lo que viaja
  *      ────────────────────          ────────────
  *      id, clase, rótulo       →     (nada)
- *      where                   →     {field, operator, value}
+ *      selection               →     {field, operator, value}
  *      level                   →     {field, grain}
  *
  *  ── Un rótulo es lo ÚNICO que distingue a un filtro de código ───────
@@ -48,9 +48,9 @@ export interface BuiltCondition {
   value: unknown;
 }
 
-/** Lo que el filtro puede ser en su forma real: una condición, un grupo `all`/`any` de más
- *  filtros —lo que el árbol arma, a cualquier profundidad—, o un `negate` que llegó de otro
- *  lado y que el árbol no fabrica, pero que este componente sabe mostrar y editar como JSON. */
+/** Lo que el filtro puede ser en su forma real —la `Expression` de `@sincpro/criteria`, clave
+ *  por clave—: una condición, un grupo `all`/`any` de más filtros —lo que el árbol arma, a
+ *  cualquier profundidad—, un `negate`, o un filtro a través de una relación. */
 export type BuiltFilter =
   | BuiltCondition
   | { all: BuiltFilter[] }
@@ -59,27 +59,38 @@ export type BuiltFilter =
   | BuiltThrough;
 
 /** How many of the records reached through a to-many relation have to match: «alguno»,
- *  «ninguno», «todos». A to-one relation reaches one record, so it carries none. */
+ *  «ninguno», «todos». It is the TREE's word, not a key that travels: criteria's
+ *  `{through, selection}` says «some», and the other two are written with `negate` around it
+ *  (see {@link BuiltThrough}). */
 export type ThroughMatch = "any" | "none" | "all";
 
 /**
- * A filter asked about the records at the other end of a relation.
+ * A filter asked about the records at the other end of a relation: some record the relation
+ * `through` holds answers `selection` — criteria's shape, and nothing beside it.
  *
  *      «alguna línea con algún impuesto con monto > 10»
- *      {through: "lines", match: "any",
- *       where: {through: "taxes", match: "any",
- *               where: {field: "amount", operator: ">", value: 10}}}
+ *      {through: "lines",
+ *       selection: {through: "taxes",
+ *                   selection: {field: "amount", operator: ">", value: 10}}}
  *
- *      «el cliente es de Bolivia»  (to-one: no `match`)
- *      {through: "partner_id", where: {field: "country", operator: "=", value: "BO"}}
+ *      «el cliente es de Bolivia»  (to-one: the one record it reaches)
+ *      {through: "partner_id", selection: {field: "country", operator: "=", value: "BO"}}
+ *
+ *      «ninguna línea con precio > 1»
+ *      {negate: {through: "lines", selection: {field: "price", operator: ">", value: 1}}}
+ *
+ *      «todas las líneas con precio > 1»  (no line that does not have it)
+ *      {negate: {through: "lines",
+ *                selection: {negate: {field: "price", operator: ">", value: 1}}}}
  *
  * One node per relation crossed, nested in the order of the path: the engine reads it from
- * the outside in, the same way the path reads left to right.
+ * the outside in, the same way the path reads left to right. There is no `match` key:
+ * sincpro_framework's `Through` refuses one, and «none» and «all» are already sentences of
+ * the grammar.
  */
 export interface BuiltThrough {
   through: string;
-  match?: ThroughMatch;
-  where: BuiltFilter;
+  selection: BuiltFilter;
 }
 
 /** Cómo se juntan las instancias de un nodo. `not` niega lo que tiene adentro. */
@@ -111,12 +122,12 @@ export type SearchCriteria =
        * Lo que viaja, en la forma del motor y sin una clave de más.
        *
        * FALTA cuando el recorte no se puede preguntar: «con entregas pendientes» se define
-       * con datos de otro contexto y ningún `where` sobre esta tabla lo
+       * con datos de otro contexto y ninguna `selection` sobre esta tabla lo
        * contesta. La instancia existe igual —se ve, se cuenta, se saca— y lo
        * contesta quien la declaró. Sin esto, un recorte así no era una instancia
        * de nada: se dibujaba en el menú y tildarlo no hacía nada.
        */
-      where?: BuiltCondition | BuiltFilter;
+      selection?: BuiltCondition | BuiltFilter;
     }
   | {
       id: string;
@@ -214,10 +225,10 @@ export function groupCriteria(level: GroupLevel, label: string): SearchCriteria 
 }
 
 /** Una instancia de filtro. `label` es lo único que distingue a uno declarado en
- *  código de uno escrito en la barra; sin `where`, es uno que sólo contesta
+ *  código de uno escrito en la barra; sin `selection`, es uno que sólo contesta
  *  quien lo declaró. */
 export function filterCriteria(
-  where: BuiltCondition | BuiltFilter | undefined,
+  selection: BuiltCondition | BuiltFilter | undefined,
   label: string,
   id?: string,
 ): SearchCriteria {
@@ -225,17 +236,18 @@ export function filterCriteria(
     id: id ?? criteriaId("f"),
     kind: "filter",
     label,
-    ...(where === undefined ? {} : { where }),
+    ...(selection === undefined ? {} : { selection }),
   };
 }
 
 /**
- * Lo que VIAJA: el `where` del motor, armado con las instancias de filtro.
+ * Lo que VIAJA: la `selection` del motor, armada con las instancias de filtro.
  *
  * Es lo único que sale de acá hacia afuera, y sale sin rótulos, sin ids y sin
- * clases: la UI se queda con lo que la UI necesita.
+ * clases: la UI se queda con lo que la UI necesita. Lleva el nombre del campo de la
+ * criteria que llena —`Criteria.selection`—, como el `selection` de `@sincpro/criteria`.
  */
-export function whereOf(all: readonly SearchCriteria[]): BuiltFilter | undefined {
+export function selectionOf(all: readonly SearchCriteria[]): BuiltFilter | undefined {
   const parts = filtersOf(all)
     .map(expressionOf)
     .filter((one): one is BuiltFilter => one !== undefined);
@@ -246,9 +258,9 @@ export function whereOf(all: readonly SearchCriteria[]): BuiltFilter | undefined
 
 function expressionOf(one: SearchCriteria): BuiltFilter | undefined {
   if (one.kind === "group") return undefined;
-  /* Una instancia sin `where` no viaja: no hay manera de preguntarla, y mandar
+  /* Una instancia sin `selection` no viaja: no hay manera de preguntarla, y mandar
      algo parecido sería contestar otra cosa. La contesta quien la declaró. */
-  if (one.kind === "filter") return one.where;
+  if (one.kind === "filter") return one.selection;
   const inside = one.of
     .map(expressionOf)
     .filter((each): each is BuiltFilter => each !== undefined);
@@ -301,11 +313,11 @@ export function withLevels(
  */
 export function toggleNamed(
   all: readonly SearchCriteria[],
-  named: { id: string; label: string; where?: BuiltCondition | BuiltFilter },
+  named: { id: string; label: string; selection?: BuiltCondition | BuiltFilter },
 ): SearchCriteria[] {
   const at = all.findIndex((one) => one.id === named.id);
   if (at >= 0) return all.filter((_, index) => index !== at);
-  return [...all, filterCriteria(named.where, named.label, named.id)];
+  return [...all, filterCriteria(named.selection, named.label, named.id)];
 }
 
 /** Si ese filtro con nombre está puesto. Lo usa el panel para dibujar la marca:

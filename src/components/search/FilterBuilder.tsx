@@ -104,7 +104,7 @@ export function isRecognizedFilter(value: unknown): value is BuiltFilter {
   if (Array.isArray(record.all)) return true;
   if (Array.isArray(record.any)) return true;
   if ("negate" in record) return true;
-  if (typeof record.through === "string" && "where" in record) return true;
+  if (isThrough(record)) return true;
   return false;
 }
 
@@ -113,11 +113,58 @@ const MATCHES: readonly ThroughMatch[] = ["any", "none", "all"];
 function isThrough(value: unknown): value is BuiltThrough {
   if (typeof value !== "object" || value === null) return false;
   const record = value as Record<string, unknown>;
-  return (
-    typeof record.through === "string" &&
-    "where" in record &&
-    (record.match === undefined || MATCHES.includes(record.match as ThroughMatch))
-  );
+  return typeof record.through === "string" && "selection" in record;
+}
+
+function isNegate(value: unknown): value is { negate: BuiltFilter } {
+  return typeof value === "object" && value !== null && "negate" in value;
+}
+
+/** A relation crossed, with the quantifier its shape says. */
+interface Crossed {
+  through: string;
+  match: ThroughMatch;
+  /** What the records reached have to answer — already without the quantifier's `negate`. */
+  selection: BuiltFilter;
+}
+
+/**
+ * A relation crossed, read off criteria's shape: the quantifier is not a key, it is the
+ * sentence the `negate`s around the `through` make.
+ *
+ *      {through, selection: s}                       «alguno»    s
+ *      {negate: {through, selection: s}}             «ninguno»   s
+ *      {negate: {through, selection: {negate: s}}}   «todos»     s  (none that does not)
+ *
+ * «Ninguno con no-s» and «todos con s» are the same filter; it reads as the second, the
+ * shorter sentence, and that is also how a path of two hops comes back: «ninguna línea con
+ * ningún impuesto» returns as «todas las líneas con algún impuesto», which filters the same.
+ * Anything else is not a relation crossed: `null`.
+ */
+function crossedOf(value: unknown): Crossed | null {
+  if (isThrough(value)) {
+    return { through: value.through, match: "any", selection: value.selection };
+  }
+  if (!isNegate(value) || !isThrough(value.negate)) return null;
+  const { through, selection } = value.negate;
+  return isNegate(selection)
+    ? { through, match: "all", selection: selection.negate }
+    : { through, match: "none", selection };
+}
+
+/** The other way: a relation and its quantifier, written the way criteria reads them. */
+function crossing(through: string, match: ThroughMatch, inner: BuiltFilter): BuiltFilter {
+  if (match === "none") return { negate: { through, selection: inner } };
+  if (match === "all") return { negate: { through, selection: { negate: inner } } };
+  return { through, selection: inner };
+}
+
+/** Whether a «some» crossing reaches ONE record: a to-one relation, as the model says. Then
+ *  it is said as a path («Cliente > País»), since «alguno de» would be noise. Without the
+ *  model it is said as what `{through, selection}` means — «alguno de» —, never wrong. */
+function reachesOne(model: ModelDefinition | undefined, crossed: Crossed): boolean {
+  const field = model?.fields[crossed.through];
+  return crossed.match === "any" && field !== undefined && !isToMany(field);
 }
 
 /* ---------------------------------------------------------------------- *
@@ -125,10 +172,11 @@ function isThrough(value: unknown): value is BuiltThrough {
  * ---------------------------------------------------------------------- */
 
 /** One relation crossed on the way to a condition's field: «Líneas», and how many of the
- *  lines have to match. A to-one relation (`many: false`) reaches one record: no `match`. */
+ *  lines have to match. Whether the relation reaches many is the MODEL's to say, not the
+ *  hop's: criteria's `{through, selection}` does not carry it, so a hop read back from a
+ *  filter could not know it. A to-one relation keeps `"any"` — the one record it reaches. */
 export interface TreeHop {
   field: string;
-  many: boolean;
   match: ThroughMatch;
 }
 
@@ -199,10 +247,7 @@ export function treeToFilter(node: TreeNode): BuiltFilter | undefined {
  *  outside, the last one next to the condition — the order the path reads in. */
 function wrapThrough(hops: readonly TreeHop[], leaf: BuiltFilter): BuiltFilter {
   return hops.reduceRight<BuiltFilter>(
-    (inner, hop) =>
-      hop.many
-        ? { through: hop.field, match: hop.match, where: inner }
-        : { through: hop.field, where: inner },
+    (inner, hop) => crossing(hop.field, hop.match, inner),
     leaf,
   );
 }
@@ -297,20 +342,17 @@ export function treeFromFilter(filter: unknown): TreeNode | null {
 
   /* A chain of relations ending in ONE condition is one row with its path. A chain that ends
      in a group («alguna línea con impuesto > 10 Y cantidad > 2», both about the SAME line)
-     cannot be a row: the tree shows it read-only and the JSON stays the way to edit it. */
-  if (isThrough(filter)) {
-    const hops: TreeHop[] = [];
-    let node: unknown = filter;
-    while (isThrough(node)) {
-      hops.push({
-        field: node.through,
-        many: node.match !== undefined,
-        match: node.match ?? "any",
-      });
-      node = node.where;
-    }
-    if (!isCondition(node)) return null;
-    return { ...conditionToTree(node), through: hops };
+     cannot be a row: the tree shows it read-only and the JSON stays the way to edit it.
+     Read before `negate`: «ninguna línea con…» is a `negate` around a `through`, and it is
+     one row with its quantifier, not a group. */
+  const hops: TreeHop[] = [];
+  let node: unknown = filter;
+  for (let crossed = crossedOf(node); crossed !== null; crossed = crossedOf(node)) {
+    hops.push({ field: crossed.through, match: crossed.match });
+    node = crossed.selection;
+  }
+  if (hops.length > 0) {
+    return isCondition(node) ? { ...conditionToTree(node), through: hops } : null;
   }
 
   if (typeof filter !== "object" || filter === null) return null;
@@ -412,16 +454,18 @@ function say(
   modelAt: ((path: readonly string[]) => ModelDefinition | undefined) | undefined,
 ): string {
   const copy = currentCopy();
-  if ("through" in node) {
+  const crossed = crossedOf(node);
+  if (crossed !== null) {
     /* «alguno de Líneas con alguno de Impuestos con Monto mayor que 10». The quantifier
        is a separate word and not «algún impuesto» because the model publishes the label,
        not its gender or its singular: «algún Impuestos» would be worse than neutral. */
     const relation =
-      model === undefined ? node.through : fieldLabel(model, node.through, copy.locale);
-    const next = [...at, node.through];
-    const inner = say(node.where, modelAt?.(next), depth + 1, next, modelAt);
-    const template =
-      node.match === undefined ? copy.fieldPath.say.one : copy.fieldPath.say[node.match];
+      model === undefined ? crossed.through : fieldLabel(model, crossed.through, copy.locale);
+    const next = [...at, crossed.through];
+    const inner = say(crossed.selection, modelAt?.(next), depth + 1, next, modelAt);
+    const template = reachesOne(model, crossed)
+      ? copy.fieldPath.say.one
+      : copy.fieldPath.say[crossed.match];
     return fillCopy(template, { relation, inner });
   }
   if ("all" in node || "any" in node) {
@@ -439,6 +483,9 @@ function say(
     return `${copy.search.notWord} ${say(node.negate, model, depth + 1, at, modelAt)}`;
   }
 
+  /* Every `through` was said above; anything still not a condition is not a shape of the
+     grammar, and it is shown as it came rather than as a sentence it is not. */
+  if (!isCondition(node)) return JSON.stringify(node);
   const label = model === undefined ? node.field : fieldLabel(model, node.field, copy.locale);
   return sayCondition(label, node.operator, describeValue(node.value, node.operator));
 }
@@ -470,20 +517,21 @@ export function ExpressionView({
   const box = surface === "chrome" ? "border-chrome-ink/20" : "border-ink/15";
   const indent = depth === 0 ? "" : "ml-4";
 
-  if ("through" in node) {
+  const crossed = crossedOf(node);
+  if (crossed !== null) {
     const relation =
-      model === undefined ? node.through : fieldLabel(model, node.through, copy.locale);
-    const next = [...at, node.through];
+      model === undefined ? crossed.through : fieldLabel(model, crossed.through, copy.locale);
+    const next = [...at, crossed.through];
     const inner = modelAt?.(next);
     return (
       <div className={`flex flex-col gap-1 border-l-2 pl-2 ${box} ${indent}`}>
         <p className="text-micro text-muted">
-          {node.match === undefined
+          {reachesOne(model, crossed)
             ? relation
-            : `${copy.fieldPath.match[node.match]} · ${relation}`}
+            : `${copy.fieldPath.match[crossed.match]} · ${relation}`}
         </p>
         <ExpressionView
-          node={node.where}
+          node={crossed.selection}
           {...(inner === undefined ? {} : { model: inner })}
           {...(modelAt === undefined ? {} : { modelAt })}
           at={next}
@@ -502,11 +550,15 @@ export function ExpressionView({
     return (
       <div className={`flex flex-col gap-1 border-l-2 pl-2 ${box} ${indent}`}>
         <p className="text-micro text-muted">{label}</p>
+        {/* `modelAt` and the path go down with every child: a `through` inside a group
+            names its fields by the model at the end of its path, not by their raw names. */}
         {items.map((child, index) => (
           <ExpressionView
             key={index}
             node={child}
             {...(model === undefined ? {} : { model })}
+            {...(modelAt === undefined ? {} : { modelAt })}
+            at={at}
             depth={depth + 1}
           />
         ))}
@@ -521,6 +573,8 @@ export function ExpressionView({
         <ExpressionView
           node={node.negate}
           {...(model === undefined ? {} : { model })}
+          {...(modelAt === undefined ? {} : { modelAt })}
+          at={at}
           depth={depth + 1}
         />
       </div>
@@ -535,7 +589,7 @@ export function ExpressionView({
  *  UN GRUPO, DIBUJADO — la pieza que se llama a sí misma para anidar.
  * ---------------------------------------------------------------------- */
 
-export function WhereTree({
+export function SelectionTree({
   model,
   group,
   onChange,
@@ -562,7 +616,7 @@ export function WhereTree({
    * **Es un nombre de campo, no una ruta**, así que dos condiciones sobre el
    * mismo campo en ramas distintas se marcan las dos y la vista va a la primera.
    * Distinguirlas pide que el árbol y las instancias de la barra compartan la
-   * identidad, y hoy no la comparten: `whereOf` arma el filtro salteándose los
+   * identidad, y hoy no la comparten: `selectionOf` arma el filtro salteándose los
    * niveles y lo que no viaja, así que la posición en uno no es la posición en
    * el otro.
    */
@@ -629,7 +683,7 @@ export function WhereTree({
         child.kind === "group" ? (
           <div key={index} className="flex min-w-0 items-start gap-2">
             <div className="min-w-0 flex-1">
-              <WhereTree
+              <SelectionTree
                 model={model}
                 group={child}
                 onChange={(next) => setChild(index, next)}
@@ -736,7 +790,6 @@ function ConditionRow({
     if (last === undefined) return;
     const nextHops = found.slice(0, -1).map((step, at) => ({
       field: step.name,
-      many: isToMany(step.field),
       /* Cambiar el campo final no reinicia la ficha de una relación que sigue en el camino. */
       match: hops[at]?.field === step.name ? hops[at]!.match : ("any" as ThroughMatch),
     }));
@@ -776,19 +829,22 @@ function ConditionRow({
       />
 
       {/* UNA FICHA POR CADA RELACIÓN A MUCHOS del camino: «alguna línea», «ninguna línea»,
-          «todas las líneas» son tres preguntas distintas y el camino solo no dice cuál. */}
-      {hops.map((hop, at) =>
-        hop.many ? (
+          «todas las líneas» son tres preguntas distintas y el camino solo no dice cuál. Si la
+          relación llega a muchos lo dice el modelo; un cuantificador que no es «alguno» se ve
+          aunque el modelo no haya llegado, porque esconderlo es esconder lo que la regla
+          pregunta. */}
+      {hops.map((hop, at) => {
+        const step = steps?.[at];
+        const many = step !== undefined && isToMany(step.field);
+        return hop.match !== "any" || many ? (
           <label
             key={`${hop.field}-${at}`}
             className={`flex min-w-0 shrink-0 items-center gap-1 rounded-control border px-2 py-0.5 text-micro ${box}`}
           >
-            <span className="max-w-32 truncate text-muted">
-              {steps?.[at]?.label ?? hop.field}
-            </span>
+            <span className="max-w-32 truncate text-muted">{step?.label ?? hop.field}</span>
             <select
               aria-label={fillCopy(copy.fieldPath.match.label, {
-                relation: steps?.[at]?.label ?? hop.field,
+                relation: step?.label ?? hop.field,
               })}
               value={hop.match}
               onChange={(event) => setMatch(at, event.target.value as ThroughMatch)}
@@ -801,8 +857,8 @@ function ConditionRow({
               ))}
             </select>
           </label>
-        ) : null,
-      )}
+        ) : null;
+      })}
 
       <select
         aria-label={copy.builder.ruleOperator}
@@ -871,7 +927,7 @@ export function FilterBuilder({
   /** El filtro que ya estaba puesto, si había uno. Reabrir el constructor con esto adentro
    *  tiene que seguir donde quedó, no empezar en blanco. */
   initial?: BuiltFilter;
-  onApply: (where: BuiltFilter | undefined) => void;
+  onApply: (selection: BuiltFilter | undefined) => void;
   onCancel?: () => void;
 }) {
   const names = filterableNames(model);
@@ -952,7 +1008,7 @@ export function FilterBuilder({
             <ExpressionView node={lockedView} model={model} modelAt={models.peek} />
           </>
         ) : (
-          <WhereTree model={model} group={tree} onChange={updateTree} models={models} />
+          <SelectionTree model={model} group={tree} onChange={updateTree} models={models} />
         )}
       </div>
 
