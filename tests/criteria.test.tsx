@@ -8,7 +8,8 @@ import {
   removeAt,
   replaceAt,
   type SearchCriteria,
-  whereOf,
+  selectionOf,
+  toggleNamed,
 } from "@sincpro/web-ui/components/search/criteria";
 import { CriteriaChips } from "@sincpro/web-ui/components/search/CriteriaChips";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -49,7 +50,7 @@ const draw = (node: Parameters<typeof renderToStaticMarkup>[0]) => renderToStati
  * ---------------------------------------------------------------- */
 
 test("hacia afuera sale el objeto del motor, sin una clave de más", () => {
-  assert.deepEqual(whereOf(PUESTO), {
+  assert.deepEqual(selectionOf(PUESTO), {
     any: [
       { field: "origin", operator: "=", value: "derivado" },
       { field: "row_count", operator: ">", value: 100000 },
@@ -63,7 +64,7 @@ test("hacia afuera sale el objeto del motor, sin una clave de más", () => {
 });
 
 test("un solo filtro no se envuelve en un grupo que no agrupa", () => {
-  assert.deepEqual(whereOf([AÑO, DERIVADOS]), {
+  assert.deepEqual(selectionOf([AÑO, DERIVADOS]), {
     field: "origin",
     operator: "=",
     value: "derivado",
@@ -76,7 +77,7 @@ test("«ninguna» niega el nodo entero", () => {
   const ninguna: SearchCriteria[] = [
     { id: "n", kind: "join", join: "not", of: [DERIVADOS, GRANDES] },
   ];
-  assert.deepEqual(whereOf(ninguna), {
+  assert.deepEqual(selectionOf(ninguna), {
     negate: {
       any: [
         { field: "origin", operator: "=", value: "derivado" },
@@ -86,22 +87,38 @@ test("«ninguna» niega el nodo entero", () => {
   });
 });
 
-test("sin filtros no hay `where`, que es distinto de un `where` vacío", () => {
-  assert.equal(whereOf([AÑO, MES]), undefined);
+test("sin filtros no hay `selection`, que es distinto de una `selection` vacía", () => {
+  assert.equal(selectionOf([AÑO, MES]), undefined);
 });
 
-/* Hay recortes que ningún `where` contesta: «con corridas» se define con datos
+/* Hay recortes que ninguna `selection` contesta: «con corridas» se define con datos
    de otro contexto. La instancia existe igual —se ve, se cuenta, se saca— y lo
    que viaja sale sin ella. Sin esto no era una instancia de nada: se dibujaba en
    el menú y tildarla no hacía nada. */
 test("una instancia sin expresión no viaja, y las otras sí", () => {
   const propio = filterCriteria(undefined, "con corridas", "with-runs");
-  assert.deepEqual(whereOf([propio, GRANDES]), {
+  assert.deepEqual(selectionOf([propio, GRANDES]), {
     field: "row_count",
     operator: ">",
     value: 100000,
   });
-  assert.equal(whereOf([propio]), undefined);
+  assert.equal(selectionOf([propio]), undefined);
+});
+
+/* La instancia guarda el filtro bajo la MISMA clave que la criteria que llena —
+   `Criteria.selection` de @sincpro/criteria 2.0—: quien la lee no traduce nada. */
+test("un filtro con nombre lleva su `selection`, la clave de la criteria", () => {
+  const vencidas = { field: "state", operator: "=", value: "vencida" };
+  assert.deepEqual(
+    toggleNamed([], { id: "overdue", label: "vencidas", selection: vencidas }),
+    [{ id: "overdue", kind: "filter", label: "vencidas", selection: vencidas }],
+  );
+  assert.deepEqual(filterCriteria(vencidas, "vencidas", "x"), {
+    id: "x",
+    kind: "filter",
+    label: "vencidas",
+    selection: vencidas,
+  });
 });
 
 /* ---------------------------------------------------------------- *
@@ -112,7 +129,7 @@ test("una instancia se cambia por su ruta, sin tocar las otras", () => {
   const otra = filterCriteria({ field: "name", operator: "like", value: "x" }, "nombre");
   const next = replaceAt(PUESTO, [2, 0], otra);
   assert.equal(groupsOf(next).length, 2);
-  assert.deepEqual(whereOf(next), {
+  assert.deepEqual(selectionOf(next), {
     any: [
       { field: "name", operator: "like", value: "x" },
       { field: "row_count", operator: ">", value: 100000 },
@@ -124,7 +141,7 @@ test("una instancia se cambia por su ruta, sin tocar las otras", () => {
    paréntesis alrededor de nada. */
 test("sacar un hermano desarma el nodo que queda solo", () => {
   const next = removeAt(PUESTO, [2, 1]);
-  assert.deepEqual(whereOf(next), {
+  assert.deepEqual(selectionOf(next), {
     field: "origin",
     operator: "=",
     value: "derivado",

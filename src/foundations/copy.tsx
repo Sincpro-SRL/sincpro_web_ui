@@ -1408,7 +1408,7 @@ export const ENGLISH_COPY: UiCopy = {
     invalidJson: "this is not valid JSON",
     editor: "Code editor",
     format: "Format",
-    notCriteria: "a criteria is an object with where, order, grouping or specification",
+    notCriteria: "a criteria is an object with selection, order, grouping or specification",
     notFilter: "this is not a filter: it needs a condition or an all/any/negate",
     apply: "Apply",
     add: "Add",

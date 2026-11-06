@@ -133,9 +133,13 @@ const NAMED = [
   {
     id: "overdue",
     label: "con deuda vencida",
-    where: { field: "state", operator: "=", value: "con deuda vencida" },
+    selection: { field: "state", operator: "=", value: "con deuda vencida" },
   },
-  { id: "clear", label: "al día", where: { field: "state", operator: "=", value: "al día" } },
+  {
+    id: "clear",
+    label: "al día",
+    selection: { field: "state", operator: "=", value: "al día" },
+  },
 ];
 const read = (c: CustomerCard, field: string) =>
   field === "state" ? c.state.label : (c as unknown as Record<string, unknown>)[field];
@@ -386,8 +390,10 @@ function ChooseProducts({ resource, api }: ViewProps) {
             onCriteriaChange={(next) => {
               const one = next.at(-1);
               setQuery(
-                one?.kind === "filter" && one.where !== undefined && "value" in one.where
-                  ? String(one.where.value)
+                one?.kind === "filter" &&
+                  one.selection !== undefined &&
+                  "value" in one.selection
+                  ? String(one.selection.value)
                   : "",
               );
             }}

@@ -551,10 +551,13 @@ export function SearchBar({
       return;
     }
     if (suggestion.kind === "literal") {
-      const where = literal?.(suggestion.text) ?? null;
-      if (where !== null)
+      const selection = literal?.(suggestion.text) ?? null;
+      if (selection !== null)
         put(
-          filterCriteria(where, fillCopy(copy.search.literalChip, { text: suggestion.text })),
+          filterCriteria(
+            selection,
+            fillCopy(copy.search.literalChip, { text: suggestion.text }),
+          ),
         );
       return;
     }

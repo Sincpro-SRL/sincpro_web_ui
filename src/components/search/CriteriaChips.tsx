@@ -321,7 +321,7 @@ function Node({
     /* Una instancia que no lleva expresión no tiene qué editar: el constructor
        edita lo que VIAJA, y ésta la contesta quien la declaró. Se ve y se saca
        como cualquiera; lo que no hace es prometer una puerta que da a nada. */
-    const editable = node.kind === "group" || node.where !== undefined;
+    const editable = node.kind === "group" || node.selection !== undefined;
     return (
       <Chip
         label={node.label}

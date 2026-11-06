@@ -426,7 +426,7 @@ export const SPANISH_COPY: UiCopyOverride = {
     editor: "Editor de código",
     format: "Formatear",
     invalidJson: "esto no es JSON válido",
-    notCriteria: "una criteria es un objeto con where, order, grouping o specification",
+    notCriteria: "una criteria es un objeto con selection, order, grouping o specification",
     notFilter: "esto no es un filtro: hace falta una condición o un all/any/negate",
     apply: "Aplicar",
     add: "Agregar",

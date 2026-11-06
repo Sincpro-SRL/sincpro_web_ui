@@ -1120,8 +1120,8 @@ export const PivoteExplorado: StoryObj<typeof List<Sale>> = {
     const grouping = useGroupingControl({ levels: [{ field: "branch" }] });
     const wanted = criteria
       .flatMap((one) =>
-        one.kind === "filter" && one.where !== undefined && "value" in one.where
-          ? [String(one.where.value)]
+        one.kind === "filter" && one.selection !== undefined && "value" in one.selection
+          ? [String(one.selection.value)]
           : [],
       )
       .map((v) => v.toLocaleLowerCase("es"));
@@ -1216,8 +1216,8 @@ export const Grafico: StoryObj<typeof List<Sale>> = {
     const [criteria, setCriteria] = useState<SearchCriteria[]>([]);
     const wanted = criteria
       .flatMap((one) =>
-        one.kind === "filter" && one.where !== undefined && "value" in one.where
-          ? [String(one.where.value)]
+        one.kind === "filter" && one.selection !== undefined && "value" in one.selection
+          ? [String(one.selection.value)]
           : [],
       )
       .map((v) => v.toLocaleLowerCase("es"));

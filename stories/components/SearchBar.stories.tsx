@@ -1,5 +1,6 @@
 import {
   at,
+  type BuiltGrouping,
   CriteriaBuilder,
   type CriteriaPath,
   Dialog,
@@ -11,9 +12,9 @@ import {
   type ModelDefinition,
   SearchBar,
   type SearchCriteria,
+  selectionOf,
   toggleNamed,
   useGroupingControl,
-  whereOf,
   withLevels,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
@@ -131,9 +132,9 @@ export const Probar: Story = {
     /* Los filtros que la lista declara, con su condición ya pensada: es lo único
        que los distingue de uno escrito a mano. */
     const DECLARADOS = [
-      { id: "posted", label: "sólo publicadas", where: ESTADO("publicada") },
-      { id: "overdue", label: "sólo vencidas", where: ESTADO("vencida") },
-      { id: "grande", label: "más de Bs. 10.000", where: TOTAL(10000) },
+      { id: "posted", label: "sólo publicadas", selection: ESTADO("publicada") },
+      { id: "overdue", label: "sólo vencidas", selection: ESTADO("vencida") },
+      { id: "grande", label: "más de Bs. 10.000", selection: TOTAL(10000) },
     ];
 
     const filtros = [
@@ -175,7 +176,9 @@ export const Probar: Story = {
             <CriteriaBuilder
               model={MODELO}
               initial={{
-                ...(whereOf(criteria) === undefined ? {} : { where: whereOf(criteria)! }),
+                ...(selectionOf(criteria) === undefined
+                  ? {}
+                  : { selection: selectionOf(criteria)! }),
               }}
               onApply={() => setConstructor(false)}
               onCancel={() => setConstructor(false)}
@@ -189,7 +192,7 @@ export const Probar: Story = {
         </p>
         <p className="mt-2 max-w-prose font-mono text-micro text-muted">
           lo que viaja:{" "}
-          <span className="text-ink">{JSON.stringify(whereOf(criteria) ?? null)}</span>
+          <span className="text-ink">{JSON.stringify(selectionOf(criteria) ?? null)}</span>
         </p>
       </Caja>
     );
@@ -461,13 +464,13 @@ export const ConModelo: Story = {
             <CriteriaBuilder
               model={MODELO}
               {...(puesto?.kind === "filter" &&
-              puesto.where !== undefined &&
-              "field" in puesto.where
-                ? { focus: puesto.where.field }
+              puesto.selection !== undefined &&
+              "field" in puesto.selection
+                ? { focus: puesto.selection.field }
                 : {})}
-              {...(whereOf(criteria) === undefined
+              {...(selectionOf(criteria) === undefined
                 ? {}
-                : { initial: { where: whereOf(criteria)! } })}
+                : { initial: { selection: selectionOf(criteria)! } })}
               onApply={() => setAbierto(null)}
               onCancel={() => setAbierto(null)}
             />
@@ -510,7 +513,7 @@ export const BusquedaLiteral: Story = {
           placeholder="buscá, o preguntá…"
         />
         <p className="mt-3 font-mono text-micro text-muted" aria-label="lo que viaja">
-          {JSON.stringify(whereOf(criteria) ?? null)}
+          {JSON.stringify(selectionOf(criteria) ?? null)}
         </p>
       </Caja>
     );
@@ -608,13 +611,61 @@ export const ElConstructor: Story = {
       <CriteriaBuilder
         model={MODELO}
         initial={{
-          where: { field: "state", operator: "=", value: "publicada" },
+          selection: { field: "state", operator: "=", value: "publicada" },
         }}
         onApply={() => {}}
         onCancel={() => {}}
       />
     </div>
   ),
+};
+
+/** El agrupado que el constructor manda, en la forma de @sincpro/criteria 2.0: `group_by`,
+ *  `measures` con `{function, field}`, `where_measures`. Es lo único que el `Grouping`
+ *  estricto de sincpro_framework acepta; `{by, totals, having}` lo rechazaba entero. */
+const AGRUPADO_DE_CRITERIA: BuiltGrouping = {
+  group_by: [{ field: "invoice_date", grain: "month" }, { field: "state" }],
+  measures: { total: { function: "sum", field: "amount_total" } },
+  where_measures: { field: "count", operator: ">", value: "10" },
+  order: [{ field: "total", descending: true }],
+};
+
+/** Lo que el constructor APLICA: el agrupado leído del `initial` vuelve a salir tal cual,
+ *  con las claves de criteria y ninguna más, aunque se haya tocado otra sección. */
+export const ElConstructorAgrupa: Story = {
+  args: { facets: FACETAS, criteria: [], onCriteriaChange: () => {} },
+  render: () => {
+    const [aplicada, setAplicada] = useState<unknown>(undefined);
+    return (
+      <div className="flex max-w-3xl flex-col gap-3">
+        <div className="rounded-box border border-line bg-surface">
+          <CriteriaBuilder
+            model={MODELO}
+            initial={{ grouping: AGRUPADO_DE_CRITERIA }}
+            onApply={setAplicada}
+          />
+        </div>
+        <section aria-label="Lo que se aplicó" className="font-mono text-micro text-muted">
+          {aplicada === undefined ? "" : JSON.stringify(aplicada)}
+        </section>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    /* Tocar otra sección —elegir qué campos vuelven— rearma la criteria entera desde los
+       controles: el agrupado que sale es el que el constructor escribe, no el texto de
+       entrada devuelto tal cual. */
+    await userEvent.click(canvas.getByRole("button", { name: "name" }));
+    await userEvent.click(canvas.getByRole("button", { name: "Aplicar" }));
+    const aplicada = canvas.getByRole("region", { name: "Lo que se aplicó" });
+    await waitFor(() =>
+      expect(JSON.parse(aplicada.textContent || "null")).toEqual({
+        grouping: AGRUPADO_DE_CRITERIA,
+        specification: { name: {} },
+      }),
+    );
+  },
 };
 
 /**
