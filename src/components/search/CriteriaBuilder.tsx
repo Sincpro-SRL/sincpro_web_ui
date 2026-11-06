@@ -523,6 +523,7 @@ export function CriteriaBuilder({
                 {/* Changing the function writes a new measure, `argument` dropped: only a
                     percentile takes one, and none of these is a percentile. */}
                 <select
+                  aria-label={fillCopy(copy.builder.totalFunction, { name })}
                   value={measure.function}
                   onChange={(event) =>
                     push({
@@ -541,6 +542,7 @@ export function CriteriaBuilder({
                   ))}
                 </select>
                 <select
+                  aria-label={fillCopy(copy.builder.totalField, { name })}
                   value={measure.field}
                   onChange={(event) =>
                     push({
@@ -615,6 +617,7 @@ export function CriteriaBuilder({
             {groupOrder.map((sort, index) => (
               <div key={index} className="flex min-w-0 flex-wrap items-center gap-2">
                 <select
+                  aria-label={copy.builder.pileOrderField}
                   value={sort.field}
                   onChange={(event) =>
                     push({
@@ -636,6 +639,7 @@ export function CriteriaBuilder({
                   ))}
                 </select>
                 <select
+                  aria-label={copy.builder.pileOrderDirection}
                   value={sort.descending === true ? "desc" : "asc"}
                   onChange={(event) =>
                     push({
