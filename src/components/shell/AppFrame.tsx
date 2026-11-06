@@ -70,9 +70,9 @@ export function AppFrame({
   sidebar?: ReactNode;
   children: ReactNode;
 }) {
-  /* La barra de arriba MIDE lo que ocupa y se lo pasa a lo de abajo: la barra
-     de una lista se pega debajo de ella, y el encabezado de una tabla debajo de
-     las dos. Ninguna de las tres tiene alto fijo — ver `system/sticky.tsx`. */
+  /* The top bar MEASURES what it takes and passes it to what is below: a list's
+     bar sticks beneath it, and a table's header beneath the other two. None of the
+     three has a fixed height — see `system/sticky.tsx`. */
   const bar = useStickyLayer<HTMLDivElement>();
   /* The slot for a view's header (see `headerSlot.ts`): full width, stuck under the
      application bar, and it pushes the stack down for the sidebar and the table header. */

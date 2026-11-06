@@ -6,8 +6,8 @@ export {
   type PickerOptionState,
   type PickerProps,
 } from "@sincpro/web-ui/primitives/picker/Picker";
-/* Lo buscado, marcado: para que una opción propia (`renderOption`) lo diga como las demás. */
+/* What was searched, marked: so an option of your own (`renderOption`) says it like the others do. */
 export { MatchedText } from "@sincpro/web-ui/primitives/picker/MatchedText";
-/* El many2many: las fichas elegidas más una entrada que agrega la siguiente. */
+/* The many2many: the chosen chips plus an input that adds the next one. */
 export { type TagOption } from "@sincpro/web-ui/primitives/picker/tagChoices";
 export { TagsField, type TagsFieldProps } from "@sincpro/web-ui/primitives/picker/TagsField";

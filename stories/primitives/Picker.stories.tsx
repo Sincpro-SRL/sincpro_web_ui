@@ -551,3 +551,47 @@ export const OpcionPropia: Story = {
     await waitFor(() => expect(field).toHaveValue("10:30 · Dr. Luis Mamani"));
   },
 };
+
+/**
+ * **Se puede dejar vacío.** Con `onClear`, un campo que puede quedar sin elegir tiene la × al
+ * lado del nombre, y borrar el nombre y salir también lo vacía — «ninguno» sin una opción falsa
+ * en la lista. Sin `onClear` (un campo obligatorio) la elección se cambia, nunca se quita.
+ */
+export const SePuedeDejarVacio: Story = {
+  args: { items: ALMACENES },
+  render: function Render() {
+    const [almacen, setAlmacen] = useState<string | undefined>(ALMACENES[0]!.id);
+    return (
+      <div className="flex max-w-md flex-col gap-2 rounded-box border border-line bg-surface p-4">
+        <Field label="Almacén de origen">
+          <Picker
+            items={ALMACENES}
+            {...(almacen === undefined ? {} : { value: almacen })}
+            onChange={setAlmacen}
+            onClear={() => setAlmacen(undefined)}
+          />
+        </Field>
+        <p className="text-meta">
+          {almacen === undefined ? "Ninguno elegido" : `Elegido: ${almacen}`}
+        </p>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Quitar" }));
+    await expect(await canvas.findByText("Ninguno elegido")).toBeVisible();
+    // Chosen again, then the name erased and the field left: empty again.
+    const field = canvas.getByRole("combobox", { name: "Almacén de origen" });
+    await userEvent.click(field);
+    await userEvent.click(
+      await within(canvasElement.ownerDocument.body).findByRole("option", {
+        name: new RegExp(ALMACENES[1]!.name.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")),
+      }),
+    );
+    await expect(await canvas.findByText(`Elegido: ${ALMACENES[1]!.id}`)).toBeVisible();
+    await userEvent.clear(field);
+    await userEvent.tab();
+    await waitFor(() => expect(canvas.getByText("Ninguno elegido")).toBeVisible());
+  },
+};

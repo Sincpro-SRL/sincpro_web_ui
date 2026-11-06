@@ -1,151 +1,151 @@
-# Principios de diseño — @sincpro/web-ui
+# Design principles — @sincpro/web-ui
 
-Un sistema de diseño para software de gestión: el usuario es experto, repetitivo, y mide su día
-en tareas terminadas. Velocidad, previsibilidad y teclado valen más que animación o vidrio.
-Cada principio de abajo dice **qué pieza del sistema lo aplica** y **qué lo verifica**, porque
-una regla que nadie hace cumplir es una sugerencia.
+A design system for business software: the user is an expert, repetitive, and measures their day
+in finished tasks. Speed, predictability and keyboard matter more than animation or glass.
+Each principle below says **which piece of the system applies it** and **what enforces it**, because
+a rule nobody enforces is a suggestion.
 
-## 1. Jerarquía visual
+## 1. Visual hierarchy
 
-Cada pantalla responde en dos segundos: dónde estoy, qué es lo más importante, qué hago ahora.
-Se construye con tamaño, peso, color, contraste, espacio y posición — en ese orden de fuerza.
+Each screen answers in two seconds: where am I, what is most important, what do I do now.
+It is built with size, weight, color, contrast, space and position — in that order of strength.
 
-| Cómo lo aplica el sistema                                                                                                                                                     | Dónde                                             |
-| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
-| El nombre del registro es el punto de entrada: `text-display` (28 px) sobre un cuerpo de 13 px — relación 2,15.                                                               | `Record` (`identity.title`)                       |
-| El dato por el que se abre el registro va grande, a la derecha.                                                                                                               | `Record` (`identity.figure`)                      |
-| Quién es el registro, segundo: `subtitle` en `text-lead`. Los hechos, terceros, en el tamaño callado.                                                                         | `Record` (`identity.subtitle`, `Record.Facts`)    |
-| El resumen de montos aparte, a la derecha, el total último y más grande.                                                                                                      | `Totals`                                          |
-| El título de una lista es lo más grande de su barra.                                                                                                                          | `ListingBar`                                      |
-| UNA banda oscura por pantalla: la barra de la app. El riel del registro y la barra de la lista son claros POR DEFECTO (`canvas`); `surface="chrome"` es una opción explícita. | `AppFrame`, `Record.Rail surface`, `List surface` |
+| How the system applies it                                                                                                                              | Where                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| The record's name is the entry point: `text-display` (28 px) over a 13 px body — ratio 2.15.                                                           | `Record` (`identity.title`)                       |
+| The datum the record is opened for goes big, on the right.                                                                                             | `Record` (`identity.figure`)                      |
+| Who the record is, second: `subtitle` in `text-lead`. The facts, third, in the quiet size.                                                             | `Record` (`identity.subtitle`, `Record.Facts`)    |
+| The summary of amounts apart, on the right, the total last and biggest.                                                                                | `Totals`                                          |
+| A list's title is the biggest thing in its bar.                                                                                                        | `ListingBar`                                      |
+| ONE dark band per screen: the app bar. The record's rail and the list's bar are light BY DEFAULT (`canvas`); `surface="chrome"` is an explicit option. | `AppFrame`, `Record.Rail surface`, `List surface` |
 
-**Se verifica**: la auditoría UX (`ux-ui-audit`) mide la relación título/cuerpo (mínimo ~1,5); `tests/mobile.test.tsx` fija que el riel por defecto no lleva `bg-chrome` y que sus botones toman la superficie del contexto.
+**Enforced by**: the UX audit (`ux-ui-audit`) measures the title/body ratio (minimum ~1.5); `tests/mobile.test.tsx` pins that the default rail does not carry `bg-chrome` and that its buttons take the context's surface.
 
-## 2. Una acción principal por contexto
+## 2. One main action per context
 
-La primaria (dorada) aparece una sola vez por vista. Las secundarias con contorno, las
-terciarias en `ghost` o en un menú `⋯`, las destructivas en `danger`, separadas y con deshacer.
+The primary (gold) appears once per view. Secondaries are outlined, tertiaries
+`ghost` or in a `⋯` menu, destructives `danger`, set apart and with undo.
 
-| Cómo lo aplica el sistema                                         | Dónde            |
-| ----------------------------------------------------------------- | ---------------- |
-| Cuatro roles de botón: `primary`, `secondary`, `ghost`, `danger`. | `Button`         |
-| Las acciones del riel: a lo sumo tres visibles + menú `⋯`.        | `Record.Actions` |
+| How the system applies it                                     | Where            |
+| ------------------------------------------------------------- | ---------------- |
+| Four button roles: `primary`, `secondary`, `ghost`, `danger`. | `Button`         |
+| The rail's actions: at most three visible + a `⋯` menu.       | `Record.Actions` |
 
-**Se verifica**: `make smoke` falla si una vista o plantilla muestra más de un botón primario.
+**Enforced by**: `make smoke` fails if a view or template shows more than one primary button.
 
-## 3. El color comunica, no decora
+## 3. Color communicates, it does not decorate
 
-El color significa estado (pagado, vencido, borrador), alerta o la acción principal. Nunca solo
-color: siempre con texto o ícono.
+Color means state (paid, overdue, draft), alert or the main action. Never color alone:
+always with text or an icon.
 
-| Cómo lo aplica el sistema                                                                  | Dónde                        |
+| How the system applies it                                                                  | Where                        |
 | ------------------------------------------------------------------------------------------ | ---------------------------- |
-| Cinco tonos semánticos — neutral, info, good, warn, bad — y el acento solo para la acción. | `Tag`, `StatusDot`, `Metric` |
-| Cada color lleva su contraste WCAG anotado y medido.                                       | `tokens.css`                 |
-| Un estado fallido lleva ícono además del rojo.                                             | `StatusBar`                  |
+| Five semantic tones — neutral, info, good, warn, bad — and the accent only for the action. | `Tag`, `StatusDot`, `Metric` |
+| Each color carries its WCAG contrast, annotated and measured.                              | `tokens.css`                 |
+| A failed state carries an icon besides the red.                                            | `StatusBar`                  |
 
-**Se verifica**: `tests/tokens.test.ts` recalcula cada contraste; `tests/tokenLint.test.ts`
-prohíbe colores fuera de los tokens.
+**Enforced by**: `tests/tokens.test.ts` recomputes every contrast; `tests/tokenLint.test.ts`
+forbids colors outside the tokens.
 
-El tema oscuro cumple lo mismo: los cinco tonos conservan su significado, el dorado sigue siendo
-la acción principal (con `on-accent` encima) y cada contraste se mide contra el lienzo, la
-superficie y el cromo **del oscuro**. Cómo funciona: README, «Theming».
+The dark theme holds to the same: the five tones keep their meaning, gold remains
+the main action (with `on-accent` on top) and every contrast is measured against **the dark**
+canvas, surface and chrome. How it works: README, «Theming».
 
-## 4. Proximidad y agrupación
+## 4. Proximity and grouping
 
-Lo que está cerca se percibe relacionado: el espacio entre grupos es mayor que dentro de un
-grupo. Ordena más que poner bordes.
+What is close together is perceived as related: the space between groups is greater than within a
+group. It orders better than putting borders.
 
-| Cómo lo aplica el sistema                                 | Dónde                       |
-| --------------------------------------------------------- | --------------------------- |
-| Grupos de campos en dos columnas, cada uno con su título. | `SheetGroups`, `SheetGroup` |
-| Secciones que se contestan juntas.                        | `FormSection`               |
+| How the system applies it                             | Where                       |
+| ----------------------------------------------------- | --------------------------- |
+| Groups of fields in two columns, each with its title. | `SheetGroups`, `SheetGroup` |
+| Sections that are answered together.                  | `FormSection`               |
 
-## 5. Divulgación progresiva
+## 5. Progressive disclosure
 
-Primero lo que el 80 % necesita; el resto en pestañas, secciones plegables o "ver más".
+First what 80 % need; the rest in tabs, collapsible sections or "see more".
 
-| Cómo lo aplica el sistema                                                                                                                                                                                                                                                                                                        | Dónde                                           |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------- |
-| Pestañas del registro.                                                                                                                                                                                                                                                                                                           | `Record.Pages`                                  |
-| Opciones avanzadas plegadas.                                                                                                                                                                                                                                                                                                     | `Disclosure`, `Accordion`                       |
-| Ayuda bajo demanda, no un párrafo en cada campo.                                                                                                                                                                                                                                                                                 | `Hint` (el `?` del rótulo)                      |
-| Avisos del registro: lo que está mal, siempre a la vista y fuera de la hoja; el resto, en la sección «Avisos» de la Actividad, y el indicador del riel lleva a ellos.                                                                                                                                                            | `Record.Notice`                                 |
-| Lo que rodea al registro en UNA columna, «Actividad», unida a la hoja por la derecha si hay ancho y debajo si no, abierta por defecto: arriba, compactos, los avisos (lo que está mal AHORA); debajo, siempre a la vista, la línea de tiempo (lo que PASÓ): mensajes, notas y eventos por fecha, separados por día, con filtros. | `Record.Activity`, `Activity`                   |
-| Lo que es de UN campo va con su campo: una marca al lado del rótulo dice DÓNDE y abre la frase; la Actividad la lista con los avisos y lleva de vuelta al campo.                                                                                                                                                                 | `note` de `Field`, `DataField` y `Record.Facts` |
-| Un registro abierto desde otro: un modal del espacio de trabajo, nunca uno sobre otro.                                                                                                                                                                                                                                           | composer: modal, vista previa, al costado       |
+| How the system applies it                                                                                                                                                                                                                                                                                              | Where                                             |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------- |
+| The record's tabs.                                                                                                                                                                                                                                                                                                     | `Record.Pages`                                    |
+| Advanced options collapsed.                                                                                                                                                                                                                                                                                            | `Disclosure`, `Accordion`                         |
+| Help on demand, not a paragraph on every field.                                                                                                                                                                                                                                                                        | `Hint` (the label's `?`)                          |
+| The record's notices: what is wrong, always in view and outside the sheet; the rest, in the «Avisos» section of the Activity, and the rail's indicator leads to them.                                                                                                                                                  | `Record.Notice`                                   |
+| What surrounds the record in ONE column, «Actividad», joined to the sheet on the right if there is width and below if not, open by default: on top, compact, the notices (what is wrong NOW); below, always in view, the timeline (what HAPPENED): messages, notes and events by date, separated by day, with filters. | `Record.Activity`, `Activity`                     |
+| What belongs to ONE field goes with its field: a mark beside the label says WHERE and opens the sentence; the Activity lists it with the notices and leads back to the field.                                                                                                                                          | `note` of `Field`, `DataField` and `Record.Facts` |
+| A record opened from another: a workspace modal, never one on top of another.                                                                                                                                                                                                                                          | composer: modal, preview, on the side             |
 
-## 6. Consistencia y convenciones
+## 6. Consistency and conventions
 
-Si "Confirmar" está arriba a la izquierda en Ventas, está en el mismo lugar en Compras. Las dos
-vistas —un registro, N registros— son las mismas en todo el producto.
+If "Confirmar" is top left in Sales, it is in the same place in Purchasing. The two
+views —one record, N records— are the same across the whole product.
 
-| Cómo lo aplica el sistema                              | Dónde                |
-| ------------------------------------------------------ | -------------------- |
-| Dos vistas y nada más, escritas como árbol (compound). | `Record.*`, `List.*` |
-| Las plantillas solo componen la API pública.           | `stories/templates/` |
+| How the system applies it                                 | Where                |
+| --------------------------------------------------------- | -------------------- |
+| Two views and nothing else, written as a tree (compound). | `Record.*`, `List.*` |
+| Templates only compose the public API.                    | `stories/templates/` |
 
-**Se verifica**: `tests/templates.test.ts` falla si una plantilla necesita estilos propios
-(es un componente que falta); `tests/storyCoverage.test.ts` exige historia para todo lo público.
+**Enforced by**: `tests/templates.test.ts` fails if a template needs styles of its own
+(it is a missing component); `tests/storyCoverage.test.ts` demands a story for everything public.
 
-## 7. Retroalimentación y tolerancia a errores
+## 7. Feedback and error tolerance
 
-Cada acción tiene respuesta visible. Los errores dicen qué hacer, en lenguaje humano.
-Deshacer es mejor que "¿estás seguro?".
+Every action has a visible response. Errors say what to do, in human language.
+Undo is better than "are you sure?".
 
-| Cómo lo aplica el sistema                                                                    | Dónde                         |
-| -------------------------------------------------------------------------------------------- | ----------------------------- |
-| Aviso con acción ("Deshacer").                                                               | `Toast` (`action`)            |
-| Cambios sin guardar en el riel, con Guardar y Descartar.                                     | `Record` (`dirty`)            |
-| El error va debajo del campo, con ícono, y dice qué poner. Se muestra al intentar, no antes. | `Field` (`error`)             |
-| Estados vacío, cargando y falló, cada uno con su frase y su salida.                          | `Empty`, `Skeleton`, `Failed` |
+| How the system applies it                                                                              | Where                         |
+| ------------------------------------------------------------------------------------------------------ | ----------------------------- |
+| Notice with an action ("Deshacer").                                                                    | `Toast` (`action`)            |
+| Unsaved changes in the rail, with Save and Discard.                                                    | `Record` (`dirty`)            |
+| The error goes below the field, with an icon, and says what to enter. It shows on attempt, not before. | `Field` (`error`)             |
+| Empty, loading and failed states, each with its sentence and its way out.                              | `Empty`, `Skeleton`, `Failed` |
 
-## 8. Accesibilidad como base
+## 8. Accessibility as a base
 
-Teclado completo, foco visible, nombres accesibles, contraste AA como mínimo.
+Full keyboard, visible focus, accessible names, AA contrast as a minimum.
 
-| Cómo lo aplica el sistema                                                                 | Dónde                   |
-| ----------------------------------------------------------------------------------------- | ----------------------- |
-| Comportamiento de teclado, foco y ARIA de React Aria.                                     | primitivas interactivas |
-| Cada control dentro de `Field` queda nombrado por su rótulo y descrito por ayuda y error. | `useFieldIds`           |
+| How the system applies it                                                            | Where                  |
+| ------------------------------------------------------------------------------------ | ---------------------- |
+| Keyboard behavior, focus and ARIA from React Aria.                                   | interactive primitives |
+| Each control inside a `Field` is named by its label and described by help and error. | `useFieldIds`          |
 
-**Se verifica**: Storybook corre a11y como error; `make smoke` abre cada historia en Chrome.
+**Enforced by**: Storybook runs a11y as an error; `make smoke` opens every story in Chrome.
 
-## 9. Leyes útiles
+## 9. Useful laws
 
-- **Fitts**: la acción principal grande y cerca de donde se mira.
-- **Hick**: menos opciones, decisión más rápida — una sola navegación por pantalla (si hay
-  barra lateral, la barra de arriba no repite sus menús).
-- **Jakob**: la gente espera que funcione como lo que ya conoce (Odoo, SAP Fiori) — por eso el
-  resumen de totales a la derecha y la barra de etapas de un documento.
-- **Miller**: no obligar a recordar entre pantallas — el paginador del registro y las migas.
+- **Fitts**: the main action big and close to where one is looking.
+- **Hick**: fewer options, faster decision — a single navigation per screen (if there is a
+  sidebar, the top bar does not repeat its menus).
+- **Jakob**: people expect it to work like what they already know (Odoo, SAP Fiori) — hence the
+  totals summary on the right and a document's stage bar.
+- **Miller**: do not force remembering between screens — the record's pager and the breadcrumbs.
 
-## 10. La IA propone, la persona decide
+## 10. The AI proposes, the person decides
 
-Un asistente que actúa dentro de una pantalla de negocio se confía si siempre se puede contestar
-tres cosas: de dónde sacó eso, qué cambia exactamente y cómo se deshace. Nunca se identifica solo
-por color: ícono y palabra. Y nunca pide «¿estás seguro?»: aplica y ofrece deshacer.
+An assistant that acts inside a business screen is trusted if three things can always be answered:
+where it got that from, what exactly changes and how it is undone. It is never identified by
+color alone: icon and word. And it never asks «are you sure?»: it applies and offers undo.
 
-| Cómo lo aplica el sistema                                                                              | Dónde                                        |
-| ------------------------------------------------------------------------------------------------------ | -------------------------------------------- |
-| La sugerencia va debajo del campo, en borde punteado (propuesta, no valor), con su fuente como enlace. | `AssistSuggestion`, `AssistSourceLink`       |
-| Varios cambios se ven como antes → después, con el tipo escrito, y se elige cuáles aplicar.            | `ChangeReview`, `ChangeReviewDialog`         |
-| Aplicar devuelve su deshacer y el aviso lo ofrece; no hay diálogo de confirmación.                     | `applyWithUndo` + `Toast`                    |
-| Lo que el asistente completó queda marcado: quién, cuándo y de qué fuente; y en el historial.          | `AssistMark`, `AssistedValue`, `assistEvent` |
-| El asistente trabajando no bloquea: es una línea cancelable donde va a aparecer la propuesta.          | `AssistPending`                              |
-| El acento dorado sigue siendo la única acción principal: el asistente usa el tono `info`.              | `ChangeReview` (`emphasis`)                  |
+| How the system applies it                                                                                     | Where                                        |
+| ------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
+| The suggestion goes below the field, in a dotted border (a proposal, not a value), with its source as a link. | `AssistSuggestion`, `AssistSourceLink`       |
+| Several changes are seen as before → after, with the type written out, and you choose which to apply.         | `ChangeReview`, `ChangeReviewDialog`         |
+| Applying returns its undo and the notice offers it; there is no confirmation dialog.                          | `applyWithUndo` + `Toast`                    |
+| What the assistant filled in stays marked: who, when and from what source; and in the history.                | `AssistMark`, `AssistedValue`, `assistEvent` |
+| The assistant working does not block: it is a cancelable line where the proposal will appear.                 | `AssistPending`                              |
+| The gold accent remains the only main action: the assistant uses the `info` tone.                             | `ChangeReview` (`emphasis`)                  |
 
-**Se verifica**: `tests/assist.test.tsx` (marca con texto, grupo nombrado, tipo de cambio escrito,
-«Aplicar» cuenta y se apaga en cero, el deshacer restaura); `make smoke` (una sola primaria por
-plantilla); `tests/templates.test.ts` (la plantilla compone sin estilos propios).
+**Enforced by**: `tests/assist.test.tsx` (mark with text, named group, change type written out,
+«Aplicar» counts and turns off at zero, undo restores); `make smoke` (a single primary per
+template); `tests/templates.test.ts` (the template composes without styles of its own).
 
-## Checklist antes de entregar una pantalla
+## Checklist before delivering a screen
 
-- [ ] ¿Se entiende en dos segundos dónde estoy y qué es lo importante? (entrecerrá los ojos)
-- [ ] ¿Hay una sola acción primaria?
-- [ ] ¿El color significa algo, y nunca va solo? ¿Se ve bien también en oscuro (`globals=theme:dark`)?
-- [ ] ¿Los estados vacío, cargando y error están cubiertos, cada uno con su salida?
-- [ ] ¿Se usa entera con teclado?
-- [ ] ¿Funciona con datos extremos: nombres larguísimos, montos de diez dígitos, cero registros?
-- [ ] Si actúa un asistente: ¿tiene fuente, vista previa de lo que cambia y deshacer?
-- [ ] ¿La pantalla se armó solo con componentes del sistema (sin estilos propios)?
+- [ ] Can you tell in two seconds where you are and what is important? (squint your eyes)
+- [ ] Is there a single primary action?
+- [ ] Does color mean something, and is it never alone? Does it also look right in dark (`globals=theme:dark`)?
+- [ ] Are the empty, loading and error states covered, each with its way out?
+- [ ] Can it be used entirely with the keyboard?
+- [ ] Does it work with extreme data: very long names, ten-digit amounts, zero records?
+- [ ] If an assistant acts: does it have a source, a preview of what changes, and undo?
+- [ ] Was the screen built only with the system's components (no styles of its own)?

@@ -14,39 +14,39 @@ import { ChevronDown, ChevronRight, ChevronUp, Plus, X } from "lucide-react";
 import { useState } from "react";
 
 /**
- * «AGRUPAR POR», adentro del panel de recortes.
+ * «AGRUPAR POR», inside the cuts panel.
  *
- * Context: va en la MISMA columna donde están los filtros y los favoritos, y no
- * en un control aparte. Filtrar y agrupar son la misma pregunta —«qué parte de
- * esto estoy mirando»— y separarlos obliga a abrir dos cosas para armar un
- * recorte, sin poder ver los dos estados a la vez.
+ * Context: it goes in the SAME column where the filters and the favourites are, and not
+ * in a separate control. Filtering and grouping are the same question —«which part of
+ * this am I looking at»— and separating them forces you to open two things to build a
+ * cut, without being able to see both states at once.
  *
- * ── Una fecha se DESPLIEGA, no se elige ─────────────────────────────
+ * ── A date UNFOLDS, it is not chosen ───────────────────────────────
  *
- * Un campo común es una opción: se tilda y listo. Un campo de fecha no, porque
- * «agrupar por fecha» no quiere decir nada hasta decir con qué corte — y los
- * cortes no son excluyentes: «por mes y adentro por día» es una pregunta
- * legítima y frecuente. Así que una fecha se abre y ofrece sus granos como
- * CASILLAS, que se tildan de a varias.
+ * An ordinary field is an option: you tick it and that is it. A date field is not, because
+ * «group by date» means nothing until you say with what cut — and the
+ * cuts are not exclusive: «by month and inside it by day» is a
+ * legitimate and frequent question. So a date opens and offers its grains as
+ * CHECKBOXES, which are ticked several at a time.
  *
- * ── Y se ordenan solas ──────────────────────────────────────────────
+ * ── And they sort themselves ───────────────────────────────────────
  *
- * Tildar «día» y después «mes» da «mes › día», nunca al revés. No es una
- * preferencia: un día entero vive adentro de un solo mes, así que partir primero
- * por día deja un nivel de mes que no parte nada. La dirección la pone el
- * calendario y por eso la pone el sistema — ver `normalizeLevels`.
+ * Ticking «día» and then «mes» gives «mes › día», never the other way round. It is not
+ * a preference: a whole day lives inside a single month, so splitting first
+ * by day leaves a month level that splits nothing. The direction is set by the
+ * calendar and that is why the system sets it — see `normalizeLevels`.
  */
 
 export type GroupingLevelsProps = {
-  /** Por qué campos se puede partir. Sin ninguno no se dibuja nada: una columna
-   *  vacía en el panel es peor que una columna que no está. */
+  /** Which fields it can be split by. With none nothing is drawn: an empty
+   *  column in the panel is worse than a column that is not there. */
   fields: readonly GroupableField[];
   control: GroupingControl;
-  /** Cómo se llama cada grano, cuando el producto lo dice con otras palabras.
-   *  Sin esto, las de la copia en el idioma activo. */
+  /** What each grain is called, when the product says it in other words.
+   *  Without this, the copy's words in the active language. */
   grainLabel?: (grain: GroupGrain) => string;
-  /** «Agrupar por otro campo»: un `FieldPath` que recorre relaciones («Cliente > País»).
-   *  Devuelve el camino; qué nivel se pone con él lo decide quien orquesta la pantalla. */
+  /** «Agrupar por otro campo»: a `FieldPath` that walks relations («Cliente > País»).
+   *  It returns the path; which level is set with it is decided by whoever orchestrates the screen. */
   addPath?: PathPick;
 };
 
@@ -61,9 +61,9 @@ export function GroupingLevels({
   addPath,
 }: GroupingLevelsProps) {
   const copy = useUiCopy();
-  /* Qué fechas están desplegadas. Arranca desplegada la que ya tenga algún grano
-     puesto: si no, lo puesto queda escondido detrás de un chevron y hay que
-     adivinar dónde. */
+  /* Which dates are unfolded. The one that already has some grain
+     set starts unfolded: otherwise what is set is hidden behind a chevron and you have to
+     guess where. */
   const [opened, setOpened] = useState<readonly string[]>(() =>
     control.levels.filter((one) => one.grain !== undefined).map((one) => one.field),
   );
@@ -80,9 +80,9 @@ export function GroupingLevels({
 
   return (
     <div className="flex flex-col gap-0.5">
-      {/* LO PUESTO, arriba y como fichas numeradas. El número ES el nivel: sin
-          él, tres fichas iguales no dicen cuál parte primero — y el orden es
-          justamente lo que distingue «cliente › mes» de «mes ›
+      {/* WHAT IS SET, on top and as numbered chips. The number IS the level: without
+          it, three equal chips do not say which splits first — and the order is
+          precisely what distinguishes «cliente › mes» from «mes ›
           cliente». */}
       {placed.length === 0 ? null : (
         <>
@@ -135,7 +135,7 @@ export function GroupingLevels({
       {fields.map((one) => {
         const grains = one.grains;
 
-        /* Un campo común: una casilla y nada más. */
+        /* An ordinary field: a checkbox and nothing more. */
         if (grains === undefined || grains.length === 0) {
           const on = control.has(one.field);
           return (
@@ -158,7 +158,7 @@ export function GroupingLevels({
           );
         }
 
-        /* Una FECHA: se despliega y ofrece sus cortes como casillas. */
+        /* A DATE: it unfolds and offers its cuts as checkboxes. */
         const open = isOpen(one.field);
         const puestos = placed.filter((level) => level.field === one.field);
         return (
@@ -183,7 +183,7 @@ export function GroupingLevels({
               >
                 {one.label}
               </span>
-              {/* Cuántos cortes tiene puestos, para no tener que abrirlo. */}
+              {/* How many cuts it has set, so you do not have to open it. */}
               {puestos.length === 0 ? null : (
                 <span className="inline-flex shrink-0 items-center rounded-pill border border-accent/40 bg-accent/18 px-2 py-0.5 text-micro tabular-nums text-ink">
                   {puestos.length}
@@ -257,10 +257,10 @@ export function GroupingLevels({
   );
 }
 
-/** La marca de tildado. La columna existe SIEMPRE, tildada o no: sin ella,
- *  tildar corre el texto y la lista salta. Apagada se dibuja el aro, la misma
- *  marca que el panel de filtros, para que las dos columnas se lean como
- *  casillas y no como texto suelto con un hueco a la izquierda. */
+/** The tick mark. The column ALWAYS exists, ticked or not: without it,
+ *  ticking shifts the text and the list jumps. When off, the ring is drawn, the same
+ *  mark as the filters panel, so that both columns read as
+ *  checkboxes and not as loose text with a gap on the left. */
 function Mark({ on }: { on: boolean }) {
   return (
     <span className="flex size-(--size-icon-sm) shrink-0 items-center justify-center">

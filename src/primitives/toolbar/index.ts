@@ -1,2 +1,2 @@
-/* LA BARRA DE HERRAMIENTAS — un grupo de controles que se recorre con las flechas. */
+/* THE TOOLBAR — a group of controls walked with the arrow keys. */
 export { Toolbar, ToolbarSeparator } from "@sincpro/web-ui/primitives/toolbar/Toolbar";

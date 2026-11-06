@@ -1,6 +1,6 @@
-/* LAS ELECCIONES — elegir uno de muchos escribiendo (ComboBox), uno de pocos a la vista
-   (RadioGroup, SegmentedControl), prender o apagar (Switch), un valor en un rango (Slider)
-   y buscar un texto suelto (SearchField). El valor es siempre un dato plano. */
+/* THE CHOICES — pick one of many by typing (ComboBox), one of a few in sight
+   (RadioGroup, SegmentedControl), turn on or off (Switch), a value in a range (Slider)
+   and search for loose text (SearchField). The value is always plain data. */
 export { ComboBox, type ComboBoxProps } from "@sincpro/web-ui/primitives/choice/ComboBox";
 export {
   KanbanState,

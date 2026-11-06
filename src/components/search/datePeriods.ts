@@ -2,47 +2,46 @@ import { monthName as calendarMonthName } from "@sincpro/web-ui/foundations/cale
 import { currentCopy, fillCopy } from "@sincpro/web-ui/foundations/copy";
 
 /**
- * EL FILTRO DE FECHA, como lo hace Odoo: meses, trimestres y años que se
- * combinan.
+ * THE DATE FILTER, the way Odoo does it: months, quarters and years that
+ * combine.
  *
  *     Fecha de orden
- *       ─ septiembre        ← los tres meses más recientes, por nombre
+ *       ─ septiembre        ← the three most recent months, by name
  *       ─ agosto
  *       ─ julio
  *       ────────────
- *       ─ Q1  Q2  Q3  Q4    ← los cuatro trimestres
+ *       ─ Q1  Q2  Q3  Q4    ← the four quarters
  *       ────────────
- *       ─ 2026  2025  2024  ← los tres años más recientes
+ *       ─ 2026  2025  2024  ← the three most recent years
  *
- * ── Por qué se combinan y no se eligen ──────────────────────────────
+ * ── Why they combine and are not chosen ─────────────────────────────
  *
- * Porque así se contestan las preguntas que la gente tiene. «Septiembre» y
- * «agosto» juntos son los dos meses: opciones del MISMO renglón se suman con O.
- * Pero «septiembre» y «2025» no es «septiembre o 2025», es **septiembre de
- * 2025**: renglones distintos se cruzan con Y. Un selector de un solo período no
- * puede decir ninguna de las dos.
+ * Because that is how the questions people have get answered. «Septiembre» and
+ * «agosto» together are the two months: options on the SAME row are added with OR.
+ * But «septiembre» and «2025» is not «septiembre or 2025», it is **September
+ * 2025**: different rows are crossed with AND. A single-period selector cannot
+ * say either.
  *
- * Sin ningún año tildado, los meses y trimestres son los del año en curso — que
- * es lo que alguien quiere decir cuando tilda «septiembre» y nada más.
+ * With no year ticked, the months and quarters are those of the current year — which
+ * is what somebody means when they tick «septiembre» and nothing else.
  *
- * ── Lo que se guarda es la INTENCIÓN ────────────────────────────────
+ * ── What is saved is the INTENT ─────────────────────────────────────
  *
- * «Los últimos tres meses» guardado en septiembre tiene que contestar otra cosa
- * en diciembre. Por eso lo que viaja es `month:9`, no `2026-09-01`, y el
- * intervalo se calcula cada vez que se lee. Un favorito con fechas absolutas
- * miente desde el día siguiente.
+ * «Los últimos tres meses» saved in September has to answer something else
+ * in December. That is why what travels is `month:9`, not `2026-09-01`, and the
+ * interval is computed every time it is read. A favourite with absolute dates
+ * lies from the next day on.
  */
 
-/** Un período tildado. El año es aparte y por eso no está acá: es el otro eje. */
+/** A ticked period. The year is separate and so is not here: it is the other axis. */
 export type DatePeriod =
   | { kind: "month"; month: number }
   | { kind: "quarter"; quarter: 1 | 2 | 3 | 4 }
   | { kind: "year"; year: number };
 
-/** Un intervalo SEMIABIERTO `[from, to)`. El final queda AFUERA, y no es un
- *  detalle: con un `between` inclusivo, una fila guardada a las 00:00:00 del
- *  primero del mes siguiente cae en dos períodos contiguos y se cuenta dos
- *  veces. */
+/** A HALF-OPEN interval `[from, to)`. The end stays OUTSIDE, and it is no
+ *  detail: with an inclusive `between`, a row saved at 00:00:00 on the
+ *  first of the next month falls in two contiguous periods and is counted twice. */
 export type DateRange = { from: Date; to: Date };
 
 export function periodId(period: DatePeriod): string {
@@ -66,8 +65,8 @@ export function readPeriodId(id: string): DatePeriod | null {
   return null;
 }
 
-/** Los tres meses más recientes, del actual hacia atrás. Cada uno con el año al
- *  que pertenece, porque en enero los tres anteriores son de dos años. */
+/** The three most recent months, from the current one backwards. Each with the year it
+ *  belongs to, because in January the previous three are from two years. */
 export function recentMonths(
   now: Date = new Date(),
   howMany = 3,
@@ -83,7 +82,7 @@ export function recentMonths(
   return out;
 }
 
-/** Los años más recientes, del actual hacia atrás. */
+/** The most recent years, from the current one backwards. */
 export function recentYears(now: Date = new Date(), howMany = 3): number[] {
   return Array.from({ length: howMany }, (_, back) => now.getFullYear() - back);
 }
@@ -91,15 +90,15 @@ export function recentYears(now: Date = new Date(), howMany = 3): number[] {
 const QUARTERS: readonly (1 | 2 | 3 | 4)[] = [1, 2, 3, 4];
 
 /**
- * Las opciones que se ofrecen, en tres renglones y en este orden: meses,
- * trimestres, años. Es el orden de Odoo y el de la pregunta — de lo fino a lo
- * grueso, porque «este mes» se pide mucho más seguido que «2024».
+ * The options offered, in three rows and in this order: months,
+ * quarters, years. It is Odoo's order and the question's — from fine to
+ * coarse, because «este mes» is asked for far more often than «2024».
  */
 export function datePeriodOptions(
   now: Date = new Date(),
-  /** Cómo se llama un mes. Sin esto, como lo llama el calendario del sistema en
-   *  el idioma activo — una lista de doce meses escrita a mano es una lista que
-   *  hay que volver a escribir para el idioma siguiente. */
+  /** What a month is called. Without this, as the system calendar calls it in
+   *  the active language — a hand-written list of twelve months is a list that
+   *  has to be rewritten for the next language. */
   monthName: (month: number) => string = calendarMonthName,
 ): {
   months: { id: string; label: string }[];
@@ -122,7 +121,7 @@ export function datePeriodOptions(
   };
 }
 
-/** Un mes de un año, como intervalo semiabierto. */
+/** A month of a year, as a half-open interval. */
 function monthRange(year: number, month: number): DateRange {
   return { from: new Date(year, month - 1, 1), to: new Date(year, month, 1) };
 }
@@ -137,15 +136,15 @@ function yearRange(year: number): DateRange {
 }
 
 /**
- * Los intervalos que un juego de períodos tildados representa.
+ * The intervals that a set of ticked periods represents.
  *
- * Devuelve VARIOS y no uno: «septiembre y julio» son dos tramos con un agujero
- * en el medio, y aplastarlos en un solo `[julio, octubre)` metería agosto, que
- * nadie pidió. Quien los use los cruza con O.
+ * It returns SEVERAL and not one: «septiembre y julio» are two stretches with a hole
+ * in the middle, and flattening them into a single `[julio, octubre)` would bring in August, which
+ * nobody asked for. Whoever uses them crosses them with OR.
  *
- * La regla es la de Odoo: los años multiplican, los meses y trimestres recortan.
- * Sin años tildados se usa el año en curso; sin meses ni trimestres, el año
- * entero.
+ * The rule is Odoo's: years multiply, months and quarters cut.
+ * With no years ticked the current year is used; with no months or quarters, the whole
+ * year.
  */
 export function resolvePeriods(
   periods: readonly DatePeriod[],
@@ -157,9 +156,9 @@ export function resolvePeriods(
   const months = periods.filter((one) => one.kind === "month").map((one) => one.month);
   const quarters = periods.filter((one) => one.kind === "quarter").map((one) => one.quarter);
 
-  /* Sin año tildado, el año en curso. Es lo que alguien quiere decir cuando
-     tilda «septiembre» y nada más — y no «todos los septiembres de la
-     historia», que además nadie sabría escribir. */
+  /* With no year ticked, the current year. It is what somebody means when they
+     tick «septiembre» and nothing else — and not «every September in
+     history», which nobody would know how to write anyway. */
   const overYears = years.length > 0 ? years : [now.getFullYear()];
 
   if (months.length === 0 && quarters.length === 0) {
@@ -173,31 +172,31 @@ export function resolvePeriods(
 }
 
 /**
- * El recorte de una fecha como GRUPO del panel de filtros: plegable, con su
- * nombre, y los tres renglones separados por una línea.
+ * A date's cut as a GROUP of the filters panel: collapsible, with its
+ * name, and the three rows separated by a line.
  *
- * Es una función y no un componente porque los filtros del panel son datos —el
- * panel dibuja, el dominio declara—, y así una fecha no necesita una ranura
- * aparte ni un camino propio adentro de `SearchBar`.
+ * It is a function and not a component because the panel's filters are data —the
+ * panel draws, the domain declares—, and so a date needs neither a separate slot
+ * nor a path of its own inside `SearchBar`.
  */
 export function datePeriodGroup(options: {
-  /** Cómo se llama el campo: «Fecha de pedido». */
+  /** What the field is called: «Fecha de pedido». */
   label: string;
-  /** Los ids tildados, de `periodId`. */
+  /** The ticked ids, from `periodId`. */
   active: readonly string[];
   now?: Date;
-  /** Cómo se llama un mes, cuando el producto lo dice con otras palabras. Sin
-   *  esto, como lo llama el calendario del sistema en el idioma activo. */
+  /** What a month is called, when the product says it in other words. Without
+   *  this, as the system calendar calls it in the active language. */
   monthName?: (month: number) => string;
 }): {
   label: string;
   collapsible: true;
   options: { id: string; label: string; checked: boolean; divider?: boolean }[];
 } {
-  /* Se REENVÍA lo que llegó, sin default propio: con `?? String` acá, el panel
-     de filtros dibujaba «9 · 8 · 7» en vez de «Septiembre · Agosto · Julio»
-     —este `String` pisaba el default del calendario— y nadie veía por qué. Un
-     default repetido en dos lugares es un default que dice dos cosas. */
+  /* What arrived is FORWARDED, with no default of its own: with `?? String` here, the filters
+     panel drew «9 · 8 · 7» instead of «Septiembre · Agosto · Julio»
+     —this `String` overrode the calendar's default— and nobody saw why. A
+     default repeated in two places is a default that says two things. */
   const { months, quarters, years } = datePeriodOptions(
     options.now ?? new Date(),
     options.monthName,

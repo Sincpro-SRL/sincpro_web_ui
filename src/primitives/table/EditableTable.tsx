@@ -635,9 +635,9 @@ export function EditableTable<T>({
   totals,
   empty,
   grouping,
-  /** El total de una columna DENTRO de un montón, ya formateado. Lo calcula quien
-   *  compone, por el mismo motivo que `totals`: sumar significa cosas distintas
-   *  según el dominio, y un porcentaje se promedia, no se suma. */
+  /** A column's total INSIDE a pile, already formatted. Whoever composes
+   *  computes it, for the same reason as `totals`: adding up means different things
+   *  depending on the domain, and a percentage is averaged, not added. */
   groupTotal,
   height,
   layout = "auto",
@@ -667,14 +667,14 @@ export function EditableTable<T>({
   totals?: readonly (ReactNode | null)[];
   empty?: string;
   /**
-   * El agrupado, con el mismo contrato que el resto de las vistas de datos.
+   * Grouping, with the same contract as the rest of the data views.
    *
-   * Editar y agrupar no se estorban: la fila que se edita sigue siendo una fila,
-   * y el montón sólo decide dónde cae. Lo que no se hereda es el orden — las
-   * filas de un montón quedan juntas, así que agregar una fila nueva la pone al
-   * final de todo y no adentro del montón que estabas mirando, que es el
-   * comportamiento honesto: todavía no tiene valor en el campo por el que se
-   * agrupa.
+   * Editing and grouping do not get in each other's way: the row being edited is still a row,
+   * and the pile only decides where it lands. What is not inherited is the order — the
+   * rows of a pile stay together, so adding a new row puts it at the
+   * end of everything and not inside the pile you were looking at, which is the
+   * honest behaviour: it does not have a value yet in the field it is
+   * grouped by.
    */
   grouping?: Grouping<T>;
   groupTotal?: (column: EditColumn<T>, rows: readonly T[]) => ReactNode | null;
@@ -859,8 +859,8 @@ export function EditableTable<T>({
     () => new Map(rows.map((row) => [getRowId(row), row])),
     [rows, getRowId],
   );
-  /* La secuencia que se dibuja: montones y filas intercalados. Sin agrupado, las
-     filas tal cual — una tabla que no agrupa no paga nada por poder hacerlo. */
+  /* The sequence that gets drawn: piles and rows interleaved. Without grouping, the
+     rows as they are — a table that does not group pays nothing for being able to. */
   const drawn = useMemo<{ pile?: Pile<T>; row?: T }[]>(() => {
     const piles = pilesOf(rows, grouping);
     if (piles === null) return rows.map((row) => ({ row }));
@@ -1585,10 +1585,10 @@ export function EditableTable<T>({
                         pile.piles.length === 0 ? pile.items : pileItems(pile.piles);
                       return [
                         gap,
-                        /* La banda respeta la cuadrícula: el rótulo en la primera
-                       columna y cada total bajo la suya. Un total en un rincón
-                       obliga a buscar de qué columna es; alineado no hay nada que
-                       buscar. */
+                        /* The band respects the grid: the label in the first
+                       column and each total under its own. A total in a corner
+                       forces you to look for which column it belongs to; aligned there is nothing to
+                       look for. */
                         <tr key={`pile:${pathKey(pile.path)}`} {...windowed}>
                           {reorderable ? <td className="w-0 bg-ground" /> : null}
                           {columns.map((c, ci) => (

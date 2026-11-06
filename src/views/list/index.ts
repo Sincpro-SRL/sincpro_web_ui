@@ -1,5 +1,5 @@
-/* LISTA — N registros. `List` se escribe como ÁRBOL: las caras que ofrece son las que
-   están escritas adentro. `ListView` es el DIBUJO que hay detrás y no se publica. */
+/* LIST — N records. `List` is written as a TREE: the faces it offers are the ones
+   written inside it. `ListView` is the DRAWING behind it and is not published. */
 export { List, type ListPresentProps, type ListProps } from "@sincpro/web-ui/views/list/List";
 export {
   type CardWays,

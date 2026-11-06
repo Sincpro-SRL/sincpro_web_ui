@@ -1,47 +1,47 @@
 import { Children, cloneElement, Fragment, isValidElement, type ReactNode } from "react";
 
 /**
- * LAS RANURAS — cómo un arquetipo se escribe como ÁRBOL.
+ * THE SLOTS — how an archetype is written as a TREE.
  *
- * Context: la forma de una pantalla es opcional de una manera que una lista de
- * props no sabe decir. ¿Hay riel? ¿Hay pestañas? ¿Hay paginador? ¿Esta lista se
- * puede ver como tabla? Una lista de props contesta eso con `pager={undefined}`
- * y con una segunda prop que declara qué caras se ofrecen — dos lugares que se
- * pueden contradecir. Un árbol lo dice en voz alta: **si no está escrito, no
- * está.**
+ * Context: the shape of a screen is optional in a way that a list of
+ * props cannot express. Is there a rail? Are there tabs? Is there a pager? Can this list
+ * be seen as a table? A list of props answers that with `pager={undefined}`
+ * and with a second prop that declares which faces are offered — two places that
+ * can contradict each other. A tree says it out loud: **if it is not written, it is
+ * not there.**
  *
  *     <Record>
  *       <Record.Rail>
- *         <Record.Pager index={12} total={80} />   ← hay paginador
+ *         <Record.Pager index={12} total={80} />   ← there is a pager
  *       </Record.Rail>
  *     </Record>
  *
- * ── Por qué una MARCA y no la identidad del componente ──────────────
+ * ── Why a MARK and not the component's identity ─────────────────────
  *
- * Reconocer una ranura comparando `node.type === Record.Pager` falla en
- * silencio el día que hay dos copias del módulo en memoria —recarga en caliente,
- * un bundle mal deduplicado— y entonces el árbol se dibuja vacío sin un solo
- * error. La marca viaja con el componente y sobrevive a eso.
+ * Recognising a slot by comparing `node.type === Record.Pager` fails
+ * silently the day there are two copies of the module in memory —hot reload,
+ * a badly deduplicated bundle— and then the tree is drawn empty without a single
+ * error. The mark travels with the component and survives that.
  *
- * ── Esto vive en `system/` y no adentro de un arquetipo ─────────────
+ * ── This lives in `system/` and not inside an archetype ─────────────
  *
- * Porque lo hablan todos los que se escriben como árbol. Mientras estuvo
- * escondido adentro de `Record.tsx`, ser un árbol era un privilegio de los
- * registros: cualquier otro arquetipo tenía que copiar el mecanismo o quedarse
- * con treinta y seis props.
+ * Because everything written as a tree speaks it. While it was
+ * hidden inside `Record.tsx`, being a tree was a privilege of
+ * records: any other archetype had to copy the mechanism or make do
+ * with thirty-six props.
  */
 
-/** Un componente marcado como ranura. La marca es el nombre, así que un árbol la
- *  lee sin saber de dónde salió el componente. */
+/** A component marked as a slot. The mark is the name, so a tree reads it
+ *  without knowing where the component came from. */
 export type Slotted<Name extends string> = { __slot?: Name };
 
 /**
- * Marca un componente como ranura y lo devuelve.
+ * Marks a component as a slot and returns it.
  *
- * El componente NO dibuja nada: existe para ser leído por el arquetipo, que es
- * quien decide dónde va lo que trae adentro. Devolver `null` es lo correcto —
- * una ranura que se dibujara sola aparecería dos veces, una donde la escribieron
- * y otra donde el arquetipo la puso.
+ * The component draws NOTHING: it exists to be read by the archetype, which is
+ * the one deciding where what it carries goes. Returning `null` is right —
+ * a slot that drew itself would appear twice, once where it was written
+ * and once where the archetype put it.
  */
 export function slot<Name extends string, P>(
   name: Name,
@@ -52,7 +52,7 @@ export function slot<Name extends string, P>(
   return marked;
 }
 
-/** Qué ranura es un nodo, si es alguna. */
+/** Which slot a node is, if any. */
 export function slotOf<Name extends string>(node: ReactNode): Name | undefined {
   if (!isValidElement(node)) return undefined;
   const type = node.type as Slotted<Name> | string;
@@ -60,11 +60,11 @@ export function slotOf<Name extends string>(node: ReactNode): Name | undefined {
 }
 
 /**
- * Los hijos, con los fragmentos abiertos.
+ * The children, with the fragments opened.
  *
- * `Children.toArray` aplana arreglos pero NO fragmentos, y un `<>…</>` en el
- * medio del árbol —lo que escribe cualquiera que ponga dos ranuras bajo un
- * condicional— escondería las ranuras que tiene adentro.
+ * `Children.toArray` flattens arrays but NOT fragments, and a `<>…</>` in the
+ * middle of the tree —what anyone writes who puts two slots under a
+ * conditional— would hide the slots inside it.
  */
 export function flatten(children: ReactNode, prefix = ""): ReactNode[] {
   const out: ReactNode[] = [];
@@ -87,7 +87,7 @@ export function flatten(children: ReactNode, prefix = ""): ReactNode[] {
   return out;
 }
 
-/** La primera ranura de ese nombre. */
+/** The first slot of that name. */
 export function pick<Name extends string>(
   nodes: readonly ReactNode[],
   name: Name,
@@ -95,8 +95,8 @@ export function pick<Name extends string>(
   return nodes.find((node) => slotOf(node) === name);
 }
 
-/** Todas las ranuras de ese nombre, en el orden en que se escribieron. Lo usa el
- *  que acepta varias hermanas —las páginas de un cuaderno. */
+/** All the slots of that name, in the order they were written. Used by whoever
+ *  accepts several sisters —a notebook's pages. */
 export function pickAll<Name extends string>(
   nodes: readonly ReactNode[],
   name: Name,
@@ -104,15 +104,15 @@ export function pickAll<Name extends string>(
   return nodes.filter((node) => slotOf(node) === name);
 }
 
-/** Las props con las que se escribió una ranura. Es lo único que el arquetipo
- *  necesita de ella: la ranura no dibuja, declara. */
+/** The props a slot was written with. It is the only thing the archetype
+ *  needs from it: the slot does not draw, it declares. */
 export function propsOf<P>(node: ReactNode | undefined): P | undefined {
   return isValidElement(node) ? (node.props as P) : undefined;
 }
 
-/** Lo que NO es ninguna de esas ranuras. Es la escotilla: lo que el arquetipo no
- *  previó se dibuja igual, y que aparezca algo acá es la señal de que al
- *  arquetipo le falta una pieza. */
+/** What is NOT any of those slots. It is the escape hatch: what the archetype did not
+ *  foresee is drawn anyway, and something showing up here is the sign that the
+ *  archetype is missing a piece. */
 export function loose<Name extends string>(
   nodes: readonly ReactNode[],
   names: readonly Name[],

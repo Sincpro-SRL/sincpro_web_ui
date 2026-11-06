@@ -13,86 +13,86 @@ import {
 } from "react";
 
 /**
- * UNA TIRA DE PESTAÑAS. La misma en todo el sistema.
+ * A STRIP OF TABS. The same across the whole system.
  *
- * Context: esto vivía adentro del encabezado del registro y se llamaba
- * `Aspects`, así que la actividad —que necesita exactamente lo mismo— no podía
- * usarlo: un contexto no importa de otro contexto. El resultado era una tira de
- * pestañas de segunda mano, con el activo marcado de otra manera, en la misma
- * pantalla que la buena.
+ * Context: this lived inside the record's header and was called
+ * `Aspects`, so the activity —which needs exactly the same— could not
+ * use it: a context does not import from another context. The result was a second-hand
+ * strip of tabs, with the active one marked differently, on the same
+ * screen as the good one.
  *
- * Es una primitiva porque no sabe qué está separando: las caras de un registro,
- * las dos fuentes de una historia, o lo que venga.
+ * It is a primitive because it does not know what it is separating: a record's
+ * faces, the two sources of a history, or whatever comes.
  *
- * ── Por qué el activo es una PESTAÑA de carpeta ─────────────────────
+ * ── Why the active one is a folder TAB ──────────────────────────────
  *
- * Y no un subrayado. Un subrayado dice «esto está elegido»; una pestaña que sale
- * del borde y tapa la línea dice «esto está ABIERTO y lo de abajo es su
- * contenido», que es la relación real. La diferencia importa cuando hay tres y
- * el contenido de abajo no cambia de forma al cambiar de una a otra.
+ * And not an underline. An underline says «this is chosen»; a tab that sticks out
+ * of the border and covers the line says «this is OPEN and what is below is its
+ * content», which is the real relationship. The difference matters when there are three and
+ * the content below does not change shape when switching from one to another.
  *
- * ── El contador apagado en cero ─────────────────────────────────────
+ * ── The counter muted at zero ───────────────────────────────────────
  *
- * Un cero se dibuja, y apagado. Esconderlo obliga a abrir la pestaña para
- * descubrir que está vacía; pintarlo como los demás la hace parecer que tiene
- * algo. «No hay ninguna» es información y se dice.
+ * A zero is drawn, and muted. Hiding it forces you to open the tab to
+ * find out it is empty; painting it like the others makes it look as if it has
+ * something. «There are none» is information and it is said.
  *
- * ── El contador y la NOTIFICACIÓN son dos cosas ─────────────────────
+ * ── The counter and the NOTIFICATION are two things ─────────────────
  *
- * El contador dice CUÁNTAS cosas hay detrás, y es neutro: «pagos 0» es una
- * respuesta tan válida como «pagos 5». La notificación dice que algo de ahí
- * PIDE que lo mires —falló, cambió, llegó— y por eso tiene color y por eso un
- * cero no se dibuja: no hay nada que pedir.
+ * The counter says HOW MANY things are behind, and is neutral: «pagos 0» is an
+ * answer as valid as «pagos 5». The notification says that something in there
+ * ASKS you to look —it failed, changed, arrived— and that is why it has colour and why a
+ * zero is not drawn: there is nothing to ask.
  *
- * Confundirlos se ve así: una pestaña con «3» al lado y nadie sabe si son tres
- * cosas o tres problemas. Son dos marcas porque son dos preguntas.
+ * Confusing them looks like this: a tab with «3» beside it and nobody knows whether it is three
+ * things or three problems. They are two marks because they are two questions.
  */
 
 /**
- * ALGO DE ESTA PESTAÑA PIDE ATENCIÓN.
+ * SOMETHING IN THIS TAB ASKS FOR ATTENTION.
  *
- * No es un conteo: un conteo dice cuántas cosas hay y esto dice que hay algo que
- * mirar. Por eso tiene color, por eso no se dibuja en cero, y por eso puede
- * convivir con el contador — «pagos 4 ⬤» es cuatro cosas, una de ellas
- * rechazada.
+ * It is not a count: a count says how many things there are and this says there is something to
+ * look at. That is why it has colour, why it is not drawn at zero, and why it can
+ * live alongside the counter — «pagos 4 ⬤» is four things, one of them
+ * rejected.
  */
 export type TabNotice = {
   /**
-   * Qué es lo que pide atención, en la voz del producto: «3 sin leer», «la
+   * What asks for attention, in the product's voice: «3 sin leer», «la
    * factura no se pudo enviar».
    *
-   * Obligatorio, y por la misma razón que en `StatusDot`: un punto de color sin
-   * su palabra al lado obliga a aprender una leyenda que no está escrita en
-   * ningún lado, y no le dice nada a quien no distingue el rojo del verde. Acá
-   * la marca acelera el barrido y la palabra informa — se lee al pasar por
-   * encima y la lee un lector de pantalla.
+   * Required, and for the same reason as in `StatusDot`: a coloured dot without
+   * its word beside it forces learning a legend that is written nowhere,
+   * and tells nothing to someone who cannot tell red from green. Here
+   * the mark speeds up scanning and the word informs — it is read on hover
+   * and a screen reader reads it.
    */
   label: string;
-  /** Cuántas cosas lo piden. Sin esto es un punto, que es lo que se pone cuando
-   *  llegó algo nuevo y contarlo no agrega nada. Un `0` no dibuja nada: no hay
-   *  nada que pedir. */
+  /** How many things ask for it. Without this it is a dot, which is what is used when
+   *  something new arrived and counting it adds nothing. A `0` draws nothing: there is
+   *  nothing to ask. */
   count?: number;
-  /** De qué clase: `bad` algo falló, `warn` algo avisa, `accent` o `info` algo
-   *  llegó. Sin esto, `bad` — que es el caso por el que esto existe. */
+  /** Of what kind: `bad` something failed, `warn` something warns, `accent` or `info` something
+   *  arrived. Without this, `bad` — which is the case this exists for. */
   tone?: Tone;
 };
 
 export type TabItem = {
   id: string;
   label: string;
-  /** La marca de la pestaña. Con tres o más, el ícono es lo que se reconoce sin
-   *  leer — y en una tira angosta es lo único que sobrevive al truncado. */
+  /** The tab's mark. With three or more, the icon is what is recognised without
+   *  reading — and in a narrow strip it is the only thing that survives truncation. */
   icon?: LucideIcon;
-  /** Cuántas cosas hay detrás. `undefined` = no se cuenta; `0` se dibuja
-   *  apagado, que es distinto de no contar. */
+  /** How many things are behind. `undefined` = not counted; `0` is drawn
+   *  muted, which is different from not counting. */
   count?: number;
-  /** Que algo de acá pide que lo mires. Aparte del contador: ver `TabNotice`. */
+  /** That something in here asks you to look. Apart from the counter: see `TabNotice`. */
   notice?: TabNotice;
 };
 
-/* El color de la notificación. Estático y en una tabla porque Tailwind no puede
-   componer una clase con un pedazo variable: `bg-${tone}/12` no existe en la
-   hoja. */
+/* The notification's colour. Static and in a table because Tailwind cannot
+   compose a class with a variable piece: `bg-${tone}/12` does not exist in the
+   stylesheet. */
 const NOTICE_TONE: Record<Tone, string> = {
   neutral: "bg-ink/8 text-muted",
   info: "bg-info/12 text-info",
@@ -179,7 +179,7 @@ export function Tabs({
   tabs: readonly TabItem[];
   current: string;
   onSelect?: (id: string) => void;
-  /** El rótulo accesible de la tira. Sin esto, «las caras del registro». */
+  /** The strip's accessible label. Without this, «las caras del registro». */
   label?: string;
 }) {
   const copy = useUiCopy();
@@ -220,8 +220,8 @@ export function Tabs({
       {tabs.map((a) => {
         const Icon = a.icon;
         const empty = a.count === 0;
-        /* Un cero no pide nada, así que no se dibuja. Es la diferencia con el
-           contador, donde «0» es una respuesta. */
+        /* A zero asks for nothing, so it is not drawn. That is the difference from the
+           counter, where «0» is an answer. */
         const notice = a.notice?.count === 0 ? undefined : a.notice;
         const isSelected = a.id === current;
         return (
@@ -269,15 +269,15 @@ export function Tabs({
                   {a.count.toLocaleString(copy.locale)}
                 </span>
               )}
-              {/* La palabra de la notificación viaja DENTRO de la pestaña y no en un
-                    `aria-label`: así la lee un lector de pantalla al llegar, y el nombre
-                    sigue conteniendo lo que se ve — el rótulo y el contador (WCAG 2.5.3). */}
+              {/* The notification's word travels INSIDE the tab and not in an
+                    `aria-label`: so a screen reader reads it on arrival, and the name
+                    keeps containing what is seen — the label and the counter (WCAG 2.5.3). */}
               {notice === undefined ? null : (
                 <span className="sr-only">{` · ${notice.label}`}</span>
               )}
               {notice === undefined ? null : notice.count === undefined ? (
-                /* Sin número, un punto. La palabra no se dibuja pero está: en el
-                       `title` y en el nombre accesible de la pestaña. */
+                /* Without a number, a dot. The word is not drawn but it is there: in the
+                       `title` and in the tab's accessible name. */
                 <span
                   className={`size-1.5 shrink-0 rounded-pill ${NOTICE_DOT[notice.tone ?? "bad"]}`}
                   aria-hidden

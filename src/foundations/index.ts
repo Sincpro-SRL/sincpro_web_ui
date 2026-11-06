@@ -24,8 +24,8 @@ export {
   DensityProvider,
   useDensity,
 } from "@sincpro/web-ui/foundations/density";
-/* EL CONTRATO DE UN CONTROL — los ids que le da su `Field` y si se mira o se escribe. Lo
-   hablan los controles del paquete y los de la aplicación por igual. */
+/* A CONTROL'S CONTRACT — the ids its `Field` gives it and whether it is viewed or written. The
+   package's controls and the application's speak it alike. */
 export {
   controlName,
   FieldBoundary,
@@ -35,8 +35,8 @@ export {
   useFieldIds,
   useFormMode,
 } from "@sincpro/web-ui/foundations/form";
-/* EL TEMA — claro, oscuro o el del sistema operativo. Las paletas viven en `tokens.css`; esto
-   sólo escribe `data-theme`. */
+/* THE THEME — light, dark or the operating system's. The palettes live in `tokens.css`; this
+   only writes `data-theme`. */
 export { bySurface, SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
 export {
   applyTheme,
@@ -51,11 +51,11 @@ export {
   useTheme,
 } from "@sincpro/web-ui/foundations/theme";
 export type { OpenTarget, Size, Surface, Tone } from "@sincpro/web-ui/foundations/types";
-/** El castellano del sistema, para quien lo quiera instalar entero. */
+/** The system's Spanish, for whoever wants to install it whole. */
 export { SPANISH_COPY } from "@sincpro/web-ui/foundations/copy.es";
-/* LAS RANURAS — cómo un arquetipo se escribe como ÁRBOL. Vive acá y no adentro
-   de uno porque lo hablan todos los que lo son: mientras estuvo escondido en
-   `Record.tsx`, ser un árbol era un privilegio de los registros. */
+/* THE SLOTS — how an archetype is written as a TREE. It lives here and not inside
+   one because all of them speak it: while it was hidden in
+   `Record.tsx`, being a tree was a privilege of records. */
 export {
   flatten,
   loose,
@@ -66,9 +66,9 @@ export {
   slotOf,
   type Slotted,
 } from "@sincpro/web-ui/foundations/slots";
-/* EL CALENDARIO — de una fecha a una clave y de una clave a un rótulo. Los meses
-   y los días de la semana los dice `Intl` con el `locale` de la copia; la semana
-   y el trimestre son las dos únicas palabras que hay que escribir. */
+/* THE CALENDAR — from a date to a key and from a key to a label. The months
+   and the days of the week are said by `Intl` with the copy's `locale`; the week
+   and the quarter are the only two words that have to be written. */
 export {
   dateKey,
   dateKeysBetween,
@@ -77,9 +77,9 @@ export {
   monthName,
   nextDateKey,
 } from "@sincpro/web-ui/foundations/calendar";
-/* LA AGRUPACIÓN — el vocabulario, que hablan las dos capas: la lista arma el
-   árbol de montones y la tabla lo dibuja. Vive acá y no en `contexts/list`
-   porque una primitiva no puede importar de un contexto. */
+/* THE GROUPING — the vocabulary, which both layers speak: the list builds the
+   tree of buckets and the table draws it. It lives here and not in `contexts/list`
+   because a primitive cannot import from a context. */
 export {
   GRAIN_ORDER,
   type GroupableField,
@@ -104,9 +104,9 @@ export {
   pilesFrom,
   pilesOf,
 } from "@sincpro/web-ui/foundations/grouping";
-/* EL PIVOTE — el mismo reparto: el vocabulario acá, la grilla en `primitives`.
-   Que los márgenes vengan de la base y que un agujero no sea un cero son reglas
-   del CONTRATO, no del dibujo, y por eso viven de este lado. */
+/* THE PIVOT — the same split: the vocabulary here, the grid in `primitives`.
+   That margins come from the base and that a hole is not a zero are rules
+   of the CONTRACT, not of the drawing, and that is why they live on this side. */
 export {
   axisLabels,
   axisSpans,
@@ -126,8 +126,8 @@ export {
   type PivotSource,
   type PivotSpec,
 } from "@sincpro/web-ui/foundations/pivot";
-/* EL GRÁFICO — un pivote leído como marcas. Lee el mismo `Pivot`, así que sirve igual para
-   registros, un dataset o lo plegado en el servidor; un diccionario entra por su helper. */
+/* THE CHART — a pivot read as marks. It reads the same `Pivot`, so it serves equally for
+   records, a dataset or what was folded on the server; a dictionary comes in through its helper. */
 export {
   chartCompare,
   type ChartData,
@@ -143,8 +143,8 @@ export {
   orderChart,
   SERIES_COLORS,
 } from "@sincpro/web-ui/foundations/chart";
-/* LA PLANILLA: la misma grilla, en un archivo. El escritor es genérico y no
-   sabe de pivotes; `pivotSheet` es el que traduce uno. */
+/* THE SHEET: the same grid, in a file. The writer is generic and knows
+   nothing of pivots; `pivotSheet` is what translates one. */
 export {
   downloadPivot,
   pivotSheet,

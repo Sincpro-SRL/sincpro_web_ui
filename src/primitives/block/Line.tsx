@@ -1,37 +1,37 @@
 import type { ReactNode } from "react";
 
 /* ==================================================================== *
- *  LA LÍNEA DE TRES ZONAS — y por qué el centro se centra contra la LÍNEA.
+ *  THE THREE-ZONE LINE — and why the centre is centred against the LINE.
  *
- *  Es la forma de las dos bandas del producto: la del registro —de dónde
- *  vengo · lo que cuelga de esto · cuál de ochenta soy— y la de la lista —de
- *  dónde vengo · qué estoy buscando · qué página—. Las dos tienen el mismo
- *  problema y por eso tienen una sola solución.
+ *  It is the shape of the product's two bands: the record's —where I
+ *  come from · what hangs from this · which of eighty I am— and the list's —where
+ *  I come from · what I am looking for · which page—. Both have the same
+ *  problem and so they have a single solution.
  *
- *  ── El problema: el centro no estaba en el centro ───────────────────
+ *  ── The problem: the centre was not in the centre ───────────────────
  *
- *  Con `mx-auto`, o con una grilla `auto 1fr max-content`, el centro queda
- *  donde SOBRA lugar. Y entonces un nombre de cincuenta caracteres a la
- *  izquierda —que en este producto es lo normal— empuja los botones contra el
- *  borde derecho, y la misma pantalla con un nombre corto los dibuja en otro
- *  lado. Dos registros seguidos ponen sus controles en dos lugares distintos:
- *  eso no es un centro, es un resto.
+ *  With `mx-auto`, or with an `auto 1fr max-content` grid, the centre ends up
+ *  wherever there is room LEFT OVER. And then a fifty-character name on the
+ *  left —which in this product is normal— pushes the buttons against the
+ *  right edge, and the same screen with a short name draws them somewhere
+ *  else. Two records in a row put their controls in two different places:
+ *  that is not a centre, it is a remainder.
  *
- *  ── La regla: los dos lados PIDEN lo mismo ──────────────────────────
+ *  ── The rule: both sides ASK for the same thing ─────────────────────
  *
- *  Los lados piden el mismo ancho y crecen parejo, así que lo que sobra se
- *  reparte en dos mitades iguales y el centro cae en el medio de la línea, con
- *  o sin migas, con o sin paginador. Lo que no entra en una mitad se recorta
- *  adentro de su mitad —para eso `min-w-0`— en vez de empujar al vecino.
+ *  The sides ask for the same width and grow evenly, so what is left over is
+ *  split in two equal halves and the centre falls in the middle of the line, with
+ *  or without breadcrumbs, with or without a pager. What does not fit in a half is clipped
+ *  inside its half —that is what `min-w-0` is for— instead of pushing the neighbour.
  *
- *  ── Y se parte sola ─────────────────────────────────────────────────
+ *  ── And it splits by itself ─────────────────────────────────────────
  *
- *  No hay ningún umbral acá: ni consulta de medios, ni de contenedor, ni una
- *  rama por densidad. Cada zona declara lo que PIDE y `flex-wrap` decide: en
- *  una banda angosta el centro ya no entra al lado de las migas y baja entero
- *  al renglón siguiente, con el paginador atrás. Es lo mismo que hace una fila
- *  de lista, y por la misma razón: un umbral no sabe si la línea trae tres
- *  contadores o nueve.
+ *  There is no threshold here: no media query, no container query, no branch
+ *  per density. Each zone declares what it ASKS for and `flex-wrap` decides: in
+ *  a narrow band the centre no longer fits beside the breadcrumbs and drops whole
+ *  to the next row, with the pager behind it. It is what a list row does,
+ *  and for the same reason: a threshold does not know whether the line carries three
+ *  counters or nine.
  * ==================================================================== */
 
 export function Line({
@@ -39,12 +39,12 @@ export function Line({
   center,
   end,
   /**
-   * Lo que PIDE cada lado antes de que la línea se parta. Los dos piden lo
-   * mismo —es lo que centra el centro— así que es un solo valor y no dos.
+   * What each side ASKS for before the line splits. Both ask for the
+   * same —it is what centres the centre— so it is a single value and not two.
    */
   asks = "var(--container-trail)",
-  /** Lo que pide el centro. `auto` es «lo que mida»; un campo de búsqueda pide
-   *  su ancho tope, que es lo que hace que no se estire a 700 px. */
+  /** What the centre asks for. `auto` is «whatever it measures»; a search field asks for
+   *  its maximum width, which is what keeps it from stretching to 700 px. */
   centerAsks = "auto",
   gap = "gap-x-4 gap-y-2",
   align = "items-center",
@@ -59,18 +59,18 @@ export function Line({
 }) {
   return (
     <div className={`flex min-w-0 flex-wrap ${align} ${gap}`}>
-      {/* Las tres zonas se dibujan SIEMPRE, incluso vacías. Una mitad que
-          desaparece cuando no hay paginador mueve el centro, y entonces el
-          centro vuelve a depender de lo que haya al lado — que es el problema
-          que esto resuelve. */}
+      {/* The three zones are ALWAYS drawn, even empty. A half that
+          disappears when there is no pager moves the centre, and then the
+          centre depends again on what is beside it — which is the problem
+          this solves. */}
       <div className="flex min-w-0 flex-1 items-center" style={{ flexBasis: asks }}>
         {start}
       </div>
-      {/* El centro NO crece. Si creciera, lo que sobra se repartiría en tres y
-          el centro volvería a moverse con lo que tenga al lado — un campo de
-          búsqueda pide su ancho tope y los dos lados se quedan con el resto, en
-          mitades iguales. Encoger sí: en una línea angosta el campo se achica
-          antes que desbordar. */}
+      {/* The centre does NOT grow. If it did, what is left over would be split in three and
+          the centre would move again with what it has beside it — a search
+          field asks for its maximum width and the two sides keep the rest, in
+          equal halves. Shrinking does: in a narrow line the field shrinks
+          before it overflows. */}
       <div
         className="flex min-w-0 shrink items-center justify-center"
         style={{ flexBasis: centerAsks, flexGrow: 0 }}

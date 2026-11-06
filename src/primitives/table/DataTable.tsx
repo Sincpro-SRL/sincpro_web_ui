@@ -156,9 +156,9 @@ function drawCell<T>(copy: UiCopy, column: DataColumn<T>, row: T): ReactNode {
 export interface DataColumn<T> {
   id: string;
   header: string;
-  /** Qué campo del MODELO muestra esta columna, cuando no se llama igual que
-   *  él: «filas» muestra `row_count`. Lo lee `columnsFromModel` para no volver
-   *  a agregar, en crudo, un campo que esta columna ya contesta. */
+  /** Which field of the MODEL this column shows, when it is not named the same as
+   *  it: «filas» shows `row_count`. `columnsFromModel` reads it so as not to add
+   *  again, raw, a field this column already answers. */
   field?: string;
   /** The raw value: this is what sorting and grouping run on. */
   value: (row: T) => string | number | boolean | null;
@@ -168,14 +168,14 @@ export interface DataColumn<T> {
    *  need it: they align with tabular figures in the same face as the rest of the row. */
   mono?: boolean;
   /**
-   * Cómo se LEE la columna donde no se puede dibujar: la planilla, que es una
-   * cuadrícula de texto y números y no puede recibir un nodo.
+   * How the column is READ where it cannot be drawn: the sheet, which is a
+   * grid of text and numbers and cannot take a node.
    *
-   * Context: sin esto, la planilla caía a `value`, que es la clave de ORDEN y
-   * no lo que una persona lee. La columna «estado» de Facturas mostraba
-   * `posted` y `paid` —los valores del contrato— en vez de «publicada» y
-   * «pagada», que es lo que dice la ficha de al lado en la tabla. Dos
-   * presentaciones del mismo conjunto diciendo cosas distintas.
+   * Context: without this, the sheet fell back to `value`, which is the SORT key and
+   * not what a person reads. The «estado» column of Invoices showed
+   * `posted` and `paid` —the contract's values— instead of «publicada» and
+   * «pagada», which is what the card next to it in the table says. Two
+   * presentations of the same set saying different things.
    */
   text?: (row: T) => string;
   /** Paints the BACKGROUND of the cell, row by row. It is what turns a table
@@ -270,15 +270,15 @@ const FEATURES = tableFeatures({
 });
 
 /**
- * El agregado de una columna sobre un conjunto de filas.
+ * The aggregate of a column over a set of rows.
  *
- * Vive afuera del componente porque lo preguntan tres lugares: el pie de la
- * tabla, la banda de un montón en la planilla, y la línea de un informe armado
- * a partir de los montones. Tres implementaciones de «cuánto suma esto» es que
- * el pie diga un número y el montón otro.
+ * It lives outside the component because three places ask for it: the table's
+ * foot, a pile's band in the sheet, and the line of a report built
+ * from the piles. Three implementations of «how much does this add up to» means
+ * the foot says one number and the pile another.
  *
- * `null` cuando la columna no declaró agregado, no es numérica, o no hay ningún
- * número que sumar — que es distinto de sumar cero.
+ * `null` when the column declared no aggregate, is not numeric, or there is no
+ * number to add — which is not the same as adding zero.
  */
 export function aggregateOf<T extends object>(
   column: DataColumn<T>,
@@ -306,23 +306,23 @@ export function aggregateOf<T extends object>(
 }
 
 /**
- * UN NIVEL, como lo necesita una tabla.
+ * ONE LEVEL, as a table needs it.
  *
- * La identidad es la del NIVEL y no la del campo: un mismo `registered_at`
- * puesto por mes y por día son dos cortes, y con el nombre del campo serían el
- * mismo repetido. `keyOf` da la clave del motor —la misma que arman las otras
- * presentaciones, así que lo plegado vale para todas— y `labelOf` la lee en el
- * idioma activo.
+ * The identity is the LEVEL's and not the field's: one `registered_at`
+ * set by month and by day makes two cuts, and with the field's name they would be the
+ * same one repeated. `keyOf` gives the engine's key —the same one the other
+ * presentations build, so what is folded holds for all— and `labelOf` reads it in the
+ * active language.
  */
 export type GroupColumn<T> = {
-  /** La identidad del nivel: `levelKey(level)`. */
+  /** The level's identity: `levelKey(level)`. */
   id: string;
-  /** Cómo se llama el corte, a la izquierda del valor. Sin él, «Septiembre» no
-   *  dice si es cuándo se registró o cuándo se corrió. */
+  /** What the cut is called, to the left of the value. Without it, «Septiembre» does not
+   *  say whether it is when it was registered or when it was run. */
   label: string;
-  /** A qué montón va cada fila en este nivel. */
+  /** Which pile each row goes to at this level. */
   keyOf: (item: T) => string;
-  /** Cómo se lee esa clave. */
+  /** How that key is read. */
   labelOf: (key: string) => string;
 };
 
@@ -418,11 +418,11 @@ export function DataTable<T extends object>({
   sort?: readonly SortState[];
   onSortChange?: (next: SortState[]) => void;
   /**
-   * Los NIVELES por los que se parte, de afuera hacia adentro. Vacío o ausente
-   * es «sin agrupar».
+   * The LEVELS the set is split by, from the outside in. Empty or absent
+   * means «not grouped».
    *
-   * Varios, porque agrupar no es una pregunta: «por cliente y después por
-   * mes» es un árbol y no una lista de montones. El orden ES la jerarquía.
+   * Several, because grouping is not one question: «by customer and then by
+   * month» is a tree and not a list of piles. The order IS the hierarchy.
    */
   levels?: readonly GroupColumn<T>[];
   selected?: ReadonlySet<string>;
@@ -505,23 +505,23 @@ export function DataTable<T extends object>({
           id: c.id,
           header: c.header,
           enableSorting: c.sortable !== false,
-          /* Ninguna columna agrupa. Lo que parte el conjunto son los NIVELES, y
-             cada uno entra como una columna suya —abajo— que existe sólo para
-             eso: nadie la dibuja y nadie la ordena. */
+          /* No column groups. What splits the set are the LEVELS, and
+             each one comes in as a column of its own —below— that exists only for
+             that: nobody draws it and nobody sorts it. */
           enableGrouping: false,
           aggregationFn: c.aggregate ?? "count",
         }),
       ),
-      /* Una columna por NIVEL, no por campo. Es la única forma de que «por mes y
-         adentro por día» sea dos cortes: con el id de la columna, los dos niveles
-         de `registered_at` eran el mismo id repetido, y un mismo id no se puede
-         agrupar dos veces.
+      /* One column per LEVEL, not per field. It is the only way for «by month and
+         inside it by day» to be two cuts: with the column's id, the two levels
+         of `registered_at` were the same id repeated, and one id cannot be
+         grouped twice.
 
-         Y la clave la pone el nivel, no la columna: `value` es la clave de
-         ORDEN —para una fecha, los milisegundos— y agrupar por ella deja un
-         montón por instante, con «1789294903895» de rótulo. Acá entra la misma
-         clave que arman las otras cinco presentaciones, así que los montones de
-         la tabla son LOS MISMOS y lo plegado vale para todas. */
+         And the key is set by the level, not the column: `value` is the SORT
+         key —for a date, the milliseconds— and grouping by it leaves one
+         pile per instant, with «1789294903895» as its label. Here goes the same
+         key the other five presentations build, so the table's piles
+         are THE SAME ones and what is folded holds for all. */
       ...(levels ?? []).map((level) =>
         helper.accessor((row) => level.keyOf(row), {
           id: level.id,
@@ -618,8 +618,8 @@ export function DataTable<T extends object>({
           const key = pathKey(path);
           const depth = path.length - 1;
           const level = levels?.find((one) => one.id === row.groupingColumnId);
-          /* La CLAVE del montón —la del motor— y el rótulo, que lo pone el nivel: son dos
-             textos y sólo el segundo cambia con el idioma. */
+          /* The pile's KEY —the engine's— and the label, which the level sets: they are two
+             texts and only the second changes with the language. */
           const value = path[depth] ?? key;
           return {
             kind: "pile",
@@ -627,9 +627,9 @@ export function DataTable<T extends object>({
             depth,
             level: level?.label,
             label: level === undefined ? value : level.labelOf(value),
-            /* Las FILAS de adentro, no los subgrupos: `subRows` de un montón con niveles
-               abajo son los montones del nivel siguiente, y contarlos decía «2» donde hay
-               cuarenta filas. */
+            /* The rows INSIDE, not the subgroups: `subRows` of a pile with levels
+               below are the piles of the next level, and counting them said «2» where there are
+               forty rows. */
             count: row.getLeafRows().filter((leaf) => leaf.subRows.length === 0).length,
             detail: undefined,
             open: collapsed === undefined ? row.getIsExpanded() : !collapsed.includes(key),

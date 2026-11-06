@@ -5,44 +5,44 @@ import { Check, Copy } from "lucide-react";
 import { type ReactNode, useEffect, useRef, useState } from "react";
 
 /**
- * UN VALOR QUE SE COPIA.
+ * A VALUE THAT GETS COPIED.
  *
- * Context: la mitad de los valores de este producto existen para pegarse en otro
- * lado —un NIT, un CUF de factura, una referencia bancaria, un código de
- * autorización de 26 caracteres—. Seleccionarlos a mano falla justo con los que
- * más importa no equivocar: son largos, van en monoespaciada y se cortan.
+ * Context: half the values in this product exist to be pasted somewhere
+ * else —a tax ID, an invoice CUF, a bank reference, a 26-character
+ * authorisation code—. Selecting them by hand fails precisely with the ones
+ * where it matters most not to make a mistake: they are long, monospaced and get cut off.
  *
- * ── Confirma, y por eso el estado vive acá ──────────────────────────
+ * ── It confirms, and that is why the state lives here ───────────────
  *
- * Copiar no tiene efecto visible: el portapapeles está afuera de la pantalla. Un
- * botón que no contesta se aprieta tres veces «por las dudas». Por eso el ícono
- * pasa a un tilde por dos segundos — lo mínimo para creerle sin quedarse
- * mirando.
+ * Copying has no visible effect: the clipboard is off the screen. A
+ * button that does not answer gets pressed three times «just in case». That is why the icon
+ * turns into a tick for two seconds — the minimum to believe it without staying
+ * to watch.
  *
- * ── Y puede fallar ──────────────────────────────────────────────────
+ * ── And it can fail ─────────────────────────────────────────────────
  *
- * `navigator.clipboard` no existe fuera de un contexto seguro, y en algunos
- * navegadores exige un permiso que se puede negar. Se contempla: si falla, el
- * botón lo dice en vez de fingir que copió. Una confirmación falsa es peor que
- * ninguna, porque alguien pega lo que tenía antes y no se entera.
+ * `navigator.clipboard` does not exist outside a secure context, and in some
+ * browsers it demands a permission that can be denied. That is handled: if it fails, the
+ * button says so instead of pretending it copied. A false confirmation is worse than
+ * none, because someone pastes what they had before and never finds out.
  */
 
 export type CopyableProps = {
-  /** Lo que se copia. Siempre texto: el portapapeles no tiene tipos. */
+  /** What is copied. Always text: the clipboard has no types. */
   value: string;
-  /** Cómo se ve, si no es el valor tal cual. Un fingerprint se muestra cortado y
-   *  se copia entero, que es justamente por qué las dos cosas son props
-   *  distintas. */
+  /** How it looks, if it is not the value as is. A fingerprint is shown cut off and
+   *  copied whole, which is precisely why the two things are different
+   *  props. */
   children?: ReactNode;
-  /** El valor es de máquina: id, hash, clave. Sin esto, tipografía normal. */
+  /** The value is a machine's: id, hash, key. Without this, normal typography. */
   mono?: boolean;
-  /** Sólo el botón, sin el valor al lado. Para una celda o un encabezado donde
-   *  el valor ya está dibujado. */
+  /** Only the button, without the value beside it. For a cell or a header where
+   *  the value is already drawn. */
   bare?: boolean;
 };
 
-/** Cuánto dura el tilde. Dos segundos: alcanza para verlo sin que el botón se
- *  quede en un estado que ya no es cierto. */
+/** How long the tick lasts. Two seconds: enough to see it without the button
+ *  staying in a state that is no longer true. */
 const CONFIRMED_FOR = 2000;
 
 /**
@@ -63,8 +63,8 @@ export function CopyButton({
   const [state, setState] = useState<"idle" | "done" | "failed" | "empty">("idle");
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  /* Se limpia al desmontar: sin esto, copiar y cerrar el panel antes de los dos
-     segundos deja un `setState` apuntando a un componente que ya no existe. */
+  /* Cleared on unmount: without this, copying and closing the panel before the two
+     seconds leaves a `setState` pointing at a component that no longer exists. */
   useEffect(
     () => () => {
       if (timer.current !== null) clearTimeout(timer.current);
@@ -85,8 +85,8 @@ export function CopyButton({
       await navigator.clipboard.writeText(text);
       setState("done");
     } catch {
-      /* Sin portapapeles —contexto no seguro, permiso negado— se DICE. Fingir
-         que copió hace que alguien pegue lo que tenía antes sin enterarse. */
+      /* Without a clipboard —insecure context, permission denied— it SAYS so. Pretending
+         it copied makes someone paste what they had before without knowing. */
       setState("failed");
     }
     timer.current = setTimeout(() => setState("idle"), CONFIRMED_FOR);
@@ -133,9 +133,9 @@ export function Copyable({ value, children, mono = false, bare = false }: Copyab
   if (bare) return button;
 
   return (
-    /* El botón aparece con el puntero y ocupa lugar SIEMPRE: si apareciera de la
-       nada, el valor se correría al pasar por encima, y un texto que se mueve
-       cuando vas a seleccionarlo es peor que no tener botón. */
+    /* The button appears with the pointer and ALWAYS takes up space: if it appeared out of
+       nowhere, the value would shift on hover, and text that moves
+       when you go to select it is worse than having no button. */
     <span className="group/copy inline-flex min-w-0 items-center gap-1">
       <span className={`min-w-0 truncate ${mono ? "font-mono" : ""}`}>
         {children ?? value}

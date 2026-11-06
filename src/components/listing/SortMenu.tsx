@@ -29,69 +29,69 @@ import {
 } from "react-aria-components";
 
 /**
- * ORDENAR — por uno o por varios campos, desde la barra.
+ * SORT — by one or several fields, from the bar.
  *
- * Context: ordenar era una capacidad de `DataTable` y de nadie más. Se hacía
- * clic en el encabezado de la columna, que es la forma correcta **cuando hay
- * encabezados**. En filas, en tablero y en la planilla no los hay, así que
- * cambiar de presentación no perdía sólo el orden puesto: perdía la posibilidad
- * de ordenar.
+ * Context: sorting was a capability of `DataTable` and of nothing else. You
+ * clicked the column header, which is the right way **when there are
+ * headers**. In rows, board and sheet there are none, so
+ * changing presentation lost not only the order set: it lost the ability
+ * to sort.
  *
- * El orden es del CONJUNTO y no de la presentación, igual que los niveles y que
- * lo plegado. Por eso el control vive en la barra y no adentro de la tabla, y
- * por eso la tabla sigue teniendo además sus encabezados: son dos puertas a lo
- * mismo, y la de los encabezados es más rápida cuando existe.
+ * The order belongs to the SET and not to the presentation, like the levels and
+ * the folding. That is why the control lives in the bar and not inside the table, and
+ * why the table still has its headers as well: they are two doors to the
+ * same thing, and the headers' one is faster when it exists.
  *
- * ── Varios criterios, y por eso un panel y no un menú ───────────────
+ * ── Several criteria, and so a panel and not a menu ─────────────────
  *
- * Se decía que ordenar por dos campos era «un desempate que hace el motor» y
- * que alcanzaba con elegir uno. La gente pidió lo contrario en la pantalla: por
- * fecha, y en la misma fecha por cliente, y después por producto. El motor ya
- * lo aceptaba (`order: [...]`); faltaba poder decirlo. Un orden de N campos
- * tiene ORDEN entre ellos —el segundo sólo decide entre las filas que el
- * primero dejó iguales—, y eso un menú de tildes no lo expresa: hace falta una
- * lista que se reordena. Es la de React Aria (`GridList` + `useDragAndDrop`):
- * se arrastra con el mouse, y con el teclado desde el asa (Enter, flechas,
- * Enter), anunciado.
+ * It used to be said that sorting by two fields was «a tie-break done by the engine» and
+ * that choosing one was enough. People asked for the opposite on screen: by
+ * date, and within the same date by customer, and then by product. The engine
+ * already accepted it (`order: [...]`); what was missing was being able to say it. An order of N fields
+ * has an ORDER among them —the second only decides between the rows the
+ * first left equal—, and a menu of ticks cannot express that: it takes a
+ * list that reorders. It is React Aria's (`GridList` + `useDragAndDrop`):
+ * dragged with the mouse, and with the keyboard from the handle (Enter, arrows,
+ * Enter), announced.
  */
 
 export type SortField<T = unknown> = {
   field: string;
   label: string;
   /**
-   * Por qué valor se ordena, cuando ordena el NAVEGADOR.
+   * What value it is sorted by, when the BROWSER sorts.
    *
-   * Ausente = ya viene ordenado de donde salió. Es la misma división que tiene
-   * el agrupado con `piles`: un conjunto que el servidor pagina no se puede
-   * ordenar acá —ordenar doce filas de ciento ochenta y siete da un orden
-   * falso— así que ahí el orden viaja en la lectura y esto sólo lo refleja.
+   * Absent = it already comes sorted from where it came. It is the same split the
+   * grouping has with `piles`: a set the server paginates cannot be
+   * sorted here —sorting twelve rows out of a hundred and eighty-seven gives a false
+   * order— so there the order travels in the read and this only reflects it.
    */
   value?: (item: T) => string | number | null | undefined;
-  /** Qué quiere decir «ascendente» para este campo. Sin esto, «ascendente».
-   *  Una fecha asciende de vieja a nueva y un importe de chico a grande, y
-   *  decirlo evita el clic de prueba. */
+  /** What «ascendente» means for this field. Without this, «ascendente».
+   *  A date ascends from old to new and an amount from small to large, and
+   *  saying so avoids the trial click. */
   ascLabel?: string;
   descLabel?: string;
 };
 
 export type SortMenuProps = {
-  /** Por qué campos se puede ordenar. Sin ninguno, el control no se dibuja. */
+  /** Which fields it can be sorted by. With none, the control is not drawn. */
   fields: readonly SortField<never>[];
-  /** El orden, de afuera hacia adentro. Vacío es «como llegaron». */
+  /** The order, from outside in. Empty is «as they arrived». */
   sort: readonly SortState[];
   onSortChange: (next: SortState[]) => void;
   surface?: Surface;
 };
 
 /**
- * Las filas, ordenadas acá, por cada criterio en su orden.
+ * The rows, sorted here, by each criterion in its order.
  *
- * Sólo por los campos que declaran `value`; los demás se saltean —ordenar una
- * página de un conjunto que se pagina afuera produce un orden que es mentira,
- * porque ordena las doce que llegaron y no las ciento ochenta y siete. Sin
- * ningún criterio legible, se devuelven tal cual.
+ * Only by the fields that declare `value`; the rest are skipped —sorting a
+ * page of a set paginated elsewhere produces an order that is a lie,
+ * because it sorts the twelve that arrived and not the hundred and eighty-seven. With
+ * no readable criterion, they are returned as is.
  *
- * Los faltantes van SIEMPRE al final, suba o baje el orden (ver `compareBy`).
+ * The missing ones go ALWAYS at the end, whether the order goes up or down (see `compareBy`).
  */
 export function sortItems<T>(
   items: readonly T[],

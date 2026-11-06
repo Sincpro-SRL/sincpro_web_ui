@@ -6,10 +6,12 @@ import { focusRing, tv } from "@sincpro/web-ui/foundations/variants";
 import { listOptionStyles } from "@sincpro/web-ui/primitives/field/aria";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
 import { ChevronDown, ChevronLeft, ChevronRight } from "lucide-react";
+import { useContext } from "react";
 import {
   Button as AriaButton,
   Calendar as AriaCalendar,
   CalendarCell,
+  CalendarContext,
   CalendarGrid,
   CalendarGridBody,
   CalendarGridHeader,
@@ -185,6 +187,12 @@ export type CalendarProps = {
   max?: string;
   /** A day that cannot be chosen — a holiday, a closed day. Receives the ISO date. */
   isUnavailable?: (date: string) => boolean;
+  /**
+   * The day it is for the business, as an ISO date: marked as today, and where the calendar
+   * opens when nothing is chosen. Without it, the browser's own day — which is another one when
+   * the company is in another zone, or past midnight somewhere else.
+   */
+  today?: string;
   "aria-label"?: string;
 };
 
@@ -195,8 +203,10 @@ export function Calendar({
   min,
   max,
   isUnavailable,
+  today,
   ...rest
 }: CalendarProps) {
+  const inPicker = useContext(CalendarContext) != null;
   const props = defined({
     value: iso(value),
     onChange:
@@ -207,6 +217,10 @@ export function Calendar({
       isUnavailable === undefined
         ? undefined
         : (date: AriaDateValue) => isUnavailable(date.toString()),
+    // Loose, it opens on the business's today when nothing is chosen. Inside a picker the value
+    // comes from React Aria's context, not from `value`: opening on today there would hide the
+    // chosen day (the picker opens on it, and on `today` only when empty — its placeholder).
+    defaultFocusedValue: inPicker || value ? undefined : (iso(today) ?? undefined),
   });
   return (
     <AriaLocale>
@@ -215,7 +229,18 @@ export function Calendar({
         <CalendarGrid className="border-separate border-spacing-0.5">
           <WeekDays />
           <CalendarGridBody>
-            {(date) => <CalendarCell date={date} className={dayCell} />}
+            {(date) => (
+              <CalendarCell
+                date={date}
+                className={(state) =>
+                  dayCell({
+                    ...state,
+                    // React Aria's «today» is the browser's; the business's, when it is given.
+                    isToday: today === undefined ? state.isToday : date.toString() === today,
+                  })
+                }
+              />
+            )}
           </CalendarGridBody>
         </CalendarGrid>
       </AriaCalendar>

@@ -68,10 +68,10 @@ export function Table({
   const caja = useScrollBox<HTMLDivElement>(height === undefined ? {} : { height });
 
   return (
-    /* Cuándo esta caja es un contenedor de scroll y cuándo no lo decide
-       `useScrollBox`: ahí vive el dilema entero y ahí vive su explicación. Las
-       tres tablas del sistema lo resolvían con tres copias de la misma
-       medición. */
+    /* When this box is a scroll container and when it is not is decided by
+       `useScrollBox`: the whole dilemma lives there, and so does its explanation. The
+       three tables of the system solved it with three copies of the same
+       measurement. */
     <div
       ref={caja.ref}
       tabIndex={caja.tabIndex}
@@ -101,10 +101,10 @@ export function THead({
   rowIndex?: number;
 }) {
   return (
-    /* Se pega DEBAJO de lo que ya esté pegado —la barra de la aplicación y la
-       de la lista— y no en `top: 0`, que lo metía atrás de las dos. Sin alto en
-       `Table` el que scrollea es la página, y ahí la diferencia es justamente
-       la que hacía desaparecer los nombres de columna. Ver `system/sticky.tsx`. */
+    /* It sticks BELOW whatever is already stuck —the application bar and the
+       list's— and not at `top: 0`, which tucked it behind both. Without a height on
+       `Table` the page is what scrolls, and there the difference is exactly
+       what made the column names disappear. See `system/sticky.tsx`. */
     <thead className="sticky z-10 bg-ground" style={stickyTop}>
       <tr aria-rowindex={rowIndex}>{children}</tr>
     </thead>

@@ -1,112 +1,112 @@
-# Auditoría UX/UI — 2026-11-04
+# UX/UI audit — 2026-11-04
 
-Revisión de la experiencia en Storybook (Playwright, escritorio 1360 px) contra
-`PRINCIPLES.md`, más el inventario de lo que falta. Cada hallazgo lleva la evidencia
-(captura o medición) y, cuando hay, el cambio aplicado.
+Review of the experience in Storybook (Playwright, desktop 1360 px) against
+`PRINCIPLES.md`, plus the inventory of what is missing. Each finding carries the evidence
+(screenshot or measurement) and, when there is one, the change applied.
 
-## 1. Hallazgos y estado
+## 1. Findings and status
 
-| #   | Hallazgo                                                                                                                                                             | Evidencia                                                                      | Principio                    | Estado                                                                                                                                                                                    |
-| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | Un error no se puede copiar: `Failed` y `Missing` muestran el texto y nada más. El diálogo de error de campo tampoco.                                                | `stories/primitives/Notice.stories.tsx` («Fallo»), diálogo «Aplicar descuento» | 7 (tolerancia a errores)     | **Hecho** en `Failed`, `Missing`, `Callout` (tono `bad`), `Toast` (tono `bad`) y el error de `Field`: botón «Copiar el error» con el reporte (qué pasó, detalle técnico, fecha y página). |
-| 2   | Padding delgado: el riel y la barra de la lista usaban 14 px de margen.                                                                                              | Medido en CRM › Actividades: `Pipeline` a 12–14 px del borde                   | 1 (jerarquía) y legibilidad  | **Hecho** en `ListingBar` (comfortable: `px-5 py-3`, 20 px). Falta revisar el gutter de `AppFrame` y del registro.                                                                        |
-| 3   | El encabezado repite el nombre: una etiqueta chica «Pipeline» arriba a la izquierda y el título grande «Pipeline» debajo, separados por la barra de búsqueda.        | CRM › Actividades, captura de viewport                                         | 1 (jerarquía: dónde estoy)   | Pendiente. Propuesta: la etiqueta chica sale (es una miga redundante) o la barra de búsqueda se mueve bajo el título.                                                                     |
-| 4   | Los eventos del calendario se cortan a 2–3 palabras («Llamar para confirm…») y los puntos de color (verde, rojo, gris) no tienen leyenda.                            | CRM › Actividades, mes de noviembre                                            | 3 (el color no va solo)      | Pendiente. Propuesta: leyenda con texto y, en la celda, ícono o palabra de estado además del punto.                                                                                       |
-| 5   | Las historias con diálogo y estado de error tardan en pintar la primera captura (aparece el spinner de Storybook aunque el DOM ya tenga el contenido).               | Capturas repetidas de «Con error» y «Fallo»                                    | — (herramienta de auditoría) | Observado. Se resuelve leyendo el DOM antes de capturar; no es un defecto de la UI.                                                                                                       |
-| 6   | No hay componentes de chat (solo el compositor y la línea de tiempo de `Activity`), ni de archivos, ni previsualización de imagen/PDF, ni de markdown, ni de canvas. | Inventario de `src/components`                                                 | Faltantes                    | Plan abajo.                                                                                                                                                                               |
+| #   | Finding                                                                                                                                                        | Evidence                                                                      | Principle                    | Status                                                                                                                                                                                          |
+| --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | An error cannot be copied: `Failed` and `Missing` show the text and nothing else. Neither does the field-error dialog.                                         | `stories/primitives/Notice.stories.tsx` («Fallo»), «Aplicar descuento» dialog | 7 (error tolerance)          | **Done** in `Failed`, `Missing`, `Callout` (`bad` tone), `Toast` (`bad` tone) and `Field`'s error: a «Copiar el error» button with the report (what happened, technical detail, date and page). |
+| 2   | Thin padding: the rail and the list bar used a 14 px margin.                                                                                                   | Measured in CRM › Actividades: `Pipeline` 12–14 px from the edge              | 1 (hierarchy) and legibility | **Done** in `ListingBar` (comfortable: `px-5 py-3`, 20 px). The gutter of `AppFrame` and of the record is still to be reviewed.                                                                 |
+| 3   | The header repeats the name: a small «Pipeline» label top left and the big «Pipeline» title below, separated by the search bar.                                | CRM › Actividades, viewport screenshot                                        | 1 (hierarchy: where am I)    | Pending. Proposal: the small label goes (it is a redundant breadcrumb) or the search bar moves below the title.                                                                                 |
+| 4   | Calendar events are cut off at 2–3 words («Llamar para confirm…») and the color dots (green, red, gray) have no legend.                                        | CRM › Actividades, November month                                             | 3 (color is never alone)     | Pending. Proposal: a legend with text and, in the cell, an icon or status word besides the dot.                                                                                                 |
+| 5   | Stories with a dialog and an error state take a while to paint the first screenshot (Storybook's spinner appears even though the DOM already has the content). | Repeated screenshots of «Con error» and «Fallo»                               | — (audit tooling)            | Observed. Solved by reading the DOM before capturing; it is not a UI defect.                                                                                                                    |
+| 6   | There are no chat components (only the composer and the timeline of `Activity`), nor file ones, nor image/PDF preview, nor markdown, nor canvas.               | Inventory of `src/components`                                                 | Missing                      | Plan below.                                                                                                                                                                                     |
 
-Sin hallazgos en consola de la UI: el único error es el `favicon.ico` 404 de Storybook.
+No UI console findings: the only error is Storybook's `favicon.ico` 404.
 
-## 2. Qué falta y con qué (investigación)
+## 2. What is missing and with what (research)
 
-Criterio: que sea **moderno y maduro**, que encaje con React 19 y Tailwind v4, y que el
-diseño lo siga poniendo el sistema (tokens, React Aria, copia en la tabla). Las versiones y
-fechas salen del registro de npm (`npm view`), no de páginas de proveedores.
+Criterion: that it be **modern and mature**, that it fit React 19 and Tailwind v4, and that the
+design still be set by the system (tokens, React Aria, copy in the table). Versions and
+dates come from the npm registry (`npm view`), not from vendor pages.
 
-| Necesidad                           | Candidato                                                  | Versión · última publicación                | Veredicto                                                                                                                                                                       |
-| ----------------------------------- | ---------------------------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Chat (hilo, burbujas, compositor)   | **Propio** sobre React Aria y tokens                       | —                                           | Recomendado. Un kit con estilos impone su look y rompe la regla de tokens.                                                                                                      |
-| Chat, alternativa headless para IA  | `@assistant-ui/react` (MIT)                                | 0.15.32 · 2026-10-28 · peer React ^18 ‖ ^19 | Solo si se agrega streaming de un modelo; sus primitivas son sin estilo.                                                                                                        |
-| Chat, hosted                        | `stream-chat-react`                                        | 14.16.0 · 2026-11-04                        | Descartado: el backend es de un servicio propio y la licencia del servicio es propietaria.                                                                                      |
-| Chat, kit con estilos               | `@chatscope/chat-ui-kit-react`                             | 2.1.1 · 2025-05-15                          | Descartado: sin publicación hace más de un año.                                                                                                                                 |
-| Markdown (mensajes, previews)       | **`streamdown`**                                           | 2.7.1 · 2026-10-19 · peer React ^18 ‖ ^19   | Recomendado: API compatible con `react-markdown`, pensado para contenido que llega en streaming.                                                                                |
-| Markdown, base estable              | `react-markdown`                                           | 10.1.0 · 2025-03-07                         | Válido como base; sin publicación desde hace más de un año.                                                                                                                     |
-| Código resaltado                    | `shiki`                                                    | 4.6.0 · 2026-11-02                          | Recomendado para bloques de código.                                                                                                                                             |
-| PDF                                 | **`react-pdf`** (wojtekmaj)                                | 11.0.0 · 2026-09-10 · peer React ^19        | Recomendado. Corre sobre pdf.js. Una búsqueda indica Node 22.13 o superior; verificar en su README.                                                                             |
-| PDF, viewer con UI hecha            | `@react-pdf-viewer/core`                                   | 3.12.0 · 2023-03-21                         | Descartado: sin publicación desde 2023, y una fuente indica que el repo fue archivado en 2026.                                                                                  |
-| Imagen con zoom y paneo             | Nativo + `react-zoom-pan-pinch`                            | sin verificar en esta sesión                | Por verificar en npm antes de adoptar.                                                                                                                                          |
-| Archivos: lista, descarga, tipo     | Propio (`FileCard`, `FileList`) sobre `DropZone` existente | —                                           | Recomendado. Algunas librerías de «todo tipo de archivo» renderizan Office enviando el documento a un tercero (Microsoft Office Online); eso no sirve para documentos internos. |
-| Canvas de nodos (diagramas, flujos) | **`@xyflow/react`** (React Flow)                           | 12.12.1 · 2026-11-04 · peer React >=17      | Recomendado para canvas de nodos y conexiones.                                                                                                                                  |
-| Pizarra libre                       | `tldraw`                                                   | 5.6.0 · 2026-11-04                          | Válido para pizarra; **licencia por verificar** antes de usarlo en producción.                                                                                                  |
-| Pizarra estilo a mano               | `@excalidraw/excalidraw`                                   | 0.18.1 · 2026-10-27 · peer React ^19        | Alternativa; **licencia por verificar**.                                                                                                                                        |
+| Need                              | Candidate                                                   | Version · last published                    | Verdict                                                                                                                                                                    |
+| --------------------------------- | ----------------------------------------------------------- | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Chat (thread, bubbles, composer)  | **Our own** on React Aria and tokens                        | —                                           | Recommended. A kit with styles imposes its look and breaks the tokens rule.                                                                                                |
+| Chat, headless alternative for AI | `@assistant-ui/react` (MIT)                                 | 0.15.32 · 2026-10-28 · peer React ^18 ‖ ^19 | Only if streaming from a model is added; its primitives are unstyled.                                                                                                      |
+| Chat, hosted                      | `stream-chat-react`                                         | 14.16.0 · 2026-11-04                        | Rejected: the backend is a service of its own and the service's license is proprietary.                                                                                    |
+| Chat, kit with styles             | `@chatscope/chat-ui-kit-react`                              | 2.1.1 · 2025-05-15                          | Rejected: no release for over a year.                                                                                                                                      |
+| Markdown (messages, previews)     | **`streamdown`**                                            | 2.7.1 · 2026-10-19 · peer React ^18 ‖ ^19   | Recommended: API compatible with `react-markdown`, designed for content that arrives streaming.                                                                            |
+| Markdown, stable base             | `react-markdown`                                            | 10.1.0 · 2025-03-07                         | Valid as a base; no release for over a year.                                                                                                                               |
+| Highlighted code                  | `shiki`                                                     | 4.6.0 · 2026-11-02                          | Recommended for code blocks.                                                                                                                                               |
+| PDF                               | **`react-pdf`** (wojtekmaj)                                 | 11.0.0 · 2026-09-10 · peer React ^19        | Recommended. Runs on pdf.js. A search indicates Node 22.13 or higher; verify in its README.                                                                                |
+| PDF, viewer with a ready-made UI  | `@react-pdf-viewer/core`                                    | 3.12.0 · 2023-03-21                         | Rejected: no release since 2023, and one source indicates the repo was archived in 2026.                                                                                   |
+| Image with zoom and pan           | Native + `react-zoom-pan-pinch`                             | not verified in this session                | To be verified on npm before adopting.                                                                                                                                     |
+| Files: list, download, type       | Our own (`FileCard`, `FileList`) on the existing `DropZone` | —                                           | Recommended. Some «every kind of file» libraries render Office by sending the document to a third party (Microsoft Office Online); that is no good for internal documents. |
+| Node canvas (diagrams, flows)     | **`@xyflow/react`** (React Flow)                            | 12.12.1 · 2026-11-04 · peer React >=17      | Recommended for a canvas of nodes and connections.                                                                                                                         |
+| Free-form whiteboard              | `tldraw`                                                    | 5.6.0 · 2026-11-04                          | Valid for a whiteboard; **license to be verified** before using it in production.                                                                                          |
+| Hand-drawn style whiteboard       | `@excalidraw/excalidraw`                                    | 0.18.1 · 2026-10-27 · peer React ^19        | Alternative; **license to be verified**.                                                                                                                                   |
 
-Fuentes de la búsqueda (las páginas de proveedores son orientativas; la madurez se midió en npm):
+Sources of the search (vendor pages are indicative; maturity was measured on npm):
 
 - [React PDF viewers 2026 (Syncfusion)](https://www.syncfusion.com/blogs/post/best-react-pdf-viewers.md)
 - [react-pdf-viewer (phuocng)](https://github.com/react-pdf-dev/react-pdf-viewer)
 - [Streamdown vs markstream-react](https://markstream-vue-docs.simonhe.me/compare/streamdown.html)
-- [assistant-ui: alternativas 2026](https://designrevision.com/alternatives/assistant-ui)
+- [assistant-ui: alternatives 2026](https://designrevision.com/alternatives/assistant-ui)
 - [Excalidraw vs tldraw vs Miro SDK 2026](https://www.pkgpulse.com/guides/excalidraw-vs-tldraw-vs-miro-sdk-collaborative-2026)
-- [tldraw en GitHub](https://github.com/tldraw/tldraw)
+- [tldraw on GitHub](https://github.com/tldraw/tldraw)
 - [file-preview (wh131462)](https://github.com/wh131462/file-preview)
 
-## 3. Plan propuesto (en orden)
+## 3. Proposed plan (in order)
 
-1. **Errores** (hecho): reporte copiable en `Callout` `bad`, en el `Toast` `bad` y en el error de `Field`.
-2. **Padding y jerarquía del CRM**: quitar la etiqueta duplicada del encabezado; revisar el
-   gutter de `AppFrame` y de `Record` con la misma medición (objetivo 20 px en comfortable).
-3. **Calendario**: leyenda de estados con texto; eventos con ícono o palabra además del punto.
-4. **Archivos**: `FileCard` (ícono por tipo, nombre, tamaño, descargar, eliminar), `FileList`,
-   y `FilePreview` que despacha por tipo: imagen (nativo + zoom), PDF (`react-pdf`), texto y
-   markdown (`streamdown`), y para el resto solo ícono + descarga.
-5. **Chat**: `ChatThread` (burbujas, agrupado por día, cargar anteriores arriba, ir al final),
-   `ChatComposer` (enviar con Enter, adjuntos), `ConversationList` (no leídos, buscar). Reusa
-   el compositor de `Activity`, no lo duplica.
-6. **Markdown** (`streamdown`) como primitiva de texto enriquecido de solo lectura, usada por
-   el chat y las previews.
-7. **Canvas**: `CanvasPanel` sobre `@xyflow/react` para diagramas y flujos; pizarra libre
-   solo si se confirma la licencia de `tldraw`.
+1. **Errors** (done): copyable report in `Callout` `bad`, in `Toast` `bad` and in `Field`'s error.
+2. **CRM padding and hierarchy**: remove the duplicated label from the header; review the
+   gutter of `AppFrame` and `Record` with the same measurement (target 20 px in comfortable).
+3. **Calendar**: status legend with text; events with an icon or word besides the dot.
+4. **Files**: `FileCard` (icon by type, name, size, download, delete), `FileList`,
+   and a `FilePreview` that dispatches by type: image (native + zoom), PDF (`react-pdf`), text and
+   markdown (`streamdown`), and for the rest only icon + download.
+5. **Chat**: `ChatThread` (bubbles, grouped by day, load earlier on top, jump to the end),
+   `ChatComposer` (send with Enter, attachments), `ConversationList` (unread, search). It reuses
+   `Activity`'s composer, it does not duplicate it.
+6. **Markdown** (`streamdown`) as a read-only rich-text primitive, used by
+   the chat and the previews.
+7. **Canvas**: `CanvasPanel` on `@xyflow/react` for diagrams and flows; free-form whiteboard
+   only if `tldraw`'s license is confirmed.
 
-Cada pieza nueva sigue `AGENTS.md`: nivel y familia definidos, tokens solamente, textos en la
-tabla de copia (inglés y español), historia en su carpeta y un test que falla sin el cambio.
+Each new piece follows `AGENTS.md`: level and family defined, tokens only, texts in the
+copy table (English and Spanish), a story in its folder and a test that fails without the change.
 
-## 4. Lo que queda por decidir
+## 4. What is left to decide
 
-- **Dependencias nuevas**: `react-pdf`, `streamdown` y `@xyflow/react` agregan peso al paquete
-  publicado. Se proponen sin instalar todavía; confirmar antes de agregarlas.
-- **Licencias**: `tldraw` y `excalidraw` no se verificaron en esta sesión.
-- **Verificación pendiente**: `make smoke` (todas las historias en Chrome, claro y oscuro)
-  antes de entregar los cambios de errores y padding.
+- **New dependencies**: `react-pdf`, `streamdown` and `@xyflow/react` add weight to the published
+  package. They are proposed without installing yet; confirm before adding them.
+- **Licenses**: `tldraw` and `excalidraw` were not verified in this session.
+- **Pending verification**: `make smoke` (all stories in Chrome, light and dark)
+  before delivering the errors and padding changes.
 
-## 5. Barrido de layout — 332 historias, escritorio (1360 px) y teléfono (390 px)
+## 5. Layout sweep — 332 stories, desktop (1360 px) and phone (390 px)
 
-Medido con Playwright sobre el DOM real: scroll horizontal de la página, texto cortado sin
-elipsis, solapamientos entre textos y controles en el flujo normal, y la distancia real del
-texto al borde de su caja (padding). Las demos de fundamentos (leyendas `figcaption` puestas
-encima a propósito) y las librerías externas (FullCalendar, Gantt, React Flow) quedan fuera.
+Measured with Playwright over the real DOM: the page's horizontal scroll, text cut off without
+ellipsis, overlaps between texts and controls in the normal flow, and the real distance from the
+text to the edge of its box (padding). The foundations demos (`figcaption` legends placed
+on top on purpose) and the external libraries (FullCalendar, Gantt, React Flow) are left out.
 
-**Padding**: sano en escritorio después de llevar `ListingBar` a 20 px; lo que el barrido marca
-(6 casos) son contenedores sin caja propia o la mención `@persona`, angosta a propósito.
+**Padding**: healthy on desktop after taking `ListingBar` to 20 px; what the sweep flags
+(6 cases) are containers without a box of their own or the `@persona` mention, narrow on purpose.
 
-**Corregido**
+**Fixed**
 
-| Dónde                                | Qué pasaba                                                                                                 | Arreglo                                                        |
-| ------------------------------------ | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `SearchBar` (escritorio)             | En una fila `flex` sin ancho, la barra colapsaba y el input quedaba debajo del botón de filtros («bu⊞car») | La barra no baja de `min-w-48` y el input de `min-w-24`        |
-| `TopBar` (teléfono)                  | Los menús se recortaban: «Cl» pegado a los íconos y el resto inalcanzable                                  | La franja de menús se desplaza (`scroll-quiet`)                |
-| `SmartButtons` en el riel (teléfono) | Cada contador se salía de su celda, pisaba el siguiente y el último se recortaba                           | Las celdas no se achican y el grupo se desplaza                |
-| `ChatComposer` (angosto)             | El cuadro colapsaba y «Enviar» se montaba encima                                                           | «Enviar» queda sólo ícono bajo 20 rem (consulta de contenedor) |
-| Historia «Tablero»                   | El título largo de la tarjeta propia salía de su tarjeta                                                   | `min-w-0` + `max-w-full` en la historia                        |
+| Where                              | What was happening                                                                                          | Fix                                                           |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------- |
+| `SearchBar` (desktop)              | In a `flex` row with no width, the bar collapsed and the input ended up under the filters button («bu⊞car») | The bar does not go below `min-w-48` and the input `min-w-24` |
+| `TopBar` (phone)                   | The menus were clipped: «Cl» stuck to the icons and the rest unreachable                                    | The menu strip scrolls (`scroll-quiet`)                       |
+| `SmartButtons` in the rail (phone) | Each counter overflowed its cell, covered the next one and the last was clipped                             | The cells do not shrink and the group scrolls                 |
+| `ChatComposer` (narrow)            | The box collapsed and «Enviar» sat on top of it                                                             | «Enviar» becomes icon-only below 20 rem (container query)     |
+| «Tablero» story                    | The long title of the custom card spilled out of its card                                                   | `min-w-0` + `max-w-full` in the story                         |
 
-**Pendiente (teléfono, 390 px)** — no se corrigió en esta vuelta:
+**Pending (phone, 390 px)** — not fixed in this round:
 
-- Formularios con controles anchos que desbordan la página: «Controles · Números» (61 px),
+- Forms with wide controls that overflow the page: «Controles · Números» (61 px),
   «Mirar y editar» (107 px), «Unidad y redondeo» (147 px), «Elecciones · en un formulario»
   (26 px).
-- `SearchBar` con muchas fichas («Probar», «Búsqueda literal») desborda ~110 px.
-- Tabla editable en la lista («Facturas editables», 187 px): la tabla no está en un contenedor
-  con scroll propio.
-- Relacional en una tabla: el enlace y el NIT se pisan en celdas angostas.
-- Barra de estados del registro: el botón de acción queda encima de las etapas.
-- `SheetTable`: el encabezado «TRASPASO CTA PROPIA BNB» se corta 22 px sin elipsis.
-- `Peek`: «Abrir como panel» se recorta 16 px contra el borde del cajón.
+- `SearchBar` with many chips («Probar», «Búsqueda literal») overflows ~110 px.
+- Editable table in the list («Facturas editables», 187 px): the table is not in a container
+  with its own scroll.
+- Relational in a table: the link and the NIT overlap in narrow cells.
+- The record's status bar: the action button sits on top of the stages.
+- `SheetTable`: the «TRASPASO CTA PROPIA BNB» header is cut 22 px without ellipsis.
+- `Peek`: «Abrir como panel» is clipped 16 px against the drawer's edge.

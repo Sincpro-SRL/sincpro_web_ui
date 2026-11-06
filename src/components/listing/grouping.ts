@@ -10,37 +10,37 @@ import {
 import { useCallback, useState } from "react";
 
 /**
- * LOS NIVELES, como estado que alguien edita.
+ * THE LEVELS, as state somebody edits.
  *
- * El vocabulario —qué es un nivel, qué es un montón, cómo se identifica— vive en
- * `system/grouping.ts`, porque lo hablan las DOS capas: la lista arma el árbol y
- * la tabla lo dibuja, y una primitiva no puede importar de un contexto. Acá
- * queda sólo el CONTROL, que es de la lista como lo son el de columnas y el de
- * plegado.
+ * The vocabulary —what a level is, what a heap is, how it is identified— lives in
+ * `system/grouping.ts`, because BOTH layers speak it: the list builds the tree and
+ * the table draws it, and a primitive cannot import from a context. Here
+ * only the CONTROL stays, which belongs to the list as do the columns' and the
+ * folding's.
  */
 
 /* ---------------------------------------------------------------- *
- *  Los niveles, como estado editable
+ *  The levels, as editable state
  * ---------------------------------------------------------------- */
 
-/** Los niveles puestos, y las cuatro cosas que se les hacen. El orden ES la
- *  jerarquía: mover un nivel de lugar cambia por qué se parte primero. */
+/** The levels set, and the four things done to them. The order IS the
+ *  hierarchy: moving a level changes what is split first. */
 export type GroupingControl = {
   levels: readonly GroupLevel[];
   /**
-   * Pone un nivel. Un campo de fecha puede estar puesto con VARIOS granos —«por
-   * mes y adentro por día»— así que lo que no se duplica es el par campo+grano,
-   * no el campo. Agrupar dos veces por exactamente lo mismo parte en montones de
-   * uno, y eso siempre es un error de tipeo.
+   * Sets a level. A date field can be set with SEVERAL grains —«by
+   * month and inside it by day»— so what is not duplicated is the field+grain pair,
+   * not the field. Grouping twice by exactly the same splits into heaps of
+   * one, and that is always a typo.
    */
   add: (field: string, grain?: GroupGrain) => void;
   remove: (field: string, grain?: GroupGrain) => void;
-  /** Tildar y destildar en un gesto, que es lo que hace una casilla. */
+  /** Tick and untick in one gesture, which is what a checkbox does. */
   toggle: (field: string, grain?: GroupGrain) => void;
   has: (field: string, grain?: GroupGrain) => boolean;
-  /** Mueve un nivel `delta` lugares. Se queda en los bordes en vez de dar la
-   *  vuelta: llegar al primero y volver al último no es lo que nadie espera de
-   *  una flecha «subir». */
+  /** Moves a level `delta` places. It stays at the edges instead of wrapping
+   *  around: reaching the first and coming back to the last is not what anyone expects of
+   *  an «up» arrow. */
   move: (field: string, delta: number) => void;
   clear: () => void;
 };
@@ -71,9 +71,9 @@ export function useGroupingControl(
   const add = useCallback(
     (field: string, grain?: GroupGrain) => {
       if (levels.some((one) => levelKey(one) === keyOf(field, grain))) return;
-      /* Se normaliza SIEMPRE y no sólo al agregar fechas: es la única forma de
-         que tildar «día» y después «mes» dé «mes › día» sin que quien tilda
-         tenga que saber en qué orden hacerlo. */
+      /* It is normalised ALWAYS and not only when adding dates: it is the only way
+         for ticking «día» and then «mes» to give «mes › día» without whoever ticks
+         having to know in which order to do it. */
       setLevels(
         normalizeLevels([...levels, grain === undefined ? { field } : { field, grain }]),
       );
@@ -85,9 +85,9 @@ export function useGroupingControl(
     (field: string, grain?: GroupGrain) => {
       setLevels(
         grain === undefined && !levels.some((one) => levelKey(one) === field)
-          ? /* Sin grano y sin coincidencia exacta: se saca el campo ENTERO, con
-               todos sus granos. Es lo que quiere decir la × de un campo de
-               fecha que está puesto por mes y por día. */
+          ? /* No grain and no exact match: the WHOLE field is taken out, with
+               all its grains. It is what the × of a date field set
+               by month and by day means. */
             levels.filter((one) => one.field !== field)
           : levels.filter((one) => levelKey(one) !== keyOf(field, grain)),
       );

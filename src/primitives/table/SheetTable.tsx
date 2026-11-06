@@ -115,16 +115,16 @@ export function SheetTable({
   height?: number | "auto";
   rowLabel?: (row: number) => string;
   /**
-   * Esta fila no es una fila: es la cabecera del montón que empieza acá.
+   * This row is not a row: it is the header of the pile that begins here.
    *
-   * Agrupar sin perder la virtualización es esto — **una banda es una fila
-   * más, de otra clase**. La alternativa era una planilla por montón, y eso
-   * son N cuadrículas con N encabezados y N scrolls para un solo conjunto.
+   * Grouping without losing virtualisation is this — **a band is one more
+   * row, of another kind**. The alternative was one sheet per pile, and that is
+   * N grids with N headers and N scrolls for a single set.
    *
-   * `depth` es cuán adentro está el montón. La planilla no puede recibir un
-   * árbol —está virtualizada por índice, y un índice es una posición en una
-   * secuencia—, así que la jerarquía la dice la sangría de cada banda y no el
-   * anidamiento del marcado.
+   * `depth` is how deep the pile is. The sheet cannot take a
+   * tree —it is virtualised by index, and an index is a position in a
+   * sequence—, so the hierarchy is told by each band's indentation and not by the
+   * nesting of the markup.
    */
   band?: (row: number) =>
     | {
@@ -134,12 +134,12 @@ export function SheetTable({
         open: boolean;
         depth?: number;
         /**
-         * Lo que el montón suma EN CADA COLUMNA, en la posición de esa columna.
+         * What the pile adds up IN EACH COLUMN, at that column's position.
          *
-         * Una banda que pone su total en un rincón obliga a buscar a qué columna
-         * corresponde el número. Alineado bajo su columna no hay nada que buscar:
-         * la cuadrícula ya dice qué significa, que es para lo que existe una
-         * cuadrícula. `null` en una columna que no suma — que es la mayoría.
+         * A band that puts its total in a corner forces you to look for which column
+         * the number belongs to. Aligned under its column there is nothing to look for:
+         * the grid already says what it means, which is what a
+         * grid is for. `null` in a column that does not add up — which is most of them.
          */
         total?: (column: SheetColumn, columnIndex: number) => string | number | null;
       }
@@ -160,11 +160,11 @@ export function SheetTable({
   const copy = useUiCopy();
   const labelOf = rowLabel ?? ((i: number) => (i + 1).toLocaleString(copy.locale));
 
-  /* `"auto"` es para un conjunto que ya vino CORTADO —una página de ochenta— y
-     deja de virtualizar de hecho: sin scroll propio, la ventana visible es la
-     caja entera y se dibujan todas las filas. Para los datos crudos —donde son
-     un millón— hay que declarar un alto, y ahí sí se dibujan las ~30 que se
-     ven. Cuándo la caja es un contenedor de scroll lo decide `useScrollBox`. */
+  /* `"auto"` is for a set that already came CUT —a page of eighty— and
+     in effect stops virtualising: with no scroll of its own, the visible window is the
+     whole box and every row is drawn. For raw data —where there are
+     a million— a height must be declared, and then only the ~30 in
+     view are drawn. When the box is a scroll container is decided by `useScrollBox`. */
   const caja = useScrollBox<HTMLDivElement>(height === "auto" ? {} : { height });
   const v = useVirtualizer({
     count: rows,
@@ -364,16 +364,16 @@ export function SheetTable({
             {items.map((item) => {
               const montón = band?.(item.index);
               if (montón !== undefined) {
-                /* La banda queda pegada a la IZQUIERDA como el número de fila:
-                   con cuarenta columnas, un rótulo que se va con el scroll
-                   horizontal deja de decir en qué montón estás justo cuando
-                   más lejos estás de él. */
+                /* The band sticks to the LEFT like the row number:
+                   with forty columns, a label that goes away with the horizontal
+                   scroll stops saying which pile you are in just when
+                   you are furthest from it. */
                 return (
-                  /* La banda RESPETA la cuadrícula: rótulo en la columna fija de
-                     la izquierda, y después una celda por columna —vacía, salvo
-                     que esa columna sume algo—. Antes era un rótulo suelto que
-                     ignoraba las columnas, y entonces un total quedaba en un
-                     rincón sin decir de qué columna era. */
+                  /* The band RESPECTS the grid: label in the fixed column on
+                     the left, and then one cell per column —empty, unless
+                     that column adds something up—. It used to be a loose label that
+                     ignored the columns, and then a total sat in a
+                     corner without saying which column it was. */
                   <div
                     key={item.key}
                     role="row"
@@ -419,9 +419,9 @@ export function SheetTable({
                       )}
                     </div>
 
-                    {/* El rótulo del montón ocupa la PRIMERA columna, que es
-                        donde alguien lo busca; de la segunda en adelante van los
-                        totales, cada uno bajo lo suyo. */}
+                    {/* The pile's label takes the FIRST column, which is
+                        where someone looks for it; from the second on go the
+                        totals, each under its own. */}
                     {columns.map((c, ci) => {
                       const total = montón.total?.(c, ci) ?? null;
                       return (

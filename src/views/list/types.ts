@@ -21,12 +21,12 @@ import type { LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
 
 /**
- * Las seis maneras de mirar un conjunto. La unión vive en `list/set.ts`, que
- * es donde ya vivía su copia.
+ * The six ways of looking at a set. The union lives in `list/set.ts`, which
+ * is where its copy already lived.
  *
- * Las seis son el MISMO conjunto mirado distinto, y por eso comparten barra.
- * Lo que cambia entre ellas es qué sabe el código de las columnas — y, en el
- * pivote, que las filas de la pantalla ya no son las filas del conjunto.
+ * The six are the SAME set looked at differently, and that is why they share a bar.
+ * What changes between them is what the code knows about the columns — and, in the
+ * pivot, that the screen's rows are no longer the set's rows.
  */
 export type { ListPresent };
 
@@ -115,45 +115,45 @@ export type ListEmpty = {
 };
 
 /**
- * El agrupado de una lista: el CONTRATO de `system/grouping.ts` más lo único que
- * una tabla necesita de más.
+ * A list's grouping: the CONTRACT of `system/grouping.ts` plus the only thing
+ * a table needs on top.
  *
- * Las seis presentaciones parten el conjunto con el MISMO árbol y las mismas
- * claves — la tabla incluida. Lo único que una tabla agrega es una pregunta de
- * VISIBILIDAD: agrupar por un campo cuya columna está escondida dejaría montones
- * cuyo criterio no se ve en ninguna parte, así que esa columna se repone, y para
- * reponerla hay que saber cuál es. Eso es `columnOf`, y nada más: la clave del
- * montón no sale de una columna.
+ * The six presentations split the set with the SAME tree and the same
+ * keys — the table included. The only thing a table adds is a question of
+ * VISIBILITY: grouping by a field whose column is hidden would leave buckets
+ * whose criterion is seen nowhere, so that column is restored, and to
+ * restore it we must know which one it is. That is `columnOf`, and nothing more: the bucket's
+ * key does not come from a column.
  *
- * Va acá y no en el contrato para que una vista que no tenga columnas no tenga
- * que fingir que las tiene.
+ * It goes here and not in the contract so that a view with no columns does not have
+ * to pretend it has them.
  */
 export type ListGroup<T extends object> = Grouping<T> & {
-  /** Qué COLUMNA contesta por cada nivel, para reponerla cuando está escondida.
-   *  Sin esto, la que se llame como el campo o la que lo declare en `field`. */
+  /** Which COLUMN answers for each level, to restore it when it is hidden.
+   *  Without this, the one called like the field or the one that declares it in `field`. */
   columnOf?: (level: GroupLevel) => string | undefined;
 };
 
 /**
- * La PLANILLA de una lista: las columnas y cómo se lee cada celda.
+ * A list's SHEET: the columns and how each cell is read.
  *
- * Se declara cuando las columnas salen del ARCHIVO y el código no sabe cuáles
- * son. Para un conjunto de registros no hace falta: sale de las `columns` que
- * la lista ya declaró.
+ * It is declared when the columns come from the FILE and the code does not know which
+ * they are. For a set of records it is not needed: it comes from the `columns` the
+ * list already declared.
  */
 export type ListSheet<T> = {
   columns: readonly SheetColumn[];
-  /** El valor de una celda. `null` es un faltante y `""` una celda vacía: son
-   *  cosas distintas y el motor las distingue, así que la interfaz también. */
+  /** A cell's value. `null` is a missing value and `""` an empty cell: they are
+   *  different things and the engine tells them apart, so the interface does too. */
   cell: (item: T, column: SheetColumn, columnIndex: number) => string | number | null;
-  /** Qué celdas se pintan y con qué: un valor imputado, uno fuera de rango. */
+  /** Which cells are painted and with what: an imputed value, an out-of-range one. */
   tone?: (item: T, column: SheetColumn, columnIndex: number) => Tone | undefined;
   note?: (item: T, column: SheetColumn, columnIndex: number) => string | undefined;
   height?: number | "auto";
-  /** Qué dice la columna fija de la izquierda. Sin esto, el número de fila. */
+  /** What the fixed column on the left says. Without this, the row number. */
   rowLabel?: (item: T, index: number) => string;
-  /** Presente = la planilla se edita como planilla. Recibe el texto crudo;
-   *  convertirlo al tipo de la columna es del dominio, no de acá. */
+  /** Present = the sheet is edited as a sheet. It receives the raw text;
+   *  converting it to the column's type is the domain's job, not this layer's. */
   onCommit?: (item: T, column: SheetColumn, columnIndex: number, next: string) => void;
   editable?: (item: T, column: SheetColumn, columnIndex: number) => boolean;
   /** Present = the sheet adds rows: «add a row» under it, and `Enter` on the last row.
@@ -162,66 +162,66 @@ export type ListSheet<T> = {
 };
 
 /**
- * El INFORME de una lista: los períodos y la jerarquía que termina en totales.
+ * A list's REPORT: the periods and the hierarchy that ends in totals.
  *
- * Las filas van aparte de `items` y es deliberado: un balance no es la lista
- * plana agrupada —«Total Activos» es una suma de sumas— y el arquetipo no puede
- * inventar esa jerarquía. La arma quien conoce el dominio, como ya arma
+ * The rows go apart from `items` and that is deliberate: a balance is not the flat
+ * grouped list —«Total Activos» is a sum of sums— and the archetype cannot
+ * invent that hierarchy. Whoever knows the domain builds it, as they already build
  * `columns`.
  */
 export type ListReport = {
   columns: readonly ReportColumn[];
   /**
-   * Las líneas del informe, cuando el DOMINIO las arma.
+   * The report's lines, when the DOMAIN builds them.
    *
-   * Un balance no es la lista plana agrupada —«Total Activos» es una suma de
-   * sumas— y el arquetipo no puede inventar esa jerarquía.
+   * A balance is not the flat grouped list —«Total Activos» is a sum of
+   * sums— and the archetype cannot invent that hierarchy.
    *
-   * **Sin esto, el informe se arma con los montones**: cada nivel es una línea
-   * con sus agregados, y el más profundo son las filas. Es el mismo conjunto que
-   * ven las otras cuatro presentaciones, contado — que es lo que alguien espera
-   * al pasar de «tabla» a «informe» con dos niveles puestos.
+   * **Without this, the report is built from the buckets**: each level is a line
+   * with its aggregates, and the deepest are the rows. It is the same set the
+   * other four presentations see, counted — which is what someone expects
+   * when going from «tabla» to «informe» with two levels set.
    */
   rows?: readonly ReportRow[];
-  /** Qué grupos arrancan abiertos. Por omisión ninguno: un balance con todo
-   *  desplegado son cuatrocientas líneas y lo que se mira primero son los
-   *  totales. */
+  /** Which groups start open. None by default: a balance with everything
+   *  unfolded is four hundred lines and what is looked at first is the
+   *  totals. */
   defaultOpen?: readonly string[];
   height?: number;
 };
 
 /**
- * El PIVOTE de una lista: los dos ejes y las medidas que se pliegan en el cruce.
+ * A list's PIVOT: the two axes and the measures folded at the crossing.
  *
- * Es la presentación en la que **las filas de la pantalla dejan de ser los
- * registros**: una fila es un montón y una columna también, así que no hay nada
- * que elegir ni que abrir, y lo que se lee está en el cruce.
+ * It is the presentation in which **the screen's rows stop being the
+ * records**: a row is a bucket and so is a column, so there is nothing
+ * to choose or to open, and what is read is at the crossing.
  *
- * De ahí que venga plegado de dos lugares posibles, igual que los montones de
- * una lista agrupada:
+ * Hence it comes folded from two possible places, just like the buckets of
+ * a grouped list:
  *
- *     folded   lo plegó quien guarda los datos. Es el caso normal en cuanto el
- *              conjunto no entra en el navegador: contar 187 vencidas no lo
- *              pueden contestar las doce filas que se bajaron.
- *     spec     lo pliega esta máquina, con las filas en la mano.
+ *     folded   folded by whoever keeps the data. It is the normal case as soon as the
+ *              set does not fit in the browser: counting 187 overdue ones cannot be
+ *              answered by the twelve rows that were downloaded.
+ *     spec     folded by this machine, with the rows in hand.
  *
- * Los dos dibujan igual porque dibujan el mismo tipo.
+ * Both draw the same because they draw the same type.
  */
 export type ListPivot<T> = {
-  /** El pivote ya plegado. Gana sobre `spec` cuando están los dos: si alguien
-   *  con el conjunto entero ya contestó, no hay nada que recalcular. */
+  /** The already folded pivot. It wins over `spec` when both are present: if someone
+   *  with the whole set already answered, there is nothing to recompute. */
   folded?: Pivot;
   /**
-   * Cómo armarlo acá adentro. Las medidas traen su pliegue, y los márgenes salen
-   * de la BASE y no de sumar celdas — ver `system/pivot.ts`.
+   * How to build it in here. The measures bring their fold, and the margins come
+   * from the BASE and not from summing cells — see `system/pivot.ts`.
    *
-   * Quien además necesite la grilla EN LA MANO —para bajarla como planilla con
-   * `downloadPivot`, por ejemplo— la pliega él con `pivotFrom` y la pasa por
-   * `folded`: así la que se dibuja y la que se baja son el mismo objeto, y no
-   * dos que podrían no coincidir.
+   * Whoever also needs the grid IN HAND —to download it as a sheet with
+   * `downloadPivot`, for example— folds it with `pivotFrom` and passes it through
+   * `folded`: that way the one drawn and the one downloaded are the same object, and not
+   * two that might not match.
    */
   spec?: PivotSpec<T>;
-  /** Qué pasa al tocar un cruce: abrir las filas que cayeron ahí. */
+  /** What happens when a crossing is pressed: open the rows that fell there. */
   onCell?: (row: PivotKey, column: PivotKey) => void;
   height?: number | string;
   /** The fields the person may pivot by. With them (and `spec`) the pivot is EXPLORED — axes,
@@ -233,33 +233,33 @@ export type ListPivot<T> = {
 };
 
 /**
- * EL GRÁFICO de una lista: la vista gráfica de Odoo. Lee lo mismo que el pivote —un
- * `Pivot`, plegado acá con `spec` o afuera con `folded`— y lo dibuja como barras, líneas o
- * torta. Sus niveles SIGUEN al agrupado del buscador: el primero va en el eje y los demás
- * son las series, como en Odoo.
+ * A list's CHART: Odoo's graph view. It reads the same as the pivot —a
+ * `Pivot`, folded here with `spec` or outside with `folded`— and draws it as bars, lines or
+ * a pie. Its levels FOLLOW the search's grouping: the first goes on the axis and the rest
+ * are the series, as in Odoo.
  */
 export type ListChart<T> = {
-  /** Plegado por quien guarda los datos. Sus ejes son los suyos y no se editan acá. */
+  /** Folded by whoever keeps the data. Its axes are its own and are not edited here. */
   folded?: Pivot;
-  /** Cómo plegarlo acá, con las filas en la mano: `rows` es el eje, `columns` las series. */
+  /** How to fold it here, with the rows in hand: `rows` is the axis, `columns` the series. */
   spec?: PivotSpec<T>;
-  /** Por qué campos se puede partir. Con esto los ejes se eligen sobre el gráfico. */
+  /** Which fields it can be split by. With this the axes are chosen on the chart. */
   fields?: readonly GroupableField[];
-  /** La medida con la que abre. La primera de `spec.measures`; `COUNT_MEASURE` para el conteo. */
+  /** The measure it opens with. The first of `spec.measures`; `COUNT_MEASURE` for the count. */
   defaultMeasure?: string;
-  /** Varias medidas, cada una su propio gráfico (nunca dos escalas en un eje). */
+  /** Several measures, each its own chart (never two scales on one axis). */
   defaultMeasures?: readonly string[];
   kind?: ChartKind;
-  /** Cómo abre: apilado (por defecto, como Odoo), acumulado, ordenado. */
+  /** How it opens: stacked (the default, as in Odoo), cumulative, ordered. */
   stacked?: boolean;
   cumulative?: boolean;
   order?: ChartOrder;
-  /** El período anterior, para dibujarlo al lado: los registros de entonces y sus nombres. */
+  /** The previous period, to draw beside it: the records of then and their names. */
   compare?: ChartComparison<T>;
-  /** Una barra, un punto o una porción: abrir los registros que cayeron ahí. */
+  /** A bar, a point or a slice: open the records that fell there. */
   onPoint?: (category: PivotKey, series?: PivotKey) => void;
   height?: number | string;
-  /** Con qué nombre se baja. */
+  /** The name it is downloaded under. */
   fileName?: string;
 };
 
@@ -293,13 +293,13 @@ export type ListViewProps<T extends object> = {
 
   row: (item: T) => RowOf;
   /**
-   * Los rótulos de las zonas de una fila, arriba de todas. Sin esto no hay
-   * encabezado: `rows` no es una tabla y no toda lista tiene algo que rotular
-   * —una lista de cinco archivos con el nombre y nada más no lo necesita.
+   * The labels of a row's zones, above all of them. Without this there is no
+   * header: `rows` is not a table and not every list has something to label
+   * —a list of five files with the name and nothing else does not need it.
    *
-   * No son columnas. Una fila tiene un nombre, UNA cadena de `meta` ya
-   * formateada y una columna de fichas: eso es lo que se rotula, y por eso los
-   * rótulos los escribe la vista y no salen de `columns`.
+   * They are not columns. A row has a name, ONE already formatted `meta`
+   * string and a column of chips: that is what is labelled, and that is why the
+   * labels are written by the view and do not come from `columns`.
    */
   rowHeader?: { name: string; meta?: string; tags?: string };
   /** The table presentation. With this, `present="table"` draws a `DataTable`. */
@@ -314,13 +314,13 @@ export type ListViewProps<T extends object> = {
   sort?: readonly SortState[];
   onSortChange?: (next: SortState[]) => void;
   /**
-   * Por qué campos se puede ordenar, para las presentaciones que NO tienen
-   * encabezados donde hacer clic.
+   * Which fields it can be sorted by, for the presentations that do NOT have
+   * headers to click on.
    *
-   * Sin esto, ordenar existe sólo en la tabla — y entonces pasar a filas o a
-   * tablero no pierde el orden puesto, pierde la posibilidad de ordenar. La
-   * tabla sigue teniendo además sus encabezados: son dos puertas a lo mismo, y
-   * la de los encabezados es más rápida donde existe.
+   * Without this, sorting exists only in the table — and then switching to rows or to
+   * a board does not lose the order set, it loses the ability to sort. The
+   * table also keeps its headers: they are two doors to the same thing, and
+   * the headers' one is faster where it exists.
    */
   sortable?: readonly SortField<T>[];
   /** The footer with the aggregates of the columns that declared one. */
@@ -344,37 +344,37 @@ export type ListViewProps<T extends object> = {
   timeline?: ListTimeline<T>;
 
   /**
-   * La PLANILLA. Con esto, `present="sheet"` dibuja un `SheetTable`.
+   * The SHEET. With this, `present="sheet"` draws a `SheetTable`.
    *
-   * Es la presentación de los datos crudos, y por eso no recibe `DataColumn`:
-   * las columnas salen del archivo y el código no sabe cuáles son ni cuántas.
-   * El valor se pide por índice —igual que `SheetTable`, que está virtualizado—
-   * así que un millón de filas no se copia a ninguna otra estructura.
+   * It is the presentation of raw data, and that is why it does not receive `DataColumn`:
+   * the columns come from the file and the code does not know which they are or how many.
+   * The value is requested by index —like `SheetTable`, which is virtualised—
+   * so a million rows are not copied into any other structure.
    */
   sheet?: ListSheet<T>;
 
   /**
-   * El INFORME: una jerarquía que termina en totales. Con esto,
-   * `present="report"` dibuja un `ReportTable`.
+   * The REPORT: a hierarchy that ends in totals. With this,
+   * `present="report"` draws a `ReportTable`.
    *
-   * Las filas van aparte de `items` y es deliberado: un balance NO es la lista
-   * plana agrupada —«Total Activos» no es un montón de cuentas, es una suma de
-   * sumas— y el arquetipo no puede inventar esa jerarquía a partir del
-   * conjunto. La arma quien conoce el dominio, como ya arma `columns`.
+   * The rows go apart from `items` and that is deliberate: a balance is NOT the flat
+   * grouped list —«Total Activos» is not a bucket of accounts, it is a sum of
+   * sums— and the archetype cannot invent that hierarchy from the
+   * set. Whoever knows the domain builds it, as they already build `columns`.
    */
   report?: ListReport;
 
   /**
-   * El PIVOTE: dos ejes a la vez. Con esto, `present="pivot"` dibuja un
+   * The PIVOT: two axes at once. With this, `present="pivot"` draws a
    * `PivotTable`.
    *
-   * Va aparte de `group` y no derivado de él aunque los dos partan el conjunto,
-   * porque un pivote parte por DOS ejes y una lista agrupada por uno: los
-   * niveles de `group` no dicen cuál de ellos sería el eje horizontal, y
-   * elegirlo acá sería adivinar la pregunta.
+   * It goes apart from `group` and not derived from it although both split the set,
+   * because a pivot splits by TWO axes and a grouped list by one: the
+   * levels of `group` do not say which of them would be the horizontal axis, and
+   * choosing it here would be guessing the question.
    */
   pivot?: ListPivot<T>;
-  /** El GRÁFICO: el pivote dibujado. Con esto, `present="chart"` dibuja un `ChartExplorer`. */
+  /** The CHART: the pivot drawn. With this, `present="chart"` draws a `ChartExplorer`. */
   chart?: ListChart<T>;
   /** The presentations the application wrote (`List.Present`), by id. */
   faces?: readonly ListFace<T>[];
@@ -410,13 +410,13 @@ export type ListViewProps<T extends object> = {
   /** The three states, in a single place. Every view used to re-assemble them
    *  with three nested ternaries, and that is why «empty because of a filter»
    *  and «really empty» got mixed up in half the screens. */
-  /** Los estados del conjunto, en un solo lugar.
+  /** The set's states, in a single place.
    *
-   *  `loading` es la PRIMERA lectura: no hay filas todavía, y se dibuja el esqueleto.
-   *  `refreshing` es volver a preguntar con filas en la mano —se tipeó en la búsqueda, se
-   *  cambió de página—: las filas se quedan y una barra discreta dice que se está
-   *  preguntando. Cambiarlas por un esqueleto en cada pregunta hacía parpadear la tabla, y un
-   *  clic podía caer sobre una fila que ya no estaba. */
+   *  `loading` is the FIRST reading: there are no rows yet, and the skeleton is drawn.
+   *  `refreshing` is asking again with rows in hand —something was typed in the search, the
+   *  page changed—: the rows stay and a discreet bar says that a question is
+   *  being asked. Swapping them for a skeleton on every question made the table flicker, and a
+   *  click could land on a row that was no longer there. */
   state?: { loading?: boolean; refreshing?: boolean; error?: string | null };
   filtered?: boolean;
   empty?: ListEmpty;

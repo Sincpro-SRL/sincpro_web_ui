@@ -11,27 +11,27 @@ import { Wand2 } from "lucide-react";
 import { useId } from "react";
 
 /* ====================================================================== *
- *  UN JSON QUE SE ESCRIBE A MANO, EN UN EDITOR DE VERDAD.
+ *  A JSON WRITTEN BY HAND, IN A REAL EDITOR.
  *
- *  CodeMirror y no un `<textarea>` con colores encima: eso último llegó hasta
- *  donde llegan cincuenta líneas —pintar las comillas— y se quedaba corto en
- *  todo lo demás, que es lo que hace usable escribir un filtro a mano:
- *  números de línea para saber dónde está el error, plegado para no perderse
- *  en un `all` de seis condiciones, y el subrayado en el carácter exacto
- *  donde el JSON se rompe en vez de un cartel que dice que algo está mal.
+ *  CodeMirror and not a `<textarea>` with colours on top: the latter got as far
+ *  as fifty lines go —painting the quotes— and fell short on
+ *  everything else, which is what makes writing a filter by hand usable:
+ *  line numbers to know where the error is, folding so you do not get lost
+ *  in an `all` of six conditions, and the underline on the exact character
+ *  where the JSON breaks instead of a sign saying something is wrong.
  *
- *  El `linter` de abajo es el del propio paquete de JSON: marca el error
- *  mientras se escribe. El aviso de afuera —`error`— sigue existiendo porque
- *  dice otra cosa: que el JSON está bien escrito pero no es un filtro.
+ *  The `linter` below is the JSON package's own: it marks the error
+ *  as you type. The outer notice —`error`— still exists because it
+ *  says something else: that the JSON is well written but is not a filter.
  * ====================================================================== */
 
-/** Un JSON acomodado, o el mismo texto si todavía no se puede leer.
+/** A JSON laid out, or the same text if it cannot be read yet.
  *
  *      in   '{"all":[{"field":"a","operator":"=","value":1}]}'
- *      out  el mismo, con sangría de dos espacios y un campo por línea
+ *      out  the same, indented by two spaces and one field per line
  *
- *  Separado del componente para que se pueda probar sin dibujar nada, que es lo único que
- *  tiene lógica acá adentro. */
+ *  Separated from the component so it can be tested without drawing anything, which is the only thing
+ *  with logic in here. */
 export function formatJson(text: string): string {
   try {
     return JSON.stringify(JSON.parse(text), null, 2);
@@ -67,12 +67,12 @@ export function JsonEditor({
 }: {
   value: string;
   onChange: (next: string) => void;
-  /** Qué está mal con lo escrito más allá de la sintaxis — que sea JSON válido pero no un
-   *  filtro, por ejemplo. Los errores de sintaxis los marca el editor, en su lugar exacto. */
+  /** What is wrong with what was written beyond the syntax — that it is valid JSON but not a
+   *  filter, for example. Syntax errors are marked by the editor, at their exact place. */
   error?: string | null;
   height?: string;
-  /** Cómo se llama este editor. Sin esto dice sólo que es un editor de código,
-   *  que es lo único que se puede decir sin saber qué se escribe adentro. */
+  /** What this editor is called. Without this it says only that it is a code editor,
+   *  which is the only thing that can be said without knowing what is written inside. */
   label?: string;
 }) {
   const copy = useUiCopy();
@@ -124,8 +124,8 @@ export function JsonEditor({
             foldGutter: true,
             highlightActiveLine: true,
             autocompletion: false,
-            /* El resaltado del par de llaves es lo que hace legible un filtro anidado: sin él,
-               en un `any` adentro de un `all` hay que contar corchetes con el dedo. */
+            /* Highlighting the pair of braces is what makes a nested filter legible: without it,
+               in an `any` inside an `all` you have to count brackets with your finger. */
             bracketMatching: true,
             closeBrackets: true,
           }}

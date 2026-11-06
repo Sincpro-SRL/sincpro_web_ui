@@ -199,11 +199,11 @@ export function Row({
         className={`group/row flex min-w-0 items-center rounded-control transition-colors duration-(--duration-instant) ${
           interactive ? "cursor-pointer hover:bg-ink/4" : ""
         } ${byDensity(d, "gap-3 px-2 py-2", "gap-2 px-1.5 py-1")}`}
-        /* `onPeek` con `onOpen` de reserva: quien sólo declara `onOpen` —lo
-         natural si nunca oyó hablar de la vista previa— tiene que poder abrir
-         igual haciendo click en cualquier parte de la fila, no sólo en el
-         nombre. Con la vista previa apagada (`PeekLayer.tsx`) esto es hoy el
-         caso de todos: un click en la fila abre, sin más. */
+        /* `onPeek` with `onOpen` as a fallback: whoever declares only `onOpen` —what is
+         natural if they never heard of the preview— must be able to open
+         just the same by clicking anywhere on the row, not only on the
+         name. With the preview turned off (`PeekLayer.tsx`) this is today the
+         case for everyone: a click on the row opens, plain and simple. */
         onClick={click === "open" ? (onOpen ?? onPeek) : (onPeek ?? onOpen)}
         role="presentation"
       >
@@ -323,12 +323,12 @@ export function Row({
   return (
     <div data-slot="branch" className="flex min-w-0 flex-col">
       {row}
-      {/* El riel de la rama. El padding DERECHO es el mismo que el de la fila
-          padre y no es estético: sin él, lo que la rama alinea a la derecha
-          —cuánto se facturó, el estado— se iba más allá del borde del
-          contenido y quedaba cortado contra el filo de la pantalla, mientras
-          la ficha del padre terminaba veinte píxeles antes. Dos cosas del
-          mismo renglón visual que no se alineaban. */}
+      {/* The branch's rail. The RIGHT padding is the same as the parent
+          row's and it is not aesthetic: without it, what the branch aligns to the right
+          —how much was invoiced, the status— went past the edge of the
+          content and got cut off against the screen's edge, while
+          the parent's card ended twenty pixels earlier. Two things on the
+          same visual line that did not align. */}
       <div
         className={`flex min-w-0 flex-col gap-1 border-l border-line-strong ${byDensity(
           d,
@@ -343,23 +343,23 @@ export function Row({
 }
 
 /**
- * EL ENCABEZADO DE LA PRESENTACIÓN DE FILAS.
+ * THE ROWS PRESENTATION'S HEADER.
  *
- * Context: la tabla y la planilla dicen qué es cada columna; la lista de filas
- * no decía nada. Ochenta renglones con «Ferretería Sur · 13 sept · Bs 12.480» a la
- * derecha y una ficha al final, y había que deducir qué era cada número — o
- * cambiar a la tabla para averiguarlo, que es cambiar de presentación para leer
- * la misma pantalla.
+ * Context: the table and the sheet say what each column is; the rows list
+ * said nothing. Eighty lines with «Ferretería Sur · 13 sept · Bs 12.480» on the
+ * right and a card at the end, and you had to deduce what each number was — or
+ * switch to the table to find out, which is changing presentation to read
+ * the same screen.
  *
- * **No son columnas: son las ZONAS de la fila, rotuladas.** Una fila tiene un
- * nombre que se estira, un `meta` que es UNA cadena ya formateada, y una
- * columna de fichas de ancho fijo. Rotularlas como si fueran tres columnas
- * alineadas sería mentir sobre lo que hay debajo: el `meta` de una fila puede
- * decir tres cosas y el de otra dos.
+ * **They are not columns: they are the row's ZONES, labelled.** A row has a
+ * name that stretches, a `meta` that is ONE already-formatted string, and a
+ * column of cards of fixed width. Labelling them as if they were three aligned
+ * columns would be lying about what is underneath: one row's `meta` may
+ * say three things and another's two.
  *
- * Por eso calca la caja de `Row` —mismo padding, mismos huecos, mismos
- * espaciadores de casilla, ícono y acciones— en vez de declarar un ancho
- * propio. Si `Row` cambia su geometría, esto la sigue.
+ * That is why it traces `Row`'s box —same padding, same gaps, same
+ * checkbox, icon and actions spacers— instead of declaring a width of its
+ * own. If `Row` changes its geometry, this follows it.
  */
 export function RowHeader({
   name,
@@ -374,15 +374,15 @@ export function RowHeader({
   name: string;
   meta?: string;
   tags?: string;
-  /** Los espaciadores de la izquierda. Los pone quien dibuja las filas, porque
-   *  es el único que sabe si esta lista elige y si sus filas tienen ícono. */
+  /** The spacers on the left. Whoever draws the rows puts them, because
+   *  they are the only one who knows whether this list selects and whether its rows have an icon. */
   withSelection?: boolean;
   withIcon?: boolean;
   /** The rows carry a face instead of an icon: a wider spacer, so the labels stay aligned. */
   withAvatar?: boolean;
-  /** La zona de acciones de la derecha ocupa su lugar aunque esté invisible
-   *  —así nada se corre al pasar el puntero—, así que el rótulo de las fichas
-   *  queda desalineado si acá no se reserva lo mismo. */
+  /** The actions zone on the right takes up its place even when invisible
+   *  —so nothing shifts when the pointer passes—, so the cards' label
+   *  ends up misaligned if the same is not reserved here. */
   withActions?: boolean;
   /** What the rows have at their end — the same flags `Row` gets — drawn invisible here so
    *  the header reserves exactly that width. Takes over from `withActions`. */
@@ -394,8 +394,8 @@ export function RowHeader({
   return (
     <div
       data-slot="row-header"
-      /* Se pega debajo de la barra de la lista, como el encabezado de la tabla
-         y el de la planilla. Ver `system/sticky.tsx`. */
+      /* It sticks below the list's bar, like the table's header
+         and the sheet's. See `system/sticky.tsx`. */
       className={`sticky z-10 flex min-w-0 items-center border-b border-line-strong bg-ground ${byDensity(
         d,
         "gap-3 px-3 py-2",
@@ -410,10 +410,10 @@ export function RowHeader({
       ) : !withIcon ? null : (
         <span className="size-(--size-icon-md) shrink-0" aria-hidden />
       )}
-      {/* La misma caja que arma `Row`, con los mismos pedidos: cuando la fila
-          parte su renglón, el rótulo del `meta` cae al segundo igual que el
-          `meta` que rotula. Calcar la caja es lo único que mantiene alineadas
-          dos cosas que se dibujan por separado. */}
+      {/* The same box `Row` builds, with the same requests: when the row
+          splits its line, the `meta` label drops to the second just like the
+          `meta` it labels. Tracing the box is the only thing that keeps aligned
+          two things that are drawn separately. */}
       <div
         className={`flex min-w-0 shrink grow basis-(--container-name) flex-wrap items-center gap-y-0 ${byDensity(
           d,
@@ -511,10 +511,10 @@ export function GroupHeader({
     </>
   );
 
-  /* La sangría va en el relleno de la izquierda y no en un margen: el
-     encabezado tiene fondo y borde inferior, y un margen los cortaría antes del
-     borde de la lista — la banda dejaría de leerse como una franja. El hover
-     no reemplaza ese fondo: es una marca metida adentro, redondeada. */
+  /* The indentation goes in the left padding and not in a margin: the
+     header has a background and a bottom border, and a margin would cut them before the
+     list's edge — the band would stop reading as a stripe. The hover
+     does not replace that background: it is a mark set inside, rounded. */
   const box = `flex min-w-0 items-center gap-2 border-b border-line bg-ground ${byDensity(
     d,
     "px-3 py-1.5",

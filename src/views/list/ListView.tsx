@@ -98,10 +98,10 @@ const ChartExplorer = lazy(() =>
 ) as unknown as typeof EagerChart;
 
 /**
- * EL DIBUJO de una lista. **La puerta es `List`**, que se escribe como árbol y
- * traduce las ranuras a esto — acá todo entra como props porque acá ya se
- * decidió todo: quién compone no elige entre dos maneras de escribir lo mismo,
- * porque esto no se publica.
+ * THE DRAWING of a list. **The door is `List`**, which is written as a tree and
+ * translates the slots into this — here everything comes in as props because here
+ * everything has already been decided: whoever composes does not choose between two ways of writing the same thing,
+ * because this is not published.
  *
  * Context: `invoices.view.tsx` has 349 lines and about 120 of them are
  * re-assembling this: the bar, the search field, the grouping and the three
@@ -127,10 +127,10 @@ const PRESENT_ICONS: readonly { id: BuiltInPresent; icon: LucideIcon }[] = [
   { id: "table", icon: Table2 },
   { id: "board", icon: LayoutGrid },
   { id: "sheet", icon: Sheet },
-  /* La sigma y no un ícono de tabla: lo que distingue a un informe de las otras
-     cuatro es que SUMA. */
+  /* The sigma and not a table icon: what sets a report apart from the other
+     four is that it SUMS. */
   { id: "report", icon: Sigma },
-  /* La cuadrícula: dos ejes, y lo que importa está adentro. */
+  /* The grid: two axes, and what matters is inside. */
   { id: "pivot", icon: Grid3x3 },
   /* El mismo pivote, dibujado. */
   { id: "chart", icon: ChartColumnBig },
@@ -208,18 +208,18 @@ export function ListView<T extends object>({
   const columnSpecs = useMemo(() => specsFromColumns(columns ?? [], false), [columns]);
   const columnControl = useColumnControl(columnSpecs, {
     ...(visibleColumnIds === undefined ? {} : { visibleIds: visibleColumnIds }),
-    /* El nombre tiene que ser el que `useColumnControl` lee. Decía
-       `onVisibleColumnIdsChange` —el nombre de la prop de ACÁ— y el hook busca
-       `onVisibleIdsChange`, así que nunca entraba en modo controlado: la lista
-       ignoraba en silencio las columnas que le pasaran. */
+    /* The name has to be the one `useColumnControl` reads. It said
+       `onVisibleColumnIdsChange` —the name of the prop HERE— and the hook looks for
+       `onVisibleIdsChange`, so it never entered controlled mode: the list
+       silently ignored the columns it was given. */
     ...(onVisibleColumnIdsChange === undefined
       ? {}
       : { onVisibleIdsChange: onVisibleColumnIdsChange }),
   });
-  /* Agrupar por una columna escondida dejaría montones cuyo criterio no se ve.
-     Con N niveles son N columnas, y se reponen todas. Es lo ÚNICO para lo que
-     hace falta saber qué columna contesta por un campo: la tabla ya no agrupa
-     por columnas, agrupa por niveles. */
+  /* Grouping by a hidden column would leave buckets whose criterion is not seen.
+     With N levels there are N columns, and all are restored. It is the ONLY thing for which
+     we need to know which column answers for a field: the table no longer groups
+     by columns, it groups by levels. */
   const groupedIds = group === undefined ? [] : groupedColumnIds(group, columns);
   const tableIds = groupedIds.every((id) => columnControl.visibleIds.includes(id))
     ? columnControl.visibleIds
@@ -255,33 +255,33 @@ export function ListView<T extends object>({
 
   const sheetSpec = sheet ?? sheetFromDeclared;
 
-  /* El menú de columnas vale en `table` y en la planilla DERIVADA —las dos
-     dibujan las columnas que declaró el código—, y no en la planilla de datos
-     crudos ni en el informe: ahí las columnas salen del archivo o son los
-     períodos, y no hay ninguna que el código pueda ofrecer esconder. */
+  /* The columns menu applies in `table` and in the DERIVED sheet —both
+     draw the columns the code declared—, and not in the raw-data sheet
+     nor in the report: there the columns come from the file or are the
+     periods, and there is none the code could offer to hide. */
   const columnsMenu =
     (present === "table" || (present === "sheet" && sheet === undefined)) &&
     columnControl.hasOptional ? (
       <ColumnsMenu control={columnControl} {...(surface === undefined ? {} : { surface })} />
     ) : null;
-  /* ORDENAR. El control va en la barra y no adentro de la tabla porque el orden
-     es del CONJUNTO, igual que los niveles y que lo plegado: cambiar de
-     presentación no puede perderlo, y en filas, tablero y planilla no hay
-     encabezados donde hacer clic.
+  /* SORTING. The control goes in the bar and not inside the table because the order
+     belongs to the SET, like the levels and what is folded: switching
+     presentation cannot lose it, and in rows, board and sheet there are no
+     headers to click on.
 
-     Lo único que NO se ordena es un informe cuyas filas DECLARÓ el dominio: ahí
-     el orden es el informe —«Total activos» tiene que quedar después de los
-     activos— y reordenarlo por importe lo destruye.
+     The only thing that is NOT sorted is a report whose rows the domain DECLARED: there
+     the order is the report —«Total activos» has to come after the
+     assets— and reordering it by amount destroys it.
 
-     Un informe armado a partir de los montones sí se ordena, porque no es una
-     jerarquía que alguien escribió: es este mismo conjunto, contado. La regla
-     mira `report.rows` y no la presentación, que era la versión gruesa de esto y
-     le sacaba el orden a un informe que sí podía tenerlo. */
+     A report built from the buckets is sorted, because it is not a
+     hierarchy someone wrote: it is this same set, counted. The rule
+     looks at `report.rows` and not at the presentation, which was the coarse version of this and
+     took the sorting away from a report that could have it. */
   const declaredReport = present === "report" && report?.rows !== undefined;
-  /* El pivote tampoco se ordena desde la barra, y por una razón propia: sus
-     filas no son las filas del conjunto. Cada eje está en el orden de sus
-     claves, y ordenar los registros de abajo no ordena los montones de arriba —
-     ofrecerlo sería un control que se mueve y no cambia nada. */
+  /* The pivot is not sorted from the bar either, for its own reason: its
+     rows are not the set's rows. Each axis is in the order of its
+     keys, and sorting the records below does not sort the buckets above —
+     offering it would be a control that moves and changes nothing. */
   const sortMenu =
     sortable === undefined ||
     sortable.length === 0 ||
@@ -384,13 +384,13 @@ export function ListView<T extends object>({
     );
   };
 
-  /* El orden va ANTES de agrupar y no después, y no es indistinto: agrupar
-     preserva el orden de aparición dentro de cada montón, así que ordenar
-     primero ordena las filas de cada montón. Al revés habría que reordenar N
-     montones y el orden entre ellos quedaría al azar.
+  /* Sorting goes BEFORE grouping and not after, and it is not indifferent: grouping
+     preserves the order of appearance within each bucket, so sorting
+     first sorts the rows of each bucket. The other way round N
+     buckets would have to be reordered and the order among them would be left to chance.
 
-     La tabla ordena adentro —es TanStack— así que ahí se deja pasar: ordenar dos
-     veces no rompe nada, pero es trabajo al pedo sobre cada render. */
+     The table sorts inside —it is TanStack— so there it is let through: sorting twice
+     breaks nothing, but it is pointless work on every render. */
   const ordered = useMemo(
     () =>
       present === "table" || sortable === undefined
@@ -400,11 +400,11 @@ export function ListView<T extends object>({
   );
 
   /**
-   * La grilla que hay que dibujar: la que le pasaron plegada, o la que se arma
-   * con las filas en la mano.
+   * The grid to draw: the one handed in folded, or the one built
+   * with the rows in hand.
    *
-   * Es la misma decisión que `pilesOf` toma para los montones, y por el mismo
-   * motivo: quién plegó no es asunto de esta capa.
+   * It is the same decision `pilesOf` takes for the buckets, and for the same
+   * reason: who folded is not this layer's business.
    */
   const pivotShown = useMemo<Pivot | undefined>(() => {
     if (pivot?.folded !== undefined) return pivot.folded;
@@ -413,10 +413,10 @@ export function ListView<T extends object>({
   }, [pivot, ordered]);
 
   /**
-   * Vacío es no tener NADA que dibujar, y en el pivote eso no se pregunta
-   * contando `items`: cuando la grilla la plegó quien guarda los datos, las
-   * filas de la pantalla son montones y el conjunto puede no haber bajado
-   * nunca. Contar los registros ahí es tapar una grilla entera con «todavía no
+   * Empty is having NOTHING to draw, and in the pivot that is not asked
+   * by counting `items`: when the grid was folded by whoever keeps the data, the
+   * screen's rows are buckets and the set may never have been
+   * downloaded. Counting the records there is covering a whole grid with «todavía no
    * hay datos».
    */
   const isEmpty =
@@ -431,8 +431,8 @@ export function ListView<T extends object>({
        saying there is nothing. */
     !(present === "table" && create?.draft != null);
 
-  /* La única línea que hace agrupable a una vista: el árbol que le pasaron, o el
-     que se arma con las filas en la mano. */
+  /* The one line that makes a view groupable: the tree it was handed, or the
+     one built with the rows in hand. */
   const piles = useMemo(() => pilesOf(ordered, group), [group, ordered]);
   const isOpen = useCallback((pile: Pile<T>) => pileIsOpen(pile, group), [group]);
 
@@ -441,9 +441,9 @@ export function ListView<T extends object>({
     [piles, isOpen, columns],
   );
 
-  /* La forma de una fila de ESTA lista, para que el encabezado reserve los
-     mismos espaciadores. Se mira la primera y no todas: el ícono y las acciones
-     los decide la vista para la lista entera. */
+  /* The shape of a row of THIS list, so that the header reserves the
+     same spacers. The first is looked at and not all: the icon and the actions
+     are decided by the view for the whole list. */
   const first = items[0];
   const firstRow = first === undefined ? undefined : row(first);
 
@@ -455,9 +455,9 @@ export function ListView<T extends object>({
     );
   }
 
-  /** Los montones, con sus filas adentro. Se llama a sí misma porque el árbol
-   *  tiene N niveles: un montón dibuja su encabezado y, adentro, o bien los
-   *  montones de abajo o bien las filas — nunca las dos cosas. */
+  /** The buckets, with their rows inside. It calls itself because the tree
+   *  has N levels: a bucket draws its header and, inside, either the buckets
+   *  below or the rows — never both. */
   function renderPiles(
     list: readonly Pile<T>[],
     nodes: (inside: readonly T[]) => ReactNode,
@@ -557,7 +557,7 @@ export function ListView<T extends object>({
         rowClick={rowClick}
       />
     ) : present === "sheet" && sheetSpec !== undefined ? (
-      /* La planilla recibe el conjunto por ÍNDICE y no una matriz ya armada: ver `SheetPresentation`. */
+      /* The sheet receives the set by INDEX and not an already built matrix: see `SheetPresentation`. */
       <SheetPresentation
         spec={sheetSpec}
         entries={sheetRows}
@@ -565,11 +565,11 @@ export function ListView<T extends object>({
         {...(group === undefined ? {} : { group })}
       />
     ) : present === "report" && report !== undefined ? (
-      /* El informe declarado por el dominio no se ORDENA desde la barra: el
-         orden ES el informe, y ordenar un balance por importe deja «Total
-         Activos» en el medio. Pero sí se AGRUPA cuando las líneas no vienen
-         declaradas: ahí el informe es este conjunto contado por los niveles que
-         estén puestos. */
+      /* The report declared by the domain is not SORTED from the bar: the
+         order IS the report, and sorting a balance by amount leaves «Total
+         Activos» in the middle. But it is GROUPED when the lines do not come
+         declared: there the report is this set counted by the levels that
+         are set. */
       <ReportTable
         /* Built from the piles, the numbers are the list's columns' — and so is how they
            are written. Declared by the domain, the columns are the domain's. */
@@ -601,11 +601,11 @@ export function ListView<T extends object>({
         />
       </div>
     ) : present === "pivot" && pivotShown !== undefined ? (
-      /* El pivote recibe la grilla y nada más: no hay selección que pasarle
-         —una casilla por montón elegiría cosas que no son registros—, no hay
-         orden —cada eje viene en el orden de sus claves— y no hay menú de
-         columnas, porque las columnas son un eje y no una lista de campos que
-         se puedan esconder de a uno. */
+      /* The pivot receives the grid and nothing else: there is no selection to pass it
+         —a checkbox per bucket would choose things that are not records—, no
+         order —each axis comes in the order of its keys— and no columns
+         menu, because the columns are an axis and not a list of fields that
+         can be hidden one by one. */
       <PivotTable
         pivot={pivotShown}
         {...(pivot?.onCell === undefined ? {} : { onCell: pivot.onCell })}
@@ -696,8 +696,8 @@ export function ListView<T extends object>({
         ))}
       </div>
     ) : (
-      /* El encabezado va ANTES de los montones y no adentro de cada uno:
-         rotula la fila, y la fila es la misma en los cinco montones. */
+      /* The header goes BEFORE the buckets and not inside each one:
+         it labels the row, and the row is the same in all five buckets. */
       <>
         {rowHeader === undefined || items.length === 0 ? null : (
           <RowHeader
@@ -705,9 +705,9 @@ export function ListView<T extends object>({
             {...(rowHeader.meta === undefined ? {} : { meta: rowHeader.meta })}
             {...(rowHeader.tags === undefined ? {} : { tags: rowHeader.tags })}
             withSelection={selection !== undefined}
-            /* Los espaciadores se preguntan por la PRIMERA fila: el ícono y las
-               acciones son de la lista entera, no de una fila — si la primera no
-               tiene ícono, ninguna lo tiene. */
+            /* The spacers are asked about the FIRST row: the icon and the
+               actions belong to the whole list, not to a row — if the first has
+               no icon, none has. */
             withIcon={firstRow?.icon !== undefined}
             withAvatar={firstRow?.avatar !== undefined}
             trail={{
@@ -732,8 +732,8 @@ export function ListView<T extends object>({
     >
       <Listing
         bar={bar}
-        /* La barra se queda arriba: con 187 filas, scrollear para ver la última
-           dejaba sin buscador, sin paginador y sin el conmutador.
+        /* The bar stays on top: with 187 rows, scrolling to see the last one
+           left you without search, without pager and without the switcher.
            Embedded it does NOT: the record has its own sticky parts (its rail, its tabs),
            and a second band stuck under them — or carried up into the frame's header slot,
            which is what a sticky list bar does under a sidebar — would cover the record
@@ -748,10 +748,10 @@ export function ListView<T extends object>({
       >
         {loading ? <Skeleton label={copy.failed.loading} /> : null}
 
-        {/* VACÍA. Lo declarado gana —«importá tus facturas» sabe qué se puede hacer— y
-            si no se declaró nada igual se dice algo: un panel en blanco, sin
-            filas y sin explicación, no dice si no hay nada o si el recorte se
-            comió todo. */}
+        {/* EMPTY. What is declared wins —«importá tus facturas» knows what can be done— and
+            if nothing was declared something is said anyway: a blank panel, with no
+            rows and no explanation, does not say whether there is nothing or the cut
+            ate everything. */}
         {isEmpty ? (
           filtered ? (
             <Empty

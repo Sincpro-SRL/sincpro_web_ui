@@ -8,39 +8,39 @@ import { formatDuration } from "@sincpro/web-ui/primitives/field/duration";
 import type { DataColumn } from "@sincpro/web-ui/primitives/table/DataTable";
 
 /* ====================================================================== *
- *  LAS COLUMNAS QUE NADIE DECLARÓ, LEÍDAS DEL MODELO.
+ *  THE COLUMNS NOBODY DECLARED, READ FROM THE MODEL.
  *
- *  Una vista declara a mano las columnas que sabe dibujar bien: la que abre el
- *  registro, la que lleva una ficha de color, la que se lee en kB. Son seis, y
- *  el modelo tiene doce. Las otras seis no estaban en ningún lado — ni en la
- *  tabla, ni en el menú de columnas— así que el `fingerprint` o el
- *  `storage_key` de un dato no se podían mirar aunque el servidor los mande en
- *  cada fila.
+ *  A view declares by hand the columns it knows how to draw well: the one that opens the
+ *  record, the one that carries a coloured card, the one read in kB. They are six, and
+ *  the model has twelve. The other six were nowhere — neither in the
+ *  table nor in the columns menu— so a datum's `fingerprint` or
+ *  `storage_key` could not be looked at even though the server sends them in
+ *  every row.
  *
- *  Esto las agrega. **No hay una lista de campos escrita acá**: son los del
- *  `model_meta_data` que el servidor deriva del modelo, los mismos que ya
- *  alimentan el constructor de filtros. Agregar una columna a la tabla del
- *  motor la hace aparecer acá, apagada y con su nombre tal cual, sin que nadie
- *  toque el frontend.
+ *  This adds them. **There is no list of fields written here**: they are those of the
+ *  `model_meta_data` the server derives from the model, the same ones that already
+ *  feed the filter builder. Adding a column to the engine's table
+ *  makes it appear here, switched off and with its name as is, without anyone
+ *  touching the frontend.
  *
- *  Van todas `optional` y `defaultHidden`: aparecen en el menú de columnas y
- *  empiezan apagadas. La vista sigue abriendo como abría; lo que cambia es que
- *  ahora lo demás EXISTE y se puede encender.
+ *  They all go `optional` and `defaultHidden`: they appear in the columns menu and
+ *  start switched off. The view keeps opening as it used to; what changes is that
+ *  now the rest EXISTS and can be switched on.
  * ====================================================================== */
 
-/** Qué campo del modelo muestra una columna declarada a mano.
+/** Which model field a hand-declared column shows.
  *
- *  Sin esto, «filas» y `row_count` son dos cosas distintas y el campo
- *  aparecería dos veces: una con el rótulo bueno y otra cruda. */
+ *  Without this, «filas» and `row_count` are two different things and the field
+ *  would appear twice: once with the good label and once raw. */
 export type ClaimedField = { id: string; field?: string };
 
-/** Los campos que las columnas declaradas ya contestan.
+/** The fields the declared columns already answer.
  *
  *      in            [{id:"rows", field:"row_count"}, {id:"name"}]
  *      out           Set {"row_count", "name"}
  *
- *  El `id` cuenta como reclamo cuando coincide con el nombre del campo: la
- *  mayoría de las columnas se llaman como lo que muestran. */
+ *  The `id` counts as a claim when it matches the field's name: most
+ *  columns are named after what they show. */
 export function claimedFields(columns: readonly ClaimedField[]): Set<string> {
   const claimed = new Set<string>();
   for (const column of columns) {
@@ -50,17 +50,17 @@ export function claimedFields(columns: readonly ClaimedField[]): Set<string> {
   return claimed;
 }
 
-/** Un valor del registro, en algo que una celda pueda ordenar y dibujar.
+/** A record value, into something a cell can sort and draw.
  *
- *      in            ["edad","sexo"]     un `text[]`
+ *      in            ["edad","sexo"]     a `text[]`
  *      out           "edad, sexo"
- *      in            []                  una lista vacía no es un texto vacío
- *      out           null                la tabla dibuja «—»
+ *      in            []                  an empty list is not an empty text
+ *      out           null                the table draws «—»
  *      in            "2026-09-13T04:17:00"
  *      out           "2026-09-13T04:17:00"
  *
- *  Las fechas se dejan como vienen —ISO— porque en ISO el orden alfabético ES
- *  el cronológico, y así la columna ordena bien sin parsear nada. */
+ *  Dates are left as they come —ISO— because in ISO alphabetical order IS
+ *  chronological, and so the column sorts well without parsing anything. */
 export function readModelValue(raw: unknown): string | number | boolean | null {
   if (raw === null || raw === undefined) return null;
   if (Array.isArray(raw)) return raw.length === 0 ? null : raw.join(", ");
@@ -101,8 +101,8 @@ export function modelCellKind(type: string): ModelCellKind {
   return KIND_OF_TYPE[type.toLowerCase()] ?? "text";
 }
 
-/** Cuánto ancho merece un campo, por su tipo. Una huella son 64 caracteres y
- *  una cuenta son seis: darles el mismo ancho arruina las dos. */
+/** How much width a field deserves, by its type. A fingerprint is 64 characters and
+ *  an account is six: giving them the same width ruins both. */
 function widthFor(kind: ModelCellKind): number {
   if (kind === "number" || kind === "duration") return 120;
   if (kind === "datetime" || kind === "date") return 190;
@@ -111,23 +111,23 @@ function widthFor(kind: ModelCellKind): number {
 }
 
 /**
- * Las columnas declaradas, más una por cada campo del modelo que ninguna
- * contestaba.
+ * The declared columns, plus one for each model field that none
+ * answered.
  *
- *     in    model     el `model_meta_data` de `account.move` — 12 campos
- *     in    declared  6 columnas escritas a mano en la vista
- *     out             las 6, y detrás `journal_id`, `currency_id`, `invoice_origin`,
+ *     in    model     the `model_meta_data` of `account.move` — 12 fields
+ *     in    declared  6 columns written by hand in the view
+ *     out             the 6, and behind them `journal_id`, `currency_id`, `invoice_origin`,
  *                     `payment_reference`, `fiscal_position_id`, `company_id`,
- *                     `move_type`, todas apagadas
+ *                     `move_type`, all switched off
  *
- * El rótulo de las agregadas sale de `model.translations` en el idioma pedido —el mismo
- * `translations()` que el modelo publica para todo lo demás—, con el `default` que ese mismo
- * modelo declaró si el idioma no está, y el nombre del campo tal cual sólo si el modelo no
- * dijo ninguna palabra sobre él. Nunca puede desincronizarse con el motor porque sale de la
- * MISMA respuesta que nombra el campo — a diferencia de un diccionario mantenido acá.
+ * The label of the added ones comes from `model.translations` in the requested language —the same
+ * `translations()` the model publishes for everything else—, with the `default` that same
+ * model declared if the language is missing, and the field's name as is only if the model
+ * said no word about it. It can never get out of sync with the engine because it comes from the
+ * SAME answer that names the field — unlike a dictionary maintained here.
  *
- * `model === null` —todavía no llegó la definición— devuelve las declaradas sin
- * tocar, que es exactamente lo que había antes.
+ * `model === null` —the definition has not arrived yet— returns the declared ones
+ * untouched, which is exactly what there was before.
  */
 export function columnsFromModel<T extends object>(
   declared: readonly DataColumn<T>[],

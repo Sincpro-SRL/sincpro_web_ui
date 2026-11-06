@@ -145,8 +145,15 @@ export function DatePicker({
   min,
   max,
   mode,
+  today,
   "aria-label": ariaLabel,
-}: Shared & { value: string | null; onChange?: (next: string | null) => void }) {
+}: Shared & {
+  value: string | null;
+  onChange?: (next: string | null) => void;
+  /** The day it is for the business, as an ISO date — what its calendar marks as today
+   *  (`Calendar today`). Without it, the browser's. */
+  today?: string;
+}) {
   const { id, labelledBy, describedBy, invalid } = useFieldIds({
     id: ownId,
     describedBy: ownDescribedBy,
@@ -165,6 +172,8 @@ export function DatePicker({
         onChange={(next) => onChange?.(next === null ? null : next.toString())}
         minValue={parse(min) ?? undefined}
         maxValue={parse(max) ?? undefined}
+        // Empty, the calendar opens on the business's today; with a value, on the value.
+        {...(today === undefined ? {} : { placeholderValue: parse(today) ?? undefined })}
         isInvalid={invalid}
         isDisabled={disabled}
         className="w-full"
@@ -177,7 +186,7 @@ export function DatePicker({
         </FieldGroup>
         <Popover placement="bottom end">
           <Dialog className="p-3 outline-0">
-            <Calendar />
+            <Calendar {...(today === undefined ? {} : { today })} />
           </Dialog>
         </Popover>
       </AriaDatePicker>

@@ -1,4 +1,4 @@
-/* LO QUE SE PLIEGA — una sección que se abre y se cierra, y un grupo de ellas. */
+/* WHAT FOLDS — a section that opens and closes, and a group of them. */
 export {
   Accordion,
   Disclosure,

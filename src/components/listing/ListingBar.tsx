@@ -240,11 +240,11 @@ export function ListingBar({
     );
   }
 
-  /* El campo de búsqueda va en el CENTRO de la línea, y centrado contra la
-     línea: pide `--container-search` y los dos lados se reparten lo que sobra
-     en mitades iguales. Antes tomaba el resto, así que un rastro largo a la
-     izquierda lo corría —y dos listas seguidas dibujaban su buscador en dos
-     lugares distintos—. Ver `primitives/block/Line.tsx`. */
+  /* The search field goes in the CENTRE of the line, centred against the
+     line: it asks for `--container-search` and the two sides share what is left
+     in equal halves. Before, it took the rest, so a long trail on the
+     left pushed it —and two lists in a row drew their search box in two
+     different places—. See `primitives/block/Line.tsx`. */
   const topRow = (
     <Line
       asks="var(--container-crumb)"
@@ -252,12 +252,12 @@ export function ListingBar({
       gap={byDensity(d, "gap-x-4 gap-y-2", "gap-x-2 gap-y-1.5")}
       align="items-start"
       start={crumbs}
-      /* `overflow-x-clip` y NO `overflow-hidden`: lo que hay que recortar es el
-         ancho —que el campo no pinte encima de «1–80»—, y `hidden` en un eje
-         fuerza `auto` en el otro, así que también recortaba hacia ABAJO. El
-         panel de filtros del `SearchBar` cuelga con `absolute top-full`, o sea
-         justo afuera de esta caja: apretar el embudo abría un panel que nadie
-         veía. `clip` es el único valor que deja `visible` en el otro eje. */
+      /* `overflow-x-clip` and NOT `overflow-hidden`: what has to be clipped is the
+         width —so the field does not paint over «1–80»—, and `hidden` on one axis
+         forces `auto` on the other, so it also clipped DOWNWARD. The
+         `SearchBar`'s filter panel hangs with `absolute top-full`, that is
+         just outside this box: pressing the funnel opened a panel nobody
+         saw. `clip` is the only value that leaves the other axis `visible`. */
       center={
         center === null ? null : (
           <div className="flex w-full min-w-0 items-center overflow-x-clip overflow-y-visible">

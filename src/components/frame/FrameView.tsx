@@ -76,12 +76,12 @@ export type FrameViewProps = {
   search?: ReactNode;
   pagination?: ReactNode;
   /**
-   * El agrupado, con el mismo contrato que usa la lista.
+   * The grouping, with the same contract the list uses.
    *
-   * Acá lo que se agrupa son ÍNDICES de fila y no registros: un marco es una
-   * matriz y sus filas no tienen identidad propia —son la fila 12 del archivo—,
-   * así que `T` es `number` y `of(fila, nivel)` lee la celda que corresponda. El
-   * contrato no cambia, que es exactamente la prueba de que no es restrictivo.
+   * What is grouped here are row INDEXES and not records: a frame is a
+   * matrix and its rows have no identity of their own —they are row 12 of the file—,
+   * so `T` is `number` and `of(row, level)` reads the matching cell. The
+   * contract does not change, which is exactly the proof that it is not restrictive.
    */
   grouping?: Grouping<number>;
 };
@@ -119,10 +119,10 @@ export function FrameView({
     [frame, columns.visibleIds],
   );
 
-  /* Los montones aplanados a una SECUENCIA: la planilla está virtualizada por
-     índice, así que la jerarquía la dice la sangría de cada banda y no el
-     anidamiento. Es el mismo aplanado que hace la lista, sobre índices en vez de
-     registros. */
+  /* The heaps flattened into a SEQUENCE: the sheet is virtualised by
+     index, so the hierarchy is told by each band's indentation and not by
+     nesting. It is the same flattening the list does, over indexes instead of
+     records. */
   const bands = useMemo(() => {
     const piles = pilesOf(
       Array.from({ length: shown.rows }, (_, index) => index),

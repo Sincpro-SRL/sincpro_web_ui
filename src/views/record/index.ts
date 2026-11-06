@@ -1,4 +1,4 @@
-/* REGISTRO — un registro y su formulario: el riel y sus piezas, y el árbol que las compone. */
+/* RECORD — a record and its form: the rail and its pieces, and the tree that composes them. */
 export {
   Record,
   type RecordIdentity,

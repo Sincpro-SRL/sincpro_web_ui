@@ -1,5 +1,5 @@
-/* FORMULARIO — lo que ACOMODA los campos: la hoja, la sección y el pie. Los
-   controles con los que se escribe están en `primitives/field`. */
+/* FORM — what ARRANGES the fields: the sheet, the section and the footer. The
+      controls fields are written with live in `primitives/field`. */
 export { FormActions, FormSection } from "@sincpro/web-ui/components/form/Form";
 export {
   Sheet,

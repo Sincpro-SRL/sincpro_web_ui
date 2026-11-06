@@ -8,96 +8,96 @@ import {
 import { currentCopy, fillCopy } from "@sincpro/web-ui/foundations/copy";
 
 /* ==================================================================== *
- *  LA GRAMÁTICA DE LA BARRA — qué se puede preguntar, y con qué.
+ *  THE BAR'S GRAMMAR — what can be asked, and with what.
  *
- *  Context: la barra ofrecía «buscar «test» en el nombre / en las columnas», y
- *  eso es una sola pregunta —¿el texto está adentro?— repetida por campo. Con
- *  eso no se puede pedir «menos de cien filas», ni «los .csv», ni «los de este
- *  proyecto»: tres preguntas que el motor contesta y que la barra no sabía
- *  escribir.
+ *  Context: the bar offered «buscar «test» en el nombre / en las columnas», and
+ *  that is a single question —is the text inside?— repeated per field. With
+ *  that you cannot ask for «menos de cien filas», nor «los .csv», nor «los de este
+ *  proyecto»: three questions the engine answers and the bar did not know how to
+ *  write.
  *
- *  ── El modelo ya dice todo lo que hace falta ────────────────────────
+ *  ── The model already says everything that is needed ────────────────
  *
- *  Nada de esto está escrito a mano. `model_meta_data` publica, por campo, su
- *  `type`, los `ops` que acepta, si es `relation` y por qué columna se lo
- *  identifica, y sus `choices` si es un enum. De ahí sale qué se ofrece: un
- *  campo de texto ofrece «contiene», uno numérico ofrece «menor que», y uno
- *  relacional se busca por la columna que lo nombra. Agregar una columna al
- *  modelo la hace aparecer acá, con sus operadores, sin tocar este archivo.
+ *  None of this is written by hand. `model_meta_data` publishes, per field, its
+ *  `type`, the `ops` it accepts, whether it is a `relation` and by which column it is
+ *  identified, and its `choices` if it is an enum. What is offered comes from there: a
+ *  text field offers «contiene», a numeric one offers «menor que», and a
+ *  relational one is searched by the column that names it. Adding a column to the
+ *  model makes it appear here, with its operators, without touching this file.
  *
- *  ── Cómo se empieza, y qué recorta cada cosa ───────────────────────
+ *  ── How to start, and what each thing narrows down ─────────────────
  *
- *      #            elegir el ATRIBUTO. Lo que sigue es el nombre de un campo y
- *                   no un valor — «nombre» se escribe igual de las dos maneras,
- *                   y con el numeral no hay que adivinar cuál.
- *      texto        los campos que tienen letras adentro.
- *      *.csv        lo mismo, pero como MOLDE: lo que termina en «.csv».
- *      =  !=        todos. Cualquier cosa se compara contra sí misma, así que la
- *                   igualdad no discrimina por tipo.
- *      >  >=  <  <= sólo lo ORDENADO: números y fechas. «Mayor que» sobre un
- *                   texto es una comparación alfabética que nadie pidió.
+ *      #            choose the ATTRIBUTE. What follows is a field's name and
+ *                   not a value — «nombre» is written the same both ways,
+ *                   and with the hash sign there is no guessing which.
+ *      texto        the fields that have letters inside.
+ *      *.csv        the same, but as a PATTERN: what ends in «.csv».
+ *      =  !=        all of them. Anything is compared against itself, so
+ *                   equality does not discriminate by type.
+ *      >  >=  <  <= only what is ORDERED: numbers and dates. «Mayor que» on a
+ *                   text is an alphabetical comparison nobody asked for.
  *
- *  El operador se mira antes que el valor: escribir `>` ya deja fuera los textos
- *  aunque todavía no se haya escrito contra qué.
+ *  The operator is looked at before the value: writing `>` already leaves out the texts
+ *  even though what to compare against has not been written yet.
  *
- *  ── Una pregunta son TRES pasos, y se escriben en uno ───────────────
+ *  ── A question is THREE steps, and they are written in one ──────────
  *
  *      filas  →  menor que  →  100
- *      ↑ campo   ↑ operador   ↑ valor
+ *      ↑ field   ↑ operator   ↑ value
  *
- *  Se eligen de a uno y cada paso ofrece lo que el anterior dejó posible — pero
- *  **no hay que recorrer los tres**. Lo que se escribe se LEE: `<= 100` ya trae
- *  su operador y su valor, así que sólo falta contra qué campo; `*.csv` es un
- *  molde y no un texto; `test` es un texto y sólo lo pueden contestar los campos
- *  que tienen letras adentro. Por eso la primera lista no ofrece los campos que
- *  no pueden contestar lo que se escribió: ofrecer «filas» para `*.csv` es
- *  ofrecer una pregunta que da cero.
+ *  They are chosen one at a time and each step offers what the previous one left possible — but
+ *  **you do not have to go through all three**. What is written is READ: `<= 100` already brings
+ *  its operator and its value, so only the field to compare against is missing; `*.csv` is a
+ *  pattern and not a text; `test` is a text and only the fields
+ *  that have letters inside can answer it. That is why the first list does not offer the fields that
+ *  cannot answer what was written: offering «filas» for `*.csv` is
+ *  offering a question that gives zero.
  * ==================================================================== */
 
-/** Qué clase de valor tiene un campo. Sale del `type` que publica el modelo y es
- *  lo que decide qué se le puede preguntar. */
+/** What kind of value a field has. It comes from the `type` the model publishes and is
+ *  what decides what can be asked of it. */
 export type QueryKind = "text" | "number" | "date" | "boolean" | "choice" | "relation";
 
-/** Un campo por el que se puede preguntar desde la barra. */
+/** A field that can be asked about from the bar. */
 export type QueryField = {
-  /** Contra qué campo va la condición. Para un relacional es la columna que lo
-   *  identifica y no el relacional en sí: el motor no compara un agregado. */
+  /** Which field the condition goes against. For a relational it is the column that
+   *  identifies it and not the relational itself: the engine does not compare an aggregate. */
   field: string;
   label: string;
   kind: QueryKind;
-  /** Los operadores que el modelo acepta para él, en el orden que los publicó. */
+  /** The operators the model accepts for it, in the order it published them. */
   ops: readonly string[];
-  /** Los valores posibles, cuando es un enum: de ahí sale la tercera lista. */
+  /** The possible values, when it is an enum: the third list comes from there. */
   choices?: readonly string[];
-  /** Cuando se llega por una relación: contra qué agregado se está preguntando
-   *  de verdad. Es lo que deja escribir «el proyecto se llama X» sin que nadie
-   *  sepa que por dentro se compara otra columna. */
+  /** When reached through a relation: which aggregate is really being asked
+   *  about. It is what lets you write «el proyecto se llama X» without anyone
+   *  knowing that inside, another column is compared. */
   through?: string;
 };
 
-/** Qué forma tiene lo que alguien escribió. Es lo que decide qué campos pueden
- *  contestarlo. */
+/** What shape what somebody wrote has. It is what decides which fields can
+ *  answer it. */
 export type ValueShape = "empty" | "text" | "glob" | "number" | "date";
 
-/** Lo tipeado, ya leído: el operador que trae puesto —si lo trae— y su forma. */
+/** What was typed, already read: the operator it brings in front —if it does— and its shape. */
 export type TypedValue = {
   op?: string;
   value: string;
   shape: ValueShape;
-  /** Se escribió `#`: se está eligiendo el ATRIBUTO y no un valor. */
+  /** `#` was written: the ATTRIBUTE is being chosen and not a value. */
   attribute?: true;
-  /** Se escribió `#and`, `#or` o `#not`: no se está eligiendo un atributo, se
-   *  está ABRIENDO UN GRUPO para meter adentro lo que venga. */
+  /** `#and`, `#or` or `#not` was written: no attribute is being chosen, a
+   *  GROUP is being OPENED to put what comes next inside. */
   opens?: "all" | "any" | "not";
 };
 
 /**
- * Las palabras que, después del numeral, abren un GRUPO en vez de nombrar un
- * atributo.
+ * The words that, after the hash sign, open a GROUP instead of naming an
+ * attribute.
  *
- * Se escriben como se piensan —`#and`, `#or`, `#not`— y también como se leen en
- * la barra —`#todas`, `#cualquiera`, `#ninguna`—, porque son la misma cosa dicha
- * de dos maneras y obligar a una sola es obligar a aprenderla.
+ * They are written as they are thought —`#and`, `#or`, `#not`— and also as they are read in
+ * the bar —`#todas`, `#cualquiera`, `#ninguna`—, because they are the same thing said
+ * in two ways and forcing only one is forcing people to learn it.
  */
 const OPENS: Readonly<Record<string, "all" | "any" | "not">> = {
   and: "all",
@@ -111,60 +111,60 @@ const OPENS: Readonly<Record<string, "all" | "any" | "not">> = {
   ninguna: "not",
 };
 
-/* Los operadores que se pueden escribir adelante del valor, de más largo a más
-   corto: si `<` se probara antes que `<=`, «<=100» se leería como «< =100». */
+/* The operators that can be written in front of the value, from longest to
+   shortest: if `<` were tried before `<=`, «<=100» would be read as «< =100». */
 const WRITTEN_OPS: readonly string[] = ["<=", ">=", "!=", "<", ">", "="];
 
 /**
- * Los que ORDENAN. Sólo los puede contestar algo que tenga orden —un número, una
- * fecha—, y no porque el campo no publique el operador: «mayor que» sobre un
- * texto es una comparación alfabética que nadie pidió nunca y que da resultados
- * que no se pueden explicar.
+ * Those that ORDER. Only something that has an order can answer them —a number, a
+ * date—, and not because the field does not publish the operator: «mayor que» on a
+ * text is an alphabetical comparison nobody ever asked for and that gives results
+ * that cannot be explained.
  */
 const ORDERING = new Set([">", ">=", "<", "<="]);
 
 /**
- * Los que sólo comparan IGUALDAD. Estos no discriminan por tipo: todo se puede
- * comparar contra sí mismo, así que escribir `=` abre la lista entera en vez de
- * adivinar de qué clase es lo que todavía no se escribió.
+ * Those that only compare EQUALITY. These do not discriminate by type: anything can be
+ * compared against itself, so writing `=` opens the whole list instead of
+ * guessing what kind of thing has not been written yet.
  */
 const EQUALITY = new Set(["=", "!="]);
 
-/** Qué clases tienen orden. Un enum no: sus valores son palabras aunque se
- *  escriban con números. */
+/** Which kinds have an order. An enum does not: its values are words even if
+ *  they are written with numbers. */
 const ORDERED = new Set<QueryKind>(["number", "date"]);
 
 const NUMBER = /^-?\d+([.,]\d+)?$/;
 const DATE = /^\d{4}-\d{2}(-\d{2})?$/;
 
 /**
- * Lee lo que alguien escribió: el operador que trae adelante, el valor, y de qué
- * forma es.
+ * Reads what somebody wrote: the operator it brings in front, the value, and what
+ * shape it is.
  *
- * Un molde —`*.csv`, `ventas_*`— es distinto de un texto: se busca con `like` y
- * el `*` se traduce al comodín del motor. Un texto suelto NO es un molde
- * implícito: quien escribe `test` está pidiendo lo que contenga «test», y quien
- * escribe `*.csv` está pidiendo lo que TERMINE en «.csv», que es otra pregunta.
+ * A pattern —`*.csv`, `ventas_*`— is different from a text: it is searched with `like` and
+ * the `*` is translated to the engine's wildcard. A loose text is NOT an implicit
+ * pattern: whoever writes `test` is asking for what contains «test», and whoever
+ * writes `*.csv` is asking for what ENDS in «.csv», which is another question.
  */
 export function readTyped(text: string): TypedValue {
   const clean = text.trim();
   if (clean === "") return { value: "", shape: "empty" };
 
-  /* `#` es «elegí el atributo»: lo que sigue no es un valor, es el nombre del
-     campo por el que se va a preguntar. Existe porque las dos intenciones se
-     escriben con las mismas letras —«nombre» puede ser el campo o el texto que
-     se busca— y hasta acá había que confiar en que la barra adivinara cuál. Con
-     el numeral no hay nada que adivinar. */
+  /* `#` is «choose the attribute»: what follows is not a value, it is the name of the
+     field to be asked about. It exists because the two intentions are
+     written with the same letters —«nombre» can be the field or the text being
+     searched— and until now you had to trust the bar to guess which. With
+     the hash sign there is nothing to guess. */
   if (clean.startsWith("#")) {
     const rest = clean.slice(1).trim();
     const opens = OPENS[rest.toLowerCase()];
-    /* `#and` no es un atributo que se llame «and»: es la orden de abrir un
-       grupo. Se mira primero porque un modelo podría tener un campo llamado
-       `and`, y entre las dos lecturas gana la que alguien escribió a propósito
-       —nadie tipea el numeral para buscar la palabra «or». */
-    /* `#` a secas es «elegí el atributo» sin haber empezado a nombrarlo: la forma
-       es «vacío», como en cualquier otro lado. Decir «texto» de una cadena vacía
-       es mentir sobre lo que hay escrito. */
+    /* `#and` is not an attribute called «and»: it is the order to open a
+       group. It is looked at first because a model could have a field called
+       `and`, and between the two readings the one somebody wrote on purpose wins
+       —nobody types the hash sign to search for the word «or». */
+    /* A bare `#` is «choose the attribute» without having started to name it: the shape
+       is «empty», as anywhere else. Saying «text» of an empty string is
+       lying about what is written. */
     const shape: ValueShape = rest === "" ? "empty" : "text";
     if (opens !== undefined) return { value: rest, shape, attribute: true, opens };
     return { value: rest, shape, attribute: true };
@@ -194,13 +194,13 @@ export function readTyped(text: string): TypedValue {
   return { ...(written === undefined ? {} : { op: written }), value, shape };
 }
 
-/** El molde, con el comodín que entiende el motor. `*` es lo que la gente
- *  escribe —y lo que escribe una terminal— y `%` es lo que entiende un `like`. */
+/** The pattern, with the wildcard the engine understands. `*` is what people
+ *  write —and what a terminal writes— and `%` is what a `like` understands. */
 export function globToLike(value: string): string {
   return value.replace(/\*/g, "%");
 }
 
-/** Qué clase de valor es un campo, leída del tipo que publica el modelo. */
+/** What kind of value a field is, read from the type the model publishes. */
 function kindOf(definition: FieldDefinition): QueryKind {
   if (definition.kind === "relation") return "relation";
   if (definition.choices !== undefined && definition.choices.length > 0) return "choice";
@@ -214,18 +214,18 @@ function kindOf(definition: FieldDefinition): QueryKind {
 }
 
 /**
- * Los campos por los que la barra puede preguntar, sacados del modelo.
+ * The fields the bar can ask about, taken from the model.
  *
- * Un relacional entra por la columna que lo IDENTIFICA y con el rótulo de la
- * relación: preguntar «el cliente se llama Ferretería» es una pregunta sobre el
- * cliente aunque por dentro compare su nombre. Un relacional sin `identifiedBy`
- * no entra: no hay nada contra qué comparar, y ofrecerlo sería ofrecer una
- * pregunta que no se puede contestar.
+ * A relational enters through the column that IDENTIFIES it and with the relation's
+ * label: asking «el cliente se llama Ferretería» is a question about the
+ * customer even if inside it compares its name. A relational without `identifiedBy`
+ * does not enter: there is nothing to compare against, and offering it would be offering a
+ * question that cannot be answered.
  */
 export function queryFields(model: ModelDefinition, locale: string): QueryField[] {
-  /* Las columnas que ya nombran a una relación no se ofrecen por su cuenta: son
-     la misma pregunta con dos rótulos —«proyecto» y «nombre del proyecto»— y la
-     que se entiende es la de la relación. */
+  /* The columns that already name a relation are not offered on their own: they are
+     the same question with two labels —«proyecto» and «nombre del proyecto»— and the
+     one that is understood is the relation's. */
   const naming = new Set(
     Object.values(model.fields)
       .filter((one) => one.kind === "relation")
@@ -267,25 +267,25 @@ export function queryFields(model: ModelDefinition, locale: string): QueryField[
 }
 
 /**
- * Si un campo puede contestar lo que se escribió.
+ * Whether a field can answer what was written.
  *
- * Manda el OPERADOR cuando se escribió uno, porque es lo que dice qué clase de
- * pregunta es:
+ * The OPERATOR rules when one was written, because it is what says what kind of
+ * question it is:
  *
- *     = / !=        todo. Cualquier cosa se compara contra sí misma, así que
- *                   escribir `=` abre la lista entera en vez de adivinar de qué
- *                   clase es un valor que todavía no se escribió.
- *     > >= < <=     sólo lo ORDENADO —un número, una fecha—. «Mayor que» sobre
- *                   un texto es una comparación alfabética que nadie pidió.
+ *     = / !=        everything. Anything is compared against itself, so
+ *                   writing `=` opens the whole list instead of guessing what
+ *                   kind a value that has not been written yet is.
+ *     > >= < <=     only what is ORDERED —a number, a date—. «Mayor que» on
+ *                   a text is an alphabetical comparison nobody asked for.
  *
- * Sin operador escrito manda la FORMA del valor: `*.csv` es un molde y sólo lo
- * contesta algo con letras; `100` sólo algo con números. Ofrecer «filas» para
- * `*.csv` es ofrecer una pregunta que da cero.
+ * With no operator written the value's SHAPE rules: `*.csv` is a pattern and only
+ * something with letters answers it; `100` only something with numbers. Offering «filas» for
+ * `*.csv` is offering a question that gives zero.
  */
 export function answers(field: QueryField, typed: TypedValue): boolean {
-  /* El operador se mira ANTES que el valor, y no después: escribir `>` ya
-     descarta los textos aunque todavía no se haya escrito contra qué. Al revés,
-     la barra ofrecía las cinco columnas hasta que se tipeaba el primer dígito. */
+  /* The operator is looked at BEFORE the value, and not after: writing `>` already
+     discards the texts even though what to compare against has not been written yet. The other way round,
+     the bar offered the five columns until the first digit was typed. */
   if (typed.op !== undefined) {
     if (!field.ops.includes(typed.op)) return false;
     if (EQUALITY.has(typed.op)) return true;
@@ -300,19 +300,19 @@ export function answers(field: QueryField, typed: TypedValue): boolean {
     case "glob":
       return field.kind === "text" || field.kind === "relation";
     default:
-      /* Un texto lo contesta lo que tiene letras adentro, y también un enum: sus
-         valores son palabras. Un número no —«test» no es un número— y una fecha
-         tampoco. */
+      /* A text is answered by what has letters inside, and also an enum: its
+         values are words. A number does not —«test» is not a number— and a date
+         neither. */
       return field.kind === "text" || field.kind === "relation" || field.kind === "choice";
   }
 }
 
 /**
- * Con qué operador se pregunta, cuando nadie lo eligió.
+ * Which operator to ask with, when nobody chose one.
  *
- * El que se escribió gana. Si no, el que la forma pide: un molde se pregunta con
- * `like`, un texto con `like` si el campo lo acepta —«contiene» es lo que quiere
- * quien escribe media palabra— y todo lo demás con `=`.
+ * The one written wins. Otherwise, the one the shape asks for: a pattern is asked with
+ * `like`, a text with `like` if the field accepts it —«contiene» is what whoever
+ * writes half a word wants— and everything else with `=`.
  */
 export function defaultOp(field: QueryField, typed: TypedValue): string {
   if (typed.op !== undefined && field.ops.includes(typed.op)) return typed.op;
@@ -321,18 +321,18 @@ export function defaultOp(field: QueryField, typed: TypedValue): string {
   return field.ops.includes("=") ? "=" : (field.ops[0] ?? "=");
 }
 
-/** El valor tal como viaja: un molde se traduce al comodín del motor, y lo demás
- *  va como se escribió. */
+/** The value as it travels: a pattern is translated to the engine's wildcard, and the rest
+ *  goes as it was written. */
 export function valueFor(op: string, typed: TypedValue): string {
   return op === "like" && typed.shape === "glob" ? globToLike(typed.value) : typed.value;
 }
 
 /* ---------------------------------------------------------------- *
- *  Lo que se ofrece, paso por paso
+ *  What is offered, step by step
  * ---------------------------------------------------------------- */
 
-/** Una pregunta a medio escribir: lo que ya se eligió y lo que se está
- *  tipeando. */
+/** A half-written question: what has already been chosen and what is being
+ *  typed. */
 export type QueryDraft = {
   field?: QueryField;
   op?: string;
@@ -340,13 +340,13 @@ export type QueryDraft = {
 };
 
 export type QuerySuggestion =
-  /** Seguir por este campo. Todavía falta el operador y el valor. */
+  /** Continue with this field. The operator and the value are still missing. */
   | { kind: "field"; id: string; label: string; hint?: string; field: QueryField }
-  /** Preguntar con este operador. */
+  /** Ask with this operator. */
   | { kind: "op"; id: string; label: string; op: string }
-  /** Abrir un GRUPO: lo que se escriba después entra adentro. */
+  /** Open a GROUP: what is written afterwards goes inside. */
   | { kind: "group"; id: string; label: string; join: "all" | "any" | "not" }
-  /** La pregunta entera, lista para entrar como ficha. */
+  /** The whole question, ready to enter as a chip. */
   | {
       kind: "condition";
       id: string;
@@ -360,26 +360,26 @@ export type QuerySuggestion =
    *  the consumer's (`SearchBar literal`): the bar only offers it and puts the chip. */
   | { kind: "literal"; id: string; label: string; hint: string; text: string };
 
-/** Cómo se llama un operador para quien lo lee. Sale de la copia, así que un
- *  operador que el servidor agregue aparece con su símbolo hasta que alguien le
- *  ponga palabra — y no desaparece. */
+/** What an operator is called for whoever reads it. It comes from the copy, so an
+ *  operator the server adds appears with its symbol until somebody gives it
+ *  a word — and does not disappear. */
 export function opLabel(op: string): string {
   return currentCopy().ops[op] ?? op;
 }
 
-/** Si el operador no lleva valor: preguntar si algo está vacío no necesita que
- *  se escriba nada. */
+/** Whether the operator takes no value: asking whether something is empty needs nothing
+ *  to be written. */
 export function withoutValue(op: string): boolean {
   return op === "is null" || op === "is not null";
 }
 
 /**
- * Si el operador compara contra DOS valores.
+ * Whether the operator compares against TWO values.
  *
- * La barra escribe UNO —es una línea, no un formulario— así que éstos no se
- * ofrecen acá: elegir «está entre» y escribir un número arma medio rango, que
- * no es una pregunta más laxa sino una que el motor no puede contestar. Se
- * preguntan en el constructor, que tiene los dos campos.
+ * The bar writes ONE —it is a line, not a form— so these are not
+ * offered here: choosing «está entre» and writing a number builds half a range, which
+ * is not a laxer question but one the engine cannot answer. They are
+ * asked in the builder, which has both fields.
  */
 export function withTwoValues(op: string): boolean {
   return op === "between";
@@ -394,14 +394,14 @@ function matches(field: QueryField, text: string): boolean {
 }
 
 /**
- * Qué se ofrece ahora mismo.
+ * What is offered right now.
  *
- * Es una sola lista y no tres pantallas: en el primer paso conviven los campos
- * que se llaman como lo tipeado —«nombr» → «nombre»— con las preguntas enteras
- * que lo tipeado ya permite armar —«test» en el nombre—. Quien escribe el nombre
- * de un campo quiere seguir por ahí; quien escribe un valor quiere preguntarlo
- * ya. Las dos intenciones se escriben igual, así que se ofrecen las dos, con los
- * campos primero: es el paso que todavía no decidió nada.
+ * It is a single list and not three screens: in the first step the fields
+ * named like what was typed coexist —«nombr» → «nombre»— with the whole questions
+ * that what was typed already allows building —«test» en el nombre—. Whoever writes a field's
+ * name wants to continue that way; whoever writes a value wants to ask it
+ * right away. The two intentions are written the same, so both are offered, with the
+ * fields first: it is the step that has not decided anything yet.
  */
 /**
  * Whether the MODEL reads what was typed as a question of its own: an operator written in
@@ -432,13 +432,13 @@ export function suggest(
 ): QuerySuggestion[] {
   const typed = readTyped(draft.text);
 
-  /* Paso 3 — el campo y el operador ya están: falta el valor. */
+  /* Step 3 — the field and the operator are already there: the value is missing. */
   if (draft.field !== undefined && draft.op !== undefined) {
     const field = draft.field;
-    /* Escribir un molde CAMBIA la comparación: «igual a ventas_*» busca un
-       nombre que termine en asterisco, que no existe y que nadie quiso pedir.
-       Sólo pisa la igualdad —quien eligió «mayor que» y escribió un `*` está
-       escribiendo cualquier otra cosa— y sólo si el campo publica `like`. */
+    /* Writing a pattern CHANGES the comparison: «igual a ventas_*» searches for a
+       name that ends in an asterisk, which does not exist and nobody meant to ask for.
+       It only overrides equality —whoever chose «mayor que» and wrote a `*` is
+       writing something else entirely— and only if the field publishes `like`. */
     const op =
       typed.shape === "glob" && EQUALITY.has(draft.op) && field.ops.includes("like")
         ? "like"
@@ -472,9 +472,9 @@ export function suggest(
     return ready;
   }
 
-  /* Paso 2 — el campo ya está: se ofrecen SUS operadores. El que la forma de lo
-     tipeado pide va primero, porque escribir «100» después de elegir «filas» es
-     casi siempre «igual a 100». */
+  /* Step 2 — the field is already there: ITS operators are offered. The one the shape of what was
+     typed asks for goes first, because writing «100» after choosing «filas» is
+     almost always «igual a 100». */
   if (draft.field !== undefined) {
     const field = draft.field;
     const first = defaultOp(field, typed);
@@ -482,9 +482,9 @@ export function suggest(
       (op) => !withTwoValues(op),
     );
     return ops.map((op) =>
-      /* El que NO lleva valor es una pregunta entera apenas se elige: mandarlo
-         al paso del valor dejaba al que eligió «está vacío» tipeando algo que no
-         significa nada, con una lista vacía abajo y Enter sin hacer nada. */
+      /* The one that takes NO value is a whole question as soon as it is chosen: sending it
+         to the value step left whoever chose «está vacío» typing something that
+         means nothing, with an empty list below and Enter doing nothing. */
       withoutValue(op)
         ? {
             kind: "condition" as const,
@@ -499,8 +499,8 @@ export function suggest(
     );
   }
 
-  /* `#and`, `#or`, `#not`: lo que se pidió es abrir un grupo, no elegir un
-     campo. Se ofrece ESO solo — quien lo escribió ya sabe lo que quiere. */
+  /* `#and`, `#or`, `#not`: what was asked for is to open a group, not to choose a
+     field. ONLY THAT is offered — whoever wrote it already knows what they want. */
   if (typed.opens !== undefined) {
     const join = typed.opens;
     return [
@@ -513,9 +513,9 @@ export function suggest(
     ];
   }
 
-  /* Con `#` a secas se está eligiendo el ATRIBUTO, así que se ofrecen los campos
-     —y los tres abridores de grupo, porque también se piden con el numeral y
-     esconderlos sería tener una notación que nadie descubre. */
+  /* With a bare `#` the ATTRIBUTE is being chosen, so the fields are offered
+     —and the three group openers, because they are also asked for with the hash sign and
+     hiding them would be having a notation nobody discovers. */
   if (typed.attribute === true) {
     const opening: QuerySuggestion[] =
       typed.value === ""
@@ -540,7 +540,7 @@ export function suggest(
     ];
   }
 
-  /* Paso 1 — todavía no se eligió nada. */
+  /* Step 1 — nothing has been chosen yet. */
   const byName: QuerySuggestion[] =
     typed.shape === "empty"
       ? []
@@ -569,10 +569,10 @@ export function suggest(
       };
     });
 
-  /* Sin VALOR todavía no hay ninguna pregunta que armar —una pregunta sin valor
-     no es una pregunta— así que se ofrecen campos. Pero si ya se escribió el
-     operador, eso solo recorta: `>` deja los que tienen orden y saca los textos
-     antes de que se escriba el primer dígito. */
+  /* Without a VALUE there is no question to build yet —a question without a value
+     is not a question— so fields are offered. But if the operator was already written,
+     that alone narrows: `>` keeps those that have an order and drops the texts
+     before the first digit is written. */
   if (typed.shape === "empty") {
     return fields
       .filter((field) => answers(field, typed))
@@ -585,10 +585,10 @@ export function suggest(
       }));
   }
 
-  /* Un campo que se llama como lo tipeado no se ofrece dos veces: si «nombre»
-     aparece arriba para seguir por él, abajo ya no hace falta como pregunta
-     hecha — salvo que lo tipeado sea también un valor razonable, que es
-     justamente el caso de «test». */
+  /* A field named like what was typed is not offered twice: if «nombre»
+     appears above to continue by it, below it is no longer needed as a
+     question already made — unless what was typed is also a reasonable value, which is
+     precisely the case of «test». */
   const named = new Set(byName.map((one) => (one.kind === "field" ? one.field.field : "")));
   const byModel = [
     ...byName,
@@ -609,15 +609,15 @@ export function suggest(
 }
 
 /**
- * CÓMO SE LEE UNA CONDICIÓN, en un solo lugar.
+ * HOW A CONDITION IS READ, in one place.
  *
- * La usan la barra —para la ficha de lo que alguien acaba de preguntar— y el
- * constructor —para la ficha y para el árbol de lo que ya está armado—. Una
- * sola, porque la misma condición escrita de dos maneras se lee distinta en dos
- * pantallas y nadie sabe cuál de las dos es la que filtra.
+ * It is used by the bar —for the chip of what somebody just asked— and the
+ * builder —for the chip and for the tree of what is already built—. Only
+ * one, because the same condition written two ways reads differently on two
+ * screens and nobody knows which of the two is the one that filters.
  *
- * Toma el RÓTULO ya resuelto y no el campo: quién sabe cómo se llama
- * `row_count` es el modelo, y esto sólo sabe armar la frase.
+ * It takes the label ALREADY resolved and not the field: who knows what
+ * `row_count` is called is the model, and this only knows how to build the sentence.
  */
 export function sayCondition(label: string, op: string, value: string): string {
   return withoutValue(op)
@@ -625,7 +625,7 @@ export function sayCondition(label: string, op: string, value: string): string {
     : fillCopy(currentCopy().search.condition, { field: label, op: opLabel(op), value });
 }
 
-/** Cómo se lee una pregunta ya hecha, para la ficha: «el nombre contiene test». */
+/** How an already-made question reads, for the chip: «el nombre contiene test». */
 export function describeCondition(field: QueryField, op: string, value: string): string {
   return sayCondition(field.label, op, value);
 }

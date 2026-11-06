@@ -49,7 +49,7 @@ export {
   ViewSwitcher,
 } from "@sincpro/web-ui/components/listing/ViewSwitcher";
 
-/* El control de los niveles. El vocabulario está en `system/grouping.ts`. */
+/* The grouping levels' control. The vocabulary is in `system/grouping.ts`. */
 export {
   AxisLevels,
   levelId,

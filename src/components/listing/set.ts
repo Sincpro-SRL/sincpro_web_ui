@@ -23,26 +23,26 @@ import { useState } from "react";
  */
 
 /**
- * Las maneras de mirar un conjunto. **Vive acá y no en el arquetipo** porque
- * son dos los que preguntan lo mismo —una lista y un marco— y la definición
- * tiene que ser una sola.
+ * The ways of looking at a set. **It lives here and not in the archetype** because
+ * two of them ask the same thing —a list and a frame— and the definition
+ * has to be only one.
  *
- * Era dos: `ListPresent` en `archetype/ListView.tsx` y esta copia. Mientras las
- * dos decían `rows | table | board` nadie lo notaba; agregar `sheet` a una dejó
- * cuatro vistas sin compilar, que es exactamente lo que pasa cuando la misma
- * idea está escrita dos veces.
+ * There were two: `ListPresent` in `archetype/ListView.tsx` and this copy. While the
+ * two said `rows | table | board` nobody noticed; adding `sheet` to one left
+ * four views not compiling, which is exactly what happens when the same
+ * idea is written twice.
  *
- *     rows / board   no hay columnas: nombre, fichas y meta.
- *     table          las columnas las DECLARA el código.
- *     sheet          las columnas salen del ARCHIVO — puede haber cuarenta y un
- *                    millón de filas, así que va virtualizada.
- *     report         columnas de período y filas en JERARQUÍA que termina en
- *                    totales. No se ordena: el orden ES el informe.
- *     pivot          dos EJES a la vez. Una fila es un montón y una columna
- *                    también; lo que se lee está en el cruce. Tampoco se
- *                    ordena: el orden de cada eje es el de sus claves.
- *     chart          el mismo pivote, dibujado: barras, líneas o torta. El
- *                    primer agrupado es el eje y el segundo, las series.
+ *     rows / board   no columns: name, cards and meta.
+ *     table          the columns are DECLARED by the code.
+ *     sheet          the columns come from the FILE — there may be forty-one
+ *                    million rows, so it is virtualised.
+ *     report         period columns and rows in a HIERARCHY that ends in
+ *                    totals. It is not sorted: the order IS the report.
+ *     pivot          two AXES at once. A row is a heap and so is a column;
+ *                    what is read is at the crossing. It is not
+ *                    sorted either: the order of each axis is that of its keys.
+ *     chart          the same pivot, drawn: bars, lines or pie. The
+ *                    first grouping is the axis and the second, the series.
  */
 export type BuiltInPresent =
   | "rows"

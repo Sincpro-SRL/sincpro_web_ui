@@ -325,12 +325,12 @@ export function RecordHeader({
               are the bridge between the two: they hang off the record but they
               take you somewhere else.
 
-              Y el centro se centra contra la LÍNEA, no contra lo que sobra: los
-              dos lados piden `--container-trail` y crecen parejo, así que un
-              nombre de cincuenta caracteres a la izquierda ya no empuja los
-              contadores contra el borde. Lo que no entra en su mitad se recorta
-              adentro de su mitad; lo que no entra en la línea baja al renglón
-              siguiente. Ver `primitives/block/Line.tsx`. */}
+              And the centre is centred against the LINE, not against what is left: the
+              two sides ask for `--container-trail` and grow evenly, so a
+              fifty-character name on the left no longer pushes the
+              counters against the edge. What does not fit in its half is clipped
+              inside its half; what does not fit in the line drops to the next
+              row. See `primitives/block/Line.tsx`. */}
                 <Line
                   start={
                     crumbs === undefined || crumbs.length === 0 ? null : (

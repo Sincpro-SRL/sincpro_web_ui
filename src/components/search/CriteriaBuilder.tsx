@@ -24,29 +24,29 @@ import { Plus, Trash2 } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
 
 /* ====================================================================== *
- *  EL CONSTRUCTOR DE LA CRITERIA ENTERA, NO SÓLO DEL FILTRO.
+ *  THE BUILDER OF THE WHOLE CRITERIA, NOT JUST THE FILTER.
  *
- *  Una lectura son cuatro preguntas, y hasta acá sólo se podía armar la
- *  primera:
+ *  A read is four questions, and until now only the first
+ *  could be built:
  *
- *    selection      ¿qué filas?          — el árbol de condiciones
- *    order          ¿en qué orden?       — N campos, cada uno asc o desc
- *    grouping       ¿partidas por qué?   — N niveles, con grano si es fecha
- *    specification  ¿qué de cada una?    — los campos que vuelven
+ *    selection      which rows?          — the tree of conditions
+ *    order          in what order?       — N fields, each asc or desc
+ *    grouping       split by what?       — N levels, with a grain if it is a date
+ *    specification  what of each one?    — the fields that come back
  *
- *  Las cuatro son la MISMA criteria, así que se editan en un solo lugar y se
- *  serializan en un solo JSON — el mismo objeto que viaja por la URL, por el
- *  cuerpo de un POST o por una cola, sin traducción en el medio.
+ *  The four are the SAME criteria, so they are edited in a single place and
+ *  serialised in a single JSON — the same object that travels in the URL, in the
+ *  body of a POST or through a queue, with no translation in between.
  *
- *  El editor de código de abajo muestra la criteria COMPLETA, no el filtro
- *  suelto: es la forma real de lo que se está armando, y se puede escribir o
- *  pegar ahí en vez de tocar los controles.
+ *  The code editor below shows the WHOLE criteria, not the loose
+ *  filter: it is the real shape of what is being built, and you can write or
+ *  paste there instead of touching the controls.
  *
- *  El agrupado sale con las claves de `@sincpro/criteria` 2.0 —`group_by`,
- *  `measures` con `{function, field}`, `where_measures`, `order`, `pagination`—
- *  y ninguna más: el `Grouping` de sincpro_framework es estricto y rechaza una
- *  clave que no conoce. Las palabras de la pantalla («Totales por montón»,
- *  «Filtrar los montones») son de la UI; lo que viaja es del motor.
+ *  The grouping comes out with the keys of `@sincpro/criteria` 2.0 —`group_by`,
+ *  `measures` with `{function, field}`, `where_measures`, `order`, `pagination`—
+ *  and no others: sincpro_framework's `Grouping` is strict and rejects a
+ *  key it does not know. The screen's words («Totales por montón»,
+ *  «Filtrar los montones») belong to the UI; what travels belongs to the engine.
  * ====================================================================== */
 
 export interface BuiltSort {
@@ -54,25 +54,25 @@ export interface BuiltSort {
   descending?: boolean;
 }
 
-/** Un nivel de agrupado, como el `Level` de criteria: el campo y, si es fecha, el grano. */
+/** A grouping level, like criteria's `Level`: the field and, if it is a date, the grain. */
 export interface BuiltLevel {
   field: string;
   grain?: string | null;
 }
 
 /**
- * Un número que cada montón contesta, como el `Measure` de criteria:
- * `{ function: "sum", field: "row_count" }`. Partes con nombre y no un par, igual que una
- * condición viaja como `{field, operator, value}`.
+ * A number that each heap answers, like criteria's `Measure`:
+ * `{ function: "sum", field: "row_count" }`. Named parts and not a pair, just as a
+ * condition travels as `{field, operator, value}`.
  */
 export interface BuiltMeasure {
   function: string;
   field: string;
-  /** Lo que la función necesita además del campo. Sólo `percentile`: la fracción del corte. */
+  /** What the function needs besides the field. Only `percentile`: the cut's fraction. */
   argument?: number;
 }
 
-/** Desde dónde empieza una página de montones — la misma forma que la paginación de filas. */
+/** From where a page of heaps starts — the same shape as the rows' pagination. */
 export type BuiltPageStrategy = { token: string | null } | { rows: number };
 
 export interface BuiltGroupPagination {
@@ -80,24 +80,24 @@ export interface BuiltGroupPagination {
   strategy?: BuiltPageStrategy;
 }
 
-/** El agrupado tal como lo declara `@sincpro/criteria` 2.0, clave por clave. */
+/** The grouping as `@sincpro/criteria` 2.0 declares it, key by key. */
 export interface BuiltGrouping {
-  /** Los niveles, en orden: no se suman, se anidan. */
+  /** The levels, in order: they are not added, they nest. */
   group_by?: BuiltLevel[];
-  /** Los números que cada montón contesta, cada uno bajo un nombre elegido. */
+  /** The numbers each heap answers, each under a chosen name. */
   measures?: Record<string, BuiltMeasure>;
-  /** Un filtro sobre lo que los montones midieron, no sobre las filas: `count > 10`. Los
-   *  nombres que admite son los de `measures`, más `"count"`. */
+  /** A filter on what the heaps measured, not on the rows: `count > 10`. The
+   *  names it admits are those of `measures`, plus `"count"`. */
   where_measures?: BuiltFilter;
-  /** En qué orden vuelven los montones: por el propio campo del nivel, por un nombre de
-   *  `measures`, o por `count`. */
+  /** In what order the heaps come back: by the level's own field, by a name from
+   *  `measures`, or by `count`. */
   order?: BuiltSort[];
-  /** Cuántos montones del primer nivel vuelven, y desde dónde. Ausente es todos. */
+  /** How many heaps of the first level come back, and from where. Absent is all of them. */
   pagination?: BuiltGroupPagination;
 }
 
-/** La criteria tal como la declara el motor. Es lo que este componente arma y devuelve, y lo
- *  que el editor de código muestra. */
+/** The criteria as the engine declares it. It is what this component builds and returns, and what
+ *  the code editor shows. */
 export interface BuiltCriteria {
   selection?: BuiltFilter;
   order?: BuiltSort[];
@@ -106,25 +106,25 @@ export interface BuiltCriteria {
 }
 
 /**
- * Los cortes de una fecha, de GRUESO a fino, con `null` adelante: sin corte, un
- * campo de fecha parte por instante y cada fila termina en su propio montón.
+ * A date's cuts, from COARSE to fine, with `null` first: with no cut, a
+ * date field splits by instant and every row ends up in its own heap.
  *
- * El orden no es una preferencia — un día entero vive adentro de un solo mes— y
- * es el mismo que `GRAIN_ORDER` publica para la barra: una sola dirección para
- * las dos pantallas. La ficha de un nivel rota por esta lista.
+ * The order is not a preference — a whole day lives inside a single month— and
+ * it is the same one `GRAIN_ORDER` publishes for the bar: a single direction for
+ * both screens. A level's chip rotates through this list.
  */
 const GRAINS: readonly (string | null)[] = [null, ...GRAIN_ORDER];
 
-/** Qué tipos admiten un grano: recortar un texto por mes no significa nada. */
+/** Which types admit a grain: cutting a text by month means nothing. */
 const DATE_TYPES = new Set(["date", "datetime"]);
 
-/** Los operadores que una medida —siempre un número— o `count` admiten en un
- *  `where_measures`: los mismos que la definición del modelo publica para un campo numérico,
- *  `is null` aparte, que no significa nada sobre un número que el propio motor calculó. */
+/** The operators that a measure —always a number— or `count` admit in a
+ *  `where_measures`: the same ones the model definition publishes for a numeric field,
+ *  `is null` aside, which means nothing on a number the engine itself computed. */
 const COMPARABLE = ["=", "!=", ">", ">=", "<", "<=", "between"] as const;
 
-/** Las funciones que una medida puede pedir acá, cerradas del lado del servidor porque el
- *  nombre llega a SQL. */
+/** The functions a measure can ask for here, closed on the server side because the
+ *  name reaches SQL. */
 const MEASURE_FUNCTIONS = ["sum", "avg", "min", "max", "count"] as const;
 
 function isEmpty(criteria: BuiltCriteria): boolean {
@@ -137,8 +137,8 @@ function isEmpty(criteria: BuiltCriteria): boolean {
   );
 }
 
-/** El árbol del editor de `where_measures`: lo leído, envuelto en un grupo si es una sola
- *  condición, o uno en blanco sobre `count` si no hay nada que leer. */
+/** The `where_measures` editor's tree: what was read, wrapped in a group if it is a single
+ *  condition, or a blank one over `count` if there is nothing to read. */
 function measuresTreeOf(filter: BuiltFilter | undefined, model: ModelDefinition): TreeGroup {
   const node = filter === undefined ? null : treeFromFilter(filter);
   if (node === null) return blankGroup(model, "count");
@@ -146,12 +146,12 @@ function measuresTreeOf(filter: BuiltFilter | undefined, model: ModelDefinition)
 }
 
 /**
- * LA FICHA QUE AGREGA: un «+» que abre la lista de lo que se puede elegir.
+ * THE CHIP THAT ADDS: a «+» that opens the list of what can be chosen.
  *
- * Es lo mismo que hace el numeral en la barra, y por la misma razón: elegir
- * entre veinte campos es elegir de una LISTA, no desplegar un `<select>` que ya
- * viene con uno puesto y que hay que cambiar. Con el `<select>`, agregar un
- * nivel ponía el primer campo del modelo aunque nadie lo hubiera pedido.
+ * It is the same as what the hash sign does in the bar, and for the same reason: choosing
+ * among twenty fields is choosing from a LIST, not unfolding a `<select>` that already
+ * comes with one set and has to be changed. With the `<select>`, adding a
+ * level put the model's first field even though nobody had asked for it.
  */
 function AddTag({
   label,
@@ -195,7 +195,7 @@ function AddTag({
   );
 }
 
-/** El corte siguiente, y vuelta a empezar. */
+/** The next cut, and back to the start. */
 function nextGrain(grain: string | null | undefined): string | null {
   const at = GRAINS.indexOf(grain ?? null);
   return GRAINS[(at + 1) % GRAINS.length] ?? null;
@@ -209,15 +209,15 @@ export function CriteriaBuilder({
   onCancel,
 }: {
   model: ModelDefinition;
-  /** La criteria que ya estaba puesta. Reabrir tiene que seguir donde quedó. */
+  /** The criteria that was already set. Reopening has to continue where it was left. */
   initial?: BuiltCriteria;
   /**
-   * El campo de la condición que hay que mostrar primero: la ficha que alguien
-   * tocó en la barra.
+   * The condition's field to show first: the chip somebody
+   * touched in the bar.
    *
-   * Sin esto, tocar un recorte abría el constructor en la regla uno y había que
-   * buscar entre doce la que uno venía mirando — que es la manera más rápida de
-   * editar la equivocada.
+   * Without this, touching a cut opened the builder on rule one and you had to
+   * search among twelve for the one you were looking at — which is the quickest way to
+   * edit the wrong one.
    */
   focus?: string;
   onApply: (criteria: BuiltCriteria | undefined) => void;
@@ -225,8 +225,8 @@ export function CriteriaBuilder({
 }) {
   const surface = useSurface();
   const names = Object.keys(model.fields).sort();
-  /* Nunca un relacional ni un valor-objeto: ninguno de los dos tiene una comparación propia
-     (`ops` vacío), así que ninguno sirve de blanco para un filtro, un orden o un nivel. */
+  /* Never a relational nor a value-object: neither has a comparison of its own
+     (empty `ops`), so neither serves as a target for a filter, an order or a level. */
   const scalarNames = filterableNames(model);
   const sortable = names.filter((name) => model.fields[name]?.sortable === true);
 
@@ -253,10 +253,10 @@ export function CriteriaBuilder({
     initial?.grouping?.pagination?.limit,
   );
 
-  /* `where_measures` es un filtro como cualquier otro, sobre un modelo sintético cuyos únicos
-     campos son los nombres que admite: los de `measures`, más `count`. Reutilizar
-     `SelectionTree` sobre ese modelo es más simple y más correcto que armar un editor de
-     condiciones aparte. */
+  /* `where_measures` is a filter like any other, over a synthetic model whose only
+     fields are the names it admits: those of `measures`, plus `count`. Reusing
+     `SelectionTree` over that model is simpler and more correct than building a separate
+     conditions editor. */
   const measuresModel = useMemo<ModelDefinition>(
     () => ({
       aggregate: "where_measures",
@@ -281,7 +281,7 @@ export function CriteriaBuilder({
   );
   const [rawError, setRawError] = useState<string | null>(null);
 
-  /** Lo que los controles dicen, junto: es lo que se aplica y lo que el JSON muestra. */
+  /** What the controls say, together: it is what is applied and what the JSON shows. */
   function assemble(next: {
     tree?: TreeGroup;
     locked?: BuiltFilter | null;
@@ -302,9 +302,9 @@ export function CriteriaBuilder({
     const limit = "groupLimit" in next ? next.groupLimit : groupLimit;
     const chosen = next.fields ?? fields;
 
-    /* Sin niveles no hay qué medir, qué filtrar entre montones ni en qué orden o página
-       volverían — una medida, un `where_measures` o una página puestos y luego vaciados de
-       niveles no tienen que sobrevivir sueltos en la criteria que se manda. */
+    /* Without levels there is nothing to measure, nothing to filter between heaps, nor in what order or page
+       they would come back — a measure, a `where_measures` or a page set and then emptied of
+       levels must not survive loose in the criteria that is sent. */
     const grouping: BuiltGrouping =
       groupBy.length === 0
         ? {}
@@ -330,7 +330,7 @@ export function CriteriaBuilder({
     };
   }
 
-  /* Tocar cualquier control reescribe el JSON entero: las dos vistas son la misma criteria. */
+  /* Touching any control rewrites the whole JSON: the two views are the same criteria. */
   function push(next: Parameters<typeof assemble>[0]) {
     if (next.tree !== undefined) setTree(next.tree);
     if (next.locked !== undefined) setLockedSelection(next.locked);
@@ -347,7 +347,7 @@ export function CriteriaBuilder({
     setRawError(null);
   }
 
-  /* Escribir el JSON rehace los controles, mientras lo escrito sea una criteria. */
+  /* Writing the JSON rebuilds the controls, as long as what was written is a criteria. */
   function updateRaw(text: string) {
     setRawText(text);
     if (text.trim() === "") {
@@ -397,7 +397,7 @@ export function CriteriaBuilder({
 
   return (
     <div className="flex min-w-0 flex-col gap-3 p-3">
-      {/* ── qué filas ─────────────────────────────────────────────────── */}
+      {/* ── which rows ────────────────────────────────────────────────── */}
       <section className="flex min-w-0 flex-col gap-2">
         <Rule label={copy.builder.filter} />
         <div className="max-h-72 min-w-0 overflow-auto">
@@ -417,14 +417,14 @@ export function CriteriaBuilder({
         </div>
       </section>
 
-      {/* ── en qué orden ──────────────────────────────────────────────── */}
+      {/* ── in what order ─────────────────────────────────────────────── */}
       <section className="flex min-w-0 flex-col gap-2">
         <Rule label={copy.builder.order} />
-        {/* FICHAS, como en la barra: un orden son N campos con su dirección, y
-            eso se lee de un vistazo en una línea. Con un `<select>` por campo
-            más otro por dirección, tres campos ocupaban seis controles y había
-            que leerlos todos para saber por dónde ordena. La flecha se toca y
-            da vuelta la dirección; la × saca el campo. */}
+        {/* CHIPS, as in the bar: an order is N fields with their direction, and
+            that is read at a glance on one line. With a `<select>` per field
+            plus another per direction, three fields took six controls and you had
+            to read them all to know what it sorts by. The arrow is touched and
+            flips the direction; the × removes the field. */}
         <div className="flex min-w-0 flex-wrap items-center gap-1">
           <Tags
             items={order.map((sort, index) => ({
@@ -445,9 +445,9 @@ export function CriteriaBuilder({
               removeLabel: fillCopy(copy.builder.dropOrderBy, { field: sort.field }),
             }))}
           />
-          {/* Sólo lo que el modelo declara ordenable: una columna que admite
-              vacío pierde filas en la paginación por cursor, y por eso el
-              servidor no la ofrece. */}
+          {/* Only what the model declares sortable: a column that admits
+              empty loses rows in cursor pagination, and that is why the
+              server does not offer it. */}
           <AddTag
             label={copy.builder.addOrder}
             options={sortable.filter((name) => !order.some((one) => one.field === name))}
@@ -459,12 +459,12 @@ export function CriteriaBuilder({
         ) : null}
       </section>
 
-      {/* ── partidas por qué ──────────────────────────────────────────── */}
+      {/* ── split by what ─────────────────────────────────────────────── */}
       <section className="flex min-w-0 flex-col gap-2">
         <Rule label={copy.builder.groupBy} />
-        {/* Encadenados con «›» y no en renglones: los niveles NO se suman, se
-            anidan —«año, y adentro mes»— y el orden ES la pregunta. Es el mismo
-            dibujo que la barra, así que lo que se arma acá se reconoce allá. */}
+        {/* Chained with «›» and not in rows: the levels are NOT added, they
+            nest —«año, y adentro mes»— and the order IS the question. It is the same
+            drawing as the bar, so what is built here is recognised there. */}
         <div className="flex min-w-0 flex-wrap items-center gap-1">
           {levels.map((level, index) => (
             <Fragment key={`${level.field}-${index}`}>
@@ -508,11 +508,11 @@ export function CriteriaBuilder({
         ) : null}
       </section>
 
-      {/* Lo que sigue sólo importa habiendo al menos un nivel: sin montones no hay qué
-          medir, qué filtrar entre montones, ni en qué orden ni cuántos de ellos volver. */}
+      {/* What follows only matters with at least one level: without heaps there is nothing to
+          measure, to filter between heaps, nor in what order or how many of them to return. */}
       {levels.length > 0 ? (
         <>
-          {/* ── qué se mide de cada montón ──────────────────────────────── */}
+          {/* ── what is measured of each heap ───────────────────────────── */}
           <section className="flex min-w-0 flex-col gap-2">
             <Rule label={copy.builder.totals} />
             {Object.keys(measures).length === 0 ? (
@@ -597,7 +597,7 @@ export function CriteriaBuilder({
             </div>
           </section>
 
-          {/* ── qué montones quedan ──────────────────────────────────────── */}
+          {/* ── which heaps remain ─────────────────────────────────────── */}
           <section className="flex min-w-0 flex-col gap-2">
             <Rule label={copy.builder.filterPiles} />
             <p className="text-meta text-muted">{copy.builder.pilesNote}</p>
@@ -608,7 +608,7 @@ export function CriteriaBuilder({
             />
           </section>
 
-          {/* ── en qué orden vuelven los montones ────────────────────────── */}
+          {/* ── in what order the heaps come back ───────────────────────── */}
           <section className="flex min-w-0 flex-col gap-2">
             <Rule label={copy.builder.pileOrder} />
             {groupOrder.length === 0 ? (
@@ -681,7 +681,7 @@ export function CriteriaBuilder({
             </div>
           </section>
 
-          {/* ── cuántos montones vuelven ──────────────────────────────────── */}
+          {/* ── how many heaps come back ──────────────────────────────────── */}
           <section className="flex min-w-0 flex-col gap-2">
             <Rule label={copy.builder.pilePage} />
             <p className="text-meta text-muted">{copy.builder.pilePageNote}</p>
@@ -708,7 +708,7 @@ export function CriteriaBuilder({
         </>
       ) : null}
 
-      {/* ── qué de cada fila ──────────────────────────────────────────── */}
+      {/* ── what of each row ──────────────────────────────────────────── */}
       <section className="flex min-w-0 flex-col gap-2">
         <Rule label={copy.builder.fields} />
         <p className="text-meta text-muted">
@@ -742,7 +742,7 @@ export function CriteriaBuilder({
         </div>
       </section>
 
-      {/* ── la criteria entera, en su forma real ──────────────────────── */}
+      {/* ── the whole criteria, in its real form ──────────────────────── */}
       <LazyJsonEditor
         value={rawText}
         onChange={updateRaw}

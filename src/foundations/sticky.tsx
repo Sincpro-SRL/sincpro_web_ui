@@ -3,72 +3,72 @@
 import { type CSSProperties, type RefObject, useLayoutEffect, useRef, useState } from "react";
 
 /* ==================================================================== *
- *  LA PILA DE COSAS PEGADAS
+ *  THE STACK OF STICKY THINGS
  *
- *  Tres bandas se quedan arriba mientras se scrollea una vista larga, y cada
- *  una tiene que quedar DEBAJO de la anterior:
+ *  Three bands stay at the top while a long view is scrolled, and each
+ *  one has to sit BELOW the previous one:
  *
  *      ┌─ TopNav ─────────────────────────────────┐  top: 0
- *      ├─ barra de la lista ──────────────────────┤  top: alto del TopNav
+ *      ├─ list bar ───────────────────────────────┤  top: height of the TopNav
  *      │  🔍 buscar…  ⚙3          1–80 / 187 ‹ ›  │
- *      ├─ encabezado de la tabla ─────────────────┤  top: los dos de arriba
+ *      ├─ table header ───────────────────────────┤  top: the two above
  *      │  número │ cliente │ fecha │ total        │
  *      ├──────────────────────────────────────────┤
- *      │  …las filas, que sí se van…              │
+ *      │  …the rows, which do scroll away…        │
  *
- *  **Ninguna de las tres tiene alto fijo.** El `TopNav` crece cuando envuelve;
- *  la barra de la lista tiene dos renglones, o uno en compacto, o tres cuando
- *  las fichas del buscador envuelven. Un `top-[52px]` escrito a mano acierta en
- *  una ventana y deja un hueco o un solapamiento en las otras — y es la clase
- *  de número que nadie vuelve a tocar cuando la barra cambia.
+ *  **None of the three has a fixed height.** The `TopNav` grows when it wraps;
+ *  the list bar has two lines, or one when compact, or three when
+ *  the search chips wrap. A hand-written `top-[52px]` is right in
+ *  one window and leaves a gap or an overlap in the others — and it is the kind
+ *  of number nobody touches again when the bar changes.
  *
- *  Por eso cada banda MIDE lo que ocupa y lo suma a `--sticky-top` para lo que
- *  venga abajo. La variable cascadea, así que cada capa lee la de arriba sin
- *  que ninguna sepa cuántas capas hay.
+ *  That is why each band MEASURES what it takes and adds it to `--sticky-top` for whatever
+ *  comes below. The variable cascades, so each layer reads the one above without
+ *  any of them knowing how many layers there are.
  *
- *  ── La regla del que abre una caja con scroll propio ────────────────
+ *  ── The rule for whoever opens a box with its own scroll ────────────
  *
- *  Adentro de una caja con alto y `overflow`, el que scrollea es la caja y no
- *  la página, así que lo pegado se pega al borde de la caja: ahí la pila
- *  arranca de cero otra vez. Eso es `stickyReset()`.
+ *  Inside a box with a height and `overflow`, it is the box that scrolls and not
+ *  the page, so what is sticky sticks to the box's edge: there the stack
+ *  starts from zero again. That is `stickyReset()`.
  * ==================================================================== */
 
-/** La variable que dice a qué altura arranca lo próximo que se pegue. */
+/** The variable that says at what height the next thing to stick starts. */
 export const STICKY_TOP = "--sticky-top";
 
-/** Lo que va en `style` de algo pegajoso: se pega debajo de lo que ya hay. */
+/** What goes in the `style` of something sticky: it sticks below what is already there. */
 export const stickyTop: CSSProperties = { top: `var(${STICKY_TOP}, 0px)` };
 
-/** Para una caja con scroll propio: adentro, la pila arranca de cero. */
+/** For a box with its own scroll: inside, the stack starts from zero. */
 export function stickyReset(): CSSProperties {
   return { [STICKY_TOP]: "0px" } as CSSProperties;
 }
 
 /**
- * LA CAJA DE UNA TABLA: cuándo tiene que ser un contenedor de scroll y cuándo no.
+ * A TABLE'S BOX: when it has to be a scroll container and when not.
  *
- * Las tres tablas del sistema tienen el mismo dilema y lo resolvían con tres
- * copias de la misma medición. El dilema es de CSS y no se puede esquivar:
- * `overflow-x: auto` **obliga** a `overflow-y: auto` —la especificación dice que
- * `visible` junto a un valor que no sea `visible` ni `clip` computa a `auto`—,
- * así que en cuanto la caja permite scroll horizontal pasa a ser el scroller, y
- * el encabezado pegajoso se pega a SU borde en vez de al de la página.
+ * The system's three tables have the same dilemma and used to solve it with three
+ * copies of the same measurement. The dilemma is CSS's and cannot be dodged:
+ * `overflow-x: auto` **forces** `overflow-y: auto` —the specification says that
+ * `visible` next to a value that is neither `visible` nor `clip` computes to `auto`—,
+ * so as soon as the box allows horizontal scroll it becomes the scroller, and
+ * the sticky header sticks to ITS edge instead of the page's.
  *
- * De ahí salen los tres casos, y son los únicos:
+ * From there come the three cases, and they are the only ones:
  *
- *     alto propio      la caja scrollea de verdad. `auto`, y la pila de cosas
- *                      pegadas arranca de cero adentro.
- *     sin alto, entra  no hace falta ninguna caja. `clip` —recorta las esquinas
- *                      redondeadas sin ser un scroller— y el encabezado se pega
- *                      a la página, debajo de la barra de la lista.
- *     sin alto, no entra   vuelve el scroll horizontal, y el encabezado se va
- *                      con las filas. Es el precio, y es el que hay.
+ *     own height       the box really scrolls. `auto`, and the stack of sticky
+ *                      things starts from zero inside.
+ *     no height, fits  no box is needed. `clip` —trims the rounded corners
+ *                      without being a scroller— and the header sticks
+ *                      to the page, below the list bar.
+ *     no height, does not fit   horizontal scroll comes back, and the header goes
+ *                      away with the rows. It is the price, and it is what there is.
  *
- * Devuelve la clase y el estilo ya resueltos para que ninguna tabla vuelva a
- * decidirlo por su cuenta.
+ * Returns the class and the style already resolved so that no table has to
+ * decide it on its own again.
  */
 export function useScrollBox<T extends HTMLElement>(options: {
-  /** El alto declarado. `undefined` o `"auto"` = crece con el contenido. */
+  /** The declared height. `undefined` or `"auto"` = grows with the content. */
   height?: number | string;
 }): {
   ref: RefObject<T | null>;
@@ -86,11 +86,11 @@ export function useScrollBox<T extends HTMLElement>(options: {
   useLayoutEffect(() => {
     const node = ref.current;
     if (node === null || !crece) return;
-    /* Se mide el CONTENIDO y no la caja, y es la diferencia entre que esto
-       funcione y que se trabe: con `overflow: clip` la caja deja de ser un
-       contenedor de scroll, así que su `scrollWidth` pasa a ser su propio ancho
-       y nunca volvería a reportar desborde. Una vez recortada, se quedaría
-       recortada para siempre. El hijo sí sabe cuánto mide de verdad. */
+    /* The CONTENT is measured and not the box, and that is the difference between this
+       working and getting stuck: with `overflow: clip` the box stops being a
+       scroll container, so its `scrollWidth` becomes its own width
+       and would never report overflow again. Once clipped, it would stay
+       clipped forever. The child does know how wide it really is. */
     const dentro = node.firstElementChild;
     const medir = () => {
       const ancho = dentro === null ? node.scrollWidth : dentro.getBoundingClientRect().width;
@@ -100,8 +100,8 @@ export function useScrollBox<T extends HTMLElement>(options: {
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(medir);
     observer.observe(node);
-    /* También el contenido: las columnas cambian de ancho sin que la caja
-       cambie de tamaño. */
+    /* The content too: the columns change width without the box
+       changing size. */
     if (dentro !== null) observer.observe(dentro);
     return () => observer.disconnect();
   }, [crece]);
@@ -121,18 +121,18 @@ export function useScrollBox<T extends HTMLElement>(options: {
 }
 
 /**
- * Mide el alto de un elemento y devuelve el estilo que empuja la pila para sus
- * hermanos de abajo.
+ * Measures an element's height and returns the style that pushes the stack for its
+ * siblings below.
  *
- * `useLayoutEffect` y `ResizeObserver` y no un alto declarado: el alto depende
- * de si las fichas del buscador envolvieron, y eso recién se sabe después de
- * pintar.
+ * `useLayoutEffect` and `ResizeObserver` and not a declared height: the height depends
+ * on whether the search chips wrapped, and that is only known after
+ * painting.
  */
 export function useStickyLayer<T extends HTMLElement>(): {
   ref: RefObject<T | null>;
-  /** Va en el elemento que se pega. */
+  /** Goes on the element that sticks. */
   self: CSSProperties;
-  /** Va en lo que viene DEBAJO, para que se pegue más abajo todavía. */
+  /** Goes on what comes BELOW, so that it sticks even lower. */
   below: CSSProperties;
 } {
   const ref = useRef<T>(null);
@@ -142,12 +142,12 @@ export function useStickyLayer<T extends HTMLElement>(): {
     const node = ref.current;
     if (node === null) return;
 
-    /* El valor de abajo se calcula en JS y se escribe en PÍXELES, no como
-       `calc(var(--sticky-top) + 44px)`. Context: esa forma parece la natural y
-       no funciona — poner `--sticky-top` en un elemento leyendo `var(--sticky-top)`
-       del MISMO elemento es un ciclo, CSS lo declara inválido, y los
-       descendientes heredan «nada»: todo se pegaba en 0 y las bandas se
-       superponían. Se midió en el navegador, no se dedujo. */
+    /* The value below is computed in JS and written in PIXELS, not as
+       `calc(var(--sticky-top) + 44px)`. Context: that form looks natural and
+       does not work — setting `--sticky-top` on an element while reading `var(--sticky-top)`
+       from the SAME element is a cycle, CSS declares it invalid, and the
+       descendants inherit «nothing»: everything stuck at 0 and the bands
+       overlapped. It was measured in the browser, not deduced. */
     const measure = () => {
       const inherited = Number.parseFloat(
         getComputedStyle(node).getPropertyValue(STICKY_TOP),
@@ -159,9 +159,9 @@ export function useStickyLayer<T extends HTMLElement>(): {
     if (typeof ResizeObserver === "undefined") return;
     const observer = new ResizeObserver(measure);
     observer.observe(node);
-    /* La altura de una capa de ARRIBA cambia sin que este observador se entere
-       —el `TopNav` envuelve al angostar—, así que también se remide al cambiar
-       el tamaño de la ventana, que es cuando eso pasa. */
+    /* The height of a layer ABOVE changes without this observer noticing
+       —the `TopNav` wraps when narrowed—, so it is also re-measured when the
+       window is resized, which is when that happens. */
     window.addEventListener("resize", measure);
     return () => {
       observer.disconnect();

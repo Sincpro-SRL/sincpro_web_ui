@@ -1,56 +1,56 @@
 import type { GroupGrain, GroupLevel } from "@sincpro/web-ui/foundations/grouping";
 
 /* ==================================================================== *
- *  LO QUE LA BARRA TIENE PUESTO: instancias de criteria.
+ *  WHAT THE BAR HAS SET: criteria instances.
  *
- *  Context: la barra manejaba tres cosas distintas —búsquedas, filtros
- *  declarados y niveles de agrupado— y las tres terminaban en el mismo lugar
- *  recién al final, cada una por su camino. Por eso una se podía editar y otra
- *  no, y por eso el anidado no se podía dibujar: no existía hasta que alguien
- *  armaba la `selection`.
+ *  Context: the bar handled three different things —searches, declared
+ *  filters and grouping levels— and all three ended up in the same place
+ *  only at the very end, each by its own path. That is why one could be edited and another
+ *  could not, and why the nesting could not be drawn: it did not exist until someone
+ *  built the `selection`.
  *
- *  Acá hay UNA sola cosa. Todo lo que la barra tiene puesto es una INSTANCIA, y
- *  una instancia es de una de dos clases:
+ *  Here there is ONE thing. Everything the bar has set is an INSTANCE, and
+ *  an instance is one of two kinds:
  *
- *      group    cómo se amontona lo que quedó — va SIEMPRE a la izquierda
- *      filter   qué filas quedan — va a la derecha, y puede anidarse
+ *      group    how what is left is heaped — ALWAYS goes on the left
+ *      filter   which rows are left — goes on the right, and may nest
  *
- *  ── Esto NO es la criteria del motor ────────────────────────────────
+ *  ── This is NOT the engine's criteria ───────────────────────────────
  *
- *  Es lo que la UI sabe de ella: de qué clase es, cómo se llama, y qué lleva
- *  adentro. El objeto del motor —`{field, operator, value}`, `{all}`, `{any}`—
- *  viaja ADENTRO, intacto, y sale sin una sola clave de más. Mezclar las dos
- *  cosas es lo que obliga a elegir entre un rótulo que se lee y un objeto que el
- *  servidor acepta; separadas, se tienen las dos.
+ *  It is what the UI knows about it: what kind it is, what it is called, and what it carries
+ *  inside. The engine's object —`{field, operator, value}`, `{all}`, `{any}`—
+ *  travels INSIDE, intact, and comes out without a single extra key. Mixing the two
+ *  is what forces a choice between a label that reads and an object the
+ *  server accepts; kept apart, you have both.
  *
- *      instancia de la UI            lo que viaja
+ *      UI instance                   what travels
  *      ────────────────────          ────────────
- *      id, clase, rótulo       →     (nada)
+ *      id, kind, label         →     (nothing)
  *      selection               →     {field, operator, value}
  *      level                   →     {field, grain}
  *
- *  ── Un rótulo es lo ÚNICO que distingue a un filtro de código ───────
+ *  ── A label is the ONLY thing that sets a filter apart from code ────
  *
- *  «Sólo vencidas» y «estado = vencida» son la misma instancia; una trae su
- *  nombre puesto porque alguien la pensó antes y la otra se describe sola. No
- *  hay dos mecanismos: hay uno, con o sin nombre.
+ *  «Sólo vencidas» and «estado = vencida» are the same instance; one comes with its
+ *  name set because somebody thought of it beforehand and the other describes itself. There
+ *  are not two mechanisms: there is one, with or without a name.
  * ==================================================================== */
 
 /* The shapes of a filter are the MODEL's: the builder draws them, the bar stores them, the
    engine reads them. They lived in `FilterBuilder` and the model imported them from the
    interface — a cycle, and the dependency pointing the wrong way. */
 
-/** Una condición, tal como la declara el motor. `operator` sale del `ops` del campo, así que
- *  lo que el constructor ofrece es exactamente lo que el modelo acepta. */
+/** A condition, as the engine declares it. `operator` comes from the field's `ops`, so
+ *  what the builder offers is exactly what the model accepts. */
 export interface BuiltCondition {
   field: string;
   operator: string;
   value: unknown;
 }
 
-/** Lo que el filtro puede ser en su forma real —la `Expression` de `@sincpro/criteria`, clave
- *  por clave—: una condición, un grupo `all`/`any` de más filtros —lo que el árbol arma, a
- *  cualquier profundidad—, un `negate`, o un filtro a través de una relación. */
+/** What the filter can be in its real form —`@sincpro/criteria`'s `Expression`, key
+ *  by key—: a condition, an `all`/`any` group of more filters —what the tree builds, to
+ *  any depth—, a `negate`, or a filter through a relation. */
 export type BuiltFilter =
   | BuiltCondition
   | { all: BuiltFilter[] }
@@ -93,39 +93,39 @@ export interface BuiltThrough {
   selection: BuiltFilter;
 }
 
-/** Cómo se juntan las instancias de un nodo. `not` niega lo que tiene adentro. */
+/** How a node's instances are joined. `not` negates what it has inside. */
 export type CriteriaJoin = "all" | "any" | "not";
 
 /**
- * UNA INSTANCIA de lo que la barra tiene puesto.
+ * ONE INSTANCE of what the bar has set.
  *
- * Tres formas y ninguna de más: un nivel de agrupado, un filtro, o un nodo que
- * junta filtros. Un nodo NO junta grupos — «año y mes» no se cruza con Y, se
- * anida, y para eso el orden de la lista ya es la jerarquía.
+ * Three forms and none extra: a grouping level, a filter, or a node that
+ * joins filters. A node does NOT join groups — «year and month» is not crossed with AND, it
+ * nests, and for that the list's order is already the hierarchy.
  */
 export type SearchCriteria =
   | {
       id: string;
       kind: "group";
-      /** Cómo se lee: «registrado · mes». Lo pone quien conoce el modelo. */
+      /** How it reads: «registrado · mes». Set by whoever knows the model. */
       label: string;
-      /** Lo que viaja: por qué campo se parte y con qué grano. */
+      /** What travels: which field it splits by and with what grain. */
       level: GroupLevel;
     }
   | {
       id: string;
       kind: "filter";
-      /** Cómo se lee. Un filtro declarado trae el suyo; uno escrito en la barra
-       *  se describe solo, con las palabras del modelo. */
+      /** How it reads. A declared filter brings its own; one written in the bar
+       *  describes itself, with the model's words. */
       label: string;
       /**
-       * Lo que viaja, en la forma del motor y sin una clave de más.
+       * What travels, in the engine's form and without an extra key.
        *
-       * FALTA cuando el recorte no se puede preguntar: «con entregas pendientes» se define
-       * con datos de otro contexto y ninguna `selection` sobre esta tabla lo
-       * contesta. La instancia existe igual —se ve, se cuenta, se saca— y lo
-       * contesta quien la declaró. Sin esto, un recorte así no era una instancia
-       * de nada: se dibujaba en el menú y tildarlo no hacía nada.
+       * MISSING when the cut cannot be asked: «con entregas pendientes» is defined
+       * with data from another context and no `selection` on this table
+       * answers it. The instance exists all the same —it is seen, counted, removed— and
+       * whoever declared it answers it. Without this, such a cut was not an instance
+       * of anything: it was drawn in the menu and ticking it did nothing.
        */
       selection?: BuiltCondition | BuiltFilter;
     }
@@ -136,27 +136,27 @@ export type SearchCriteria =
       of: readonly SearchCriteria[];
     };
 
-/** El camino hasta una instancia, por índice desde la raíz. Es su identidad: dos
- *  instancias pueden decir lo mismo en ramas distintas, y tocar una no puede
- *  abrir la otra. */
+/** The path to an instance, by index from the root. It is its identity: two
+ *  instances may say the same in different branches, and touching one cannot
+ *  open the other. */
 export type CriteriaPath = readonly number[];
 
-/** Una instancia de agrupado, ya estrechada: los de grupo nunca son un nodo, así
- *  que quien los dibuja no tiene que preguntarse si tienen rótulo. */
+/** A grouping instance, already narrowed: group ones are never a node, so
+ *  whoever draws them does not have to ask whether they have a label. */
 export type GroupCriteria = Extract<SearchCriteria, { kind: "group" }>;
 
-/** Las instancias de agrupado, en orden. Van SIEMPRE a la izquierda y no se
- *  cruzan con nada: el orden ES la jerarquía. */
+/** The grouping instances, in order. They ALWAYS go on the left and do not
+ *  cross with anything: the order IS the hierarchy. */
 export function groupsOf(all: readonly SearchCriteria[]): GroupCriteria[] {
   return all.filter((one): one is GroupCriteria => one.kind === "group");
 }
 
-/** Las de filtro, que son las que se anidan. */
+/** The filter ones, which are the ones that nest. */
 export function filtersOf(all: readonly SearchCriteria[]): SearchCriteria[] {
   return all.filter((one) => one.kind !== "group");
 }
 
-/** La instancia que hay en esa ruta, si hay alguna. */
+/** The instance at that path, if there is one. */
 export function at(
   all: readonly SearchCriteria[],
   path: CriteriaPath,
@@ -169,8 +169,8 @@ export function at(
   return here.kind === "join" ? at(here.of, rest) : undefined;
 }
 
-/** El mismo árbol con una instancia cambiada. Devolver uno nuevo y no tocar el
- *  viejo es lo que deja comparar antes y después —y deshacer. */
+/** The same tree with one instance changed. Returning a new one and not touching the
+ *  old one is what allows comparing before and after —and undoing. */
 export function replaceAt(
   all: readonly SearchCriteria[],
   path: CriteriaPath,
@@ -186,10 +186,10 @@ export function replaceAt(
 }
 
 /**
- * El mismo árbol sin esa instancia.
+ * The same tree without that instance.
  *
- * Un nodo que se queda con un solo hijo se DESARMA: «cualquiera de: (a)» es un
- * paréntesis alrededor de nada, y dejarlo obliga a leer un grupo que no agrupa.
+ * A node left with a single child is DISMANTLED: «cualquiera de: (a)» is a
+ * parenthesis around nothing, and leaving it forces reading a group that does not group.
  */
 export function removeAt(
   all: readonly SearchCriteria[],
@@ -207,26 +207,26 @@ export function removeAt(
   });
 }
 
-/** Cómo se juntan los de un nodo: `all` → `any` → `not` y vuelta a empezar. Es
- *  la misma rueda que el selector muestra abierta, para quien prefiera el
- *  atajo. */
+/** How a node's instances are joined: `all` → `any` → `not` and round again. It is
+ *  the same wheel the selector shows open, for whoever prefers the
+ *  shortcut. */
 export function nextJoin(join: CriteriaJoin): CriteriaJoin {
   return join === "all" ? "any" : join === "any" ? "not" : "all";
 }
 
-/** Un id que no choca con otro. Corto, porque se lee en el DOM. */
+/** An id that does not collide with another. Short, because it is read in the DOM. */
 export function criteriaId(prefix: string): string {
   return `${prefix}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
-/** Una instancia de agrupado, a partir de un nivel ya legible. */
+/** A grouping instance, from an already legible level. */
 export function groupCriteria(level: GroupLevel, label: string): SearchCriteria {
   return { id: criteriaId("g"), kind: "group", label, level };
 }
 
-/** Una instancia de filtro. `label` es lo único que distingue a uno declarado en
- *  código de uno escrito en la barra; sin `selection`, es uno que sólo contesta
- *  quien lo declaró. */
+/** A filter instance. `label` is the only thing that sets a declared-in-code one apart from
+ *  one written in the bar; without `selection`, it is one that only whoever
+ *  declared it answers. */
 export function filterCriteria(
   selection: BuiltCondition | BuiltFilter | undefined,
   label: string,
@@ -241,11 +241,11 @@ export function filterCriteria(
 }
 
 /**
- * Lo que VIAJA: la `selection` del motor, armada con las instancias de filtro.
+ * What TRAVELS: the engine's `selection`, built from the filter instances.
  *
- * Es lo único que sale de acá hacia afuera, y sale sin rótulos, sin ids y sin
- * clases: la UI se queda con lo que la UI necesita. Lleva el nombre del campo de la
- * criteria que llena —`Criteria.selection`—, como el `selection` de `@sincpro/criteria`.
+ * It is the only thing that leaves from here outward, and it leaves without labels, ids or
+ * kinds: the UI keeps what the UI needs. It carries the field name of the
+ * criteria it fills —`Criteria.selection`—, like `@sincpro/criteria`'s `selection`.
  */
 export function selectionOf(all: readonly SearchCriteria[]): BuiltFilter | undefined {
   const parts = filtersOf(all)
@@ -258,8 +258,8 @@ export function selectionOf(all: readonly SearchCriteria[]): BuiltFilter | undef
 
 function expressionOf(one: SearchCriteria): BuiltFilter | undefined {
   if (one.kind === "group") return undefined;
-  /* Una instancia sin `selection` no viaja: no hay manera de preguntarla, y mandar
-     algo parecido sería contestar otra cosa. La contesta quien la declaró. */
+  /* An instance without `selection` does not travel: there is no way to ask it, and sending
+     something similar would be answering something else. Whoever declared it answers it. */
   if (one.kind === "filter") return one.selection;
   const inside = one.of
     .map(expressionOf)
@@ -273,7 +273,7 @@ function expressionOf(one: SearchCriteria): BuiltFilter | undefined {
   return one.join === "all" ? { all: inside } : { any: inside };
 }
 
-/** Los niveles que viajan, en orden. */
+/** The levels that travel, in order. */
 export function levelsOf(all: readonly SearchCriteria[]): GroupLevel[] {
   return groupsOf(all).flatMap((one) => (one.kind === "group" ? [one.level] : []));
 }
@@ -281,19 +281,19 @@ export function levelsOf(all: readonly SearchCriteria[]): GroupLevel[] {
 export type { GroupGrain, GroupLevel };
 
 /* ---------------------------------------------------------------- *
- *  Las dos operaciones que todo consumidor necesita
+ *  The two operations every consumer needs
  * ---------------------------------------------------------------- */
 
 /**
- * Los niveles de agrupado, puestos al día.
+ * The grouping levels, brought up to date.
  *
- * Reemplaza TODAS las instancias de grupo por las que salen de `levels`, y no
- * toca ninguna de filtro. Existe porque el control de niveles es una lista
- * ordenada que se edita entera —se agrega, se saca, se mueve— y reconciliarla
- * instancia por instancia desde afuera es el mismo bucle escrito en cada
- * pantalla.
+ * Replaces ALL the group instances with those that come out of `levels`, and touches
+ * none of the filter ones. It exists because the levels control is an
+ * ordered list that is edited whole —added to, removed from, moved— and reconciling it
+ * instance by instance from outside is the same loop written on every
+ * screen.
  *
- * Los de grupo quedan ADELANTE, que es donde se dibujan.
+ * The group ones stay IN FRONT, which is where they are drawn.
  */
 export function withLevels(
   all: readonly SearchCriteria[],
@@ -304,12 +304,12 @@ export function withLevels(
 }
 
 /**
- * Un filtro CON NOMBRE, puesto o sacado.
+ * A NAMED filter, set or removed.
  *
- * Es lo único que hace un filtro declarado en código: traer su rótulo y su
- * condición ya pensadas. Tildarlo lo agrega, destildarlo lo saca, y se reconoce
- * por su `id` — el mismo que declaró quien lo escribió, así que sobrevive a
- * guardarlo como favorito y volver a leerlo.
+ * It is the only thing a filter declared in code does: bring its label and its
+ * condition already thought out. Ticking it adds it, unticking removes it, and it is recognised
+ * by its `id` — the one declared by whoever wrote it, so it survives
+ * being saved as a favourite and read back.
  */
 export function toggleNamed(
   all: readonly SearchCriteria[],
@@ -320,8 +320,8 @@ export function toggleNamed(
   return [...all, filterCriteria(named.selection, named.label, named.id)];
 }
 
-/** Si ese filtro con nombre está puesto. Lo usa el panel para dibujar la marca:
- *  la marca sale de lo PUESTO y no de un estado aparte que podría discrepar. */
+/** Whether that named filter is set. The panel uses it to draw the mark:
+ *  the mark comes from what is SET and not from a separate state that could disagree. */
 export function hasNamed(all: readonly SearchCriteria[], id: string): boolean {
   return all.some((one) => one.id === id);
 }

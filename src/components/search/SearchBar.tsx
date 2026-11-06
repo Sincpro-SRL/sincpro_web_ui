@@ -41,62 +41,62 @@ import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "re
 import { useOverlay } from "react-aria";
 
 /* ==================================================================== *
- *  LA BARRA — buscar es preguntar DÓNDE, no sólo qué.
+ *  THE BAR — searching is asking WHERE, not just what.
  *
- *  El diagnóstico del producto fue literal: «actualmente estamos poniendo todo
- *  en el menú como si fueran filtros». El menú del costado dice QUÉ OBJETOS hay;
- *  la barra dice CUÁLES DE ELLOS estoy mirando. Son dos preguntas, y por eso son
- *  dos controles — poner los recortes en el menú obliga a navegar para filtrar.
+ *  The product's diagnosis was literal: «we are currently putting everything
+ *  in the menu as if they were filters». The side menu says WHICH OBJECTS there are;
+ *  the bar says WHICH OF THEM I am looking at. They are two questions, and so they are
+ *  two controls — putting the cuts in the menu forces you to navigate in order to filter.
  *
- *  ── La faceta es la pieza que no se puede saltear ───────────────────
+ *  ── The facet is the piece that cannot be skipped ──────────────────
  *
- *  Un campo de búsqueda sin facetas busca donde decidió el que lo programó.
- *  Escribir «edad» puede querer decir *«el archivo se llama edad»* o *«tiene una
- *  columna edad»*, y son dos preguntas con dos respuestas distintas. La solución
- *  no es adivinar ni buscar en todos lados: es PREGUNTAR. Se escribe, el
- *  desplegable ofrece en qué campo buscarlo, y lo elegido queda como una ficha
- *  que se ve y se saca.
+ *  A search field without facets searches where whoever programmed it decided.
+ *  Typing «edad» can mean *«the file is called edad»* or *«it has a
+ *  column edad»*, and those are two questions with two different answers. The solution
+ *  is not to guess nor to search everywhere: it is to ASK. You type, the
+ *  dropdown offers in which field to look for it, and what is chosen stays as a chip
+ *  that is seen and removed.
  *
- *  Con un MODELO la barra deja de buscar texto y pregunta: de él salen el tipo
- *  de cada campo, sus comparaciones, sus valores posibles y la columna por la
- *  que se busca un relacional. Sin modelo, una faceta es un campo de texto y la
- *  barra sigue funcionando — es el mismo camino, con menos metadatos.
+ *  With a MODEL the bar stops searching text and asks: from it come each field's type,
+ *  its comparisons, its possible values and the column by which a
+ *  relational is searched. Without a model, a facet is a text field and the
+ *  bar keeps working — it is the same path, with less metadata.
  *
- *  ── Los recortes viven ADENTRO del campo ────────────────────────────
+ *  ── The cuts live INSIDE the field ──────────────────────────────────
  *
- *  Filtros, agrupado y favoritos son un solo panel colgado del borde derecho de
- *  la barra, y no tres botones al lado. Son la misma pregunta —*¿qué parte de
- *  esto estoy mirando?*— y separados obligan a abrir tres desplegables para
- *  armar un recorte, sin poder ver los tres estados a la vez.
+ *  Filters, grouping and favourites are a single panel hanging from the right edge of
+ *  the bar, and not three buttons side by side. They are the same question —*which part of
+ *  this am I looking at?*— and apart they force you to open three dropdowns to
+ *  build a cut, without being able to see the three states at once.
  *
- *  ── Todo lo puesto es una INSTANCIA, y se dibuja ────────────────────
+ *  ── Everything set is an INSTANCE, and it is drawn ──────────────────
  *
- *  Tildar un filtro, escribir una pregunta, abrir un grupo con `#and` o agregar
- *  un nivel de agrupado dejan todos la misma cosa: una instancia en la lista que
- *  la barra dibuja. Los de grupo van siempre a la izquierda, encadenados; los de
- *  filtro a la derecha, con su anidado.
+ *  Ticking a filter, writing a question, opening a group with `#and` or adding
+ *  a grouping level all leave the same thing: an instance in the list that
+ *  the bar draws. The group ones go always on the left, chained; the
+ *  filter ones on the right, with their nesting.
  *
- *  Un contador en el embudo no alcanzaba: había que abrir el panel para saber
- *  QUÉ estaba puesto, y una lista que parece sin filtrar es como alguien termina
- *  mirando un subconjunto sin saberlo. Y cómo se juntan no se deduce: es una
- *  palabra —«todas», «cualquiera», «ninguna»— que se lee y se toca ahí mismo.
+ *  A counter on the funnel was not enough: you had to open the panel to know
+ *  WHAT was set, and a list that looks unfiltered is how somebody ends up
+ *  looking at a subset without knowing it. And how they are joined is not deduced: it is a
+ *  word —«todas», «cualquiera», «ninguna»— that is read and touched right there.
  *
- *  Odoo cuelga su panel de un chevron, y ése es su defecto: un `▾` no dice qué
- *  hay del otro lado, así que hay que abrirlo para averiguarlo. Acá el disparador
- *  es un ícono de filtro con su contador — se ve que filtra, y cuánto.
+ *  Odoo hangs its panel from a chevron, and that is its flaw: a `▾` does not say what
+ *  is on the other side, so you have to open it to find out. Here the trigger
+ *  is a filter icon with its counter — you see that it filters, and how much.
  * ==================================================================== */
 
-/** Dónde se puede buscar. Lo declara el dominio, no esta pieza. */
+/** Where you can search. The domain declares it, not this piece. */
 export interface SearchFacet {
   id: string;
-  /** Cómo se lee en la sugerencia y en la ficha: «nombre», «columnas». */
+  /** How it reads in the suggestion and on the chip: «nombre», «columnas». */
   label: string;
 }
 
-/** Una columna del panel de recortes. O una lista de opciones, o una pieza que
- *  se dibuja sola — el agrupado dejó de ser una lista de casillas el día que
- *  pasó a ser N niveles ordenados, pero sigue siendo la misma pregunta que los
- *  filtros y por eso sigue en el mismo panel. */
+/** A column of the cuts panel. Either a list of options, or a piece that
+ *  draws itself — grouping stopped being a list of checkboxes the day it
+ *  became N ordered levels, but it is still the same question as the
+ *  filters and that is why it stays in the same panel. */
 interface Column {
   title: string;
   groups?: readonly MenuGroup[];
@@ -115,10 +115,10 @@ function Option({ o, onSelect }: { o: MenuOption; onSelect?: (id: string) => voi
         o.checked === true ? "bg-primary/6" : ""
       }`}
     >
-      {/* La columna de la marca existe siempre, aunque no haya nada elegido: sin
-          ella, tildar una opción corre todo el texto y el panel pega un salto.
-          Apagada se ve el aro: un hueco del tamaño del ícono se lee como un
-          padding que nadie pidió. */}
+      {/* The mark column always exists, even if nothing is chosen: without
+          it, ticking an option shifts all the text and the panel jumps.
+          When off the ring is seen: a gap the size of the icon reads as
+          padding nobody asked for. */}
       <span className="mt-0.5 flex size-(--size-icon-sm) shrink-0 items-center justify-center">
         {o.checked === true ? (
           <span className="size-1.5 rounded-pill bg-primary" />
@@ -149,9 +149,9 @@ function Option({ o, onSelect }: { o: MenuOption; onSelect?: (id: string) => voi
   );
 }
 
-/** Un grupo del panel. Plegable cuando lo pide —una fecha, que trae once
- *  opciones— y abierto de entrada si ya tiene algo tildado: si no, lo puesto
- *  queda escondido detrás de un chevron y hay que adivinar dónde está. */
+/** A panel group. Collapsible when it asks —a date, which brings eleven
+ *  options— and open from the start if it already has something ticked: otherwise what is set
+ *  stays hidden behind a chevron and you have to guess where it is. */
 function Group({
   group,
   first,
@@ -179,10 +179,10 @@ function Group({
     <div className="flex flex-col gap-0.5">
       {first ? null : <div className="my-1 h-px bg-line" role="separator" />}
       {group.label === undefined ? null : group.collapsible !== true ? (
-        /* El rótulo del grupo va en la columna del TEXTO, no en la del borde.
-           La banda de la columna ya es el título (medium, sobre la línea). Este
-           es un escalón abajo: peso normal, y el mismo hueco de la marca para
-           que «mostrar sólo» arranque donde arranca «traídos». */
+        /* The group's label goes in the TEXT column, not the edge one.
+           The column's band is already the title (medium, over the line). This
+           one is a step down: normal weight, and the same gap as the mark
+           so that «mostrar sólo» starts where «traídos» starts. */
         <div className="flex items-center gap-2 px-1.5 pt-1 pb-0.5 text-micro text-muted">
           <span className="size-(--size-icon-sm) shrink-0" aria-hidden />
           {group.label}
@@ -206,7 +206,7 @@ function Group({
           >
             {group.label}
           </span>
-          {/* Cuántos recortes tiene puestos, sin abrirlo. */}
+          {/* How many cuts it has set, without opening it. */}
           {!active ? null : (
             <span className="inline-flex shrink-0 items-center rounded-pill border border-accent/40 bg-accent/18 px-2 py-0.5 text-micro tabular-nums text-ink">
               {group.options.filter((o) => o.checked === true).length}
@@ -230,64 +230,64 @@ function Group({
 }
 
 /**
- * La CONJUNCIÓN entre dos recortes: «y» o «o».
+ * The CONJUNCTION between two cuts: «y» or «o».
  *
- * Con `onToggle` se puede tocar, y eso no es un adorno: «vencidas Y de este
- * mes» y «vencidas O de este mes» son dos listas completamente distintas, y
- * hasta acá cuál de las dos era estaba decidido por dentro y no se podía cambiar
- * sin abrir el constructor. Sin `onToggle` es una palabra y nada más — que es lo
- * correcto entre dos ejes, donde la Y no es una opción.
+ * With `onToggle` it can be touched, and that is no ornament: «vencidas Y de este
+ * mes» and «vencidas O de este mes» are two completely different lists, and
+ * until now which of the two it was was decided inside and could not be changed
+ * without opening the builder. Without `onToggle` it is a word and nothing more — which is
+ * right between two axes, where AND is not an option.
  */
 /**
- * Lo que la barra necesita. Está aparte de la función porque es el contrato: lo
- * que una lista tiene que darle para que la barra pregunte, y nada más.
+ * What the bar needs. It is apart from the function because it is the contract: what
+ * a list has to give it for the bar to ask, and nothing more.
  */
 export type SearchBarProps = {
   facets: readonly SearchFacet[];
   /**
-   * El modelo, cuando la lista lo tiene.
+   * The model, when the list has it.
    *
-   * Es lo que convierte la barra de «buscar un texto en un campo» a «hacer una
-   * pregunta»: de acá salen el tipo de cada campo —y con él qué se le puede
-   * escribir—, los operadores que acepta, sus valores posibles si es un enum, y
-   * por qué columna se busca un relacional. Sin esto, `facets` sigue funcionando
-   * como siempre: cada faceta es un campo de texto.
+   * It is what turns the bar from «search a text in a field» into «ask a
+   * question»: from here come each field's type —and with it what can be
+   * written to it—, the operators it accepts, its possible values if it is an enum, and
+   * by which column a relational is searched. Without this, `facets` keeps working
+   * as always: each facet is a text field.
    */
   model?: ModelDefinition;
   /**
-   * TODO lo que la barra tiene puesto: los niveles de agrupado y los filtros, en
-   * una sola lista de instancias.
+   * EVERYTHING the bar has set: the grouping levels and the filters, in
+   * a single list of instances.
    *
-   * Una sola y no tres porque son lo mismo con clases distintas —ver
-   * `criteria.ts`—: lo que entra por el numeral, lo que se escribe a mano, lo
-   * que un filtro declarado trae con nombre y lo que sale del constructor son
-   * todas instancias, y por eso todas se leen, se tocan y se sacan igual.
+   * A single one and not three because they are the same with different kinds —see
+   * `criteria.ts`—: what enters through the hash sign, what is written by hand, what
+   * a declared filter brings with a name and what comes out of the builder are
+   * all instances, and that is why they are all read, touched and removed the same.
    */
   criteria: readonly SearchCriteria[];
   onCriteriaChange: (next: SearchCriteria[]) => void;
   placeholder?: string;
-  /** Lo que el panel OFRECE. Lo puesto no sale de acá: sale de `criteria`. */
+  /** What the panel OFFERS. What is set does not come from here: it comes from `criteria`. */
   filters?: readonly MenuGroup[];
   /**
-   * El editor de niveles de agrupado: `<GroupingLevels …/>`.
+   * The grouping levels editor: `<GroupingLevels …/>`.
    *
-   * Va en la MISMA columna del panel donde están los filtros, porque es la misma
-   * pregunta —«qué parte de esto estoy mirando»— y separarlos obliga a abrir dos
-   * cosas para armar un recorte sin poder ver los dos estados a la vez.
+   * It goes in the SAME panel column where the filters are, because it is the same
+   * question —«which part of this am I looking at»— and separating them forces opening two
+   * things to build a cut without being able to see both states at once.
    */
   grouping?: ReactNode;
   /**
-   * Alguien escribió `#and`, `#or` o `#not` y la barra abrió un nodo: esto avisa
-   * cuál, por si quien compone quiere hacer algo más con eso.
+   * Somebody wrote `#and`, `#or` or `#not` and the bar opened a node: this says
+   * which, in case whoever composes wants to do something more with it.
    */
   onOpenGroup?: (join: CriteriaJoin) => void;
   favorites?: readonly MenuGroup[];
   onFilterSelect?: (id: string) => void;
   onFavoriteSelect?: (id: string) => void;
   /**
-   * Abre el constructor. Recibe la RUTA de la instancia que se tocó, cuando se
-   * tocó una: el constructor abre ahí, en vez de abrir en la primera regla y
-   * obligar a buscar la que uno venía mirando entre doce.
+   * Opens the builder. It receives the PATH of the instance that was touched, when one
+   * was touched: the builder opens there, instead of opening on the first rule and
+   * forcing you to search for the one you were looking at among twelve.
    */
   onOpenBuilder?: (path?: CriteriaPath) => void;
   /**
@@ -300,12 +300,12 @@ export type SearchBarProps = {
    * enum's value, a number a numeric field answers): then that goes first and this after it.
    */
   literal?: (text: string) => BuiltCondition | BuiltFilter | null;
-  /** Lo que va pegado al campo, a su derecha. */
+  /** What goes stuck to the field, on its right. */
   trailing?: ReactNode;
   /** How many facets the bar shows before folding the rest into «+N»; the grouping chain
    *  counts as one. On a narrow bar only the first shows. `Infinity` never folds. */
   collapseAfter?: number;
-  /** Por default la hereda de la superficie que la envuelve. */
+  /** By default it inherits it from the surface that wraps it. */
   surface?: Surface;
 };
 
@@ -331,34 +331,34 @@ export function SearchBar({
   const sup = useSurface(surface);
   const [text, setText] = useState("");
   const [panel, setPanel] = useState(false);
-  /** El paso en el que está la pregunta que se escribe: sin campo, con campo, o
-   *  con campo y operador. */
+  /** The step the question being written is at: no field, with a field, or
+   *  with a field and operator. */
   const [step, setStep] = useState<{ field?: QueryField; op?: string }>({});
-  /** Cuál de lo ofrecido está marcado. Arranca en el primero, que es el que
-   *  Enter toma sin bajar ni una vez. */
+  /** Which of the offered is marked. It starts on the first, which is the one
+   *  Enter takes without going down even once. */
   const [active, setActive] = useState(0);
   /**
-   * El grupo ABIERTO: dónde cae lo próximo que se escriba.
+   * The OPEN group: where the next thing written lands.
    *
-   * `null` es «al final de la lista», que es lo normal. Se abre con `#and` y se
-   * cierra con Escape o eligiendo otro — un grupo que no se puede cerrar es una
-   * trampa en la que todo lo que se escriba después queda adentro sin que nadie
-   * lo haya pedido.
+   * `null` is «at the end of the list», which is the normal case. It is opened with `#and` and
+   * closed with Escape or by choosing another — a group that cannot be closed is a
+   * trap in which everything written afterwards ends up inside without anybody
+   * having asked for it.
    */
   const [openGroup, setOpenGroup] = useState<CriteriaPath | null>(null);
 
-  /* Cuál es el nodo abierto se DERIVA de la ruta y del árbol, y no se guarda
-     aparte: guardado, el día que alguien le cambia la conjunción desde la ficha
-     quedan dos verdades sobre la misma cosa. */
+  /* Which node is open is DERIVED from the path and the tree, and is not stored
+     apart: stored, the day somebody changes its conjunction from the chip
+     there are two truths about the same thing. */
   const openNode = openGroup === null ? undefined : at(criteria, openGroup);
   const openJoin = openNode?.kind === "join" ? openNode.join : undefined;
 
   /**
-   * Cerrar el nodo abierto: lo que siga vuelve a caer afuera.
+   * Close the open node: what follows lands outside again.
    *
-   * Si quedó VACÍO se lo saca. Abrirlo y no poner nada deja un corchete que no
-   * agrupa nada, y alguien tendría que descubrir que se saca con la × de una
-   * ficha que no dice nada adentro.
+   * If it was left EMPTY it is removed. Opening it and putting nothing leaves a bracket that does not
+   * group anything, and somebody would have to discover that it is removed with the × of a
+   * chip that says nothing inside.
    */
   function closeGroup() {
     if (openGroup !== null && openNode?.kind === "join" && openNode.of.length === 0) {
@@ -368,9 +368,9 @@ export function SearchBar({
     input.current?.focus();
   }
 
-  /* Cuántas cosas hay puestas, para el número del embudo. Se cuenta lo de
-     ARRIBA y no las hojas: «tres» tiene que ser lo que se ve en la barra, y lo
-     que se ve es un grupo, no sus dos condiciones. */
+  /* How many things are set, for the funnel's number. The ones on TOP are counted and not the leaves:
+     «three» has to be what is seen in the bar, and what
+     is seen is a group, not its two conditions. */
   const puestos = criteria.length;
   const input = useRef<HTMLInputElement>(null);
   const box = useRef<HTMLDivElement>(null);
@@ -384,13 +384,13 @@ export function SearchBar({
   const optionId = (at: number) => `${listId}-${at}`;
 
   /**
-   * Los campos por los que se puede preguntar.
+   * The fields that can be asked about.
    *
-   * Con un modelo, salen de él con su tipo, sus operadores y sus relaciones —y
-   * entonces la barra sabe que «total» acepta «menor que» y «estado» sólo
-   * tres valores. Sin modelo, una faceta es un campo de texto y nada más: es
-   * exactamente lo que una lista podía declarar hasta ahora, dibujado por el
-   * mismo camino. Dos caminos serían dos barras.
+   * With a model, they come from it with their type, their operators and their relations —and
+   * then the bar knows that «total» accepts «menor que» and «estado» only
+   * three values. Without a model, a facet is a text field and nothing more: it is
+   * exactly what a list could declare until now, drawn through the
+   * same path. Two paths would be two bars.
    */
   const fields: readonly QueryField[] =
     model === undefined
@@ -398,17 +398,17 @@ export function SearchBar({
           field: facet.id,
           label: facet.label,
           kind: "text" as const,
-          /* Las tres que se le pueden hacer a un texto sin saber nada más de
-             él. Con una sola —«contiene»— el paso de la comparación ofrecía un
-             botón y nada que elegir, que es peor que no tener el paso. Un modelo
-             publica las suyas y éstas no se usan. */
+          /* The three that can be asked of a text without knowing anything more about
+             it. With only one —«contiene»— the comparison step offered a
+             button and nothing to choose, which is worse than not having the step. A model
+             publishes its own and these are not used. */
           ops: ["like", "=", "!="],
         }))
       : queryFields(model, copy.locale);
 
-  /* Lo marcado vuelve al primero cuando cambia lo ofrecido: dejar la marca en el
-     cuarto renglón mientras se sigue escribiendo hace que Enter tome algo que ya
-     no es lo que dice la pantalla. */
+  /* What is marked goes back to the first when what is offered changes: leaving the mark on the
+     fourth row while you keep writing makes Enter take something that is no
+     longer what the screen says. */
   const suggestions = suggest(
     {
       ...(step.field === undefined ? {} : { field: step.field }),
@@ -419,15 +419,15 @@ export function SearchBar({
     { literal: literal !== undefined },
   );
 
-  /* Lo escrito, ya leído: hace falta acá para saber si se está eligiendo un
-     ATRIBUTO —lo que empieza con `#`— y dibujar fichas en vez de renglones. */
+  /* What was typed, already read: needed here to know whether an
+     ATTRIBUTE is being chosen —what starts with `#`— and to draw chips instead of rows. */
   const asked = readTyped(text);
-  /* Se abre cuando hay algo que ofrecer Y alguien empezó: escribiendo, o
-     eligiendo un campo, que ya es haber empezado. */
+  /* It opens when there is something to offer AND somebody has started: typing, or
+     choosing a field, which is already having started. */
   const open = suggestions.length > 0 && (text.trim() !== "" || step.field !== undefined);
 
-  /* Se eligen FICHAS cuando lo que se elige es un atributo o una comparación, y
-     renglones cuando lo que se elige es una pregunta entera. */
+  /* CHIPS are chosen when what is chosen is an attribute or a comparison, and
+     rows when what is chosen is a whole question. */
   const asTags =
     asked.attribute === true || (step.field !== undefined && step.op === undefined);
 
@@ -436,9 +436,9 @@ export function SearchBar({
     setActive(0);
   }, [shown]);
 
-  /** Una columna sin opciones no es una columna: aparecería el disparador y el
-   *  panel abriría en blanco. Pasar `[]` es lo que hace quien tiene una lista que
-   *  no declara ningún recorte, y tiene que leerse igual que no pasar nada. */
+  /** A column with no options is not a column: the trigger would appear and the
+   *  panel would open blank. Passing `[]` is what whoever has a list that
+   *  declares no cut does, and it has to read the same as passing nothing. */
   const withOptions = (groups: readonly MenuGroup[]): boolean =>
     groups.some((group) => group.options.length > 0);
 
@@ -490,11 +490,11 @@ export function SearchBar({
   };
 
   /**
-   * UNA PREGUNTA ENTERA entra como instancia, y la barra vuelve al principio.
+   * A WHOLE QUESTION enters as an instance, and the bar goes back to the start.
    *
-   * Cae adentro del grupo ABIERTO si hay uno —lo que hace `#and`— y al final de
-   * la lista si no. Es lo único que la barra decide sobre dónde van las cosas:
-   * el resto lo decide quien tiene la lista.
+   * It lands inside the OPEN group if there is one —what `#and` does— and at the end of
+   * the list if not. It is the only thing the bar decides about where things go:
+   * the rest is decided by whoever has the list.
    */
   /** A finished instance, where the next one goes: the end, or the group left open. */
   function put(one: SearchCriteria) {
@@ -510,16 +510,16 @@ export function SearchBar({
 
   function commit(field: QueryField, op: string, value: string) {
     const one = filterCriteria(
-      /* El que no lleva valor viaja con `true`, que es lo que el motor espera de
-         «está vacío»: mandarle la cadena vacía sería preguntar por el campo que
-         vale "". */
+      /* The one that takes no value travels with `true`, which is what the engine expects of
+         «está vacío»: sending it the empty string would be asking for the field that
+         is "". */
       { field: field.field, operator: op, value: withoutValue(op) ? true : value },
       describeCondition(field, op, value),
     );
     put(one);
   }
 
-  /** Lo elegido en el desplegable, según de qué clase sea. */
+  /** What was chosen in the dropdown, depending on what kind it is. */
   function pick(suggestion: QuerySuggestion) {
     if (suggestion.kind === "field") {
       setStep({ field: suggestion.field });
@@ -533,10 +533,10 @@ export function SearchBar({
       return;
     }
     if (suggestion.kind === "group") {
-      /* Abrir un grupo es poner un nodo VACÍO y recordar que lo que venga cae
-         adentro. Vacío y no con lo de antes metido a la fuerza: quien escribe
-         `#and` está diciendo «lo que sigue va junto», no «agrupá lo que ya
-         puse». */
+      /* Opening a group is putting an EMPTY node and remembering that what comes lands
+         inside. Empty and not with the previous stuff forced in: whoever writes
+         `#and` is saying «what follows goes together», not «group what I already
+         put». */
       const node: SearchCriteria = {
         id: criteriaId("n"),
         kind: "join",
@@ -564,7 +564,7 @@ export function SearchBar({
     commit(suggestion.field, suggestion.op, suggestion.value);
   }
 
-  /** El nodo con una instancia más adentro. */
+  /** The node with one more instance inside. */
   function addTo(node: SearchCriteria | undefined, one: SearchCriteria): SearchCriteria {
     return node === undefined || node.kind !== "join"
       ? one
@@ -588,12 +588,12 @@ export function SearchBar({
         className={`@container/bar flex min-h-(--size-control-md) w-full min-w-0 items-start rounded-box border transition-colors duration-(--duration-instant) ${bySurface(
           sup,
           "border-line-strong bg-surface focus-within:border-primary/60",
-          /* Sobre el cromo lo que define al campo es el BORDE, no el relleno. El
-             azul ya es casi negro, así que hundirlo no da contraste (1,05:1) y
-             levantarlo da 1,21:1 — en los dos casos el campo no se lee como un
-             campo, que era «no llama la atención». La tinta al 45 % es el primer
-             borde que pasa 3:1 contra el relleno Y contra el cromo, que es lo que
-             1.4.11 le pide a un control. */
+          /* On the chrome what defines the field is the BORDER, not the fill. The
+             blue is already almost black, so sinking it gives no contrast (1.05:1) and
+             raising it gives 1.21:1 — in both cases the field does not read as a
+             field, which was «it does not draw attention». Ink at 45 % is the first
+             border that passes 3:1 against the fill AND against the chrome, which is what
+             1.4.11 asks of a control. */
           "border-chrome-ink/45 bg-chrome-ink/8 focus-within:border-chrome-link",
         )}`}
       >
@@ -607,10 +607,10 @@ export function SearchBar({
         {/* `min-w-24`: the input's own minimum. Below it the input overflowed this column
             and was drawn under the buttons of the next one. */}
         <div className="flex min-w-24 flex-1 flex-wrap items-center gap-1 py-0.75">
-          {/* LO PUESTO. Una sola pieza para las dos clases: los de grupo a la
-              izquierda, encadenados; los de filtro después, con su anidado y su
-              conjunción tocable. Todo abre el constructor parado sobre lo que se
-              tocó — ver `CriteriaChips`. */}
+          {/* WHAT IS SET. A single piece for both kinds: the group ones on the
+              left, chained; the filter ones after, with their nesting and their
+              touchable conjunction. Everything opens the builder standing on what was
+              touched — see `CriteriaChips`. */}
           <CriteriaChips
             criteria={criteria}
             surface={sup}
@@ -634,32 +634,32 @@ export function SearchBar({
             }}
             onRemove={(path) => {
               onCriteriaChange(removeAt(criteria, path));
-              /* Si lo que se sacó era el grupo abierto, deja de estarlo: escribir
-                 adentro de algo que ya no existe es escribir en el aire. */
+              /* If what was removed was the open group, it stops being so: writing
+                 inside something that no longer exists is writing into the air. */
               if (openGroup !== null && path.join(".") === openGroup.join(".")) {
                 setOpenGroup(null);
               }
             }}
           />
 
-          {/* EL BORRADOR, en la barra y no en el desplegable.
+          {/* THE DRAFT, in the bar and not in the dropdown.
               
-              Mientras se arma, la pregunta se ve donde va a quedar: el campo
-              elegido y la comparación elegida son fichas acá adentro, delante de
-              lo que se está escribiendo. El desplegable sólo OFRECE — si además
-              dijera en qué paso se está, el estado viviría en dos lugares y el
-              que desaparece al hacer clic afuera se llevaría la mitad.
+              While it is being built, the question is seen where it will end up: the chosen field
+              and the chosen comparison are chips in here, in front of
+              what is being written. The dropdown only OFFERS — if it also
+              said which step you are on, the state would live in two places and the
+              one that disappears on clicking outside would take half with it.
 
-              Cada ficha del borrador se saca y se vuelve a elegir: la × del
-              campo devuelve al paso 1, la de la comparación al paso 2. */}
+              Each chip of the draft is removed and chosen again: the field's
+              × returns to step 1, the comparison's to step 2. */}
           <Tags
             surface={sup}
             items={[
-              /* ADENTRO DE QUÉ se está escribiendo, primero: es lo que envuelve
-                 al resto del borrador, y es la única ficha que se saca para
-                 CERRAR en vez de para deshacer un paso. Sin ella, `#and` abría
-                 un grupo y lo único que lo decía era que la próxima pregunta
-                 aparecía en un lugar que nadie eligió mirando. */
+              /* INSIDE WHAT is being written, first: it is what wraps
+                 the rest of the draft, and it is the only chip that is removed to
+                 CLOSE rather than to undo a step. Without it, `#and` opened
+                 a group and the only thing that said so was that the next question
+                 appeared in a place nobody chose by looking. */
               ...(openJoin === undefined
                 ? []
                 : [
@@ -722,48 +722,48 @@ export function SearchBar({
             value={text}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
-              /* Retroceso con el campo vacío saca la ÚLTIMA instancia: el gesto
-                 que ya existe en cualquier campo de fichas y el único que se
-                 descubre sin que nadie lo explique. La última y no la última de
-                 su clase — ahora son una sola lista, así que no hay un orden de
-                 preferencia que recordar. */
+              /* Backspace with the field empty removes the LAST instance: the gesture
+                 that already exists in any chip field and the only one that is
+                 discovered without anybody explaining it. The last and not the last of
+                 its kind — now they are a single list, so there is no order of
+                 preference to remember. */
               if (e.key === "Backspace" && text === "") {
                 if (criteria.length > 0) {
                   onCriteriaChange(removeAt(criteria, [criteria.length - 1]));
                 }
                 return;
               }
-              /* Las flechas RECORREN lo ofrecido y Enter toma lo que esté
-                 marcado. Sin esto, escribir «#nom» y bajar no hacía nada: la
-                 lista se veía y no se podía tocar sin el mouse, que es
-                 justamente lo que una barra de búsqueda no puede pedir. */
+              /* The arrows TRAVERSE what is offered and Enter takes what is
+                 marked. Without this, typing «#nom» and going down did nothing: the
+                 list was seen and could not be touched without the mouse, which is
+                 precisely what a search bar cannot ask for. */
               if (e.key === "ArrowDown" || e.key === "ArrowUp") {
                 if (suggestions.length === 0) return;
                 e.preventDefault();
                 setActive((current) => {
                   const next = e.key === "ArrowDown" ? current + 1 : current - 1;
-                  /* Da la vuelta: con cinco campos, bajar seis veces vuelve al
-                     primero en vez de quedarse trabado en el último. */
+                  /* It wraps around: with five fields, going down six times returns to the
+                     first instead of getting stuck on the last. */
                   return (next + suggestions.length) % suggestions.length;
                 });
                 return;
               }
-              /* Enter toma lo MARCADO, que arranca siendo lo primero — y lo
-                 primero es lo más probable: con «test» el primer campo de texto,
-                 con «<= 100» el único que puede contestarlo. */
+              /* Enter takes what is MARKED, which starts out being the first — and the
+                 first is the most likely: with «test» the first text field,
+                 with «<= 100» the only one that can answer it. */
               if (e.key === "Enter") {
                 e.preventDefault();
                 const chosen = suggestions[active] ?? suggestions[0];
                 if (chosen !== undefined) pick(chosen);
               }
-              /* Escape DESHACE, un paso por vez y siempre el último: primero lo
-                 escrito, después la comparación, después el campo. Quien se
-                 equivocó de campo quiere cambiarlo, no volver a empezar — y
-                 quien no está armando nada no espera que le pase nada.
+              /* Escape UNDOES, one step at a time and always the last: first what is
+                 written, then the comparison, then the field. Whoever
+                 got the field wrong wants to change it, not start over — and
+                 whoever is not building anything does not expect anything to happen.
 
-                 Antes sólo desarmaba el paso cuando ya había un campo elegido,
-                 así que con «vent» a medio escribir no hacía nada: la tecla que
-                 todo el mundo aprieta para deshacer no deshacía. */
+                 Before, it only dismantled the step when a field had already been chosen,
+                 so with «vent» half-written it did nothing: the key that
+                 everybody presses to undo did not undo. */
               if (e.key === "Escape") {
                 if (text !== "") {
                   e.preventDefault();
@@ -783,8 +783,8 @@ export function SearchBar({
                   setStep({});
                   return;
                 }
-                /* Y al final, el grupo: lo último que se abrió es lo último que
-                   se deshace. */
+                /* And at the end, the group: the last thing opened is the last thing
+                   undone. */
                 if (openGroup !== null) {
                   e.preventDefault();
                   e.stopPropagation();
@@ -800,17 +800,17 @@ export function SearchBar({
                   ? (placeholder ?? copy.search.placeholder)
                   : ""
             }
-            /* CON UN CAMPO ELEGIDO, lo que se escribe es el VALOR — y se dibuja
-               como la ficha que va a ser, atrás de las otras dos. No es un
-               adorno: el borrador se lee entero —«nombre · contiene · vent▌»—
-               antes de existir como recorte, así que se ve lo que va a quedar
-               antes de que quede. Y sigue siendo el input: nada se duplica, y
-               nada se convierte en filtro hasta que alguien aprieta Enter o
-               elige de la lista.
+            /* WITH A FIELD CHOSEN, what is written is the VALUE — and it is drawn
+               as the chip it will become, behind the other two. It is not an
+               ornament: the draft is read whole —«nombre · contiene · vent▌»—
+               before existing as a cut, so you see what it will end up as
+               before it ends up. And it is still the input: nothing is duplicated, and
+               nothing becomes a filter until somebody presses Enter or
+               chooses from the list.
 
-               El ancho lo pide el CONTENIDO —`field-sizing`— para que la ficha
-               crezca con lo escrito en vez de reservar una banda vacía. Donde no
-               esté, el input se estira como siempre. */
+               The width is asked for by the CONTENT —`field-sizing`— so the chip
+               grows with what is written instead of reserving an empty band. Where it
+               is not available, the input stretches as always. */
             style={step.field === undefined ? undefined : { fieldSizing: "content" }}
             className={
               step.field === undefined
@@ -888,25 +888,25 @@ export function SearchBar({
 
       {trailing}
 
-      {/* LO OFRECIDO, y nada más.
+      {/* WHAT IS OFFERED, and nothing more.
           
-          El desplegable no dice en qué paso se está: eso ya se ve en la barra,
-          en fichas, donde va a quedar. Acá sólo están las opciones — y la forma
-          la decide qué se está eligiendo, porque elegir entre fichas y elegir
-          entre renglones no son el mismo gesto.
+          The dropdown does not say which step you are on: that is already seen in the bar,
+          in chips, where it will end up. Here there are only the options — and the shape
+          is decided by what is being chosen, because choosing between chips and choosing
+          between rows are not the same gesture.
 
-              atributos       fichas, porque es lo que va a quedar puesto
-              comparaciones   fichas en un cuadro chico: son tres símbolos
-              preguntas       renglones «campo: valor», como van a quedar */}
+              atributos       chips, because it is what will end up set
+              comparaciones   chips in a small box: they are three symbols
+              preguntas       «campo: valor» rows, as they will end up */}
       {open ? (
         <div
           className={`absolute top-full z-30 mt-1 overflow-hidden rounded-panel border border-line-strong bg-surface shadow-float ${
             asTags ? "left-0 w-max max-w-full" : "right-0 left-0"
           }`}
         >
-          {/* DÓNDE VA A CAER lo que se elija. Va arriba de lo ofrecido porque es
-              la condición de todo lo de abajo: la misma pregunta elegida cae en
-              un lugar distinto según haya un nodo abierto o no. */}
+          {/* WHERE WHAT IS CHOSEN WILL LAND. It goes above what is offered because it is
+              the condition for everything below: the same question chosen lands in
+              a different place depending on whether there is an open node or not. */}
           {openJoin === undefined ? null : (
             <div className="flex items-center gap-1.5 border-line border-b px-3 py-1.5 text-micro text-muted">
               <CornerDownRight className="size-3 shrink-0" strokeWidth={2} aria-hidden />
@@ -917,9 +917,9 @@ export function SearchBar({
             </div>
           )}
           {asTags ? (
-            /* UNA LISTA, no una tira. Se está ELIGIENDO: el ojo baja por una
-               columna y el teclado también. Doce atributos doblados en tres
-               renglones son doce cosas que barrer en zigzag para encontrar una. */
+            /* A LIST, not a strip. You are CHOOSING: the eye goes down a
+               column and so does the keyboard. Twelve attributes folded into three
+               rows are twelve things to sweep in zigzag to find one. */
             <div id={listId} className="max-h-72 overflow-y-auto p-1">
               <Tags
                 stack
@@ -981,10 +981,10 @@ export function SearchBar({
         </div>
       ) : null}
 
-      {/* El panel de recortes. En una pantalla ancha las tres columnas se ven de
-          una —que es justamente el punto: armar un recorte sin abrir tres cosas—;
-          en una angosta se apilan solas y termina pareciendo una hoja emergente,
-          que es exactamente lo que hace falta en un teléfono. */}
+      {/* The cuts panel. On a wide screen the three columns are seen at
+          once —which is exactly the point: building a cut without opening three things—;
+          on a narrow one they stack by themselves and it ends up looking like a popover,
+          which is exactly what is needed on a phone. */}
       {panel && (columns.length > 0 || onOpenBuilder !== undefined) ? (
         <div
           {...overlayProps}
@@ -999,9 +999,9 @@ export function SearchBar({
                 i === 0 ? "" : "border-t border-line sm:border-t-0 sm:border-l"
               }`}
             >
-              {/* El título es una banda de la columna, no un rótulo con su propio
-                  padding adentro de otro padding. Las dos columnas arrancan el
-                  contenido a la misma altura. */}
+              {/* The title is a band of the column, not a label with its own
+                  padding inside another padding. Both columns start the
+                  content at the same height. */}
               <div className="border-b border-line px-2.5 py-1.5 text-micro font-medium text-muted">
                 {c.title}
               </div>
@@ -1019,17 +1019,17 @@ export function SearchBar({
             </div>
           ))}
 
-          {/* LA PUERTA AL CONSTRUCTOR, abajo y a lo ancho de las tres columnas.
+          {/* THE DOOR TO THE BUILDER, below and across the width of the three columns.
               
-              Las columnas de arriba son las preguntas que alguien YA PENSÓ —los
-              filtros con nombre, los cortes de una fecha, los favoritos— y ésta
-              es la puerta a las que no pensó nadie. Va afuera de ellas porque no
-              es un recorte que se tilda: es otra pantalla.
+              The columns above are the questions somebody ALREADY THOUGHT OF —the named
+              filters, a date's cuts, the favourites— and this one
+              is the door to the ones nobody thought of. It goes outside them because it
+              is not a cut that gets ticked: it is another screen.
 
-              Estaba escondida como una opción más adentro de la columna de
-              filtros, o directamente no estaba, y entonces el constructor que
-              existe no se podía abrir desde el único lugar donde alguien lo
-              busca. */}
+              It was hidden as one more option inside the filters
+              column, or simply was not there, and so the builder that
+              exists could not be opened from the only place where somebody
+              looked for it. */}
           {onOpenBuilder === undefined ? null : (
             <div className="w-full border-t border-line p-1">
               <button
