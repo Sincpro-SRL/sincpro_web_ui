@@ -1,6 +1,7 @@
 import {
   AppFrame,
   Board,
+  type BoardState,
   BoardTile,
   Button,
   Chart,
@@ -121,7 +122,10 @@ const SALE_COLUMNS: DataColumn<DatedSale>[] = [
   },
 ];
 
-function SalesBoard() {
+/** What each reading of the board is doing — the application's to decide, web-ui's to draw. */
+type Readings = { board?: BoardState; channel?: BoardState; quarter?: BoardState };
+
+function SalesBoard({ readings = {} }: { readings?: Readings }) {
   const [year, setYear] = useState("2026");
   const [branch, setBranch] = useState("");
   const [drill, setDrill] = useState<string | null>(null);
@@ -173,6 +177,7 @@ function SalesBoard() {
 
   return (
     <Board
+      {...(readings.board === undefined ? {} : { state: readings.board })}
       title="Ventas"
       description={`${year}${branch === "" ? ", todas las sucursales" : ` · ${branch}`}`}
       filters={
@@ -249,10 +254,19 @@ function SalesBoard() {
           onPoint={(category) => setDrill(category[0] ?? null)}
         />
       </BoardTile>
-      <BoardTile title="Por canal" description="cuántas ventas entraron por cada uno">
+      <BoardTile
+        title="Por canal"
+        description="cuántas ventas entraron por cada uno"
+        {...(readings.channel === undefined ? {} : { state: readings.channel })}
+      >
         <Chart data={charts.byChannel} kind="pie" label="Ventas por canal" />
       </BoardTile>
-      <BoardTile title="Contado y crédito" description="por trimestre" span={2}>
+      <BoardTile
+        title="Contado y crédito"
+        description="por trimestre"
+        span={2}
+        {...(readings.quarter === undefined ? {} : { state: readings.quarter })}
+      >
         <Chart data={charts.byQuarter} stacked label="Contado y crédito por trimestre" />
       </BoardTile>
       {drill === null ? null : (
@@ -280,7 +294,7 @@ function withChange(change: ReturnType<typeof changeOf>) {
   return change === undefined ? {} : { change };
 }
 
-function Page() {
+function Page({ readings }: { readings?: Readings }) {
   return (
     <AppFrame
       menu={
@@ -290,7 +304,7 @@ function Page() {
         />
       }
     >
-      <SalesBoard />
+      <SalesBoard {...(readings === undefined ? {} : { readings })} />
     </AppFrame>
   );
 }
@@ -324,5 +338,64 @@ export const Ventas: Story = {
       await canvas.findByText("no hay un año anterior con qué comparar"),
     ).toBeVisible();
     await expect(canvas.queryByText("vs 2024")).toBeNull();
+  },
+};
+
+/** A board where one reading failed and another is still on its way — the rest is drawn. */
+function PartlyRead() {
+  const [channel, setChannel] = useState<BoardState>({
+    status: "failed",
+    sentence: "El servidor de canales no respondió a tiempo. Probá de nuevo en un momento.",
+    detail: "504 · canales/ventas?año=2026",
+    onRetry: () => setChannel({ status: "ready" }),
+  });
+  return <Page readings={{ channel, quarter: { status: "loading" } }} />;
+}
+
+/**
+ * **Un recuadro falla, otro todavía lee, y el resto se dibuja.** Cada recuadro es una
+ * lectura y llega cuando llega: «Por canal» dice por qué no se pudo leer y ofrece
+ * «Reintentar» (tocalo), «Contado y crédito» guarda el lugar del gráfico mientras lee, y los
+ * otros dos ya muestran sus ventas. La grilla no salta: el estado ocupa el alto del gráfico.
+ */
+export const UnoFallaOtroLee: Story = {
+  name: "Uno falla, otro lee",
+  render: () => <PartlyRead />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const channel = await canvas.findByRole("region", { name: "Por canal" });
+    await expect(within(channel).getByText("No se pudo leer «Por canal»")).toBeVisible();
+    const quarter = canvas.getByRole("region", { name: "Contado y crédito" });
+    await expect(quarter.getAttribute("aria-busy")).toBe("true");
+    /* The others are drawn: their charts are there. */
+    const monthly = canvas.getByRole("region", { name: "Ventas por mes" });
+    await waitFor(() => expect(monthly.querySelector("svg")).not.toBeNull());
+    /* Asking again draws the chart in the same place. */
+    await userEvent.click(within(channel).getByRole("button", { name: "Reintentar" }));
+    await expect(within(channel).queryByText("No se pudo leer «Por canal»")).toBeNull();
+  },
+};
+
+/** **Los números del tablero no se pudieron leer.** La negativa ocupa el lugar de los números
+ *  de arriba; los recuadros siguen con sus propias lecturas. */
+export const SinSusNumeros: Story = {
+  name: "Sin sus números",
+  render: () => (
+    <Page
+      readings={{
+        board: {
+          status: "failed",
+          sentence: "No tenés permiso para ver los totales de todas las sucursales.",
+        },
+      }}
+    />
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(
+      await canvas.findByText("No se pudieron leer los números del tablero"),
+    ).toBeVisible();
+    await expect(canvas.queryByText("vendido")).toBeNull();
+    await expect(canvas.getByRole("region", { name: "Por sucursal" })).toBeVisible();
   },
 };
