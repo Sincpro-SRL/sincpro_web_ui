@@ -33,8 +33,13 @@ assert.ok(DARK_MEDIA, "no prefers-color-scheme: dark block");
  * Context: the comment has to be on the SAME line. With `\s*` the pattern
  * crossed the newline and attributed to one token the contrast of the next
  * block — which is exactly the kind of lie this test exists to catch.
+ *
+ * A brand token reads `var(--brand-x, #default)`, and the formatter breaks a long call over
+ * lines. Inside its parentheses a newline is safe — the call anchors it; after the `;` it is
+ * not, which is the rule above.
  */
-const DECLARATION = /--color-([a-z-]+):[^\S\n]*(#[0-9a-fA-F]{3,8});[^\S\n]*\/\*([^*]*)\*\//g;
+const DECLARATION =
+  /--color-([a-z-]+):[^\S\n]*(?:var\(\s*--brand-[a-z-]+,\s*)?(#[0-9a-fA-F]{3,8})\s*\)?;[^\S\n]*\/\*([^*]*)\*\//g;
 /* The ratio is written with a DOT now that the comments are in English:
    `7.48:1`. It used to be `7,48:1` and the pattern read a comma — the day the
    comments were translated this test stopped finding anything and passed on an
@@ -51,7 +56,10 @@ const THEMES: readonly Theme[] = [
 ];
 
 function colorIn(css: string, name: string): RGB {
-  const found = new RegExp(`--color-${name}:\\s*(#[0-9a-fA-F]{3,8})`).exec(css);
+  /* A brand token reads `var(--brand-x, #default)`: the system's own value is the default. */
+  const found = new RegExp(
+    `--color-${name}:\\s*(?:var\\(\\s*--brand-[a-z-]+,\\s*)?(#[0-9a-fA-F]{3,8})`,
+  ).exec(css);
   assert.ok(found?.[1], `falta --color-${name}`);
   const rgb = parseHex(found[1]);
   assert.ok(rgb, `--color-${name} no es un hex legible`);
@@ -296,9 +304,47 @@ test("todo token de color o sombra del claro se redefine en el oscuro", () => {
   }
 });
 
+/** Only the words: the formatter wraps a long value — and a `var(` call — differently at two
+ *  indentations, and that is not a decision. */
+const squeeze = (css: string) =>
+  css.replace(/\s+/g, " ").replace(/\( /g, "(").replace(/ \)/g, ")").trim();
+
+/** `--color-x: var(--brand-<prefix>x, …)` in one block → the token names a brand can set. */
+function brandable(css: string, prefix: "brand-" | "brand-dark-"): string[] {
+  const found: string[] = [];
+  for (const [, token, variable] of css.matchAll(
+    /--color-([a-z-]+):\s*var\(\s*--(brand-[a-z-]+),/g,
+  )) {
+    assert.equal(
+      variable,
+      `${prefix}${token}`,
+      `--color-${token} reads --${variable}: a brand variable is named after its token`,
+    );
+    found.push(token!);
+  }
+  return found;
+}
+
+test("una marca se pone una vez y la siguen las cuatro copias de la paleta", () => {
+  const theme = /@theme \{([\s\S]*?)\n\}\n/.exec(LIGHT_CSS)?.[1];
+  const forced = /\n\[data-theme="light"\] \{([^}]*)\}/.exec(FULL_CSS)?.[1];
+  assert.ok(theme && forced);
+  const light = brandable(theme, "brand-");
+  /* The action, the link, the bar: what makes a back office look like its owner's. */
+  for (const token of ["accent", "primary", "chrome"])
+    assert.ok(light.includes(token), token);
+  assert.deepEqual(brandable(forced, "brand-"), light, "the nested light block forgot one");
+  assert.deepEqual(
+    brandable(DARK_ATTRIBUTE, "brand-dark-"),
+    light,
+    "dark has a different set",
+  );
+  assert.deepEqual(brandable(DARK_MEDIA, "brand-dark-"), light);
+});
+
 test("la paleta oscura del media query es idéntica a la del atributo", () => {
   /* The formatter may wrap a long value onto two lines; only the words are compared. */
-  const flat = (block: string) => block.replace(/\s+/g, " ").trim();
+  const flat = (block: string) => squeeze(block);
   assert.equal(
     flat(DARK_MEDIA),
     flat(DARK_ATTRIBUTE),
@@ -318,7 +364,7 @@ test("el claro forzado en un subárbol repite exactamente el @theme", () => {
         ...css
           .replace(/\/\*[\s\S]*?\*\//g, "")
           .matchAll(/--((?:color|shadow)-[a-z-]+):\s*([^;]+);/g),
-      ].map((m) => [m[1]!, m[2]!.replace(/\s+/g, " ").trim()] as const),
+      ].map((m) => [m[1]!, squeeze(m[2]!)] as const),
     );
   assert.deepEqual(decisions(forced), decisions(theme));
 });

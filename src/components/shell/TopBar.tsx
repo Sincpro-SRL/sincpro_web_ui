@@ -1,11 +1,13 @@
 "use client";
 
+import { SidebarToggle } from "@sincpro/web-ui/components/shell/sidebarDrawer";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { SurfaceProvider } from "@sincpro/web-ui/foundations/surface";
 import { Menu, type MenuGroup } from "@sincpro/web-ui/primitives/menu/Menu";
+import { Count, countText } from "@sincpro/web-ui/primitives/tag/Count";
 import { Avatar } from "@sincpro/web-ui/primitives/value/Person";
 import { Grid3x3, type LucideIcon } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useMemo, useState } from "react";
 
 /* ==================================================================== *
  *  TOP BAR — the application bar. Where I am, what I can open, who I am.
@@ -55,6 +57,8 @@ export interface TopMenu {
   id: string;
   label: string;
   groups: readonly MenuGroup[];
+  /** What is waiting inside — «Pagos 5» — seen without opening the menu. Zero is not drawn. */
+  count?: number;
 }
 
 export function TopBar({
@@ -95,6 +99,9 @@ export function TopBar({
   return (
     <SurfaceProvider value="chrome">
       <header className="flex h-(--size-appbar) min-w-0 items-center gap-1 border-b border-chrome-edge bg-chrome px-2">
+        {/* On a phone, inside a frame with a sidebar: what opens it as a drawer. First, where
+            a thumb and the eye look for the way to the rest of the product. */}
+        <SidebarToggle />
         {apps === undefined || apps.length === 0 ? null : (
           <AppSwitcher
             apps={apps}
@@ -135,6 +142,7 @@ export function TopBar({
                 surface="chrome"
                 variant="text"
                 chevron={false}
+                {...(m.count === undefined ? {} : { count: m.count })}
                 onSelect={(id) => onMenuSelect?.(m.id, id)}
               />
             ))}
@@ -234,6 +242,9 @@ export function AppSwitcher({
   );
 }
 
+/** A badge over an icon is read in a glance: past two digits it says «a lot». */
+const SYSTRAY_MAX = 99;
+
 /** A systray icon with its count.
  *
  *  Zero is NOT drawn: a bell with a «0» next to it forces you to read a number
@@ -254,18 +265,18 @@ export function SystrayButton({
   onClick?: () => void;
   active?: boolean;
 }) {
-  const PUNTO = {
-    info: "bg-chrome-link text-chrome",
-    warn: "bg-chrome-warn text-chrome",
-    bad: "bg-chrome-bad text-chrome",
-  } as const;
+  const copy = useUiCopy();
+  const number = useMemo(() => new Intl.NumberFormat(copy.locale), [copy.locale]);
+  /* The button says the number in its name, so the badge is only seen — and both say the
+     same «99+», not a badge that is cut and a name that is not. */
+  const said = countText(count, number.format, SYSTRAY_MAX);
 
   return (
     <button
       type="button"
       onClick={onClick}
-      title={count > 0 ? `${label} (${count})` : label}
-      aria-label={count > 0 ? `${label}: ${count}` : label}
+      title={count > 0 ? `${label} (${said})` : label}
+      aria-label={count > 0 ? `${label}: ${said}` : label}
       className={`relative inline-flex size-(--size-control-md) items-center justify-center rounded-pill transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-chrome-link ${
         active
           ? "bg-chrome-ink/12 text-chrome-ink"
@@ -274,11 +285,15 @@ export function SystrayButton({
     >
       <Icon className="size-(--size-icon-md)" strokeWidth={2} aria-hidden />
       {count <= 0 ? null : (
-        <span
-          aria-hidden
-          className={`absolute -top-0.5 -right-0.5 inline-flex min-w-4 items-center justify-center rounded-pill px-1 text-micro leading-none font-semibold tabular-nums ${PUNTO[tone]}`}
-        >
-          {count > 99 ? "99+" : count}
+        <span className="absolute -top-0.5 -right-0.5 flex">
+          <Count
+            value={count}
+            tone={tone}
+            solid
+            max={SYSTRAY_MAX}
+            surface="chrome"
+            aria-hidden
+          />
         </span>
       )}
     </button>

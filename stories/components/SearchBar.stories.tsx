@@ -253,6 +253,52 @@ export const Angosta: Story = {
   },
 };
 
+/** A narrow field on a wide screen — a list's bar shares its line with sort, columns and
+ *  «New», so its field is often this narrow. The cuts panel is the SCREEN's width, not the
+ *  field's: filters, grouping and favourites side by side, as in Odoo, opened toward the side
+ *  with room. On a phone (`--container-cuts` is capped by the screen) they stack. */
+export const AngostaEnPantallaAncha: Story = {
+  args: { facets: FACETAS, criteria: [], onCriteriaChange: () => {} },
+  render: () => {
+    const [criteria, setCriteria] = useState<SearchCriteria[]>([]);
+    const grouping = useGroupingControl({ levels: [] });
+    return (
+      <div className="min-h-96 rounded-box border border-line bg-surface p-4">
+        <div style={{ width: 280 }}>
+          <SearchBar
+            facets={FACETAS}
+            criteria={criteria}
+            onCriteriaChange={setCriteria}
+            placeholder="buscar…"
+            filters={FILTROS}
+            grouping={<GroupingLevels fields={AGRUPABLES} control={grouping} />}
+            favorites={FAVORITOS}
+          />
+        </div>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const boton = canvasElement.querySelector<HTMLButtonElement>("button[aria-expanded]");
+    if (boton === null) throw new Error("the bar draws no cuts button");
+    await userEvent.click(boton);
+    const panel = await waitFor(() => {
+      const id = boton.getAttribute("aria-controls");
+      const encontrado = id === null ? null : canvasElement.ownerDocument.getElementById(id);
+      expect(encontrado).not.toBeNull();
+      return encontrado as HTMLElement;
+    });
+    const columnas = [...panel.children].filter((el) => el.classList.contains("flex-col"));
+    expect(columnas).toHaveLength(3);
+    // Side by side: the three columns start on the same line, wider together than the field.
+    const alturas = new Set(columnas.map((c) => Math.round(c.getBoundingClientRect().top)));
+    expect(alturas.size).toBe(1);
+    expect(panel.getBoundingClientRect().width).toBeGreaterThan(280);
+    // And inside the screen.
+    expect(panel.getBoundingClientRect().right).toBeLessThanOrEqual(window.innerWidth);
+  },
+};
+
 /** The search Odoo users end up with: four grouping levels and four filters, one of them an
  *  «any». The grouping reads as ONE chain, each chip stops at its width, and past the fourth
  *  facet the rest fold into «+N» until somebody asks to see them. */

@@ -876,6 +876,33 @@ export const Filas: Story = {
   render: () => <Presentacion present="rows" />,
 };
 
+/** **Filas en el ancho de un teléfono.** El nombre es lo que identifica el registro y se
+ *  queda con su línea: el estado baja a la de abajo, sobre el mismo borde derecho, junto al
+ *  `meta`. Antes la columna de fichas guardaba su ancho y el nombre quedaba en «Pe…». */
+export const FilasAngostas: Story = {
+  name: "Filas · en 390 px",
+  render: () => (
+    <div style={{ width: 390 }}>
+      <Presentacion present="rows" />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const filas = [...canvasElement.querySelectorAll<HTMLElement>('[data-slot="row"]')].slice(
+      0,
+      6,
+    );
+    await expect(filas.length).toBeGreaterThan(0);
+    for (const fila of filas) {
+      const nombre = fila.querySelector<HTMLElement>("[title]")?.parentElement;
+      if (nombre === null || nombre === undefined) throw new Error("a row without its name");
+      // The name keeps the line: more than half the row, not the leftovers of a tag column.
+      await expect(nombre.getBoundingClientRect().width).toBeGreaterThan(
+        fila.getBoundingClientRect().width / 2,
+      );
+    }
+  },
+};
+
 /** Tabla: columnas alineadas, con footer de agregados. */
 export const Tabla: Story = {
   render: () => <Presentacion present="table" />,

@@ -11,7 +11,8 @@ import {
   type Tone,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { useState } from "react";
+import { type CSSProperties, useState } from "react";
+import { expect } from "storybook/test";
 
 /* ==================================================================== *
  *  THEME — the same tokens, two palettes.
@@ -120,4 +121,60 @@ export const LadoALado: Story = {
 export const Oscuro: Story = {
   globals: { theme: "dark" },
   render: () => <Sample />,
+};
+
+/* A teal brand, far enough from the system's navy and gold to see that EVERY palette took it. */
+const MARCA = {
+  "--brand-primary": "#0f5c4d",
+  "--brand-primary-hover": "#0a4539",
+  "--brand-accent": "#e2a93b",
+  "--brand-accent-hover": "#cf9629",
+  "--brand-chrome": "#0d2b26",
+  "--brand-chrome-raised": "#163c35",
+  "--brand-chrome-edge": "#0d2b26",
+  "--brand-chrome-link": "#9fd6c6",
+  "--brand-dark-primary": "#7fcbb6",
+  "--brand-dark-primary-hover": "#a3dccb",
+  "--brand-dark-accent": "#e2a93b",
+  "--brand-dark-accent-hover": "#ecbd5c",
+  "--brand-dark-chrome": "#061a17",
+  "--brand-dark-chrome-raised": "#0f2a25",
+  "--brand-dark-chrome-link": "#9fd6c6",
+} as CSSProperties;
+
+/** **La marca se pone una vez.** Las variables `--brand-*` (las del claro) y `--brand-dark-*`
+ *  (las del oscuro) van en `:root` — acá, en el ancestro de los dos lados — y TODAS las
+ *  copias de la paleta las toman: el claro, el oscuro, y un claro anidado dentro de un
+ *  oscuro. Antes había que repetir cada color en cada bloque de tema. */
+export const Marca: Story = {
+  render: () => (
+    <div style={MARCA} className="grid gap-4 md:grid-cols-2">
+      <div
+        data-theme="light"
+        data-testid="claro"
+        className="min-w-0 rounded-panel bg-ground p-3"
+      >
+        <Sample />
+      </div>
+      <div
+        data-theme="dark"
+        data-testid="oscuro"
+        className="min-w-0 rounded-panel bg-ground p-3"
+      >
+        <Sample />
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const token = (testId: string, name: string) => {
+      const side = canvasElement.querySelector(`[data-testid="${testId}"]`);
+      if (side === null) throw new Error(`no ${testId} side`);
+      return getComputedStyle(side).getPropertyValue(name).trim();
+    };
+    await expect(token("claro", "--color-primary")).toBe("#0f5c4d");
+    await expect(token("oscuro", "--color-primary")).toBe("#7fcbb6");
+    await expect(token("claro", "--color-chrome")).toBe("#0d2b26");
+    // What a brand leaves unset keeps the system's value.
+    await expect(token("claro", "--color-on-accent")).toBe("#1a1714");
+  },
 };

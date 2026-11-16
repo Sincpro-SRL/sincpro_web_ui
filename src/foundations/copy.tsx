@@ -108,10 +108,19 @@ export type UiCopy = {
     closePreview: string;
     account: string;
     openAsPanel: string;
+    /** The button that opens the sidebar as a drawer on a phone. */
+    openNavigation: string;
+    /** The drawer's name: what a screen reader hears when it opens. */
+    navigation: string;
   };
   field: {
     drop: string;
+    /** The drop zone's sentence when it takes several files at once. */
+    dropMany: string;
     chooseFile: string;
+    chooseFiles: string;
+    /** A batch over the zone's `max`: `{max}` were taken out of `{count}`. */
+    tooManyFiles: string;
     cancel: string;
     uploadProgress: string;
     fileUnreadable: string;
@@ -1078,10 +1087,15 @@ export const ENGLISH_COPY: UiCopy = {
     closePreview: "Close preview",
     account: "My account",
     openAsPanel: "Open as panel",
+    openNavigation: "Open the navigation",
+    navigation: "Navigation",
   },
   field: {
     drop: "Drop a file here, or choose one.",
+    dropMany: "Drop files here, or choose them.",
     chooseFile: "Choose file",
+    chooseFiles: "Choose files",
+    tooManyFiles: "Only the first {max} of {count} were taken: up to {max} at a time.",
     cancel: "Cancel",
     uploadProgress: "upload progress",
     fileUnreadable: "We could not read the file",
@@ -1571,8 +1585,8 @@ export const ENGLISH_COPY: UiCopy = {
   attachments: {
     label: "Attachments",
     empty: "No files attached yet.",
-    emptyAdd: "No files attached yet. Drop one here, or choose it.",
-    add: "Drop another file here, or choose one.",
+    emptyAdd: "No files attached yet. Drop them here, or choose them.",
+    add: "Drop more files here, or choose them.",
     download: "Download",
     remove: "Remove the file",
     removed: "Removed «{name}».",

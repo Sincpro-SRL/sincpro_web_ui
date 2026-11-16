@@ -38,7 +38,7 @@ import {
   X,
 } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
-import { useOverlay } from "react-aria";
+import { mergeProps, Overlay, useOverlay, useOverlayPosition } from "react-aria";
 
 /* ==================================================================== *
  *  THE BAR — searching is asking WHERE, not just what.
@@ -331,6 +331,10 @@ export function SearchBar({
   const sup = useSurface(surface);
   const [text, setText] = useState("");
   const [panel, setPanel] = useState(false);
+  /* Which edge of the field the panel hangs from. It is wider than the field when the
+     field is narrow, so it opens toward the side of the screen with room: from the start
+     of a field on the left of a page, from its end on the right. */
+  const [panelSide, setPanelSide] = useState<"start" | "end">("end");
   /** The step the question being written is at: no field, with a field, or
    *  with a field and operator. */
   const [step, setStep] = useState<{ field?: QueryField; op?: string }>({});
@@ -478,6 +482,20 @@ export function SearchBar({
     },
     panelBox,
   );
+  /* The panel floats in the page's overlay layer (`Overlay`, a portal React Aria stacks with
+     dialogs), placed against the field: a list's bar clips its search box sideways
+     (`ListingBar`, so the field never paints over «1–80») and a page may clip its card, and a
+     panel drawn inside them was cut wherever it outgrew the field. Placed this way it is as
+     wide as `--container-cuts`, inside the screen, toward the side with room. */
+  const { overlayProps: positionProps } = useOverlayPosition({
+    targetRef: box,
+    overlayRef: panelBox,
+    placement: panelSide === "start" ? "bottom start" : "bottom end",
+    offset: 4,
+    containerPadding: 16,
+    shouldFlip: false,
+    isOpen: panel,
+  });
   /* With the focus still in the bar (the input, the button) and the panel open, Escape is
      the panel's too — used up the same way, so it does not reach the dialog either. With the
      panel closed, Escape is not the bar's and goes on to whoever owns it. */
@@ -848,7 +866,12 @@ export function SearchBar({
           <button
             ref={toolsButton}
             type="button"
-            onClick={() => setPanel((v) => !v)}
+            onClick={() => {
+              const rect = box.current?.getBoundingClientRect();
+              if (!panel && rect !== undefined)
+                setPanelSide(window.innerWidth - rect.left >= rect.right ? "start" : "end");
+              setPanel((v) => !v);
+            }}
             aria-expanded={panel}
             aria-controls={panel ? id : undefined}
             /* Named on purpose, not by its content: once something is set the count is
@@ -984,42 +1007,51 @@ export function SearchBar({
       {/* The cuts panel. On a wide screen the three columns are seen at
           once —which is exactly the point: building a cut without opening three things—;
           on a narrow one they stack by themselves and it ends up looking like a popover,
-          which is exactly what is needed on a phone. */}
+          which is exactly what is needed on a phone. «Wide» is the screen's, not the
+          field's: the panel grows up to `--container-cuts` whatever the field measures. */}
       {panel && (columns.length > 0 || onOpenBuilder !== undefined) ? (
-        <div
-          {...overlayProps}
-          ref={panelBox}
-          id={id}
-          className="absolute top-full right-0 z-30 mt-1 flex w-max max-w-full flex-wrap overflow-hidden rounded-panel border border-line-strong bg-surface shadow-float"
-        >
-          {columns.map((c, i) => (
-            <div
-              key={c.title}
-              className={`flex min-w-48 flex-1 flex-col ${
-                i === 0 ? "" : "border-t border-line sm:border-t-0 sm:border-l"
-              }`}
-            >
-              {/* The title is a band of the column, not a label with its own
+        <Overlay>
+          <div
+            {...mergeProps(overlayProps, positionProps)}
+            ref={panelBox}
+            id={id}
+            /* In the overlay layer, a modal around the bar (a dialog) makes everything outside
+               itself inert — the panel included, since it is portalled out of the dialog's
+               DOM. React Aria keeps the nodes marked as its top layer usable, as it does with
+               its own popovers and live regions. */
+            data-react-aria-top-layer=""
+            className="z-30 flex w-max max-w-(--container-cuts) flex-wrap overflow-hidden rounded-panel border border-line-strong bg-surface shadow-float"
+          >
+            {columns.map((c, i) => (
+              <div
+                key={c.title}
+                className={`flex min-w-48 flex-1 flex-col ${
+                  i === 0 ? "" : "border-t border-line sm:border-t-0 sm:border-l"
+                }`}
+              >
+                {/* The title is a band of the column, not a label with its own
                   padding inside another padding. Both columns start the
                   content at the same height. */}
-              <div className="border-b border-line px-2.5 py-1.5 text-micro font-medium text-muted">
-                {c.title}
+                <div className="border-b border-line px-2.5 py-1.5 text-micro font-medium text-muted">
+                  {c.title}
+                </div>
+                {/* A long column (grouping lists every field a model has) scrolls inside
+                  itself, so the panel never grows past the screen. */}
+                <div className="flex max-h-96 flex-col gap-0.5 overflow-y-auto p-1">
+                  {c.content ??
+                    c.groups?.map((g, gi) => (
+                      <Group
+                        key={g.label ?? gi}
+                        group={g}
+                        first={gi === 0}
+                        onSelect={c.onSelect}
+                      />
+                    ))}
+                </div>
               </div>
-              <div className="flex flex-col gap-0.5 p-1">
-                {c.content ??
-                  c.groups?.map((g, gi) => (
-                    <Group
-                      key={g.label ?? gi}
-                      group={g}
-                      first={gi === 0}
-                      onSelect={c.onSelect}
-                    />
-                  ))}
-              </div>
-            </div>
-          ))}
+            ))}
 
-          {/* THE DOOR TO THE BUILDER, below and across the width of the three columns.
+            {/* THE DOOR TO THE BUILDER, below and across the width of the three columns.
               
               The columns above are the questions somebody ALREADY THOUGHT OF —the named
               filters, a date's cuts, the favourites— and this one
@@ -1030,22 +1062,23 @@ export function SearchBar({
               column, or simply was not there, and so the builder that
               exists could not be opened from the only place where somebody
               looked for it. */}
-          {onOpenBuilder === undefined ? null : (
-            <div className="w-full border-t border-line p-1">
-              <button
-                type="button"
-                onClick={() => {
-                  onOpenBuilder();
-                  setPanel(false);
-                }}
-                className="flex w-full items-center gap-2 rounded-control px-1.5 py-1 text-left text-meta text-ink transition-colors duration-(--duration-instant) hover:bg-primary/8 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
-              >
-                <SlidersHorizontal className="size-(--size-icon-sm)" strokeWidth={2} />
-                {copy.search.openBuilder}
-              </button>
-            </div>
-          )}
-        </div>
+            {onOpenBuilder === undefined ? null : (
+              <div className="w-full border-t border-line p-1">
+                <button
+                  type="button"
+                  onClick={() => {
+                    onOpenBuilder();
+                    setPanel(false);
+                  }}
+                  className="flex w-full items-center gap-2 rounded-control px-1.5 py-1 text-left text-meta text-ink transition-colors duration-(--duration-instant) hover:bg-primary/8 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+                >
+                  <SlidersHorizontal className="size-(--size-icon-sm)" strokeWidth={2} />
+                  {copy.search.openBuilder}
+                </button>
+              </div>
+            )}
+          </div>
+        </Overlay>
       ) : null}
     </div>
   );

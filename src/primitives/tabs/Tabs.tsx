@@ -2,6 +2,7 @@
 
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
+import { Count } from "@sincpro/web-ui/primitives/tag/Count";
 import type { LucideIcon } from "lucide-react";
 import {
   createContext,
@@ -88,27 +89,6 @@ export type TabItem = {
   count?: number;
   /** That something in here asks you to look. Apart from the counter: see `TabNotice`. */
   notice?: TabNotice;
-};
-
-/* The notification's colour. Static and in a table because Tailwind cannot
-   compose a class with a variable piece: `bg-${tone}/12` does not exist in the
-   stylesheet. */
-const NOTICE_TONE: Record<Tone, string> = {
-  neutral: "bg-ink/8 text-muted",
-  info: "bg-info/12 text-info",
-  good: "bg-good/12 text-good",
-  warn: "bg-warn/14 text-warn",
-  bad: "bg-bad/12 text-bad",
-  accent: "bg-accent/14 text-accent",
-};
-
-const NOTICE_DOT: Record<Tone, string> = {
-  neutral: "bg-muted",
-  info: "bg-info",
-  good: "bg-good",
-  warn: "bg-warn",
-  bad: "bg-bad",
-  accent: "bg-accent",
 };
 
 /**
@@ -219,7 +199,6 @@ export function Tabs({
     >
       {tabs.map((a) => {
         const Icon = a.icon;
-        const empty = a.count === 0;
         /* A zero asks for nothing, so it is not drawn. That is the difference from the
            counter, where «0» is an answer. */
         const notice = a.notice?.count === 0 ? undefined : a.notice;
@@ -257,17 +236,7 @@ export function Tabs({
               )}
               {a.label}
               {a.count === undefined ? null : (
-                <span
-                  className={`rounded-pill px-1.5 text-micro tabular-nums ${
-                    empty
-                      ? "bg-ink/5 text-muted"
-                      : isSelected
-                        ? "bg-ink/8 text-ink"
-                        : "bg-ink/8 text-muted"
-                  }`}
-                >
-                  {a.count.toLocaleString(copy.locale)}
-                </span>
+                <Count value={a.count} showZero current={isSelected} />
               )}
               {/* The notification's word travels INSIDE the tab and not in an
                     `aria-label`: so a screen reader reads it on arrival, and the name
@@ -275,22 +244,14 @@ export function Tabs({
               {notice === undefined ? null : (
                 <span className="sr-only">{` · ${notice.label}`}</span>
               )}
-              {notice === undefined ? null : notice.count === undefined ? (
-                /* Without a number, a dot. The word is not drawn but it is there: in the
-                       `title` and in the tab's accessible name. */
-                <span
-                  className={`size-1.5 shrink-0 rounded-pill ${NOTICE_DOT[notice.tone ?? "bad"]}`}
+              {/* Without a number, a dot. The word is not drawn but it is there: in the
+                  `title` and in the tab's accessible name. */}
+              {notice === undefined ? null : (
+                <Count
+                  {...(notice.count === undefined ? {} : { value: notice.count })}
+                  tone={notice.tone ?? "bad"}
                   aria-hidden
                 />
-              ) : (
-                <span
-                  className={`rounded-pill px-1.5 text-micro font-medium tabular-nums ${
-                    NOTICE_TONE[notice.tone ?? "bad"]
-                  }`}
-                  aria-hidden
-                >
-                  {notice.count.toLocaleString(copy.locale)}
-                </span>
               )}
             </span>
           </button>

@@ -161,10 +161,17 @@ test("a failed upload says why, with an icon, and offers to retry", () => {
 
 test("with somewhere to add, the drop zone is drawn; empty, it says so", () => {
   const empty = spanish(<Attachments files={[]} onAdd={() => {}} />);
-  assert.ok(empty.includes("Todavía no hay archivos adjuntos. Soltá uno acá o elegilo."));
-  assert.ok(empty.includes("Elegir archivo"), "the file button");
+  assert.ok(empty.includes("Todavía no hay archivos adjuntos. Soltalos acá o elegilos."));
+  assert.ok(empty.includes("Elegir archivos"), "the file button");
   const some = spanish(<Attachments files={[FACTURA]} now={NOW} onAdd={() => {}} />);
-  assert.ok(some.includes("Soltá otro archivo acá o elegilo."));
+  assert.ok(some.includes("Soltá más archivos acá o elegilos."));
+});
+
+test("a record takes files in batches by default; `multiple={false}` takes one", () => {
+  assert.match(spanish(<Attachments files={[]} onAdd={() => {}} />), /<input[^>]*multiple/);
+  const one = spanish(<Attachments files={[]} multiple={false} onAdd={() => {}} />);
+  assert.doesNotMatch(one, /<input[^>]*multiple/);
+  assert.ok(one.includes("Elegir archivo<"), "one file, one button in the singular");
 });
 
 test("read mode keeps open and download, and draws no drop zone and no trash", () => {

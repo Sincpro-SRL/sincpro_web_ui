@@ -50,8 +50,17 @@ const preview: Preview = {
           styles: { width: "390px", height: "844px" },
           type: "mobile",
         },
+        escritorio: {
+          name: "Escritorio · 1280 × 900",
+          styles: { width: "1280px", height: "900px" },
+          type: "desktop",
+        },
         ...MINIMAL_VIEWPORTS,
       },
+      /* What the test runner sizes a story WITHOUT a viewport to — the desk of
+         `vitest.config.ts`, not the addon's own 1200 × 900. Only the runner reads it: the
+         canvas in Storybook stays as wide as its panel. */
+      defaultViewport: "escritorio",
     },
     /* axe FAILS the story (2026-11-03): the 314 violations of the migration were fixed at their
        root — names that hid the visible text, empty headers, headings that skipped a level,

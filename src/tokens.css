@@ -92,14 +92,17 @@
    *  as the border that marks a state. If the gold needs to say something, it
    *  is the dark text on top of it that says it.
    * ---------------------------------------------------------------- */
-  --color-accent: #c89b3c; /* 2.43:1 on the ground → NEVER text */
-  --color-accent-hover: #b88a2e; /* on light the hover DARKENS: ink on top gives 5.71:1 */
+  --color-accent: var(--brand-accent, #c89b3c); /* 2.43:1 on the ground → NEVER text */
+  --color-accent-hover: var(
+    --brand-accent-hover,
+    #b88a2e
+  ); /* on light the hover DARKENS: ink on top gives 5.71:1 */
 
   /* The text ON the gold. It is its own token and not `ink` because `ink` flips
      to a light colour in the dark theme, and light text on gold is 2.4:1: the
      primary action would stop being readable the moment the theme changed. The
      gold button is dark-on-gold in BOTH themes. */
-  --color-on-accent: #1a1714; /* 6.98:1 on the gold */
+  --color-on-accent: var(--brand-on-accent, #1a1714); /* 6.98:1 on the gold */
 
   /* Data blue. On light the brand blue reads in full, without lightening it:
      13.52:1. In the dark theme it had to be lightened to #3D5CA8 so that a 6px
@@ -140,8 +143,11 @@
      product read as assembled, not designed. It is now the chrome's own navy,
      less saturated: still clearly blue, one family with the bar, and it reads
      BETTER — 8.26:1 as text (was 7.48:1), white on top 8.69:1 (was 7.87:1). */
-  --color-primary: #2a4a85; /* 8.26:1 · white on top 8.69:1 */
-  --color-primary-hover: #1c3765; /* 11.19:1 · white on top 11.77:1 */
+  --color-primary: var(--brand-primary, #2a4a85); /* 8.26:1 · white on top 8.69:1 */
+  --color-primary-hover: var(
+    --brand-primary-hover,
+    #1c3765
+  ); /* 11.19:1 · white on top 11.77:1 */
 
   /* Destructive. It is the SAME red as the `bad` state, on purpose: the red
      that says «this went wrong» and the one that says «this is going to delete
@@ -224,15 +230,21 @@
      practical consequence — the `brand-wash` is BORN out of the background
      itself instead of being painted on top, which is why here the wash reads as
      light and on black it read as a stain. */
-  --color-chrome: #141b2e; /* the base */
-  --color-chrome-raised: #1e2740; /* active tab, open menu */
+  --color-chrome: var(--brand-chrome, #141b2e); /* the base */
+  --color-chrome-raised: var(--brand-chrome-raised, #1e2740); /* active tab, open menu */
   /* The hairline under the application bar. On light the chrome already
      separates from the canvas by luminance, so it IS the chrome (invisible); in the
      dark theme the two are both near-black and the hairline is what tells them apart. */
-  --color-chrome-edge: #141b2e; /* 1.00:1 on the chrome — invisible on light, a hairline on dark */
+  --color-chrome-edge: var(
+    --brand-chrome-edge,
+    #141b2e
+  ); /* 1.00:1 on the chrome — invisible on light, a hairline on dark */
   --color-chrome-ink: #e8e4de; /* 13.53:1 — text */
   --color-chrome-muted: #a39b90; /* 6.24:1 — faint text */
-  --color-chrome-accent: #c89b3c; /* 6.70:1 — the gold, here it IS text */
+  --color-chrome-accent: var(
+    --brand-chrome-accent,
+    #c89b3c
+  ); /* 6.70:1 — the gold, here it IS text */
 
   /* ── The link had to change, and the reason is NOT contrast ──────────
      The blue #6FA0EA gave 6.44:1 on this background: too dark, it sank into the
@@ -243,7 +255,10 @@
      (220°) at 9.46:1 separates from the bar as clearly as the cyan did (9.94:1)
      and stays in the palette. WCAG measures luminance and people see hue — here
      both agree: light on dark, one family. */
-  --color-chrome-link: #a9c1f2; /* 9.46:1 · same family as the navy, separated by luminance */
+  --color-chrome-link: var(
+    --brand-chrome-link,
+    #a9c1f2
+  ); /* 9.46:1 · same family as the navy, separated by luminance */
 
   --color-chrome-good: #6fcf8b; /* 8.95:1 */
   --color-chrome-warn: #e3b341; /* 8.80:1 */
@@ -461,6 +476,13 @@
      `ListingBar`. */
   --container-search: 30rem;
 
+  /* How wide the cuts panel may grow: filters, grouping and favourites side by side — three
+     columns of a facet each — and never wider than the screen, so on a phone the columns
+     stack and it reads as a popover. It is the SCREEN that decides, not the field: a list's
+     search field is often narrow (it shares the bar with sort, columns and «New»), and a
+     panel capped at the field's width stacked its three columns on a 1440px desk. */
+  --container-cuts: min(calc(var(--container-facet) * 3), calc(100vw - 3rem));
+
   /* What a crumb ASKS for before being clipped, and what the whole trail asks for.
      Both are requests and not widths: a narrower line drops them, and a
      wider one lets them grow.
@@ -600,6 +622,11 @@
      two modules whose sidebars differ in width read as two products. */
   --container-sidebar: 15rem;
 
+  /* The same sidebar as a drawer on a phone: a little wider than the column — it has the
+     whole screen to itself — and never wider than the screen minus a strip of the page,
+     which is where a thumb taps to close it. */
+  --container-drawer: min(20rem, calc(100vw - 3rem));
+
   /* The record sheet. The rail above it spans the whole window; the sheet does not: a form
      stretched to 1,400 px puts the label and its value half a screen apart and turns every
      input into a bar nobody fills. 72rem holds two columns of fields at a readable width —
@@ -715,6 +742,29 @@
  *  gets a hairline (`chrome-edge`) because it and the canvas are both near
  *  black. The gold keeps being the primary action; `on-accent` keeps the text
  *  on it dark.
+ *
+ *  ── A BRAND: set it once, every theme follows ───────────────────────
+ *
+ *  The colours a brand owns — the action (`accent`, `accent-hover`, `on-accent`),
+ *  the link and current place (`primary`, `primary-hover`), and the bar
+ *  (`chrome`, `chrome-raised`, `chrome-edge`, `chrome-accent`, `chrome-link`) —
+ *  read a `--brand-*` variable first, and fall back to the system's value:
+ *
+ *      :root {
+ *        --brand-accent: #d4a73a;        --brand-dark-accent: #e0b850;
+ *        --brand-chrome: #10203f;        --brand-dark-chrome: #0a1428;
+ *      }
+ *
+ *  `--brand-<token>` is the light palette's, `--brand-dark-<token>` the dark's.
+ *  Set on `:root`, a variable is INHERITED by every subtree — so the four blocks
+ *  that define a palette (`@theme`, the media query, `[data-theme="dark"]` and
+ *  the nested `[data-theme="light"]`) all resolve to the brand, and nothing has
+ *  to be repeated per theme. Before, a brand overrode `--color-*` and lost to
+ *  whichever of those blocks matched the element it was on.
+ *
+ *  The system measures ITS values (the numbers in the comments); a brand's
+ *  contrast is the brand's to check — the Storybook a11y pass does, on every
+ *  story, in both themes.
  * ==================================================================== */
 :root {
   color-scheme: light dark;
@@ -729,12 +779,21 @@
     --color-line-strong: #443f38; /* 1.73:1 — border of a box, table header */
     --color-ink: #ece8e1; /* 14.78:1 */
     --color-muted: #a39b90; /* 6.57:1 */
-    --color-accent: #c89b3c; /* 7.05:1 — on dark the gold CAN be read, but it stays the primary action */
-    --color-accent-hover: #dbb055; /* on dark the hover LIGHTENS: on-accent on top gives 8.80:1 */
-    --color-on-accent: #1a1714; /* 6.98:1 on the gold */
+    --color-accent: var(
+      --brand-dark-accent,
+      #c89b3c
+    ); /* 7.05:1 — on dark the gold CAN be read, but it stays the primary action */
+    --color-accent-hover: var(
+      --brand-dark-accent-hover,
+      #dbb055
+    ); /* on dark the hover LIGHTENS: on-accent on top gives 8.80:1 */
+    --color-on-accent: var(--brand-dark-on-accent, #1a1714); /* 6.98:1 on the gold */
     --color-data: #8ea6d9; /* 7.40:1 */
-    --color-primary: #8fa9e8; /* 7.74:1 · surface on top 7.03:1 */
-    --color-primary-hover: #b0c3f1; /* 10.25:1 · surface on top 9.31:1 */
+    --color-primary: var(--brand-dark-primary, #8fa9e8); /* 7.74:1 · surface on top 7.03:1 */
+    --color-primary-hover: var(
+      --brand-dark-primary-hover,
+      #b0c3f1
+    ); /* 10.25:1 · surface on top 9.31:1 */
     --color-danger: #f08d7f; /* 7.58:1 · surface on top 6.89:1 */
     --color-danger-hover: #f6ab9f; /* 9.66:1 · surface on top 8.78:1 */
     --color-info: #5cc4d8; /* 8.89:1 */
@@ -750,13 +809,22 @@
     --color-good: #6fcf8b; /* 9.43:1 */
     --color-warn: #e3b341; /* 9.27:1 */
     --color-bad: #f08d7f; /* 7.58:1 */
-    --color-chrome: #0b101e; /* the base: deeper than the canvas */
-    --color-chrome-raised: #18223a; /* active tab, open menu */
-    --color-chrome-edge: #2b3656; /* 1.59:1 on the chrome — the hairline that separates the bar from the canvas */
+    --color-chrome: var(--brand-dark-chrome, #0b101e); /* the base: deeper than the canvas */
+    --color-chrome-raised: var(
+      --brand-dark-chrome-raised,
+      #18223a
+    ); /* active tab, open menu */
+    --color-chrome-edge: var(
+      --brand-dark-chrome-edge,
+      #2b3656
+    ); /* 1.59:1 on the chrome — the hairline that separates the bar from the canvas */
     --color-chrome-ink: #e8e4de; /* 14.98:1 — text */
     --color-chrome-muted: #a39b90; /* 6.91:1 — faint text */
-    --color-chrome-accent: #c89b3c; /* 7.42:1 — the gold, here it IS text */
-    --color-chrome-link: #a9c1f2; /* 10.48:1 */
+    --color-chrome-accent: var(
+      --brand-dark-chrome-accent,
+      #c89b3c
+    ); /* 7.42:1 — the gold, here it IS text */
+    --color-chrome-link: var(--brand-dark-chrome-link, #a9c1f2); /* 10.48:1 */
     --color-chrome-good: #6fcf8b; /* 9.91:1 */
     --color-chrome-warn: #e3b341; /* 9.75:1 */
     --color-chrome-bad: #ff8a7a; /* 8.28:1 */
@@ -776,12 +844,21 @@
   --color-line-strong: #443f38; /* 1.73:1 — border of a box, table header */
   --color-ink: #ece8e1; /* 14.78:1 */
   --color-muted: #a39b90; /* 6.57:1 */
-  --color-accent: #c89b3c; /* 7.05:1 — on dark the gold CAN be read, but it stays the primary action */
-  --color-accent-hover: #dbb055; /* on dark the hover LIGHTENS: on-accent on top gives 8.80:1 */
-  --color-on-accent: #1a1714; /* 6.98:1 on the gold */
+  --color-accent: var(
+    --brand-dark-accent,
+    #c89b3c
+  ); /* 7.05:1 — on dark the gold CAN be read, but it stays the primary action */
+  --color-accent-hover: var(
+    --brand-dark-accent-hover,
+    #dbb055
+  ); /* on dark the hover LIGHTENS: on-accent on top gives 8.80:1 */
+  --color-on-accent: var(--brand-dark-on-accent, #1a1714); /* 6.98:1 on the gold */
   --color-data: #8ea6d9; /* 7.40:1 */
-  --color-primary: #8fa9e8; /* 7.74:1 · surface on top 7.03:1 */
-  --color-primary-hover: #b0c3f1; /* 10.25:1 · surface on top 9.31:1 */
+  --color-primary: var(--brand-dark-primary, #8fa9e8); /* 7.74:1 · surface on top 7.03:1 */
+  --color-primary-hover: var(
+    --brand-dark-primary-hover,
+    #b0c3f1
+  ); /* 10.25:1 · surface on top 9.31:1 */
   --color-danger: #f08d7f; /* 7.58:1 · surface on top 6.89:1 */
   --color-danger-hover: #f6ab9f; /* 9.66:1 · surface on top 8.78:1 */
   --color-info: #5cc4d8; /* 8.89:1 */
@@ -797,13 +874,19 @@
   --color-good: #6fcf8b; /* 9.43:1 */
   --color-warn: #e3b341; /* 9.27:1 */
   --color-bad: #f08d7f; /* 7.58:1 */
-  --color-chrome: #0b101e; /* the base: deeper than the canvas */
-  --color-chrome-raised: #18223a; /* active tab, open menu */
-  --color-chrome-edge: #2b3656; /* 1.59:1 on the chrome — the hairline that separates the bar from the canvas */
+  --color-chrome: var(--brand-dark-chrome, #0b101e); /* the base: deeper than the canvas */
+  --color-chrome-raised: var(--brand-dark-chrome-raised, #18223a); /* active tab, open menu */
+  --color-chrome-edge: var(
+    --brand-dark-chrome-edge,
+    #2b3656
+  ); /* 1.59:1 on the chrome — the hairline that separates the bar from the canvas */
   --color-chrome-ink: #e8e4de; /* 14.98:1 — text */
   --color-chrome-muted: #a39b90; /* 6.91:1 — faint text */
-  --color-chrome-accent: #c89b3c; /* 7.42:1 — the gold, here it IS text */
-  --color-chrome-link: #a9c1f2; /* 10.48:1 */
+  --color-chrome-accent: var(
+    --brand-dark-chrome-accent,
+    #c89b3c
+  ); /* 7.42:1 — the gold, here it IS text */
+  --color-chrome-link: var(--brand-dark-chrome-link, #a9c1f2); /* 10.48:1 */
   --color-chrome-good: #6fcf8b; /* 9.91:1 */
   --color-chrome-warn: #e3b341; /* 9.75:1 */
   --color-chrome-bad: #ff8a7a; /* 8.28:1 */
@@ -825,12 +908,18 @@
   --color-line-strong: #d5cec2; /* 1.49:1 — border of a box, table header */
   --color-ink: #1a1714;
   --color-muted: #6b6459;
-  --color-accent: #c89b3c; /* 2.43:1 on the ground → NEVER text */
-  --color-accent-hover: #b88a2e; /* on light the hover DARKENS: ink on top gives 5.71:1 */
-  --color-on-accent: #1a1714; /* 6.98:1 on the gold */
+  --color-accent: var(--brand-accent, #c89b3c); /* 2.43:1 on the ground → NEVER text */
+  --color-accent-hover: var(
+    --brand-accent-hover,
+    #b88a2e
+  ); /* on light the hover DARKENS: ink on top gives 5.71:1 */
+  --color-on-accent: var(--brand-on-accent, #1a1714); /* 6.98:1 on the gold */
   --color-data: #1b2a4a; /* 13.52:1 */
-  --color-primary: #2a4a85; /* 8.26:1 · white on top 8.69:1 */
-  --color-primary-hover: #1c3765; /* 11.19:1 · white on top 11.77:1 */
+  --color-primary: var(--brand-primary, #2a4a85); /* 8.26:1 · white on top 8.69:1 */
+  --color-primary-hover: var(
+    --brand-primary-hover,
+    #1c3765
+  ); /* 11.19:1 · white on top 11.77:1 */
   --color-danger: #9b3b30; /* 6.52:1 · white on top 6.86:1 */
   --color-danger-hover: #7c2d24; /* 8.84:1 · white on top 9.30:1 */
   --color-info: #0f5c6e; /* 7.19:1 · white on top 7.56:1 */
@@ -846,13 +935,22 @@
   --color-good: #2f6b3c; /* 6.07:1 */
   --color-warn: #7e5e12; /* 5.71:1 */
   --color-bad: #9b3b30; /* 6.52:1 */
-  --color-chrome: #141b2e; /* the base */
-  --color-chrome-raised: #1e2740; /* active tab, open menu */
-  --color-chrome-edge: #141b2e; /* 1.00:1 on the chrome — invisible on light, a hairline on dark */
+  --color-chrome: var(--brand-chrome, #141b2e); /* the base */
+  --color-chrome-raised: var(--brand-chrome-raised, #1e2740); /* active tab, open menu */
+  --color-chrome-edge: var(
+    --brand-chrome-edge,
+    #141b2e
+  ); /* 1.00:1 on the chrome — invisible on light, a hairline on dark */
   --color-chrome-ink: #e8e4de; /* 13.53:1 — text */
   --color-chrome-muted: #a39b90; /* 6.24:1 — faint text */
-  --color-chrome-accent: #c89b3c; /* 6.70:1 — the gold, here it IS text */
-  --color-chrome-link: #a9c1f2; /* 9.46:1 · same family as the navy, separated by luminance */
+  --color-chrome-accent: var(
+    --brand-chrome-accent,
+    #c89b3c
+  ); /* 6.70:1 — the gold, here it IS text */
+  --color-chrome-link: var(
+    --brand-chrome-link,
+    #a9c1f2
+  ); /* 9.46:1 · same family as the navy, separated by luminance */
   --color-chrome-good: #6fcf8b; /* 8.95:1 */
   --color-chrome-warn: #e3b341; /* 8.80:1 */
   --color-chrome-bad: #ff8a7a; /* 7.48:1 */
