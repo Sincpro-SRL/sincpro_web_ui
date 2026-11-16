@@ -131,6 +131,51 @@ a screen needs no change to work in both.
 </ThemeProvider>
 ```
 
+#### Your brand
+
+The colours a brand owns read a `--brand-*` variable before the system's value. Set them once,
+on `:root`, and every palette — light, dark, and a light subtree inside a dark page — follows:
+
+```css
+:root {
+  --brand-accent: #d4a73a; /* the primary action */
+  --brand-accent-hover: #c0942c;
+  --brand-primary: #1f3a6e; /* links, the current place */
+  --brand-primary-hover: #152a52;
+  --brand-chrome: #10203f; /* the application bar */
+  --brand-chrome-raised: #1a2c52;
+  --brand-chrome-edge: #10203f;
+
+  --brand-dark-accent: #e0b850; /* the same, for the dark palette */
+  --brand-dark-chrome: #0a1428;
+}
+```
+
+The full list is `accent`, `accent-hover`, `on-accent`, `primary`, `primary-hover`, `chrome`,
+`chrome-raised`, `chrome-edge`, `chrome-accent` and `chrome-link`; `--brand-<token>` is the light
+palette's and `--brand-dark-<token>` the dark's. One left unset keeps the system's value. Do not
+override `--color-*` directly: those are redefined per theme, so an override on `:root` loses to
+`[data-theme="light"]` and leaks into the dark palette. The system measures its own contrasts;
+your brand's are checked by Storybook's a11y pass if you render your stories with it.
+
+#### Living beside a site's own CSS
+
+The package's styles are in cascade layers (`@layer base`, `utilities`), and **CSS outside any
+layer always beats CSS inside one** — so a site's global `h1 { font-family: … }` restyles every
+heading web-ui draws. Put the site's element rules in a layer too:
+
+```css
+@layer base {
+  h1,
+  h2 {
+    font-family: var(--font-display);
+  }
+}
+```
+
+or scope them to the site's own pages (`.site h1`). Classes are not affected; element selectors
+and `*` are.
+
 Rules a new token must follow: define it in **both** palettes with its contrast on the same line
 (`tests/tokens.test.ts` measures each theme against its own ground, surface and chrome, and fails
 if a light token has no dark twin or the two dark copies drift); the gold stays the primary

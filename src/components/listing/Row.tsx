@@ -273,25 +273,27 @@ export function Row({
               {meta}
             </span>
           )}
+          {/* The tags go in their own column and not glued to the name. Hanging off
+            the name they land wherever each one ends —one in the middle, the next
+            at twice that— and twelve tags at twelve different heights is exactly
+            what makes a list read as cluttered. In a column they get compared top
+            to bottom without reading, which is what a tag exists for.
+
+            The column is the END of the name's line (`ms-auto`), and it ASKS FOR
+            `--container-tags`. With room it takes all of it and the tags fall on the
+            same vertical, which is the point. Without room it does what the metadata
+            does: it drops to the line below, still on the right edge, and the name
+            keeps the first line whole. It used to be a column beside the line, and
+            on a 390 px phone it held its width while the name shrank to «Ve…» — the
+            one thing a row exists to say. It stops at the width of its own tags:
+            what would shrink below that is a tag, and a tag that shrinks stops being
+            readable. */}
+          {tags === undefined ? null : (
+            <span className="ms-auto flex min-w-fit shrink basis-(--container-tags) items-center justify-end gap-1.5">
+              {tags}
+            </span>
+          )}
         </div>
-
-        {/* The tags go in their own column and not glued to the name. Hanging off
-          the name they land wherever each one ends —one in the middle, the next
-          at twice that— and twelve tags at twelve different heights is exactly
-          what makes a list read as cluttered. In a column they get compared top
-          to bottom without reading, which is what a tag exists for.
-
-          The column ASKS FOR `--container-tags` and does not impose it. With
-          room it takes all of it and the tags fall on the same vertical, which
-          is the point. Without room it gives back what it is not using —in a
-          480 px drawer that reservation is a quarter of the box, taken from the
-          name— and it stops at the width of its own tags: from there down what
-          would shrink is a tag, and a tag that shrinks stops being readable. */}
-        {tags === undefined ? null : (
-          <span className="flex min-w-fit shrink basis-(--container-tags) items-center justify-end gap-1.5">
-            {tags}
-          </span>
-        )}
 
         {/* The gesture, made visible. It shows up on hover and always occupies its
           place, so nothing shifts when it appears. */}
@@ -423,12 +425,12 @@ export function RowHeader({
       >
         <span className={`min-w-0 grow basis-(--container-name) ${rotulo}`}>{name}</span>
         {meta === undefined ? null : <span className={`min-w-0 ${rotulo}`}>{meta}</span>}
+        {tags === undefined ? null : (
+          <span className="ms-auto flex min-w-fit shrink basis-(--container-tags) items-center justify-end">
+            <span className={rotulo}>{tags}</span>
+          </span>
+        )}
       </div>
-      {tags === undefined ? null : (
-        <span className="flex min-w-fit shrink basis-(--container-tags) items-center justify-end">
-          <span className={rotulo}>{tags}</span>
-        </span>
-      )}
       {trail !== undefined ? (
         <span inert aria-hidden className="invisible flex shrink-0 items-center gap-1">
           <Trail

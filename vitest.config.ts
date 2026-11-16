@@ -32,6 +32,12 @@ const browser = (name: string) => ({
 export default mergeConfig(
   viteConfig,
   defineConfig({
+    /* The phone stories (`globals: { viewport: { value: "telefono" } }`) only run at 390 × 844
+       if the Storybook addon can size the page — and it asks `@vitest/browser/context`, which
+       vitest 5 turned into a stub that throws (the real module is `vitest/browser`). The addon
+       swallowed the error and every phone story ran on the 1280 desk: a drawer, a bottom sheet
+       or a row folded for a phone was never seen by a test. */
+    resolve: { alias: { "@vitest/browser/context": "vitest/browser" } },
     test: {
       /* Half the cores: several repos test on the same machine, each with its own Chrome. */
       maxWorkers: "50%",

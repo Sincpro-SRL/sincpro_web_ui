@@ -38,11 +38,11 @@ The primary (gold) appears once per view. Secondaries are outlined, tertiaries
 Color means state (paid, overdue, draft), alert or the main action. Never color alone:
 always with text or an icon.
 
-| How the system applies it                                                                  | Where                        |
-| ------------------------------------------------------------------------------------------ | ---------------------------- |
-| Five semantic tones — neutral, info, good, warn, bad — and the accent only for the action. | `Tag`, `StatusDot`, `Metric` |
-| Each color carries its WCAG contrast, annotated and measured.                              | `tokens.css`                 |
-| A failed state carries an icon besides the red.                                            | `StatusBar`                  |
+| How the system applies it                                                                  | Where                                 |
+| ------------------------------------------------------------------------------------------ | ------------------------------------- |
+| Five semantic tones — neutral, info, good, warn, bad — and the accent only for the action. | `Tag`, `StatusDot`, `Metric`, `Count` |
+| Each color carries its WCAG contrast, annotated and measured.                              | `tokens.css`                          |
+| A failed state carries an icon besides the red.                                            | `StatusBar`                           |
 
 **Enforced by**: `tests/tokens.test.ts` recomputes every contrast; `tests/tokenLint.test.ts`
 forbids colors outside the tokens.

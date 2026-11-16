@@ -1,6 +1,6 @@
 "use client";
 
-import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { useFieldIds } from "@sincpro/web-ui/foundations/form";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { cn } from "@sincpro/web-ui/foundations/variants";
@@ -8,6 +8,7 @@ import { Button, buttonClasses } from "@sincpro/web-ui/primitives/button/Button"
 import { ReadValue } from "@sincpro/web-ui/primitives/field/Field";
 import { Failed } from "@sincpro/web-ui/primitives/notice/Notice";
 import { ProgressBar } from "@sincpro/web-ui/primitives/value/ProgressBar";
+import { useState } from "react";
 import {
   Button as AriaButton,
   type DropItem,
@@ -33,8 +34,17 @@ import {
  * say a dragged file's extension until it lands, and a drop that silently does
  * nothing reads as a broken zone. The file reaches `onFile`, and the consumer
  * answers with `error` when it cannot read it.
+ *
+ * ── One file, or several ─────────────────────────────────────────────
+ *
+ * `multiple` takes every file of a drop or of the dialog in ONE call to `onFiles` —
+ * a gallery gets its thirty photos as one batch, not thirty events. Listing what
+ * was chosen, with its thumbnails and per-file removal, is `Attachments`, which
+ * draws this zone: the zone takes files, it does not keep them. `max` caps the
+ * batch: the first `max` go through and the zone SAYS how many were left out — a
+ * silent cut is a photo nobody knows is missing.
  */
-export type DropZoneProps = {
+type DropZoneCommon = {
   /** The browser's `accept` list: extensions and MIME types, comma-separated
    *  (`".pdf,application/pdf"`). */
   accept?: string;
@@ -45,7 +55,6 @@ export type DropZoneProps = {
   fileName?: string;
   fileDetail?: string;
   error?: string | null;
-  onFile: (file: File) => void;
   onCancel?: () => void;
   onRetry?: () => void;
   id?: string;
@@ -56,23 +65,37 @@ export type DropZoneProps = {
   mode?: FormMode;
 };
 
-export function DropZone({
-  accept,
-  label,
-  busy = false,
-  progress,
-  fileName,
-  fileDetail,
-  error,
-  onFile,
-  onCancel,
-  onRetry,
-  id: ownId,
-  describedBy: ownDescribedBy,
-  invalid: ownInvalid,
-  mode,
-}: DropZoneProps) {
+export type DropZoneProps = DropZoneCommon &
+  (
+    | { multiple?: false; onFile: (file: File) => void }
+    | {
+        multiple: true;
+        /** Every file of one drop, paste or choice, in their order. */
+        onFiles: (files: File[]) => void;
+        /** At most this many per batch; the rest are left out, and the zone says so. */
+        max?: number;
+      }
+  );
+
+export function DropZone(props: DropZoneProps) {
+  const {
+    accept,
+    label,
+    busy = false,
+    progress,
+    fileName,
+    fileDetail,
+    error,
+    onCancel,
+    onRetry,
+    id: ownId,
+    describedBy: ownDescribedBy,
+    invalid: ownInvalid,
+    mode,
+  } = props;
   const copy = useUiCopy();
+  /* How many the last batch left out, said under the zone until the next batch. */
+  const [leftOut, setLeftOut] = useState<{ taken: number; of: number } | null>(null);
   const { id, labelledBy, describedBy, invalid } = useFieldIds({
     id: ownId,
     describedBy: ownDescribedBy,
@@ -81,20 +104,36 @@ export function DropZone({
   const readMode = useFormMode(mode) === "read";
   if (readMode) return <ReadValue value={fileName ?? null} />;
 
-  const sentence = label ?? copy.field.drop;
+  const many = props.multiple === true;
+  const sentence = label ?? (many ? copy.field.dropMany : copy.field.drop);
   const types = accept
     ?.split(",")
     .map((t) => t.trim())
     .filter((t) => t !== "");
 
+  function take(files: readonly File[]) {
+    if (files.length === 0) return;
+    if (props.multiple !== true) {
+      props.onFile(files[0] as File);
+      return;
+    }
+    const max = props.max;
+    const taken = max === undefined ? files : files.slice(0, max);
+    setLeftOut(
+      taken.length < files.length ? { taken: taken.length, of: files.length } : null,
+    );
+    props.onFiles([...taken]);
+  }
+
   async function onDrop(items: readonly DropItem[]) {
     if (busy) return;
+    const files: File[] = [];
     for (const item of items) {
-      if (item.kind === "file") {
-        onFile(await item.getFile());
-        return;
-      }
+      if (item.kind !== "file") continue;
+      files.push(await item.getFile());
+      if (!many) break;
     }
+    take(files);
   }
 
   return (
@@ -141,10 +180,8 @@ export function DropZone({
           <div className="flex flex-wrap items-center justify-center gap-3">
             <FileTrigger
               {...(types === undefined ? {} : { acceptedFileTypes: types })}
-              onSelect={(files) => {
-                const file = files?.[0];
-                if (file !== undefined) onFile(file);
-              }}
+              allowsMultiple={many}
+              onSelect={(files) => take(files === null ? [] : Array.from(files))}
             >
               {/* React Aria's button, because the trigger presses it through React Aria's
                   press events; dressed as the system's secondary — the main action of the
@@ -156,7 +193,7 @@ export function DropZone({
                 data-emphasis="secondary"
                 className={buttonClasses("secondary", "md")}
               >
-                {copy.field.chooseFile}
+                {many ? copy.field.chooseFiles : copy.field.chooseFile}
               </AriaButton>
             </FileTrigger>
             {onCancel === undefined ? null : (
@@ -167,6 +204,15 @@ export function DropZone({
           </div>
         )}
       </AriaDropZone>
+      {/* A status, not an error: what was taken is on its way; this says what was not. */}
+      <p role="status" className={leftOut === null ? "sr-only" : "text-meta text-warn"}>
+        {leftOut === null
+          ? null
+          : fillCopy(copy.field.tooManyFiles, {
+              max: leftOut.taken.toLocaleString(copy.locale),
+              count: leftOut.of.toLocaleString(copy.locale),
+            })}
+      </p>
       {error === undefined || error === null ? null : (
         <Failed
           heading={copy.field.fileUnreadable}

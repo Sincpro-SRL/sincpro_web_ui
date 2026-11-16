@@ -13,6 +13,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useState } from "react";
+import { expect, within } from "storybook/test";
 
 const MODULOS: AppEntry[] = [
   {
@@ -207,4 +208,52 @@ export const Minima: Story = {
       <main className="p-8 text-body text-muted">Una sola cosa, el mismo marco.</main>
     </div>
   ),
+};
+
+/** **Lo que espera, sin abrir nada.** Un menú de la barra lleva su cuenta («Pedidos 5»): se ve
+ *  sin abrirlo, y el cero no se dibuja. La insignia del systray corta en «99+» y el nombre del
+ *  botón dice lo mismo que se ve. Las opciones de un menú cuentan igual (`badge` con un número). */
+export const LoQueEspera: Story = {
+  render: () => (
+    <div className="flex min-h-dvh flex-col bg-ground">
+      <TopBar
+        app={{ label: "Tienda", icon: ShoppingCart }}
+        menus={[
+          {
+            id: "pedidos",
+            label: "Pedidos",
+            count: 5,
+            groups: [
+              {
+                options: [
+                  { id: "nuevos", label: "Por confirmar", badge: 5 },
+                  { id: "enviados", label: "Enviados", badge: 0 },
+                ],
+              },
+            ],
+          },
+          {
+            id: "productos",
+            label: "Productos",
+            count: 0,
+            groups: [{ options: [{ id: "todos", label: "Todos" }] }],
+          },
+        ]}
+        systray={<SystrayButton icon={Bell} label="Avisos" count={240} tone="bad" />}
+        user={{ name: "Andrés Gutiérrez" }}
+        userGroups={CUENTA}
+      />
+      <main className="p-8 text-body text-muted">
+        Cinco pedidos esperan; los productos, nada.
+      </main>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("button", { name: /Pedidos/ }).textContent).toContain("5");
+    await expect(canvas.getByRole("button", { name: /Productos/ }).textContent).toBe(
+      "Productos",
+    );
+    await expect(canvas.getByRole("button", { name: "Avisos: 99+" })).toBeTruthy();
+  },
 };

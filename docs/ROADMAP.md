@@ -134,6 +134,27 @@ reading (`mode="read"`) it draws it as a datum, in the copy's language.
 | Guide «Nuestro estilo · cómo abrimos las cosas»        | ✅ 10-31 | `stories/Estilo.mdx`                                            |
 | A single «opener» that web-framework wires up once     | ❓       | to be decided: web-ui (context) or web-framework                |
 
+## 4b. The frame, the counts and the brand (round of 2026-11-16, issue #28)
+
+Found building **quipu**, a reference app on the whole stack: the back office of a professional
+association (members, dues, courses, a shop, a gallery), themed with its own colours.
+
+| Need                                                                                      | Status   | Piece / owner                                                            |
+| ----------------------------------------------------------------------------------------- | -------- | ------------------------------------------------------------------------ |
+| The cuts panel as wide as the SCREEN, not the field; usable inside a dialog               | ✅ 11-16 | `SearchBar` (portal `Overlay`, `--container-cuts`)                       |
+| ONE counter for every host — zero not drawn, «99+», the locale, a dot, the host's colour  | ✅ 11-16 | `Count`; used by `NavigationTree`, `Tabs`, `SystrayButton`, `Menu`       |
+| A menu of the application bar says what waits inside without opening it                   | ✅ 11-16 | `TopMenu.count`, `Menu count`; a number `badge` is a `Count`             |
+| A metric being read keeps its size; one not counted says «—»                              | ✅ 11-16 | `Metric loading`, `value` optional                                       |
+| Several files at once, with a cap that says what it left out                              | ✅ 11-16 | `DropZone multiple onFiles max`; `Attachments` takes batches by default  |
+| A back office whose chrome is the sidebar: brand and user on top, the account at the foot | ✅ 11-16 | `Sidebar` in `AppFrame sidebar` with no `menu`                           |
+| The sidebar on a phone: a drawer opened from the bar                                      | ✅ 11-16 | `AppFrame` (`narrowMenu`), `SidebarToggle`, `useSidebarDrawer`           |
+| A row on a 390 px phone keeps its name: the tags drop below it                            | ✅ 11-16 | `Row` (the tags close the name's line)                                   |
+| A brand set ONCE and followed by every palette                                            | ✅ 11-16 | `--brand-*` / `--brand-dark-*` in `tokens.css`; README «Your brand»      |
+| A site's global heading rules do not restyle web-ui's                                     | ✅ 11-16 | README «Living beside a site's own CSS» (the site's rules go in a layer) |
+| Phone stories run at 390 × 844 in the test runner, not on the desk                        | ✅ 11-16 | `vitest.config.ts` alias; `.storybook/preview.ts` `defaultViewport`      |
+| A loading and failed state per board tile                                                 | 🟡       | issue #27                                                                |
+| Public pages (hero, carousel, product grid, checkout) on the same tokens                  | ❓       | not web-ui — a sibling package that imports `tokens.css` (to be decided) |
+
 ## 5. Tests
 
 | Need                                                 | Status   | Owner                                                       |

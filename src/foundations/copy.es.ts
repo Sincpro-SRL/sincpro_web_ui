@@ -100,10 +100,16 @@ export const SPANISH_COPY: UiCopyOverride = {
     closePreview: "Cerrar la vista previa",
     account: "Mi cuenta",
     openAsPanel: "Abrir como panel",
+    openNavigation: "Abrir la navegación",
+    navigation: "Navegación",
   },
   field: {
     drop: "Soltá un archivo acá, o elegí uno.",
+    dropMany: "Soltá archivos acá, o elegilos.",
     chooseFile: "Elegir archivo",
+    chooseFiles: "Elegir archivos",
+    tooManyFiles:
+      "Se tomaron los primeros {max} de {count}: se pueden subir hasta {max} a la vez.",
     cancel: "Cancelar",
     uploadProgress: "progreso de la subida",
     fileUnreadable: "No pudimos leer el archivo",
@@ -574,8 +580,8 @@ export const SPANISH_COPY: UiCopyOverride = {
   attachments: {
     label: "Adjuntos",
     empty: "Todavía no hay archivos adjuntos.",
-    emptyAdd: "Todavía no hay archivos adjuntos. Soltá uno acá o elegilo.",
-    add: "Soltá otro archivo acá o elegilo.",
+    emptyAdd: "Todavía no hay archivos adjuntos. Soltalos acá o elegilos.",
+    add: "Soltá más archivos acá o elegilos.",
     download: "Descargar",
     remove: "Quitar el archivo",
     removed: "Se quitó «{name}».",

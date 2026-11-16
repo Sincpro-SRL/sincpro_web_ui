@@ -31,8 +31,13 @@ import { useMemo } from "react";
  * the NUMBER.
  */
 export type MetricProps = {
-  value: number | string;
+  /** The figure. Without it — and not `loading` — it reads «—»: not counted, which is not
+   *  zero. */
+  value?: number | string;
   label: string;
+  /** The figure is being read. The label stays and the box keeps its size, so a row of
+   *  metrics does not jump when the numbers land one at a time. */
+  loading?: boolean;
   tone?: Tone;
   icon?: LucideIcon;
   /** Present = narrows the list. Absent = only informs, and doesn't get pressed. */
@@ -67,6 +72,7 @@ export function Metric({
   onClick,
   active = false,
   change,
+  loading = false,
 }: MetricProps) {
   const copy = useUiCopy();
   const sup = useSurface();
@@ -94,6 +100,13 @@ export function Metric({
       : "cursor-pointer hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
   }`;
 
+  const figure =
+    value === undefined
+      ? "—"
+      : typeof value === "number"
+        ? value.toLocaleString(copy.locale)
+        : value;
+
   const content = (
     <>
       <span
@@ -102,26 +115,52 @@ export function Metric({
         {Icon === undefined ? null : (
           <Icon className="size-(--size-icon-md)" strokeWidth={2} aria-hidden />
         )}
-        {typeof value === "number" ? value.toLocaleString(copy.locale) : value}
+        {loading ? (
+          /* A bar one line of the figure tall (`h-lh`), so the box is the size it will
+             be. It appears late, like every skeleton: a fast read never shows it. */
+          <span
+            aria-hidden
+            className={`inline-block h-lh w-16 animate-reveal-late rounded-control ${bySurface(
+              sup,
+              "bg-ink/8",
+              "bg-chrome-ink/12",
+            )}`}
+          />
+        ) : (
+          figure
+        )}
       </span>
       <span className={`text-micro ${bySurface(sup, "text-muted", "text-chrome-muted")}`}>
         {label}
       </span>
-      {change === undefined ? null : <Change change={change} format={percent.format} />}
+      {change === undefined || loading ? null : (
+        <Change change={change} format={percent.format} />
+      )}
     </>
   );
 
   if (onClick === undefined) {
     return (
-      <div className={box} aria-label={`${value} ${label}`}>
+      <div
+        className={box}
+        aria-label={loading ? `${label}: ${copy.failed.loading}` : `${figure} ${label}`}
+        {...(loading ? { "aria-busy": true } : {})}
+      >
         {content}
       </div>
     );
   }
 
   return (
-    <button type="button" onClick={onClick} aria-pressed={active} className={box}>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      {...(loading ? { "aria-busy": true } : {})}
+      className={box}
+    >
       {content}
+      {loading ? <span className="sr-only">{copy.failed.loading}</span> : null}
     </button>
   );
 }

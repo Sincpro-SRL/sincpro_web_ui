@@ -41,6 +41,8 @@ const SHOWN_THROUGH: Readonly<Record<string, string>> = {
   AssistLabel: "AssistSuggestion, AssistPending and ChangeReview — 3 · Componentes/Asistente",
   AssistSourceLink:
     "AssistSuggestion, ChangeReview and AssistMark — 3 · Componentes/Asistente",
+  SidebarToggle:
+    "TopBar draws it first inside a frame with a sidebar — 3 · Componentes/Shell · la barra lateral · En el teléfono",
 };
 
 const ROOT = join(import.meta.dirname, "..");

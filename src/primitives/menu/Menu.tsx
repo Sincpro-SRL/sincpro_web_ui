@@ -7,6 +7,7 @@ import {
   type ButtonSize,
 } from "@sincpro/web-ui/primitives/button/Button";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
+import { Count } from "@sincpro/web-ui/primitives/tag/Count";
 import type { LucideIcon } from "lucide-react";
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
 import type { ReactNode } from "react";
@@ -89,8 +90,8 @@ export interface MenuOption {
   onRemove?: () => void;
   disabled?: boolean;
   /** Visual mark at the end of the label. A string is drawn as a pill
-   *  —"maqueta", "nuevo"—; anything else is drawn as is, which is how a status
-   *  `Tag` or an already formatted counter comes in. */
+   *  —"maqueta", "nuevo"—; a number as a `Count` —«Por aprobar 3», no zero—;
+   *  anything else is drawn as is, which is how a status `Tag` comes in. */
   badge?: ReactNode;
   /** What THIS option does. It exists on top of the menu's `onSelect` because a
    *  menu built from a registry —twenty-five operations, each one with its own
@@ -221,6 +222,7 @@ export function Menu({
   size = "md",
   title,
   closeOnSelect = true,
+  count,
 }: {
   label: string;
   groups: readonly MenuGroup[];
@@ -263,6 +265,10 @@ export function Menu({
   /** Column and filter menus toggle several options in a row. Closing after
    *  each click turns three hides into three open-close round trips. */
   closeOnSelect?: boolean;
+  /** What is waiting inside, on the trigger: «Pagos 5» in an application bar says it
+   *  without opening the menu. Zero is not drawn. Not with `iconOnly`, where there is no
+   *  label for it to belong to. */
+  count?: number;
 }) {
   const copy = useUiCopy();
   const { contains } = useFilter({ sensitivity: "base" });
@@ -314,6 +320,7 @@ export function Menu({
             <Trigger className="size-(--size-icon-sm)" strokeWidth={2} aria-hidden />
           )}
           {iconOnly ? null : label}
+          {iconOnly || count === undefined ? null : <Count value={count} surface={surface} />}
           {chevron && !iconOnly ? (
             <ChevronDown className="size-(--size-icon-sm)" strokeWidth={2} aria-hidden />
           ) : null}
@@ -419,7 +426,11 @@ export function MenuList({
             >
               {o.label}
             </span>
-            {o.badge === undefined ? null : typeof o.badge === "string" ? (
+            {o.badge === undefined ? null : typeof o.badge === "number" ? (
+              <span className="ml-auto flex shrink-0">
+                <Count value={o.badge} />
+              </span>
+            ) : typeof o.badge === "string" ? (
               <span className="inline-flex shrink-0 items-center rounded-pill border border-warn/30 bg-warn/10 px-2 py-0.5 text-micro text-warn">
                 {o.badge}
               </span>

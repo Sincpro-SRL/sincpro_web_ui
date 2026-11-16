@@ -1,6 +1,7 @@
 import { DropZone, Field } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useState } from "react";
+import { expect, userEvent, waitFor } from "storybook/test";
 
 const meta = {
   title: "2 · Primitivas/DropZone",
@@ -131,4 +132,45 @@ export const Estados: Story = {
       </div>
     </div>
   ),
+};
+
+/** **Las fotos de un evento, de una vez.** Con `multiple` cada soltada o elección llega en
+ *  UNA llamada a `onFiles`, en su orden. Con `max` pasan los primeros y la zona dice cuántos
+ *  dejó afuera: un recorte callado es una foto que nadie sabe que falta. Listar lo elegido,
+ *  con miniaturas y para quitar de a uno, es `Attachments`, que dibuja esta misma zona. */
+export const VariasALaVez: Story = {
+  args: { onFile: () => {} },
+  render: function Render() {
+    const [lote, setLote] = useState<string[]>([]);
+    return (
+      <div className="flex max-w-xl flex-col gap-3">
+        <Field label="Fotos del evento">
+          <DropZone
+            multiple
+            max={2}
+            accept="image/*"
+            onFiles={(files) => setLote(files.map((f) => f.name))}
+          />
+        </Field>
+        <p className="text-meta text-muted" data-testid="lote">
+          {lote.join(" · ") || "—"}
+        </p>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const input = canvasElement.querySelector<HTMLInputElement>('input[type="file"]');
+    if (input === null) throw new Error("the zone draws no file input");
+    await expect(input.multiple).toBe(true);
+    const foto = (name: string) => new File(["·"], name, { type: "image/jpeg" });
+    await userEvent.upload(input, [foto("a.jpg"), foto("b.jpg"), foto("c.jpg")]);
+    // The first two pass, in their order, in one batch…
+    await waitFor(() =>
+      expect(canvasElement.querySelector('[data-testid="lote"]')?.textContent).toBe(
+        "a.jpg · b.jpg",
+      ),
+    );
+    // …and the zone says what it left out.
+    await expect(canvasElement.querySelector('[role="status"]')?.textContent).toMatch(/2.*3/);
+  },
 };

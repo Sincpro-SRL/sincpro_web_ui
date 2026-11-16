@@ -3,6 +3,7 @@
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { focusRing, tv } from "@sincpro/web-ui/foundations/variants";
+import { Count } from "@sincpro/web-ui/primitives/tag/Count";
 import { ChevronRight, type LucideIcon } from "lucide-react";
 import { type CSSProperties, type ReactNode, useMemo } from "react";
 import {
@@ -127,7 +128,6 @@ export function NavigationTree({
   label?: string;
 }) {
   const copy = useUiCopy();
-  const number = useMemo(() => new Intl.NumberFormat(copy.locale), [copy.locale]);
   const expanded = useMemo(
     () => [...new Set([...defaultExpanded, ...pathTo(items, current)])],
     // The initial state only: React Aria owns the expansion after the first render.
@@ -179,14 +179,8 @@ export function NavigationTree({
                 >
                   {item.label}
                 </span>
-                {item.count === undefined || item.count <= 0 ? null : (
-                  <span
-                    className={`shrink-0 rounded-pill px-1.5 text-micro leading-normal font-medium tabular-nums ${
-                      isCurrent ? "bg-primary/12 text-primary" : "bg-ink/6 text-muted"
-                    }`}
-                  >
-                    {number.format(item.count)}
-                  </span>
+                {item.count === undefined ? null : (
+                  <Count value={item.count} current={isCurrent} />
                 )}
               </Link>
               {module ? (

@@ -108,6 +108,12 @@ export type AttachmentsProps = {
   onRetry?: (file: AttachmentFile) => void;
   /** The browser's `accept` list for the file dialog (`".pdf,image/*"`). */
   accept?: string;
+  /** Several files per drop or choice, in one `onAdd` — on by default: a record gathers
+   *  scans and photos in batches. `false` takes one at a time. */
+  multiple?: boolean;
+  /** At most this many per batch (a gallery's 30 photos); the zone says how many it left
+   *  out. */
+  max?: number;
   /** `read` for a record that can no longer change. By default, the form's mode. */
   mode?: FormMode;
   /** The accessible name of the list. «Adjuntos» by default. */
@@ -166,6 +172,8 @@ export function Attachments({
   onOpen,
   onRetry,
   accept,
+  multiple = true,
+  max,
   mode,
   label,
   empty,
@@ -363,7 +371,13 @@ export function Attachments({
             files.length === 0 ? (empty ?? copy.attachments.emptyAdd) : copy.attachments.add
           }
           {...(accept === undefined ? {} : { accept })}
-          onFile={(file) => onAdd([file])}
+          {...(multiple
+            ? {
+                multiple: true as const,
+                onFiles: onAdd,
+                ...(max === undefined ? {} : { max }),
+              }
+            : { onFile: (file: File) => onAdd([file]) })}
         />
       ) : null}
     </div>
