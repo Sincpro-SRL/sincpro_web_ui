@@ -152,7 +152,7 @@ association (members, dues, courses, a shop, a gallery), themed with its own col
 | A brand set ONCE and followed by every palette                                            | ✅ 11-16 | `--brand-*` / `--brand-dark-*` in `tokens.css`; README «Your brand»      |
 | A site's global heading rules do not restyle web-ui's                                     | ✅ 11-16 | README «Living beside a site's own CSS» (the site's rules go in a layer) |
 | Phone stories run at 390 × 844 in the test runner, not on the desk                        | ✅ 11-16 | `vitest.config.ts` alias; `.storybook/preview.ts` `defaultViewport`      |
-| A loading and failed state per board tile                                                 | 🟡       | issue #27                                                                |
+| A loading and failed state per board tile, and for the board's own numbers                | ✅ 11-16 | `BoardTile state`, `Board state` (`BoardState`); issue #27               |
 | Public pages (hero, carousel, product grid, checkout) on the same tokens                  | ❓       | not web-ui — a sibling package that imports `tokens.css` (to be decided) |
 
 ## 5. Tests

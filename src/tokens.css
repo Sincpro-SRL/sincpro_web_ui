@@ -569,6 +569,15 @@
      things, and what they have to let you compare is precisely the number. */
   --container-metric: 7rem;
 
+  /* The body of a board tile while it reads or after it failed: a chart's own plot height
+     (`Chart` draws `h-72`, 18rem). The skeleton and the failure take the room the chart will
+     take, so the grid does not jump when one tile lands and its neighbour is still reading. */
+  --size-tile-body: 18rem;
+
+  /* A row of headline metrics while the board reads them: the height of one `Metric` with
+     its figure and label, so the tiles below do not move down when the numbers arrive. */
+  --size-metric: 3.75rem;
+
   /* The width of the peek drawer. It is a system decision and not a component
      one: 30rem is what fits of a record without leaving the list behind it
      —which has to stay clickable— reduced to a useless strip. */

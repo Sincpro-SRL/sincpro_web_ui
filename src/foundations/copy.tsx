@@ -754,6 +754,10 @@ export type UiCopy = {
   };
   /** The board by stages (`BoardColumns`). */
   board: {
+    /** A board tile that could not be read. `{title}` is the tile's. */
+    tileFailed: string;
+    /** The board's own reading (its headline numbers) failed. */
+    failed: string;
     emptyLane: string;
     moveHint: string;
     moved: string;
@@ -1522,6 +1526,8 @@ export const ENGLISH_COPY: UiCopy = {
     none: "no priority",
   },
   board: {
+    tileFailed: "«{title}» could not be read",
+    failed: "The board's numbers could not be read",
     emptyLane: "Nothing in this stage.",
     moveHint: "Drag it, or Alt + ← / → to move it to another stage",
     moved: "{name} moved to {column}",

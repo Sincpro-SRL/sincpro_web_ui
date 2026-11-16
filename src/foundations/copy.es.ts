@@ -522,6 +522,8 @@ export const SPANISH_COPY: UiCopyOverride = {
     none: "sin prioridad",
   },
   board: {
+    tileFailed: "No se pudo leer «{title}»",
+    failed: "No se pudieron leer los números del tablero",
     emptyLane: "Nada en esta etapa.",
     moveHint: "Arrastrala, o Alt + ← / → para pasarla a otra etapa",
     moved: "{name} pasó a {column}",
