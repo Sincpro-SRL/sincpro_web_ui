@@ -1,11 +1,14 @@
 import {
   AppFrame,
+  type DataColumn,
+  DataTable,
   Metric,
   Metrics,
   NavigationTree,
   type NavItem,
   Sidebar,
   type SidebarAction,
+  type Surface,
   SystrayButton,
   ThemeSwitcher,
   TopBar,
@@ -22,7 +25,7 @@ import {
   ShoppingBag,
   Users,
 } from "lucide-react";
-import { useState } from "react";
+import { type ReactElement, useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
 /**
@@ -89,6 +92,25 @@ const CUENTA: readonly SidebarAction[] = [
 
 const MARCA = { label: "Colegio de Contadores", icon: Landmark };
 
+/* An inline crest: it paints with the tokens — the gold of the chrome and the ink around
+   it — so it follows the theme and the surface, which an image with its colours baked in
+   cannot. */
+const ESCUDO: ReactElement = (
+  <svg viewBox="0 0 32 32" fill="none" data-testid="escudo">
+    <path
+      d="M16 3 5 7.5V15c0 6.6 4.6 11.6 11 14 6.4-2.4 11-7.4 11-14V7.5Z"
+      stroke="var(--color-chrome-accent)"
+      strokeWidth="2"
+    />
+    <path
+      d="M10 13.5h12M11.5 13.5v7M16 13.5v7M20.5 13.5v7M9.5 21.5h13"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+    />
+  </svg>
+);
+
 const NOMBRES: Record<string, string> = Object.fromEntries(
   SECCIONES.flatMap((s) => [
     [s.id, s.label],
@@ -96,14 +118,23 @@ const NOMBRES: Record<string, string> = Object.fromEntries(
   ]),
 );
 
-function Portal({ start = "socios.cuotas" }: { start?: string }) {
+function Portal({
+  start = "socios.cuotas",
+  surface,
+  logo,
+}: {
+  start?: string;
+  surface?: Surface;
+  logo?: ReactElement;
+}) {
   const [actual, setActual] = useState(start);
   const [ultima, setUltima] = useState<string | null>(null);
   return (
     <AppFrame
+      {...(surface === undefined ? {} : { sidebarSurface: surface })}
       sidebar={
         <Sidebar
-          brand={MARCA}
+          brand={logo === undefined ? MARCA : { ...MARCA, logo }}
           user={{ name: "Ana Gutiérrez", detail: "Tesorería" }}
           actions={CUENTA}
           onAction={setUltima}
@@ -176,5 +207,85 @@ export const EnElTelefono: Story = {
       expect(page.queryByRole("dialog", { name: "Navegación" })).toBeNull(),
     );
     await expect(canvas.getByTestId("pantalla").textContent).toBe("Padrón");
+  },
+};
+
+/** **En el color de la marca.** Sin barra arriba la columna ES el cromo, y un producto cuyo
+ *  cromo es su azul la quiere así: `AppFrame sidebarSurface="chrome"`. El árbol, los
+ *  contadores y el avatar la siguen sin que nadie se los diga. El escudo va en línea —un
+ *  `<svg>` que pinta con los tokens—, así sigue al tema y a la superficie. */
+export const EnElColorDeLaMarca: Story = {
+  render: () => <Portal surface="chrome" logo={ESCUDO} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const aside = canvasElement.querySelector("aside")!;
+    const chrome = getComputedStyle(canvasElement).getPropertyValue("--color-chrome").trim();
+    const probe = document.createElement("div");
+    probe.style.background = chrome;
+    canvasElement.append(probe);
+    const expected = getComputedStyle(probe).backgroundColor;
+    probe.remove();
+    // The column wears the brand's colour, and the logo is drawn inline, not as an image.
+    await expect(getComputedStyle(aside).backgroundColor).toBe(expected);
+    await expect(within(aside).getByTestId("escudo").tagName.toLowerCase()).toBe("svg");
+    await expect(aside.querySelector("img")).toBeNull();
+    // The tree on it is the same tree: it still navigates.
+    await userEvent.click(canvas.getByRole("link", { name: /Padrón/ }));
+    await expect(canvas.getByTestId("pantalla").textContent).toBe("Padrón");
+  },
+};
+
+type Fila = { id: string; numero: string; cliente: string; total: string };
+
+const FILAS: readonly Fila[] = Array.from({ length: 80 }, (_, i) => ({
+  id: `F${i}`,
+  numero: `FAC/2026/${String(i + 1).padStart(4, "0")}`,
+  cliente: ["Ferretería El Progreso", "Clínica San Gabriel", "Panadería Doña Julia"][i % 3]!,
+  total: `Bs. ${((i + 1) * 137.5).toLocaleString("es-BO", { minimumFractionDigits: 2 })}`,
+}));
+
+const COLUMNAS: DataColumn<Fila>[] = [
+  { id: "numero", header: "Número", value: (f) => f.numero, width: 160 },
+  { id: "cliente", header: "Cliente", value: (f) => f.cliente },
+  { id: "total", header: "Total", value: (f) => f.total, numeric: true, width: 140 },
+];
+
+/** **Un espacio de trabajo con scroll propio.** Un workspace (el de composer) es tan alto
+ *  como la ventana y scrollea DENTRO de sus cajas. Con `scroll="view"` el marco es la ventana,
+ *  la vista recibe lo que dejan las barras, y lo pegajoso de adentro empieza de cero: el
+ *  encabezado de la tabla queda arriba de SU caja, no a la altura de la barra de arriba
+ *  encima de las primeras filas. */
+export const EspacioDeTrabajo: Story = {
+  render: () => (
+    <AppFrame
+      scroll="view"
+      menu={<TopBar app={MARCA} />}
+      sidebar={<NavigationTree items={SECCIONES} current="socios.cuotas" />}
+    >
+      <div className="flex min-h-0 flex-1 flex-col bg-surface">
+        <h1 className="shrink-0 px-6 pt-5 pb-3 text-title font-semibold text-ink">
+          Facturas
+        </h1>
+        <div className="min-h-0 flex-1 overflow-auto" data-testid="caja">
+          <DataTable data={FILAS} columns={COLUMNAS} getRowId={(f) => f.id} />
+        </div>
+      </div>
+    </AppFrame>
+  ),
+  play: async ({ canvasElement }) => {
+    const caja = within(canvasElement).getByTestId("caja");
+    const encabezado = caja.querySelector("thead")!;
+    const arriba = () =>
+      Math.round(encabezado.getBoundingClientRect().top - caja.getBoundingClientRect().top);
+    // At rest, the header is where the table starts: at the top of its box.
+    await waitFor(() => expect(arriba()).toBe(0));
+    // Scrolled, it stays at the top of the box — not pushed down by the bar's height.
+    caja.scrollTop = 600;
+    await waitFor(() => expect(caja.scrollTop).toBeGreaterThan(0));
+    await waitFor(() => expect(arriba()).toBe(0));
+    // The page itself does not scroll: the frame is the window.
+    await expect(document.scrollingElement!.scrollHeight).toBeLessThanOrEqual(
+      window.innerHeight + 1,
+    );
   },
 };

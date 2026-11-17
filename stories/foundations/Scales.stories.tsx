@@ -55,8 +55,12 @@ const RADIO = [
     v: "8px",
     uso: "lo que se toca y lleva rótulo: un botón, un campo, un select",
   },
-  { clase: "rounded-box", v: "12px", uso: "una caja de contenido, un panel, una banda" },
-  { clase: "rounded-panel", v: "16px", uso: "una superficie flotante: menú, aviso, ventana" },
+  {
+    clase: "rounded-box",
+    v: "12px",
+    uso: "una caja de contenido, una banda, y lo que se despliega de un control: un menú, una lista, el panel de filtros (sus filas de 8 + 4 de aire = 12)",
+  },
+  { clase: "rounded-panel", v: "16px", uso: "una ventana: un diálogo, un aviso" },
   {
     clase: "rounded-pill",
     v: "9999px",

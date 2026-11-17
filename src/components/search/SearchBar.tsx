@@ -27,14 +27,20 @@ import {
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
+import { CheckMark } from "@sincpro/web-ui/primitives/field/Checks";
 import type { MenuGroup, MenuOption } from "@sincpro/web-ui/primitives/menu/Menu";
+import { Count } from "@sincpro/web-ui/primitives/tag/Count";
+import { chosenTone } from "@sincpro/web-ui/primitives/tag/Tag";
 import { Tags } from "@sincpro/web-ui/primitives/tag/Tags";
 import {
   ChevronRight,
   CornerDownRight,
+  Layers,
   ListFilter,
+  type LucideIcon,
   Search,
   SlidersHorizontal,
+  Star,
   X,
 } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
@@ -99,33 +105,44 @@ export interface SearchFacet {
  *  filters and that is why it stays in the same panel. */
 interface Column {
   title: string;
+  /** Said once beside the title, so the three columns are told apart before they are read. */
+  icon: LucideIcon;
   groups?: readonly MenuGroup[];
+  /** Its options are cuts, on or off — the filters. Otherwise they are actions (a favourite
+   *  is applied, not ticked) and carry their own icon. */
+  checks?: boolean;
   content?: ReactNode;
   onSelect?: (id: string) => void;
 }
 
-function Option({ o, onSelect }: { o: MenuOption; onSelect?: (id: string) => void }) {
+function Option({
+  o,
+  checks,
+  onSelect,
+}: {
+  o: MenuOption;
+  checks: boolean;
+  onSelect?: (id: string) => void;
+}) {
   const Icon = o.icon;
+  const toggles = checks || o.checked !== undefined;
   return (
     <button
       type="button"
       disabled={o.disabled}
       onClick={() => onSelect?.(o.id)}
-      className={`flex w-full items-start gap-2 rounded-control px-1.5 py-1 text-left transition-colors duration-(--duration-instant) disabled:pointer-events-none disabled:opacity-45 hover:bg-primary/8 ${
-        o.checked === true ? "bg-primary/6" : ""
-      }`}
+      {...(toggles ? { "aria-pressed": o.checked === true } : {})}
+      className="flex w-full items-start gap-2 rounded-control px-1.5 py-1 text-left transition-colors duration-(--duration-instant) disabled:pointer-events-none disabled:opacity-45 hover:bg-primary/8"
     >
-      {/* The mark column always exists, even if nothing is chosen: without
-          it, ticking an option shifts all the text and the panel jumps.
-          When off the ring is seen: a gap the size of the icon reads as
-          padding nobody asked for. */}
+      {/* The mark column always exists: without it, ticking an option shifts all the text
+          and the panel jumps, and an action's label starts under its column's title text.
+          A cut is a MULTIPLE choice, so its mark is `Checkbox`'s box — a ring that turned
+          into a dot read as a radio, one of many, the opposite of what the column does. */}
       <span className="mt-0.5 flex size-(--size-icon-sm) shrink-0 items-center justify-center">
-        {o.checked === true ? (
-          <span className="size-1.5 rounded-pill bg-primary" />
-        ) : Icon !== undefined ? (
-          <Icon className="size-(--size-icon-sm) text-muted" strokeWidth={2} />
-        ) : (
-          <span className="size-3 rounded-pill border border-line-strong" />
+        {toggles ? (
+          <CheckMark on={o.checked === true} />
+        ) : Icon === undefined ? null : (
+          <Icon className="size-(--size-icon-sm) text-muted" strokeWidth={2} aria-hidden />
         )}
       </span>
       <span className="min-w-0 flex-1">
@@ -155,10 +172,12 @@ function Option({ o, onSelect }: { o: MenuOption; onSelect?: (id: string) => voi
 function Group({
   group,
   first,
+  checks,
   onSelect,
 }: {
   group: MenuGroup;
   first: boolean;
+  checks: boolean;
   onSelect?: (id: string) => void;
 }) {
   const active = group.options.some((o) => o.checked === true);
@@ -169,7 +188,7 @@ function Group({
       {group.options.map((o) => (
         <Fragment key={o.id}>
           {o.divider === true ? <div className="my-1 h-px bg-line" role="separator" /> : null}
-          <Option o={o} onSelect={onSelect} />
+          <Option o={o} checks={checks} onSelect={onSelect} />
         </Fragment>
       ))}
     </>
@@ -179,10 +198,10 @@ function Group({
     <div className="flex flex-col gap-0.5">
       {first ? null : <div className="my-1 h-px bg-line" role="separator" />}
       {group.label === undefined ? null : group.collapsible !== true ? (
-        /* The group's label goes in the TEXT column, not the edge one.
-           The column's band is already the title (medium, over the line). This
-           one is a step down: normal weight, and the same gap as the mark
-           so that «mostrar sólo» starts where «traídos» starts. */
+        /* The group's label goes in the TEXT column, not the edge one. The column's title
+           is the step above (the section, with its icon); this one is a step down: the
+           quiet size, and the same gap as the mark so that «mostrar sólo» starts where
+           «traídos» starts. */
         <div className="flex items-center gap-2 px-1.5 pt-1 pb-0.5 text-micro text-muted">
           <span className="size-(--size-icon-sm) shrink-0" aria-hidden />
           {group.label}
@@ -208,9 +227,7 @@ function Group({
           </span>
           {/* How many cuts it has set, without opening it. */}
           {!active ? null : (
-            <span className="inline-flex shrink-0 items-center rounded-pill border border-accent/40 bg-accent/18 px-2 py-0.5 text-micro tabular-nums text-ink">
-              {group.options.filter((o) => o.checked === true).length}
-            </span>
+            <Count value={group.options.filter((o) => o.checked === true).length} />
           )}
         </button>
       )}
@@ -449,11 +466,28 @@ export function SearchBar({
   const columns: Column[] = [
     ...(filters === undefined || !withOptions(filters)
       ? []
-      : [{ title: copy.search.filters, groups: filters, onSelect: onFilterSelect }]),
-    ...(grouping === undefined ? [] : [{ title: copy.search.groupBy, content: grouping }]),
+      : [
+          {
+            title: copy.search.filters,
+            icon: ListFilter,
+            groups: filters,
+            checks: true,
+            onSelect: onFilterSelect,
+          },
+        ]),
+    ...(grouping === undefined
+      ? []
+      : [{ title: copy.search.groupBy, icon: Layers, content: grouping }]),
     ...(favorites === undefined || !withOptions(favorites)
       ? []
-      : [{ title: copy.search.favorites, groups: favorites, onSelect: onFavoriteSelect }]),
+      : [
+          {
+            title: copy.search.favorites,
+            icon: Star,
+            groups: favorites,
+            onSelect: onFavoriteSelect,
+          },
+        ]),
   ];
 
   /* THE PANEL IS A LAYER, and Escape closes the layer on top — only that one.
@@ -835,7 +869,7 @@ export function SearchBar({
                 ? `h-7 ${criteria.length === 0 ? "min-w-24" : "min-w-16"} flex-1 bg-transparent text-meta outline-none ${bySurface(sup, "text-ink placeholder:text-muted", "text-chrome-ink placeholder:text-chrome-muted")}`
                 : `min-w-16 rounded-pill px-2 py-0.5 text-micro outline-none ${bySurface(
                     sup,
-                    "bg-accent/18 text-ink placeholder:text-muted",
+                    "bg-primary/8 text-ink placeholder:text-muted",
                     "bg-chrome-link/20 text-chrome-ink placeholder:text-chrome-muted",
                   )}`
             }
@@ -893,7 +927,7 @@ export function SearchBar({
               puestos > 0 || panel
                 ? bySurface(
                     sup,
-                    "border-accent/40 bg-accent/18 text-ink",
+                    "border-primary/30 bg-primary/8 text-primary",
                     "border-chrome-link/35 bg-chrome-link/15 text-chrome-link",
                   )
                 : bySurface(
@@ -923,7 +957,7 @@ export function SearchBar({
               preguntas       «campo: valor» rows, as they will end up */}
       {open ? (
         <div
-          className={`absolute top-full z-30 mt-1 overflow-hidden rounded-panel border border-line-strong bg-surface shadow-float ${
+          className={`absolute top-full z-30 mt-1 overflow-hidden rounded-box border border-line-strong bg-surface shadow-float ${
             asTags ? "left-0 w-max max-w-full" : "right-0 left-0"
           }`}
         >
@@ -934,7 +968,7 @@ export function SearchBar({
             <div className="flex items-center gap-1.5 border-line border-b px-3 py-1.5 text-micro text-muted">
               <CornerDownRight className="size-3 shrink-0" strokeWidth={2} aria-hidden />
               <span className="min-w-0 truncate">{copy.search.landsHere}</span>
-              <span className="shrink-0 rounded-pill border border-accent/40 bg-accent/18 px-1.5 text-ink">
+              <span className={`shrink-0 rounded-pill px-1.5 ${chosenTone("canvas")}`}>
                 {copy.search.joins[openJoin === "not" ? "none" : openJoin]}
               </span>
             </div>
@@ -1020,7 +1054,7 @@ export function SearchBar({
                DOM. React Aria keeps the nodes marked as its top layer usable, as it does with
                its own popovers and live regions. */
             data-react-aria-top-layer=""
-            className="z-30 flex w-max max-w-(--container-cuts) flex-wrap overflow-hidden rounded-panel border border-line-strong bg-surface shadow-float"
+            className="z-30 flex w-max max-w-(--container-cuts) flex-wrap overflow-hidden rounded-box border border-line-strong bg-surface shadow-float"
           >
             {columns.map((c, i) => (
               <div
@@ -1029,10 +1063,17 @@ export function SearchBar({
                   i === 0 ? "" : "border-t border-line sm:border-t-0 sm:border-l"
                 }`}
               >
-                {/* The title is a band of the column, not a label with its own
-                  padding inside another padding. Both columns start the
+                {/* The title is the column's heading, the top of the panel's three steps:
+                  section (ink, semibold, its icon) › group (quiet, muted) › option. It was
+                  the quiet size in muted, the same as the hints under it, so nothing said
+                  where «Filtros» ended and «Agrupar por» began. Both columns start the
                   content at the same height. */}
-                <div className="border-b border-line px-2.5 py-1.5 text-micro font-medium text-muted">
+                <div className="flex items-center gap-2 px-2.5 pt-2.5 pb-1 text-meta font-semibold text-ink">
+                  <c.icon
+                    className="size-(--size-icon-sm) shrink-0 text-muted"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
                   {c.title}
                 </div>
                 {/* A long column (grouping lists every field a model has) scrolls inside
@@ -1044,6 +1085,7 @@ export function SearchBar({
                         key={g.label ?? gi}
                         group={g}
                         first={gi === 0}
+                        checks={c.checks === true}
                         onSelect={c.onSelect}
                       />
                     ))}

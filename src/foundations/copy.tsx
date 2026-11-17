@@ -1162,9 +1162,9 @@ export const ENGLISH_COPY: UiCopy = {
     condition: "{field} {op} {value}",
     andMore: "and {count} more",
     placeholder: "search…",
-    filters: "filters",
-    groupBy: "group by",
-    favorites: "favorites",
+    filters: "Filters",
+    groupBy: "Group by",
+    favorites: "Favorites",
   },
   failed: {
     operation: "We could not complete the operation",

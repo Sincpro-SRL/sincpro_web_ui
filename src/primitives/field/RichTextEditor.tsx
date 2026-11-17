@@ -278,7 +278,7 @@ function MentionList({
       id={listId}
       role="listbox"
       aria-label={copy.mentions}
-      className="fixed z-50 flex w-64 flex-col rounded-panel border border-line-strong bg-surface p-1 shadow-float"
+      className="fixed z-50 flex w-64 flex-col rounded-box border border-line-strong bg-surface p-1 shadow-float"
       style={{ left: rect.left, top: rect.bottom + 4 }}
     >
       {asking.items.length === 0 ? (

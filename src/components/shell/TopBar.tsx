@@ -1,5 +1,6 @@
 "use client";
 
+import { type BrandLogo, BrandMark } from "@sincpro/web-ui/components/shell/brandMark";
 import { SidebarToggle } from "@sincpro/web-ui/components/shell/sidebarDrawer";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { SurfaceProvider } from "@sincpro/web-ui/foundations/surface";
@@ -59,6 +60,8 @@ export interface TopMenu {
   groups: readonly MenuGroup[];
   /** What is waiting inside — «Pagos 5» — seen without opening the menu. Zero is not drawn. */
   count?: number;
+  /** `columns` lays its sections side by side: a big module menu, seen whole. */
+  layout?: "list" | "columns";
 }
 
 export function TopBar({
@@ -67,6 +70,7 @@ export function TopBar({
   currentApp,
   onAppSelect,
   menus,
+  currentMenu,
   onMenuSelect,
   systray,
   user,
@@ -76,7 +80,7 @@ export function TopBar({
   /** The product's name, when there is ONE product. It is drawn like the
    *  current app of the switcher —same icon, same weight— but without the
    *  switcher: nothing to switch to. */
-  app?: { label: string; icon?: LucideIcon };
+  app?: { label: string; icon?: LucideIcon; logo?: BrandLogo };
   /** Everything that exists. Without this there is no switcher — a product with
    *  a single app does not need one, and drawing it empty promises something
    *  that is not there. */
@@ -85,6 +89,9 @@ export function TopBar({
   onAppSelect?: (id: string) => void;
   /** The menus OF the current app. */
   menus?: readonly TopMenu[];
+  /** The menu that holds the screen on view: marked with a bar under its label, so «where am
+   *  I» is answered without opening any of them. */
+  currentMenu?: string;
   onMenuSelect?: (menuId: string, optionId: string) => void;
   /** What happened while I was not looking: activity, alerts. Icons with a count. */
   systray?: ReactNode;
@@ -115,7 +122,9 @@ export function TopBar({
             answer to «where am I», said twice. */}
         {brand === undefined ? null : (
           <span className="flex shrink-0 items-center gap-2 pr-2 pl-1">
-            {brand.icon === undefined ? null : (
+            {"logo" in brand && brand.logo !== undefined ? (
+              <BrandMark logo={brand.logo} className="size-(--size-control-sm) shrink-0" />
+            ) : brand.icon === undefined ? null : (
               <brand.icon
                 className="size-(--size-icon-md) text-chrome-link"
                 strokeWidth={2}
@@ -142,6 +151,8 @@ export function TopBar({
                 surface="chrome"
                 variant="text"
                 chevron={false}
+                current={m.id === currentMenu}
+                {...(m.layout === undefined ? {} : { layout: m.layout })}
                 {...(m.count === undefined ? {} : { count: m.count })}
                 onSelect={(id) => onMenuSelect?.(m.id, id)}
               />
@@ -212,7 +223,7 @@ export function AppSwitcher({
           />
           <div
             role="menu"
-            className="absolute top-full left-0 z-50 mt-1 grid w-(--container-apps) grid-cols-3 gap-1 rounded-panel border border-line bg-surface p-2 shadow-float"
+            className="absolute top-full left-0 z-50 mt-1 grid w-(--container-apps) grid-cols-3 gap-1 rounded-box border border-line bg-surface p-1 shadow-float"
           >
             {apps.map((a) => {
               const here = a.id === current;
@@ -226,7 +237,7 @@ export function AppSwitcher({
                     onSelect?.(a.id);
                     setOpen(false);
                   }}
-                  className={`flex flex-col items-center gap-1.5 rounded-box px-2 py-3 text-center transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${
+                  className={`flex flex-col items-center gap-1.5 rounded-control px-2 py-3 text-center transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${
                     here ? "bg-primary/8 text-primary" : "text-ink hover:bg-ink/5"
                   }`}
                 >

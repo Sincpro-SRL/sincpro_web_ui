@@ -11,6 +11,7 @@ import { JoinWord } from "@sincpro/web-ui/components/search/JoinWord";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
+import { chosenTone } from "@sincpro/web-ui/primitives/tag/Tag";
 import { ChevronRight, Layers, X } from "lucide-react";
 import { Fragment, type ReactNode, useState } from "react";
 
@@ -389,10 +390,8 @@ function Chip({
   surface: Surface;
 }) {
   const copy = useUiCopy();
-  const shell = `inline-flex min-w-0 max-w-(--container-facet) items-center gap-1 rounded-pill border py-0.5 text-micro ${bySurface(
+  const shell = `inline-flex min-w-0 max-w-(--container-facet) items-center gap-1 rounded-pill py-0.5 text-micro ${chosenTone(
     surface,
-    "border-accent/40 bg-accent/18 text-ink",
-    "border-chrome-link/35 bg-chrome-link/18 text-chrome-link",
   )} ${onRemove === undefined ? "px-2" : "pr-0.5 pl-2"}`;
 
   const remove =

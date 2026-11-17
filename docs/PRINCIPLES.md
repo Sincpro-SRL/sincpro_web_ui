@@ -10,14 +10,14 @@ a rule nobody enforces is a suggestion.
 Each screen answers in two seconds: where am I, what is most important, what do I do now.
 It is built with size, weight, color, contrast, space and position — in that order of strength.
 
-| How the system applies it                                                                                                                              | Where                                             |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
-| The record's name is the entry point: `text-display` (28 px) over a 13 px body — ratio 2.15.                                                           | `Record` (`identity.title`)                       |
-| The datum the record is opened for goes big, on the right.                                                                                             | `Record` (`identity.figure`)                      |
-| Who the record is, second: `subtitle` in `text-lead`. The facts, third, in the quiet size.                                                             | `Record` (`identity.subtitle`, `Record.Facts`)    |
-| The summary of amounts apart, on the right, the total last and biggest.                                                                                | `Totals`                                          |
-| A list's title is the biggest thing in its bar.                                                                                                        | `ListingBar`                                      |
-| ONE dark band per screen: the app bar. The record's rail and the list's bar are light BY DEFAULT (`canvas`); `surface="chrome"` is an explicit option. | `AppFrame`, `Record.Rail surface`, `List surface` |
+| How the system applies it                                                                                                                                                                                                                              | Where                                             |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------- |
+| The record's name is the entry point: `text-display` (28 px) over a 13 px body — ratio 2.15.                                                                                                                                                           | `Record` (`identity.title`)                       |
+| The datum the record is opened for goes big, on the right.                                                                                                                                                                                             | `Record` (`identity.figure`)                      |
+| Who the record is, second: `subtitle` in `text-lead`. The facts, third, in the quiet size.                                                                                                                                                             | `Record` (`identity.subtitle`, `Record.Facts`)    |
+| The summary of amounts apart, on the right, the total last and biggest.                                                                                                                                                                                | `Totals`                                          |
+| A list's title is the biggest thing in its bar.                                                                                                                                                                                                        | `ListingBar`                                      |
+| ONE dark band per screen: the app bar — or, with no bar on top, the sidebar that takes its place (`AppFrame sidebarSurface="chrome"`). The record's rail and the list's bar are light BY DEFAULT (`canvas`); `surface="chrome"` is an explicit option. | `AppFrame`, `Record.Rail surface`, `List surface` |
 
 **Enforced by**: the UX audit (`ux-ui-audit`) measures the title/body ratio (minimum ~1.5); `tests/mobile.test.tsx` pins that the default rail does not carry `bg-chrome` and that its buttons take the context's surface.
 

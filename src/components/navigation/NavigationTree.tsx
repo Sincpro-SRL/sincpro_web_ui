@@ -2,6 +2,8 @@
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { useSurface } from "@sincpro/web-ui/foundations/surface";
+import type { Surface } from "@sincpro/web-ui/foundations/types";
 import { focusRing, tv } from "@sincpro/web-ui/foundations/variants";
 import { Count } from "@sincpro/web-ui/primitives/tag/Count";
 import { ChevronRight, type LucideIcon } from "lucide-react";
@@ -47,6 +49,13 @@ import {
  *  id IS the href, inside a router of its own that hands every navigation back
  *  as `onNavigate(id)` instead of letting the browser follow it. The anchors are
  *  drawn as `#<id>` so a ⌘-click opens this same page and not a broken URL.
+ *
+ *  ── On the chrome ───────────────────────────────────────────────────
+ *
+ *  Inside a `Sidebar` that wears the brand's colour the tree reads the surface
+ *  from it: the navy of the current row becomes the chrome's link, the ink its
+ *  ink. The pairs are the ones the `TopBar` already uses on the same navy, so a
+ *  bar and a sidebar of one product mark «here» the same way.
  * ==================================================================== */
 
 /** One entry of the sidebar. With `children` it is a module that opens and closes; without,
@@ -63,13 +72,23 @@ export interface NavItem {
 
 const row = tv({
   extend: focusRing,
-  base: "group relative flex min-w-0 items-center rounded-control text-meta text-ink outline-offset-0 select-none",
+  base: "group relative flex min-w-0 items-center rounded-control text-meta outline-offset-0 select-none",
   variants: {
+    surface: {
+      canvas: "text-ink",
+      chrome: "text-chrome-ink outline-chrome-link",
+    },
     isCurrent: {
-      true: "bg-primary/10 font-medium text-primary forced-colors:bg-[Highlight] forced-colors:text-[HighlightText]",
-      false: "hover:bg-ink/6",
+      true: "font-medium forced-colors:bg-[Highlight] forced-colors:text-[HighlightText]",
+      false: "",
     },
   },
+  compoundVariants: [
+    { surface: "canvas", isCurrent: true, class: "bg-primary/10 text-primary" },
+    { surface: "canvas", isCurrent: false, class: "hover:bg-ink/6" },
+    { surface: "chrome", isCurrent: true, class: "bg-chrome-link/15 text-chrome-link" },
+    { surface: "chrome", isCurrent: false, class: "hover:bg-chrome-ink/10" },
+  ],
 });
 
 const link = tv({
@@ -81,13 +100,31 @@ const link = tv({
 
 const chevronButton = tv({
   extend: focusRing,
-  base: "mr-1 inline-flex shrink-0 items-center justify-center rounded-mark p-1 text-muted transition-colors duration-(--duration-instant) hover:bg-ink/6 hover:text-ink pressed:bg-ink/10",
+  base: "mr-1 inline-flex shrink-0 items-center justify-center rounded-mark p-1 transition-colors duration-(--duration-instant)",
+  variants: {
+    surface: {
+      canvas: "text-muted hover:bg-ink/6 hover:text-ink pressed:bg-ink/10",
+      chrome:
+        "text-chrome-muted outline-chrome-link hover:bg-chrome-ink/10 hover:text-chrome-ink pressed:bg-chrome-ink/15",
+    },
+  },
 });
 
 /** The marker of the current row: a bar on the leading edge, so the spot reads in the
  *  margin before the label is read. */
-const marker =
-  "absolute inset-y-1 start-0 w-0.5 rounded-pill bg-primary forced-colors:bg-[HighlightText]";
+const MARKER: Record<Surface, string> = {
+  canvas:
+    "absolute inset-y-1 start-0 w-0.5 rounded-pill bg-primary forced-colors:bg-[HighlightText]",
+  chrome:
+    "absolute inset-y-1 start-0 w-0.5 rounded-pill bg-chrome-link forced-colors:bg-[HighlightText]",
+};
+
+/** The colour of what is «here» — the current row's icon, a folded module that holds it —
+ *  and of what is not. */
+const HERE: Record<Surface, { here: string; rest: string }> = {
+  canvas: { here: "text-primary", rest: "text-muted" },
+  chrome: { here: "text-chrome-link", rest: "text-chrome-muted" },
+};
 
 /** The ids of every module on the way to `id`, so the row you are on is never folded away. */
 function pathTo(items: readonly NavItem[], id: string | undefined): string[] {
@@ -128,6 +165,7 @@ export function NavigationTree({
   label?: string;
 }) {
   const copy = useUiCopy();
+  const surface = useSurface();
   const expanded = useMemo(
     () => [...new Set([...defaultExpanded, ...pathTo(items, current)])],
     // The initial state only: React Aria owns the expansion after the first render.
@@ -154,19 +192,21 @@ export function NavigationTree({
         id={item.id}
         textValue={item.label}
         {...(module ? {} : { href: item.id })}
-        className={({ isCurrent, isFocusVisible }) => row({ isCurrent, isFocusVisible })}
+        className={({ isCurrent, isFocusVisible }) =>
+          row({ surface, isCurrent, isFocusVisible })
+        }
       >
         <NavigationTreeItemContent>
           {({ isCurrent, isCurrentAncestor, isExpanded }) => (
             <>
-              {isCurrent ? <span aria-hidden className={marker} /> : null}
+              {isCurrent ? <span aria-hidden className={MARKER[surface]} /> : null}
               <Link className={link({ isModule: module })} style={indent}>
                 {Icon === undefined ? null : (
                   <Icon
                     className={`size-(--size-icon-md) shrink-0 ${
                       isCurrent || (isCurrentAncestor && !isExpanded)
-                        ? "text-primary"
-                        : "text-muted"
+                        ? HERE[surface].here
+                        : HERE[surface].rest
                     }`}
                     strokeWidth={2}
                     aria-hidden
@@ -174,7 +214,7 @@ export function NavigationTree({
                 )}
                 <span
                   className={`min-w-0 flex-1 truncate ${
-                    isCurrentAncestor && !isExpanded ? "text-primary" : ""
+                    isCurrentAncestor && !isExpanded ? HERE[surface].here : ""
                   }`}
                 >
                   {item.label}
@@ -186,7 +226,9 @@ export function NavigationTree({
               {module ? (
                 <AriaButton
                   slot="chevron"
-                  className={({ isFocusVisible }) => chevronButton({ isFocusVisible })}
+                  className={({ isFocusVisible }) =>
+                    chevronButton({ surface, isFocusVisible })
+                  }
                 >
                   <ChevronRight
                     className={`size-(--size-icon-sm) transition-transform duration-(--duration-quick) ease-(--ease-out) ${

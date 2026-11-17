@@ -331,7 +331,7 @@ test("una marca se pone una vez y la siguen las cuatro copias de la paleta", () 
   assert.ok(theme && forced);
   const light = brandable(theme, "brand-");
   /* The action, the link, the bar: what makes a back office look like its owner's. */
-  for (const token of ["accent", "primary", "chrome"])
+  for (const token of ["accent", "primary", "chrome", "ground", "surface", "ink", "line"])
     assert.ok(light.includes(token), token);
   assert.deepEqual(brandable(forced, "brand-"), light, "the nested light block forgot one");
   assert.deepEqual(
@@ -386,4 +386,23 @@ test("fuera de tokens.css no hay un solo color escrito a mano", () => {
   };
   walk(root);
   assert.deepEqual(offenders, [], "colores escritos a mano fuera de tokens.css");
+});
+
+test("las esquinas se giran con una sola perilla, y cada paso se puede fijar solo", () => {
+  const theme = /@theme \{([\s\S]*?)\n\}\n/.exec(LIGHT_CSS)?.[1] ?? "";
+  const steps = [...theme.matchAll(/--radius-([a-z]+):\s*([^;]+);/g)];
+  assert.deepEqual(
+    steps.map(([, step]) => step),
+    ["mark", "control", "box", "panel", "pill"],
+  );
+  for (const [, step, value] of steps) {
+    /* `--brand-radius: 0` squares everything — the pill too — and every step keeps its
+       proportion to the others, so a dropdown stays concentric with its rows. */
+    assert.match(
+      value!,
+      new RegExp(
+        `^var\\(--brand-radius-${step}, calc\\(\\d+px \\* var\\(--brand-radius, 1\\)\\)\\)$`,
+      ),
+    );
+  }
 });

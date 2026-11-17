@@ -18,7 +18,7 @@ import {
  * focus and closes it on Escape; this only dresses it.
  */
 const popover = tv({
-  base: "rounded-panel border border-line-strong bg-surface text-ink shadow-float outline-0 transition-[opacity,translate] duration-(--duration-quick) ease-(--ease-out) forced-colors:bg-[Canvas]",
+  base: "rounded-box border border-line-strong bg-surface text-ink shadow-float outline-0 transition-[opacity,translate] duration-(--duration-quick) ease-(--ease-out) forced-colors:bg-[Canvas]",
   variants: {
     isEntering: {
       true: "opacity-0 placement-bottom:-translate-y-1 placement-top:translate-y-1",

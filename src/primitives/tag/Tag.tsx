@@ -63,6 +63,20 @@ export function tagTone(tone: Tone, surface: "canvas" | "chrome"): string {
   return TAG_TONE[tone][surface];
 }
 
+/**
+ * The capsule of something SET: an applied filter, a grouping level, a chip of the draft.
+ *
+ * Context: a selection, so it wears the selection's family — the navy on the canvas, the
+ * link on the chrome — as the current row of a `NavigationTree` does. It was the gold, and a
+ * bar of six gold chips drowned the one action the gold is kept for (PRINCIPLES §3: «the
+ * accent only for the action»).
+ */
+export function chosenTone(surface: "canvas" | "chrome"): string {
+  return surface === "chrome"
+    ? "border border-chrome-link/40 bg-chrome-link/20 text-chrome-ink"
+    : "border border-primary/30 bg-primary/8 text-ink";
+}
+
 export function Tag({
   children,
   tone = "neutral",

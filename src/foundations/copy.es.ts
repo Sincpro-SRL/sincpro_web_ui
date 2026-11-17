@@ -184,9 +184,9 @@ export const SPANISH_COPY: UiCopyOverride = {
     askOp: "comparado cómo",
     askJoin: "tienen que coincidir",
     askValue: "contra qué",
-    filters: "filtros",
-    groupBy: "agrupar por",
-    favorites: "favoritos",
+    filters: "Filtros",
+    groupBy: "Agrupar por",
+    favorites: "Favoritos",
     unreadable:
       "No podemos leer este filtro como árbol — así es como queda. Se puede seguir editando en el JSON de abajo.",
   },

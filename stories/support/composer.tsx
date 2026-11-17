@@ -128,7 +128,9 @@ export function Workspace({
       {menu === undefined ? (
         <div className="flex h-dvh min-h-0 flex-col bg-ground">{composer}</div>
       ) : (
-        <AppFrame menu={menu} {...(sidebar === undefined ? {} : { sidebar })}>
+        /* `scroll="view"`: the workspace scrolls inside its own boxes, so the frame is the
+           window and the sticky stack starts from zero inside the view. */
+        <AppFrame scroll="view" menu={menu} {...(sidebar === undefined ? {} : { sidebar })}>
           <div className="flex min-h-0 flex-1 flex-col">{composer}</div>
         </AppFrame>
       )}

@@ -56,26 +56,29 @@
   /* WARM white, not pure white: #FFFFFF on a full screen tires the eye and
      cheapens the piece. It is called `ground` and not `base` because
      `text-base` is already a Tailwind font size and the name would clash. */
-  --color-ground: #faf9f7;
+  --color-ground: var(--brand-ground, #faf9f7);
 
   /* The raised surface IS white — that is what separates it from the ground.
      Elevation here is done with a hairline border, not with a shadow: a shadow
      on a light background is dirty grey. */
-  --color-surface: #ffffff;
+  --color-surface: var(--brand-surface, #ffffff);
 
   /* The two hairlines. WARM grey — a neutral grey against a warm ground looks
      bluish. They are not text: 1.26:1 and 1.49:1 on the ground, which is
      exactly what a line that separates without shouting should measure. */
-  --color-line: #e4dfd7; /* 1.26:1 — common separator */
-  --color-line-strong: #d5cec2; /* 1.49:1 — border of a box, table header */
+  --color-line: var(--brand-line, #e4dfd7); /* 1.26:1 — common separator */
+  --color-line-strong: var(
+    --brand-line-strong,
+    #d5cec2
+  ); /* 1.49:1 — border of a box, table header */
 
   /* Text: warm near-black. 16.96:1 on the ground, 17.85:1 on white. */
-  --color-ink: #1a1714;
+  --color-ink: var(--brand-ink, #1a1714);
 
   /* Faint text — labels, metadata, units. 5.56:1 on the ground and 5.85:1 on
      white: it passes AA for small text, which is exactly where it is used. The
      #8A8178 from the dark theme gave 3.63:1 here and was discarded. */
-  --color-muted: #6b6459;
+  --color-muted: var(--brand-muted, #6b6459);
 
   /* ---------------------------------------------------------------- *
    *  THE GOLD — and the rule that governs it on light.
@@ -352,23 +355,35 @@
    *  radius scale read as intentional:
    *    mark     — a glyph-sized box. At 8px a 16px checkbox is already a circle
    *    control  — what you touch and what measures one line of text
-   *    box      — a content box, a panel, a band
-   *    panel    — a floating surface: popup menu, notice, window
+   *    box      — a content box, a panel, a band — and what DROPS from a
+   *               control: a menu, a list, the cuts panel
+   *    panel    — a window: a dialog, a notice, the workspace's frames
    *    pill     — what is round because it is a capsule, not a box
    *
    *  **The measured step.** 6/10/14 still read as the dense console. The median
    *  control across measured production systems is 8px, and the button shares
    *  it with the field: surveyed systems match those three (button, input,
    *  select) instead of rounding the button alone. The surface still grows.
-   *  12 is the next published peak and the modal step; 16 is what floats.
+   *  12 is the next published peak and the modal step; 16 is a window.
    *  The pill stays a capsule — a tag, a switch, an icon-only target — and
    *  is not a labeled button.
+   *
+   *  **A dropdown is concentric with its rows.** A menu wraps 8px rows in
+   *  4px of padding, so its corner is 8 + 4 = 12. At 16 the outer curve ran
+   *  away from the rows' and a 220px menu read as a balloon — «muy redondo»,
+   *  said of the bar's menus, and measured: 16 outside, 8 inside, 4 between.
+   *
+   *  **A brand turns ONE knob.** `--brand-radius` multiplies the whole scale,
+   *  so the steps keep their proportion — and the dropdowns stay concentric:
+   *  `0` is square everywhere (the pill too: «todo recto» means all of it),
+   *  `1` is this scale, `1.5` rounder. A single step can still be set on its
+   *  own (`--brand-radius-control: 6px`). Set on `:root`, like the colours.
    *  ------------------------------------------------------------------- */
-  --radius-mark: 4px;
-  --radius-control: 8px;
-  --radius-box: 12px;
-  --radius-panel: 16px;
-  --radius-pill: 9999px;
+  --radius-mark: var(--brand-radius-mark, calc(4px * var(--brand-radius, 1)));
+  --radius-control: var(--brand-radius-control, calc(8px * var(--brand-radius, 1)));
+  --radius-box: var(--brand-radius-box, calc(12px * var(--brand-radius, 1)));
+  --radius-panel: var(--brand-radius-panel, calc(16px * var(--brand-radius, 1)));
+  --radius-pill: var(--brand-radius-pill, calc(9999px * var(--brand-radius, 1)));
 
   /* ---------------------------------------------------------------- *
    *  ELEVATION
@@ -754,15 +769,22 @@
  *
  *  ── A BRAND: set it once, every theme follows ───────────────────────
  *
- *  The colours a brand owns — the action (`accent`, `accent-hover`, `on-accent`),
- *  the link and current place (`primary`, `primary-hover`), and the bar
- *  (`chrome`, `chrome-raised`, `chrome-edge`, `chrome-accent`, `chrome-link`) —
- *  read a `--brand-*` variable first, and fall back to the system's value:
+ *  The colours a brand owns — the canvas (`ground`, `surface`, `line`,
+ *  `line-strong`, `ink`, `muted`), the action (`accent`, `accent-hover`,
+ *  `on-accent`), the link and current place (`primary`, `primary-hover`), and the
+ *  bar (`chrome`, `chrome-raised`, `chrome-edge`, `chrome-accent`, `chrome-link`)
+ *  — read a `--brand-*` variable first, and fall back to the system's value:
  *
  *      :root {
  *        --brand-accent: #d4a73a;        --brand-dark-accent: #e0b850;
  *        --brand-chrome: #10203f;        --brand-dark-chrome: #0a1428;
+ *        --brand-ground: #f7f8fa;        --brand-dark-ground: #121417;
+ *        --brand-radius: 0.5;            (the corners: 0 square · 1 · 1.5 rounder)
  *      }
+ *
+ *  The canvas is brandable because a product's paper is part of its look — a
+ *  cool white, a warmer grey. Before, a brand overrode `--color-ink` and
+ *  `--color-line` directly, and lost them in the dark theme.
  *
  *  `--brand-<token>` is the light palette's, `--brand-dark-<token>` the dark's.
  *  Set on `:root`, a variable is INHERITED by every subtree — so the four blocks
@@ -782,12 +804,21 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --color-ground: #181614; /* the canvas: warm near-black, not #000 */
-    --color-surface: #221f1c; /* 1.10:1 above the ground — in the dark, raised is LIGHTER */
-    --color-line: #302c28; /* 1.30:1 — common separator */
-    --color-line-strong: #443f38; /* 1.73:1 — border of a box, table header */
-    --color-ink: #ece8e1; /* 14.78:1 */
-    --color-muted: #a39b90; /* 6.57:1 */
+    --color-ground: var(
+      --brand-dark-ground,
+      #181614
+    ); /* the canvas: warm near-black, not #000 */
+    --color-surface: var(
+      --brand-dark-surface,
+      #221f1c
+    ); /* 1.10:1 above the ground — in the dark, raised is LIGHTER */
+    --color-line: var(--brand-dark-line, #302c28); /* 1.30:1 — common separator */
+    --color-line-strong: var(
+      --brand-dark-line-strong,
+      #443f38
+    ); /* 1.73:1 — border of a box, table header */
+    --color-ink: var(--brand-dark-ink, #ece8e1); /* 14.78:1 */
+    --color-muted: var(--brand-dark-muted, #a39b90); /* 6.57:1 */
     --color-accent: var(
       --brand-dark-accent,
       #c89b3c
@@ -847,12 +878,21 @@
 
 [data-theme="dark"] {
   color-scheme: dark;
-  --color-ground: #181614; /* the canvas: warm near-black, not #000 */
-  --color-surface: #221f1c; /* 1.10:1 above the ground — in the dark, raised is LIGHTER */
-  --color-line: #302c28; /* 1.30:1 — common separator */
-  --color-line-strong: #443f38; /* 1.73:1 — border of a box, table header */
-  --color-ink: #ece8e1; /* 14.78:1 */
-  --color-muted: #a39b90; /* 6.57:1 */
+  --color-ground: var(
+    --brand-dark-ground,
+    #181614
+  ); /* the canvas: warm near-black, not #000 */
+  --color-surface: var(
+    --brand-dark-surface,
+    #221f1c
+  ); /* 1.10:1 above the ground — in the dark, raised is LIGHTER */
+  --color-line: var(--brand-dark-line, #302c28); /* 1.30:1 — common separator */
+  --color-line-strong: var(
+    --brand-dark-line-strong,
+    #443f38
+  ); /* 1.73:1 — border of a box, table header */
+  --color-ink: var(--brand-dark-ink, #ece8e1); /* 14.78:1 */
+  --color-muted: var(--brand-dark-muted, #a39b90); /* 6.57:1 */
   --color-accent: var(
     --brand-dark-accent,
     #c89b3c
@@ -911,12 +951,15 @@
    `tests/tokens.test.ts` keeps it equal to `@theme`. */
 [data-theme="light"] {
   color-scheme: light;
-  --color-ground: #faf9f7;
-  --color-surface: #ffffff;
-  --color-line: #e4dfd7; /* 1.26:1 — common separator */
-  --color-line-strong: #d5cec2; /* 1.49:1 — border of a box, table header */
-  --color-ink: #1a1714;
-  --color-muted: #6b6459;
+  --color-ground: var(--brand-ground, #faf9f7);
+  --color-surface: var(--brand-surface, #ffffff);
+  --color-line: var(--brand-line, #e4dfd7); /* 1.26:1 — common separator */
+  --color-line-strong: var(
+    --brand-line-strong,
+    #d5cec2
+  ); /* 1.49:1 — border of a box, table header */
+  --color-ink: var(--brand-ink, #1a1714);
+  --color-muted: var(--brand-muted, #6b6459);
   --color-accent: var(--brand-accent, #c89b3c); /* 2.43:1 on the ground → NEVER text */
   --color-accent-hover: var(
     --brand-accent-hover,

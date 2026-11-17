@@ -1,5 +1,7 @@
 /* THE APPLICATION FRAME — what sits above every view. */
 export { AppFrame } from "@sincpro/web-ui/components/shell/AppFrame";
+/* A product's mark: an image's URL, or an inline <svg> that paints with the tokens. */
+export { type BrandLogo } from "@sincpro/web-ui/components/shell/brandMark";
 /* The whole chrome in one column, for a back office with no bar on top. */
 export {
   Sidebar,

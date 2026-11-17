@@ -10,6 +10,9 @@ import {
   type GroupGrain,
   levelKey,
 } from "@sincpro/web-ui/foundations/grouping";
+import { CheckMark } from "@sincpro/web-ui/primitives/field/Checks";
+import { Count } from "@sincpro/web-ui/primitives/tag/Count";
+import { chosenTone } from "@sincpro/web-ui/primitives/tag/Tag";
 import { ChevronDown, ChevronRight, ChevronUp, Plus, X } from "lucide-react";
 import { useState } from "react";
 
@@ -89,7 +92,9 @@ export function GroupingLevels({
           <ol className="flex flex-wrap gap-1 px-1 pb-1.5">
             {placed.map((level, index) => (
               <li key={levelKey(level)}>
-                <span className="inline-flex items-center gap-1 rounded-pill border border-accent/40 bg-accent/18 py-0.5 pr-0.5 pl-1.5 text-micro text-ink">
+                <span
+                  className={`inline-flex items-center gap-1 rounded-pill py-0.5 pr-0.5 pl-1.5 text-micro ${chosenTone("canvas")}`}
+                >
                   <span className="tabular-nums opacity-70">{index + 1}</span>
                   <span className="max-w-32 truncate">
                     {fieldLabel(fields, level.field)}
@@ -144,9 +149,7 @@ export function GroupingLevels({
               type="button"
               onClick={() => control.toggle(one.field)}
               aria-pressed={on}
-              className={`flex items-center gap-2 rounded-control px-1.5 py-1 text-left transition-colors duration-(--duration-instant) hover:bg-primary/8 ${
-                on ? "bg-primary/6" : ""
-              }`}
+              className="flex items-center gap-2 rounded-control px-1.5 py-1 text-left transition-colors duration-(--duration-instant) hover:bg-primary/8"
             >
               <Mark on={on} />
               <span
@@ -184,11 +187,7 @@ export function GroupingLevels({
                 {one.label}
               </span>
               {/* How many cuts it has set, so you do not have to open it. */}
-              {puestos.length === 0 ? null : (
-                <span className="inline-flex shrink-0 items-center rounded-pill border border-accent/40 bg-accent/18 px-2 py-0.5 text-micro tabular-nums text-ink">
-                  {puestos.length}
-                </span>
-              )}
+              {puestos.length === 0 ? null : <Count value={puestos.length} />}
             </button>
 
             {!open ? null : (
@@ -201,9 +200,7 @@ export function GroupingLevels({
                       type="button"
                       onClick={() => control.toggle(one.field, g)}
                       aria-pressed={on}
-                      className={`flex items-center gap-2 rounded-control px-1.5 py-1 text-left transition-colors duration-(--duration-instant) hover:bg-primary/8 ${
-                        on ? "bg-primary/6" : ""
-                      }`}
+                      className="flex items-center gap-2 rounded-control px-1.5 py-1 text-left transition-colors duration-(--duration-instant) hover:bg-primary/8"
                     >
                       <Mark on={on} />
                       <span
@@ -257,18 +254,13 @@ export function GroupingLevels({
   );
 }
 
-/** The tick mark. The column ALWAYS exists, ticked or not: without it,
- *  ticking shifts the text and the list jumps. When off, the ring is drawn, the same
- *  mark as the filters panel, so that both columns read as
- *  checkboxes and not as loose text with a gap on the left. */
+/** The tick mark. The column ALWAYS exists, ticked or not: without it, ticking shifts the
+ *  text and the list jumps. It is `Checkbox`'s box, the same as the filters column, so both
+ *  columns read as the multiple choice they are. */
 function Mark({ on }: { on: boolean }) {
   return (
     <span className="flex size-(--size-icon-sm) shrink-0 items-center justify-center">
-      {on ? (
-        <span className="size-1.5 rounded-pill bg-primary" />
-      ) : (
-        <span className="size-3 rounded-pill border border-line-strong" />
-      )}
+      <CheckMark on={on} />
     </span>
   );
 }
