@@ -181,6 +181,7 @@ function CardDatumBox({
         aria-describedby={describedBy}
         placeholder={placeholder}
         spellCheck={false}
+        data-ui="control"
         className={`${controlClasses(invalid)} font-mono tabular-nums`}
       />
     </AriaTextField>

@@ -97,7 +97,7 @@ const overlay = tv({
  *  are rounded (the bottom ones sit on the screen's edge), it stops at `--size-sheet`,
  *  and it enters from below — the motion says where it lives. */
 const modal = tv({
-  base: "flex max-h-full w-full flex-col overflow-hidden rounded-panel border border-line-strong bg-surface text-ink shadow-window outline-0 transition-[opacity,translate] duration-(--duration-panel) ease-(--ease-out) forced-colors:bg-[Canvas] max-sm:max-h-(--size-sheet) max-sm:max-w-none max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0",
+  base: "flex max-h-full w-full flex-col overflow-hidden rounded-ui-dialog border border-line-strong bg-ui-dialog text-ink shadow-window outline-0 transition-[opacity,translate] duration-(--duration-panel) ease-(--ease-out) forced-colors:bg-[Canvas] max-sm:max-h-(--size-sheet) max-sm:max-w-none max-sm:rounded-b-none max-sm:border-x-0 max-sm:border-b-0",
   variants: {
     width: { sm: "max-w-md", md: "max-w-2xl", lg: "max-w-4xl" },
     isEntering: { true: "translate-y-2 opacity-0 max-sm:translate-y-full" },
@@ -282,6 +282,8 @@ export function Dialog({
       className={overlay}
     >
       <Modal
+        data-ui="dialog"
+        data-width={width}
         className={(state) => modal({ ...state, width })}
         {...(movable
           ? { style: { transform: `translate(${offset.x}px, ${offset.y}px)` } }

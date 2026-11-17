@@ -105,7 +105,10 @@ export function TopBar({
 
   return (
     <SurfaceProvider value="chrome">
-      <header className="flex h-(--size-appbar) min-w-0 items-center gap-1 border-b border-chrome-edge bg-chrome px-2">
+      <header
+        data-ui="topbar"
+        className="flex h-(--size-appbar) min-w-0 items-center gap-1 border-b border-chrome-edge bg-chrome px-2"
+      >
         {/* On a phone, inside a frame with a sidebar: what opens it as a drawer. First, where
             a thumb and the eye look for the way to the rest of the product. */}
         <SidebarToggle />
@@ -121,7 +124,7 @@ export function TopBar({
             app when there are several (`actual`). Never both: they are the same
             answer to «where am I», said twice. */}
         {brand === undefined ? null : (
-          <span className="flex shrink-0 items-center gap-2 pr-2 pl-1">
+          <span data-ui="topbar.brand" className="flex shrink-0 items-center gap-2 pr-2 pl-1">
             {"logo" in brand && brand.logo !== undefined ? (
               <BrandMark logo={brand.logo} className="size-(--size-control-sm) shrink-0" />
             ) : brand.icon === undefined ? null : (
@@ -140,6 +143,7 @@ export function TopBar({
             the icons and the rest of the menus could not be reached at all. */}
         {menus === undefined ? null : (
           <nav
+            data-ui="topbar.menus"
             className="scroll-quiet flex min-w-0 items-center gap-0.5"
             aria-label={copy.shell.menus}
           >
@@ -160,7 +164,10 @@ export function TopBar({
           </nav>
         )}
 
-        <div className="ml-auto flex shrink-0 items-center gap-1 pl-2">
+        <div
+          data-ui="topbar.actions"
+          className="ml-auto flex shrink-0 items-center gap-1 pl-2"
+        >
           {systray}
           {user === undefined ? null : (
             <UserMenu
@@ -223,7 +230,7 @@ export function AppSwitcher({
           />
           <div
             role="menu"
-            className="absolute top-full left-0 z-50 mt-1 grid w-(--container-apps) grid-cols-3 gap-1 rounded-box border border-line bg-surface p-1 shadow-float"
+            className="absolute top-full left-0 z-50 mt-1 grid w-(--container-apps) grid-cols-3 gap-1 rounded-ui-popover border border-ui-popover-border bg-ui-popover p-1 shadow-ui-popover"
           >
             {apps.map((a) => {
               const here = a.id === current;
@@ -326,7 +333,7 @@ export function UserMenu({
 }) {
   const copy = useUiCopy();
   return (
-    <span className="flex shrink-0 items-center gap-2 pl-1">
+    <span data-ui="topbar.user" className="flex shrink-0 items-center gap-2 pl-1">
       <Avatar name={name} size="md" />
       <span className="hidden min-w-0 flex-col leading-tight sm:flex">
         <span className="truncate text-meta text-chrome-ink">{name}</span>

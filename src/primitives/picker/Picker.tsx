@@ -208,14 +208,14 @@ function sectioned(items: readonly PickerItem[]): (PickerItem | PickerSection)[]
    and the marked row is said by its tint — a ring inside the list as well as around the
    field is two marks for one place. */
 const option = tv({
-  base: "flex w-full min-w-0 cursor-default gap-2 rounded-control px-2 text-left outline-0 select-none forced-color-adjust-none",
+  base: "flex w-full min-w-0 cursor-default gap-2 rounded-ui-option px-2 text-left outline-0 select-none forced-color-adjust-none",
   variants: {
     hints: {
       true: "items-start py-1.5",
       false: "items-center py-1",
     },
     isFocused: {
-      true: "bg-primary/8 forced-colors:bg-[Highlight] forced-colors:text-[HighlightText]",
+      true: "bg-ui-option-active forced-colors:bg-[Highlight] forced-colors:text-[HighlightText]",
     },
     isHovered: {
       true: "bg-ink/4",
@@ -227,7 +227,7 @@ const option = tv({
       true: "opacity-45 forced-colors:text-[GrayText]",
     },
   },
-  compoundVariants: [{ isFocused: true, isHovered: true, class: "bg-primary/8" }],
+  compoundVariants: [{ isFocused: true, isHovered: true, class: "bg-ui-option-active" }],
 });
 
 export type PickerProps = {

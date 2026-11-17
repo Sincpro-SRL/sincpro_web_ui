@@ -49,7 +49,8 @@ export function RecordCard({
   const titleText = <span className="min-w-0 truncate">{title}</span>;
   return (
     <div
-      className={`relative flex w-full min-w-0 flex-col gap-2 rounded-box border border-line bg-surface p-4 text-left ${
+      data-ui="record-card"
+      className={`relative flex w-full min-w-0 flex-col gap-2 rounded-ui-card border border-ui-card-border bg-ui-card p-4 text-left ${
         onOpen === undefined
           ? ""
           : "transition-colors duration-(--duration-instant) focus-within:border-line-strong hover:border-line-strong"

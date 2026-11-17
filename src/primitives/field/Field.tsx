@@ -392,10 +392,10 @@ export function ReadValue({ value, mono = false }: { value: ReactNode; mono?: bo
  *  be born with another height, another radius or another focus. That was the
  *  original defect: every file wrote its own `<input className="…">`. */
 export function controlClasses(invalid = false): string {
-  return `h-(--size-control-md) w-full min-w-0 rounded-control border bg-surface px-2.5 text-meta text-ink transition-colors duration-(--duration-instant) placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:bg-ground disabled:text-muted ${
+  return `h-(--size-control-md) w-full min-w-0 rounded-ui-control border bg-ui-control px-2.5 text-meta text-ink transition-colors duration-(--duration-instant) placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:bg-ground disabled:text-muted ${
     invalid
       ? "border-danger focus-visible:border-danger focus-visible:outline-danger"
-      : "border-line-strong focus-visible:border-primary focus-visible:outline-primary"
+      : "border-ui-control-border focus-visible:border-primary focus-visible:outline-primary"
   }`;
 }
 
@@ -482,6 +482,7 @@ export function TextInput({
         aria-describedby={describedBy}
         placeholder={placeholder}
         spellCheck={spellCheck}
+        data-ui="control"
         className={`${controlClasses(invalid)} ${mono ? "font-mono tabular-nums" : ""}`}
       />
     </AriaTextField>
@@ -708,6 +709,7 @@ export function TextArea({
         aria-describedby={describedBy}
         rows={rows}
         placeholder={placeholder}
+        data-ui="control"
         className={`${controlClasses(invalid)} h-auto resize-y py-1.5 leading-relaxed`}
       />
     </AriaTextField>
@@ -722,13 +724,13 @@ export interface SelectOption {
 
 const selectTrigger = tv({
   extend: focusRing,
-  base: "flex h-(--size-control-md) w-full min-w-0 cursor-default items-center gap-2 rounded-control border bg-surface pr-2 pl-2.5 text-start text-meta text-ink transition-colors duration-(--duration-instant) forced-colors:bg-[Field]",
+  base: "flex h-(--size-control-md) w-full min-w-0 cursor-default items-center gap-2 rounded-ui-control border bg-ui-control pr-2 pl-2.5 text-start text-meta text-ink transition-colors duration-(--duration-instant) forced-colors:bg-[Field]",
   variants: {
     isFocusVisible: {
       true: "border-primary",
     },
     isInvalid: {
-      false: "border-line-strong forced-colors:border-[ButtonBorder]",
+      false: "border-ui-control-border forced-colors:border-[ButtonBorder]",
       true: "border-danger outline-danger forced-colors:border-[Mark]",
     },
     isDisabled: {
@@ -792,7 +794,10 @@ export function Select({
         isDisabled={disabled}
         className="w-full min-w-0"
       >
-        <AriaButton className={(state) => selectTrigger({ ...state, isInvalid: invalid })}>
+        <AriaButton
+          data-ui="control"
+          className={(state) => selectTrigger({ ...state, isInvalid: invalid })}
+        >
           {/* The option's TEXT, not its row: the row carries the check mark of the list. */}
           <SelectValue className="min-w-0 flex-1 truncate data-placeholder:text-muted">
             {({ isPlaceholder, selectedText, defaultChildren }) =>

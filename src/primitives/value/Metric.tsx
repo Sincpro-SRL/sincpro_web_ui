@@ -92,9 +92,13 @@ export function Metric({
      there the color says which one is applied. */
   const skin = active
     ? `${t.background} ${t.edge}`
-    : bySurface(sup, "bg-surface border-line", "bg-chrome-ink/6 border-chrome-ink/15");
+    : bySurface(
+        sup,
+        "bg-ui-card border-ui-card-border",
+        "bg-chrome-ink/6 border-chrome-ink/15",
+      );
 
-  const box = `flex min-w-(--container-metric) shrink-0 flex-col justify-center gap-0.5 rounded-box border px-3.5 py-2 text-left transition-colors duration-(--duration-instant) ${skin} ${
+  const box = `flex min-w-(--container-metric) shrink-0 flex-col justify-center gap-0.5 rounded-ui-card border px-3.5 py-2 text-left transition-colors duration-(--duration-instant) ${skin} ${
     onClick === undefined
       ? ""
       : "cursor-pointer hover:border-line-strong focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
@@ -142,6 +146,7 @@ export function Metric({
   if (onClick === undefined) {
     return (
       <div
+        data-ui="metric"
         className={box}
         aria-label={loading ? `${label}: ${copy.failed.loading}` : `${figure} ${label}`}
         {...(loading ? { "aria-busy": true } : {})}
@@ -157,6 +162,7 @@ export function Metric({
       onClick={onClick}
       aria-pressed={active}
       {...(loading ? { "aria-busy": true } : {})}
+      data-ui="metric"
       className={box}
     >
       {content}

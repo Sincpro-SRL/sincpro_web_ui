@@ -1501,6 +1501,7 @@ export function EditableTable<T>({
             list
           ) : (
             <table
+              data-ui="table"
               className="w-full border-separate border-spacing-0 px-1 text-left"
               /* Windowed, the table says how many rows it really has: the header, every row
                drawn or not, and the footer. */
@@ -1508,7 +1509,11 @@ export function EditableTable<T>({
                 ? { "aria-rowcount": 1 + drawn.length + (totals === undefined ? 0 : 1) }
                 : {})}
             >
-              <thead className="sticky z-10 bg-ground" style={stickyTop}>
+              <thead
+                className="sticky z-10 bg-ui-table-head"
+                style={stickyTop}
+                data-ui="table.head"
+              >
                 <tr {...(view.on ? { "aria-rowindex": 1 } : {})}>
                   {reorderable ? <td className="w-0 border-b border-line-strong" /> : null}
                   {/* A column of buttons has no header: its top is a cell, not an empty one. */}

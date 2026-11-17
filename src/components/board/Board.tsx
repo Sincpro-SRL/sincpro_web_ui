@@ -184,7 +184,8 @@ export function BoardTile({
     <section
       aria-label={title}
       {...(state.status === "loading" ? { "aria-busy": true } : {})}
-      className={`flex min-w-0 flex-col gap-4 rounded-box border border-line-strong bg-surface p-4 ${SPAN[span]}`}
+      data-ui="board.tile"
+      className={`flex min-w-0 flex-col gap-4 rounded-ui-card border border-line-strong bg-ui-card p-4 ${SPAN[span]}`}
     >
       <header className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">

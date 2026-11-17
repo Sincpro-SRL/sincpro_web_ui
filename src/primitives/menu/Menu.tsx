@@ -357,6 +357,7 @@ export function Menu({
   return (
     <MenuTrigger>
       <AriaButton
+        data-ui="menu.trigger"
         aria-label={iconOnly ? label : undefined}
         {...(role === undefined ? {} : { "data-emphasis": role })}
         className={({ isPressed, isFocusVisible }) =>
@@ -492,9 +493,10 @@ export function MenuList({
         id={o.id}
         textValue={o.hint === undefined ? o.label : `${o.label} ${o.hint}`}
         isDisabled={o.disabled}
-        className={`flex w-full cursor-default rounded-control ${
+        data-ui="menu.item"
+        className={`flex w-full cursor-default rounded-ui-option ${
           hasHints ? "items-start py-1.5" : "items-center py-1"
-        } gap-2 ${nested ? "pr-2 pl-(--spacing-indent)" : "px-2"} text-left outline-0 transition-colors duration-(--duration-instant) data-focused:bg-primary/8 data-open:bg-primary/8 disabled:opacity-45`}
+        } gap-2 ${nested ? "pr-2 pl-(--spacing-indent)" : "px-2"} text-left outline-0 transition-colors duration-(--duration-instant) data-focused:bg-ui-option-active data-open:bg-ui-option-active disabled:opacity-45`}
       >
         {/* The mark column exists only when some option carries an icon
             or a checked state, and then for every row, so toggling one
@@ -564,6 +566,7 @@ export function MenuList({
 
   return (
     <AriaMenu
+      data-ui="menu"
       aria-label={label}
       shouldCloseOnSelect={closeOnSelect}
       onAction={act}
@@ -579,7 +582,7 @@ export function MenuList({
         const folding = folds(g);
         const open = !folding || unfolded.has(key);
         return (
-          <MenuSection key={key} className={SECTION[layout]}>
+          <MenuSection key={key} data-ui="menu.section" className={SECTION[layout]}>
             {g.label === undefined ? null : folding ? (
               /* A folded section is a ROW you press — it is the door to the options, so it
                reads as one (ink, the row's size) and says how many wait behind it. The
@@ -589,7 +592,8 @@ export function MenuList({
                 textValue={g.label}
                 shouldCloseOnSelect={false}
                 aria-expanded={open}
-                className="flex w-full cursor-default items-center gap-2 rounded-control px-2 py-1 text-left outline-0 transition-colors duration-(--duration-instant) data-focused:bg-primary/8"
+                data-ui="menu.fold"
+                className="flex w-full cursor-default items-center gap-2 rounded-ui-option px-2 py-1 text-left outline-0 transition-colors duration-(--duration-instant) data-focused:bg-ui-option-active"
               >
                 {g.icon !== undefined ? (
                   <g.icon

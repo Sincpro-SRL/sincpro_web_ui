@@ -16,8 +16,25 @@ const twMergeConfig = {
   extend: {
     theme: {
       text: ["micro", "meta", "body", "lead", "title", "display"],
-      radius: ["mark", "control", "box", "panel", "pill"],
-      shadow: ["raised", "float", "window"],
+      radius: [
+        "mark",
+        "control",
+        "box",
+        "panel",
+        "pill",
+        /* The component tokens (`tokens.css`, `@theme inline`). */
+        "ui-button",
+        "ui-icon-button",
+        "ui-control",
+        "ui-popover",
+        "ui-option",
+        "ui-dialog",
+        "ui-card",
+        "ui-tag",
+        "ui-search",
+        "ui-nav",
+      ],
+      shadow: ["raised", "float", "window", "ui-popover"],
     },
   },
 };

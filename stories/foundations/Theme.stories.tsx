@@ -1,4 +1,5 @@
 import {
+  Block,
   Button,
   Callout,
   Field,
@@ -232,5 +233,95 @@ export const EsquinasDeLaMarca: Story = {
     await waitFor(() => expect(corner()).toBe("12px"));
     await userEvent.click(canvas.getByRole("radio", { name: "Sistema" }));
     await waitFor(() => expect(corner()).toBe("8px"));
+  },
+};
+
+/* A zone that turns four components — and a part rule an application would write. */
+const A_MEDIDA = {
+  "--ui-button-radius": "0px",
+  "--ui-control-radius": "0px",
+  "--ui-tag-radius": "var(--radius-mark)",
+  "--ui-card-bg": "var(--color-ground)",
+  "--ui-card-border": "var(--color-line-strong)",
+} as CSSProperties;
+
+const PARTE = `[data-zone="a-medida"] [data-ui="button"][data-emphasis="primary"] {
+  text-transform: uppercase;
+}`;
+
+function Muestra({ zone }: { zone: string }) {
+  return (
+    <Block title="Cobro">
+      <div className="flex flex-col gap-3" data-zone={zone}>
+        <div className="flex flex-wrap gap-2">
+          <Button role="primary" size="sm">
+            Cobrar
+          </Button>
+          <Button role="secondary" size="sm">
+            Duplicar
+          </Button>
+          <Tag tone="good">Pagada</Tag>
+        </div>
+        <Field label="Cliente">
+          <TextInput value="Distribuidora Andina" onChange={() => {}} />
+        </Field>
+      </div>
+    </Block>
+  );
+}
+
+/** **Un componente a medida.** Sin copiar ningún componente: la zona de la derecha pone
+ *  `--ui-button-radius`, `--ui-control-radius`, `--ui-tag-radius` y `--ui-card-*`, y una regla
+ *  sobre una parte (`[data-ui="button"][data-emphasis="primary"]`). La de la izquierda no pone
+ *  nada y se ve como siempre. En el tema oscuro, los fondos siguen al tema. */
+export const UnComponenteAMedida: Story = {
+  render: () => (
+    <div className="grid gap-4 md:grid-cols-2">
+      <style>{PARTE}</style>
+      <div data-testid="sistema">
+        <Muestra zone="sistema" />
+      </div>
+      <div data-testid="a-medida" style={A_MEDIDA} data-zone="a-medida">
+        <Muestra zone="a-medida" />
+      </div>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const side = (id: string) =>
+      canvasElement.querySelector<HTMLElement>(`[data-testid="${id}"]`)!;
+    const style = (id: string, selector: string) =>
+      getComputedStyle(side(id).querySelector(selector)!);
+    /* A colour token resolved where it is used, to compare with what was painted. */
+    const painted = (id: string, token: string) => {
+      const probe = document.createElement("div");
+      probe.style.background = `var(${token})`;
+      side(id).append(probe);
+      const value = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return value;
+    };
+
+    // Setting nothing changes nothing.
+    await expect(style("sistema", '[data-ui="button"]').borderTopLeftRadius).toBe("8px");
+    await expect(style("sistema", "input").borderTopLeftRadius).toBe("8px");
+    await expect(style("sistema", '[data-ui="block"]').backgroundColor).toBe(
+      painted("sistema", "--color-surface"),
+    );
+    await expect(style("sistema", '[data-ui="button"]').textTransform).toBe("none");
+
+    // The zone turns each piece it names, and only those.
+    await expect(style("a-medida", '[data-ui="button"]').borderTopLeftRadius).toBe("0px");
+    await expect(style("a-medida", "input").borderTopLeftRadius).toBe("0px");
+    await expect(style("a-medida", '[data-ui="tag"]').borderTopLeftRadius).toBe("4px");
+    await expect(style("a-medida", '[data-ui="block"]').backgroundColor).toBe(
+      painted("a-medida", "--color-ground"),
+    );
+    // A part rule reaches the variant it names.
+    await expect(
+      style("a-medida", '[data-ui="button"][data-emphasis="primary"]').textTransform,
+    ).toBe("uppercase");
+    await expect(
+      style("a-medida", '[data-ui="button"][data-emphasis="secondary"]').textTransform,
+    ).toBe("none");
   },
 };

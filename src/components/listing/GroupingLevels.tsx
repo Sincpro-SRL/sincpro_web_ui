@@ -93,7 +93,8 @@ export function GroupingLevels({
             {placed.map((level, index) => (
               <li key={levelKey(level)}>
                 <span
-                  className={`inline-flex items-center gap-1 rounded-pill py-0.5 pr-0.5 pl-1.5 text-micro ${chosenTone("canvas")}`}
+                  data-ui="search.chip"
+                  className={`inline-flex items-center gap-1 rounded-ui-tag py-0.5 pr-0.5 pl-1.5 text-micro ${chosenTone("canvas")}`}
                 >
                   <span className="tabular-nums opacity-70">{index + 1}</span>
                   <span className="max-w-32 truncate">
@@ -149,7 +150,7 @@ export function GroupingLevels({
               type="button"
               onClick={() => control.toggle(one.field)}
               aria-pressed={on}
-              className="flex items-center gap-2 rounded-control px-1.5 py-1 text-left transition-colors duration-(--duration-instant) hover:bg-primary/8"
+              className="flex items-center gap-2 rounded-ui-option px-1.5 py-1 text-left transition-colors duration-(--duration-instant) hover:bg-ui-option-active"
             >
               <Mark on={on} />
               <span
@@ -170,7 +171,7 @@ export function GroupingLevels({
               type="button"
               onClick={() => toggleOpen(one.field)}
               aria-expanded={open}
-              className="flex items-center gap-1.5 rounded-control px-1.5 py-1 text-left transition-colors duration-(--duration-instant) hover:bg-primary/8"
+              className="flex items-center gap-1.5 rounded-ui-option px-1.5 py-1 text-left transition-colors duration-(--duration-instant) hover:bg-ui-option-active"
             >
               <ChevronRight
                 className={`size-(--size-icon-sm) shrink-0 text-muted transition-transform duration-(--duration-instant) ${
@@ -200,7 +201,7 @@ export function GroupingLevels({
                       type="button"
                       onClick={() => control.toggle(one.field, g)}
                       aria-pressed={on}
-                      className="flex items-center gap-2 rounded-control px-1.5 py-1 text-left transition-colors duration-(--duration-instant) hover:bg-primary/8"
+                      className="flex items-center gap-2 rounded-ui-option px-1.5 py-1 text-left transition-colors duration-(--duration-instant) hover:bg-ui-option-active"
                     >
                       <Mark on={on} />
                       <span

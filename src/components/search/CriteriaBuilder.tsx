@@ -177,7 +177,10 @@ function AddTag({
         {label}
       </button>
       {open ? (
-        <span className="absolute top-full left-0 z-40 mt-1 max-h-64 overflow-y-auto rounded-box border border-line-strong bg-surface p-1 shadow-float">
+        <span
+          data-ui="popover"
+          className="absolute top-full left-0 z-40 mt-1 max-h-64 overflow-y-auto rounded-ui-popover border border-ui-popover-border bg-ui-popover p-1 shadow-ui-popover"
+        >
           <Tags
             stack
             label={label}

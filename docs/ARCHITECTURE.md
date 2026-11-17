@@ -74,19 +74,24 @@ What two views need goes down to `components/`; what two tiers need goes down to
 
 The application builds its own with the public API (`@sincpro/web-ui`), with no forks or loose classes:
 
-| I want…                                         | With                                                                                        |
-| ----------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| A control of my own inside a `Field`            | `useFieldIds`, `useFormMode` (`foundations/form`)                                           |
-| A cell with anything inside                     | `DataColumn.cell`, `edit.render`, `rowActions`                                              |
-| Another way of looking at a list (map, gallery) | `List.Present` → receives the set (`ListSet`)                                               |
-| A composed piece written as a tree              | `slot()`, `pick`, `propsOf` (`foundations/slots`)                                           |
-| An operation over N records (the «wizard»)      | `Record` in a modal + `api.pick` / `api.answer` (composer) — see `5 · Plantillas/Operación` |
-| My components with the same look                | the token classes (`bg-surface text-ink …`)                                                 |
-| My application's words, in its language         | `createCopy` → `install`, `Provider`, `useCopy` (`foundations/catalog`)                     |
-| Several sets at once (reconciliation)           | `Panes` / `Pane` — see `5 · Plantillas/Conciliación`                                        |
+| I want…                                                        | With                                                                                        |
+| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| A control of my own inside a `Field`                           | `useFieldIds`, `useFormMode` (`foundations/form`)                                           |
+| A cell with anything inside                                    | `DataColumn.cell`, `edit.render`, `rowActions`                                              |
+| Another way of looking at a list (map, gallery)                | `List.Present` → receives the set (`ListSet`)                                               |
+| A composed piece written as a tree                             | `slot()`, `pick`, `propsOf` (`foundations/slots`)                                           |
+| An operation over N records (the «wizard»)                     | `Record` in a modal + `api.pick` / `api.answer` (composer) — see `5 · Plantillas/Operación` |
+| My components with the same look                               | the token classes (`bg-surface text-ink …`)                                                 |
+| My product's colours, paper and corners                        | `--brand-*`, `--brand-radius` (README «Your brand»)                                         |
+| ONE component looking different (square buttons, another menu) | its `--ui-*` tokens and its `data-ui` parts (README «Customizing a component»)              |
+| My application's words, in its language                        | `createCopy` → `install`, `Provider`, `useCopy` (`foundations/catalog`)                     |
+| Several sets at once (reconciliation)                          | `Panes` / `Pane` — see `5 · Plantillas/Conciliación`                                        |
 
-What is closed on purpose: a component's look (there is no `className` or `style`) and
-the domain. What is open is the structure.
+What stays closed on purpose: `className` and `style` on a component — a loose class per
+screen is how two screens stop looking alike — and the domain. The structure is open, and so
+is the look, through the tokens: the brand's for the whole product, a component's `--ui-*`
+for one piece (globally or in a zone), and its named parts (`data-ui`) for what a token does
+not cover. Customizing never means copying a component.
 
 ## 6. Refactor plan
 

@@ -144,7 +144,7 @@ test("by default the sidebar stays on the ground, as before", () => {
       <p>vista</p>
     </AppFrame>,
   );
-  assert.match(html, /<aside class="[^"]*border-line bg-ground/);
+  assert.match(html, /<aside class="[^"]*border-ui-sidebar-border bg-ui-sidebar/);
   assert.match(html, /data-surface="canvas"/);
 });
 
@@ -174,7 +174,7 @@ test("scroll='view': the frame is the window, and the view's sticky stack starts
   assert.ok(!root.includes("min-h-dvh"));
   assert.match(
     html,
-    /<main class="[^"]*min-h-0 overflow-y-auto[^"]*" style="--sticky-top:0px">/,
+    /<main class="[^"]*min-h-0 overflow-y-auto[^"]*" style="--sticky-top:0px"[^>]*>/,
   );
 });
 

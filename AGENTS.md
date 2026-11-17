@@ -85,6 +85,11 @@ idea; this file is how to keep it.
   A new control reads `useFieldIds({ id, describedBy, invalid })` so it works the same way.
 - Compound pieces are written as a tree with `slot()` (`foundations/slots.ts`), the way
   `Record.*` and `List.*` are: if it is not written, it is not there.
+- A component an application may want to look different reads its look from `--ui-*` tokens
+  (`tokens.css`, `@theme inline`, each falling back to the system's token) and names its root
+  and parts with `data-ui` (plus its variant: `data-emphasis`, `data-size`, `data-tone`). A new
+  token or part goes in the README («Customizing a component»);
+  `tests/componentTokens.test.tsx` fails on a token nobody reads or one left undocumented.
 
 ## Known traps
 

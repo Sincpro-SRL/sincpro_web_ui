@@ -107,7 +107,7 @@ const ROW =
 function Brand({ brand, skin }: { brand: NonNullable<SidebarProps["brand"]>; skin: Skin }) {
   const Icon = brand.icon;
   return (
-    <div className="flex min-w-0 items-center gap-2 px-4 pt-4 pb-2">
+    <div data-ui="sidebar.brand" className="flex min-w-0 items-center gap-2 px-4 pt-4 pb-2">
       {brand.logo === undefined ? (
         Icon === undefined ? null : (
           <Icon
@@ -128,7 +128,7 @@ function Brand({ brand, skin }: { brand: NonNullable<SidebarProps["brand"]>; ski
 
 function User({ user, skin }: { user: NonNullable<SidebarProps["user"]>; skin: Skin }) {
   return (
-    <div className="flex min-w-0 items-center gap-2 px-4 py-2">
+    <div data-ui="sidebar.user" className="flex min-w-0 items-center gap-2 px-4 py-2">
       <Avatar
         name={user.name}
         size="md"
@@ -212,16 +212,28 @@ export function Sidebar({
   const foot = (actions !== undefined && actions.length > 0) || footer !== undefined;
   return (
     <SurfaceProvider value={sup}>
-      <div data-surface={sup} className={`flex h-full min-h-0 min-w-0 flex-col ${skin.root}`}>
+      <div
+        data-ui="sidebar"
+        data-surface={sup}
+        className={`flex h-full min-h-0 min-w-0 flex-col ${skin.root}`}
+      >
         {head ? (
           <div className={`shrink-0 border-b pb-2 ${skin.line}`}>
             {brand === undefined ? null : <Brand brand={brand} skin={skin} />}
             {user === undefined ? null : <User user={user} skin={skin} />}
           </div>
         ) : null}
-        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">{children}</div>
+        <div
+          data-ui="sidebar.nav"
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain"
+        >
+          {children}
+        </div>
         {foot ? (
-          <div className={`flex shrink-0 flex-col gap-2 border-t p-2 ${skin.line}`}>
+          <div
+            data-ui="sidebar.account"
+            className={`flex shrink-0 flex-col gap-2 border-t p-2 ${skin.line}`}
+          >
             {actions === undefined || actions.length === 0 ? null : (
               <ul aria-label={copy.shell.account} className="flex flex-col gap-px">
                 {actions.map((action) => (

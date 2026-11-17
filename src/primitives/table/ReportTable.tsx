@@ -313,7 +313,7 @@ export function ReportTable({
       className={`min-w-0 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-primary ${caja.className}`}
       style={caja.style}
     >
-      <table className="w-full border-collapse px-1">
+      <table data-ui="table" className="w-full border-collapse px-1">
         {caption === undefined ? null : (
           <caption
             className={`text-left text-meta text-muted ${byDensity(d, "px-3 pb-2", "px-2 pb-1.5")}`}
@@ -321,7 +321,11 @@ export function ReportTable({
             {caption}
           </caption>
         )}
-        <thead className="sticky z-20 bg-ground" style={stickyTop}>
+        <thead
+          className="sticky z-20 bg-ui-table-head"
+          style={stickyTop}
+          data-ui="table.head"
+        >
           <tr className="border-b border-line-strong">
             <th
               className={`sticky left-0 z-10 bg-ground text-left ${compact ? "px-2 py-1.5" : "px-3 py-2"}`}

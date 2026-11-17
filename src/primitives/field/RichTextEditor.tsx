@@ -278,7 +278,8 @@ function MentionList({
       id={listId}
       role="listbox"
       aria-label={copy.mentions}
-      className="fixed z-50 flex w-64 flex-col rounded-box border border-line-strong bg-surface p-1 shadow-float"
+      data-ui="popover"
+      className="fixed z-50 flex w-64 flex-col rounded-ui-popover border border-ui-popover-border bg-ui-popover p-1 shadow-ui-popover"
       style={{ left: rect.left, top: rect.bottom + 4 }}
     >
       {asking.items.length === 0 ? (
@@ -302,7 +303,7 @@ function MentionList({
               asking.pick(item);
             }}
             className={`cursor-default rounded-control px-2 py-1 text-meta text-ink ${
-              index === active ? "bg-primary/8" : ""
+              index === active ? "bg-ui-option-active" : ""
             }`}
           >
             {item.label}

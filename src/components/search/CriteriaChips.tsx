@@ -134,7 +134,7 @@ export function CriteriaChips({
       onClick={() => setExpanded(true)}
       title={hidden}
       aria-label={`${fillCopy(copy.search.moreFacets, { count })}: ${hidden}`}
-      className={`${className} shrink-0 items-center rounded-pill border px-2 py-0.5 text-micro font-medium tabular-nums transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${bySurface(
+      className={`${className} shrink-0 items-center rounded-ui-tag border px-2 py-0.5 text-micro font-medium tabular-nums transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${bySurface(
         sup,
         "border-line-strong text-muted hover:bg-ink/5 hover:text-ink",
         "border-chrome-ink/30 text-chrome-muted hover:bg-chrome-ink/10 hover:text-chrome-ink",
@@ -242,7 +242,7 @@ function GroupChain({
       role="group"
       aria-label={`${copy.search.groupedBy} ${chain}`}
       title={`${copy.search.groupedBy} ${chain}`}
-      className={`inline-flex min-w-0 max-w-(--container-chain) items-center gap-1 rounded-pill border py-0.5 pl-1.5 text-micro ${bySurface(
+      className={`inline-flex min-w-0 max-w-(--container-chain) items-center gap-1 rounded-ui-tag border py-0.5 pl-1.5 text-micro ${bySurface(
         surface,
         "border-line-strong bg-surface text-ink",
         "border-chrome-ink/30 bg-chrome-ink/8 text-chrome-ink",
@@ -390,7 +390,7 @@ function Chip({
   surface: Surface;
 }) {
   const copy = useUiCopy();
-  const shell = `inline-flex min-w-0 max-w-(--container-facet) items-center gap-1 rounded-pill py-0.5 text-micro ${chosenTone(
+  const shell = `inline-flex min-w-0 max-w-(--container-facet) items-center gap-1 rounded-ui-tag py-0.5 text-micro ${chosenTone(
     surface,
   )} ${onRemove === undefined ? "px-2" : "pr-0.5 pl-2"}`;
 
@@ -417,7 +417,7 @@ function Chip({
 
   if (onOpen === undefined) {
     return (
-      <span className={shell}>
+      <span data-ui="search.chip" className={shell}>
         <span className="min-w-0 truncate">{label}</span>
         {remove}
       </span>
@@ -429,7 +429,7 @@ function Chip({
      another one, which a screen reader announces as one thing and axe flags
      (`nested-interactive`). Siblings, each with its own name, are both reachable. */
   return (
-    <span className={shell}>
+    <span data-ui="search.chip" className={shell}>
       <button
         type="button"
         onClick={() => onOpen(path)}

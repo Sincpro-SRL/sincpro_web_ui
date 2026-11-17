@@ -718,6 +718,90 @@
   --animate-reveal-late: reveal var(--duration-quick) var(--ease-out) 200ms both;
 }
 
+/* ==================================================================== *
+ *  COMPONENT TOKENS — a component's look, open without forking it.
+ *
+ *  The system tokens above decide the whole product. A product sometimes
+ *  wants ONE piece different — square buttons for a till, a cooler menu, the
+ *  cards without a border — and before this it had no way but to write its
+ *  own component. Now each of the most-used components reads its look from
+ *  a `--ui-<component>-<property>` variable first, and falls back to the
+ *  system's token:
+ *
+ *      :root {
+ *        --ui-button-radius: 0;              every button, square
+ *        --ui-popover-bg: #f7f8fa;           every menu and dropdown
+ *      }
+ *      .till {
+ *        --ui-control-radius: 0;             only inside this zone
+ *      }
+ *
+ *  `@theme inline` and not `@theme`: Tailwind writes the WHOLE chain into the
+ *  utility (`border-radius: var(--ui-button-radius, var(--radius-control))`),
+ *  so it resolves on the element itself. Declared on `:root`, the fallback
+ *  would freeze the light palette there, and a dark subtree would inherit it.
+ *  Set nothing and every piece looks exactly as it did.
+ *
+ *  What a token does not cover, a PART does: every customizable piece carries
+ *  `data-ui="<component>"` on its root and `data-ui="<component>.<part>"` on
+ *  its parts, plus its variant (`data-role`, `data-size`, `data-surface`) —
+ *  the stable names an application's CSS selects, instead of a class that
+ *  changes with the next refactor. The list is in the README («Customizing a
+ *  component») and `tests/componentTokens.test.tsx` holds both.
+ * ==================================================================== */
+@theme inline {
+  /* Button and IconButton. */
+  --radius-ui-button: var(--ui-button-radius, var(--radius-control));
+  --radius-ui-icon-button: var(--ui-icon-button-radius, var(--radius-pill));
+
+  /* What is written into or chosen from: inputs, selects, pickers. */
+  --radius-ui-control: var(--ui-control-radius, var(--radius-control));
+  --color-ui-control: var(--ui-control-bg, var(--color-surface));
+  --color-ui-control-border: var(--ui-control-border, var(--color-line-strong));
+
+  /* Everything that drops from a control: menus, lists, the cuts panel, a popover. */
+  --radius-ui-popover: var(--ui-popover-radius, var(--radius-box));
+  --color-ui-popover: var(--ui-popover-bg, var(--color-surface));
+  --color-ui-popover-border: var(--ui-popover-border, var(--color-line-strong));
+  --shadow-ui-popover: var(--ui-popover-shadow, var(--shadow-float));
+
+  /* A row inside one of them: a menu item, an option. */
+  --radius-ui-option: var(--ui-option-radius, var(--radius-control));
+  --color-ui-option-active: var(
+    --ui-option-active-bg,
+    color-mix(in srgb, var(--color-primary) 8%, transparent)
+  );
+
+  /* A window: a dialog, a confirmation. */
+  --radius-ui-dialog: var(--ui-dialog-radius, var(--radius-panel));
+  --color-ui-dialog: var(--ui-dialog-bg, var(--color-surface));
+
+  /* A box of content: a block, a card of a list, a board tile, a metric. */
+  --radius-ui-card: var(--ui-card-radius, var(--radius-box));
+  --color-ui-card: var(--ui-card-bg, var(--color-surface));
+  --color-ui-card-border: var(--ui-card-border, var(--color-line));
+
+  /* A capsule: a tag, a chip of the search bar. */
+  --radius-ui-tag: var(--ui-tag-radius, var(--radius-pill));
+
+  /* The search bar's field. */
+  --radius-ui-search: var(--ui-search-radius, var(--radius-box));
+
+  /* The sidebar on the canvas (on the chrome it is the brand's `--brand-chrome`). */
+  --color-ui-sidebar: var(--ui-sidebar-bg, var(--color-ground));
+  --color-ui-sidebar-border: var(--ui-sidebar-border, var(--color-line));
+
+  /* A row of the navigation tree, and the one you are on. */
+  --radius-ui-nav: var(--ui-nav-radius, var(--radius-control));
+  --color-ui-nav-current: var(
+    --ui-nav-current-bg,
+    color-mix(in srgb, var(--color-primary) 10%, transparent)
+  );
+
+  /* A table's header band. */
+  --color-ui-table-head: var(--ui-table-head-bg, var(--color-ground));
+}
+
 @keyframes reveal {
   from {
     opacity: 0;
