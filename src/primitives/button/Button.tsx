@@ -150,7 +150,7 @@ export function buttonClasses(
   size: ButtonSize = "md",
   surface: Surface = "canvas",
 ): string {
-  return `inline-flex shrink-0 items-center justify-center rounded-control whitespace-nowrap transition-[background-color,border-color,filter,color] duration-(--duration-instant) ease-(--ease-out) disabled:pointer-events-none disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${SIZE[size]} ${WEIGHT[role]} ${ROLE[role][surface]}`;
+  return `inline-flex shrink-0 items-center justify-center rounded-ui-button whitespace-nowrap transition-[background-color,border-color,filter,color] duration-(--duration-instant) ease-(--ease-out) disabled:pointer-events-none disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${SIZE[size]} ${WEIGHT[role]} ${ROLE[role][surface]}`;
 }
 
 const ICON: Record<ButtonSize, { size: string; stroke: number }> = {
@@ -174,7 +174,9 @@ export type ButtonPopup = "menu" | "dialog" | "listbox";
  *
  *  What stays out on purpose: `className` and `style` — the look is the role, the size and
  *  the surface, and a primitive that takes classes from outside stops being the one place
- *  where a button is decided; `role`, because here it is the button's ROLE in the hierarchy
+ *  where a button is decided. An application changes it through its tokens
+ *  (`--ui-button-radius`) and its part (`data-ui="button"`, `data-emphasis`), which keep
+ *  every button of the product changing together; `role`, because here it is the button's ROLE in the hierarchy
  *  (`primary`…), not an ARIA role; and the attributes the props below already own. */
 type NativeProps<E extends "button" | "a", Own extends string> = Omit<
   ComponentPropsWithRef<E>,
@@ -262,8 +264,12 @@ export function Button({
       }}
       {...popupAttrs(expanded, haspopup)}
       /* The role in the DOM: `make smoke` counts the primaries of a view — the rule is
-         ONE per screen, and a rule nobody checks is a suggestion. */
+         ONE per screen, and a rule nobody checks is a suggestion. It is also the part's
+         variant an application's CSS selects (`[data-ui="button"][data-emphasis="primary"]`). */
+      data-ui="button"
       data-emphasis={role}
+      data-size={size}
+      data-surface={surface}
       className={
         busy
           ? `${buttonClasses(role, size, surface)} cursor-progress`
@@ -325,7 +331,10 @@ export function ButtonLink({
     <a
       {...native}
       ref={ref}
+      data-ui="button"
       data-emphasis={role}
+      data-size={size}
+      data-surface={surface}
       href={href}
       title={title}
       {...(download === undefined ? {} : { download })}
@@ -364,7 +373,7 @@ const TONE: Record<IconTone, Record<Surface, string>> = {
 /* `aria-pressed` is a TOGGLE's state — bold on, a filter applied: it reads as the action
    tint, the same as a chosen option, so «on» is seen and not only heard. */
 const BOX =
-  "inline-flex shrink-0 items-center justify-center rounded-pill transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary aria-pressed:bg-primary/12 aria-pressed:text-primary";
+  "inline-flex shrink-0 items-center justify-center rounded-ui-icon-button transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary aria-pressed:bg-primary/12 aria-pressed:text-primary";
 
 const SQUARE: Record<ButtonSize, string> = {
   sm: "size-(--size-control-sm)",
@@ -458,6 +467,10 @@ export function IconButton({
           aria-label={label}
           disabled={disabled}
           {...popupAttrs(expanded, haspopup)}
+          data-ui="icon-button"
+          data-tone={tone}
+          data-size={size}
+          data-surface={surface}
           className={`${BOX} disabled:pointer-events-none disabled:opacity-45 ${SQUARE[size]} ${TONE[tone][surface]}`}
         >
           <Icon className={ic.size} strokeWidth={ic.stroke} aria-hidden />
@@ -514,6 +527,10 @@ export function IconLink({
           {...(download === undefined ? {} : { download })}
           title={title}
           aria-label={label}
+          data-ui="icon-button"
+          data-tone={tone}
+          data-size={size}
+          data-surface={surface}
           className={`${BOX} ${SQUARE[size]} ${TONE[tone][surface]}`}
         >
           <Icon className={ic.size} strokeWidth={ic.stroke} aria-hidden />

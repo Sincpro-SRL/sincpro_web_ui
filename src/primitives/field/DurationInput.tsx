@@ -102,6 +102,7 @@ export function DurationInput({
         spellCheck={false}
         onBlur={commit}
         onKeyDown={arrows}
+        data-ui="control"
         className={`${controlClasses(invalid)} tabular-nums`}
       />
       <span className="shrink-0 text-meta text-muted">{copy.field.hours}</span>

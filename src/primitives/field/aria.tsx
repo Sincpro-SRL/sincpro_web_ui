@@ -20,10 +20,10 @@ import {
  */
 export const fieldGroupStyles = tv({
   extend: focusRing,
-  base: "group flex h-(--size-control-md) w-full min-w-0 items-center overflow-hidden rounded-control border bg-surface text-meta text-ink transition-colors duration-(--duration-instant) forced-colors:bg-[Field]",
+  base: "group flex h-(--size-control-md) w-full min-w-0 items-center overflow-hidden rounded-ui-control border bg-ui-control text-meta text-ink transition-colors duration-(--duration-instant) forced-colors:bg-[Field]",
   variants: {
     isFocusWithin: {
-      false: "border-line-strong forced-colors:border-[ButtonBorder]",
+      false: "border-ui-control-border forced-colors:border-[ButtonBorder]",
       true: "border-primary forced-colors:border-[Highlight]",
     },
     isInvalid: {
@@ -42,6 +42,7 @@ export function FieldGroup({ ref, ...props }: GroupProps & { ref?: Ref<HTMLDivEl
   return (
     <Group
       ref={ref}
+      data-ui="control"
       {...props}
       className={composeRenderProps(props.className, (className, state) =>
         fieldGroupStyles({ ...state, className }),
@@ -80,10 +81,10 @@ export function FieldButton(props: AriaButtonProps) {
  * control opened it.
  */
 export const listOptionStyles = tv({
-  base: "group flex min-h-(--size-control-md) cursor-default items-center gap-2 rounded-control px-2 py-1 text-meta text-ink outline-0 select-none forced-color-adjust-none",
+  base: "group flex min-h-(--size-control-md) cursor-default items-center gap-2 rounded-ui-option px-2 py-1 text-meta text-ink outline-0 select-none forced-color-adjust-none",
   variants: {
     isFocused: {
-      true: "bg-primary/8 forced-colors:bg-[Highlight] forced-colors:text-[HighlightText]",
+      true: "bg-ui-option-active forced-colors:bg-[Highlight] forced-colors:text-[HighlightText]",
     },
     isPressed: {
       true: "bg-primary/12",

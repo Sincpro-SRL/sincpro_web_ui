@@ -53,7 +53,10 @@ export function Block({
   const withHeader = title !== undefined || actions !== undefined || status !== undefined;
 
   return (
-    <section className="min-w-0 rounded-box border border-line bg-surface">
+    <section
+      data-ui="block"
+      className="min-w-0 rounded-ui-card border border-ui-card-border bg-ui-card"
+    >
       {!withHeader ? null : (
         <header className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1 border-b border-line px-3 py-2">
           {title === undefined ? null : (

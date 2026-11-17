@@ -289,6 +289,7 @@ function EditableTagsField({
        and the input alone is a sliver after the last chip. */
     <Group
       ref={boxRef}
+      data-ui="control"
       isDisabled={disabled}
       isInvalid={invalid}
       className={(state) =>

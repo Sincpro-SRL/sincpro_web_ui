@@ -72,7 +72,7 @@ export interface NavItem {
 
 const row = tv({
   extend: focusRing,
-  base: "group relative flex min-w-0 items-center rounded-control text-meta outline-offset-0 select-none",
+  base: "group relative flex min-w-0 items-center rounded-ui-nav text-meta outline-offset-0 select-none",
   variants: {
     surface: {
       canvas: "text-ink",
@@ -84,7 +84,7 @@ const row = tv({
     },
   },
   compoundVariants: [
-    { surface: "canvas", isCurrent: true, class: "bg-primary/10 text-primary" },
+    { surface: "canvas", isCurrent: true, class: "bg-ui-nav-current text-primary" },
     { surface: "canvas", isCurrent: false, class: "hover:bg-ink/6" },
     { surface: "chrome", isCurrent: true, class: "bg-chrome-link/15 text-chrome-link" },
     { surface: "chrome", isCurrent: false, class: "hover:bg-chrome-ink/10" },
@@ -188,6 +188,7 @@ export function NavigationTree({
         : undefined;
     return (
       <AriaNavigationTreeItem
+        data-ui="navigation.item"
         key={item.id}
         id={item.id}
         textValue={item.label}
@@ -251,6 +252,7 @@ export function NavigationTree({
     <AriaLocale>
       <RouterProvider navigate={(id) => onNavigate?.(id)} useHref={(id) => `#${id}`}>
         <AriaNavigationTree
+          data-ui="navigation"
           aria-label={label ?? copy.shell.menus}
           selectedRoute={current ?? null}
           defaultExpandedKeys={expanded}

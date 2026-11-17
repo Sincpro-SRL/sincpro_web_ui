@@ -158,6 +158,7 @@ function StillStrip({
       {items.map((item) => (
         <span
           key={item.id}
+          data-ui="tags.item"
           {...(listed ? { role: "listitem" } : {})}
           {...(item.title === undefined ? {} : { title: item.title })}
           className={shell({ item, surface, stack, removable: false, pressable: false })}
@@ -234,6 +235,7 @@ function ChipGroup({
       <TagList items={items} className={stack ? STACK : STRIP}>
         {(item) => (
           <AriaTag
+            data-ui="tags.item"
             id={item.id}
             textValue={item.note === undefined ? item.label : `${item.label} ${item.note}`}
             {...(!selecting && item.onSelect !== undefined
@@ -301,7 +303,7 @@ function shell({
 }): string {
   return cn(
     stack ? "flex w-full justify-start" : "inline-flex shrink-0",
-    "min-w-0 items-center gap-1 rounded-pill py-0.5 text-micro transition-colors duration-(--duration-instant)",
+    "min-w-0 items-center gap-1 rounded-ui-tag py-0.5 text-micro transition-colors duration-(--duration-instant)",
     paint(item, surface),
     removable ? "pr-0.5 pl-2" : "px-2",
     pressable ? "cursor-pointer" : "cursor-default",

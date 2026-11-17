@@ -304,6 +304,7 @@ export function SignatureInput({
             disabled={disabled}
             autoComplete="name"
             onChange={(event) => writeTyped(event.target.value)}
+            data-ui="control"
             className={`${controlClasses(invalid)} font-normal`}
           />
         </label>

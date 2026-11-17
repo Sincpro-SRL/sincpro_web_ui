@@ -94,7 +94,7 @@ test("growing with its lines, the box is not a scroller: the header sticks to th
   assert.doesNotMatch(box, /--sticky-top/);
   assert.match(
     table(),
-    /<thead class="sticky z-10 bg-ground" style="top:var\(--sticky-top, 0px\)">/,
+    /<thead class="sticky z-10 bg-ui-table-head" style="top:var\(--sticky-top, 0px\)"/,
   );
 });
 

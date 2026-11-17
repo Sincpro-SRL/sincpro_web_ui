@@ -79,6 +79,7 @@ export function Table({
       style={caja.style}
     >
       <table
+        data-ui="table"
         aria-rowcount={rowCount}
         className="w-full border-separate border-spacing-0 px-1 text-left"
       >
@@ -105,7 +106,7 @@ export function THead({
        list's— and not at `top: 0`, which tucked it behind both. Without a height on
        `Table` the page is what scrolls, and there the difference is exactly
        what made the column names disappear. See `system/sticky.tsx`. */
-    <thead className="sticky z-10 bg-ground" style={stickyTop}>
+    <thead className="sticky z-10 bg-ui-table-head" style={stickyTop} data-ui="table.head">
       <tr aria-rowindex={rowIndex}>{children}</tr>
     </thead>
   );

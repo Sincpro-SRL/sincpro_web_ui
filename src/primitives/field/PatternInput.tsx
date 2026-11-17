@@ -95,6 +95,7 @@ export function PatternInput({
         placeholder={shown}
         spellCheck={false}
         autoCapitalize="characters"
+        data-ui="control"
         className={`${controlClasses(invalid)} font-mono tabular-nums`}
       />
     </AriaTextField>

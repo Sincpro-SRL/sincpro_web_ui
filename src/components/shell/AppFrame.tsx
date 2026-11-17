@@ -274,10 +274,11 @@ export function AppFrame({
       <aside
         className={`sticky w-(--container-sidebar) shrink-0 self-start overflow-y-auto overscroll-contain border-r max-sm:hidden print:hidden ${bySurface(
           sidebarSurface,
-          "border-line bg-ground",
+          "border-ui-sidebar-border bg-ui-sidebar",
           "border-chrome-edge bg-chrome",
         )}`}
         style={{ ...stickyTop, height: "calc(100dvh - var(--sticky-top, 0px))" }}
+        data-ui="frame.sidebar"
       >
         <SurfaceProvider value={sidebarSurface}>{sidebar}</SurfaceProvider>
       </aside>
@@ -292,6 +293,7 @@ export function AppFrame({
         className={`relative flex min-w-0 flex-col bg-ground ${
           fills ? "h-dvh overflow-hidden print:h-auto print:overflow-visible" : "min-h-dvh"
         }`}
+        data-ui="frame"
         data-scroll={scroll}
       >
         {top === undefined ? null : (
@@ -300,6 +302,7 @@ export function AppFrame({
           <div
             ref={bar.ref}
             className={`sticky top-0 z-40 print:hidden ${sidebarIsChrome ? "sm:hidden" : ""}`}
+            data-ui="frame.bar"
           >
             {top}
           </div>
@@ -308,6 +311,7 @@ export function AppFrame({
           <main
             className={`flex min-w-0 flex-1 flex-col ${mainScroll}`}
             style={fills ? stickyReset() : bar.below}
+            data-ui="frame.main"
           >
             {children}
           </main>
@@ -317,6 +321,7 @@ export function AppFrame({
             <main
               className={`flex min-w-0 flex-1 flex-col self-stretch ${mainScroll}`}
               {...(fills ? { style: stickyReset() } : {})}
+              data-ui="frame.main"
             >
               {children}
             </main>
@@ -337,6 +342,7 @@ export function AppFrame({
                 <main
                   className={`flex min-w-0 flex-1 flex-col self-stretch ${mainScroll}`}
                   {...(fills ? { style: stickyReset() } : {})}
+                  data-ui="frame.main"
                 >
                   {children}
                 </main>

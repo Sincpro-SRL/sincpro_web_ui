@@ -132,7 +132,7 @@ function Option({
       disabled={o.disabled}
       onClick={() => onSelect?.(o.id)}
       {...(toggles ? { "aria-pressed": o.checked === true } : {})}
-      className="flex w-full items-start gap-2 rounded-control px-1.5 py-1 text-left transition-colors duration-(--duration-instant) disabled:pointer-events-none disabled:opacity-45 hover:bg-primary/8"
+      className="flex w-full items-start gap-2 rounded-ui-option px-1.5 py-1 text-left transition-colors duration-(--duration-instant) disabled:pointer-events-none disabled:opacity-45 hover:bg-ui-option-active"
     >
       {/* The mark column always exists: without it, ticking an option shifts all the text
           and the panel jumps, and an action's label starts under its column's title text.
@@ -211,7 +211,7 @@ function Group({
           type="button"
           onClick={() => setOpen(!open)}
           aria-expanded={open}
-          className="flex items-center gap-2 rounded-control px-1.5 py-1 text-left transition-colors duration-(--duration-instant) hover:bg-primary/8"
+          className="flex items-center gap-2 rounded-ui-option px-1.5 py-1 text-left transition-colors duration-(--duration-instant) hover:bg-ui-option-active"
         >
           <ChevronRight
             className={`size-(--size-icon-sm) shrink-0 text-muted transition-transform duration-(--duration-instant) ${
@@ -631,15 +631,17 @@ export function SearchBar({
          narrowest and the input slid UNDER the filters button («bu⊞car»). 12rem is the
          magnifier, a word of input and the buttons; a narrower container scrolls, it does
          not stack controls on top of each other. */
+      data-ui="search"
       className="relative flex min-w-48 items-center gap-2"
     >
       {/* Three columns: the magnifier, what is set plus the input (the only part that wraps),
           and the buttons. The two ends sit on the FIRST line: when the middle wraps they
           stay where the eye starts reading, instead of floating to its middle. */}
       <div
-        className={`@container/bar flex min-h-(--size-control-md) w-full min-w-0 items-start rounded-box border transition-colors duration-(--duration-instant) ${bySurface(
+        data-ui="search.field"
+        className={`@container/bar flex min-h-(--size-control-md) w-full min-w-0 items-start rounded-ui-search border transition-colors duration-(--duration-instant) ${bySurface(
           sup,
-          "border-line-strong bg-surface focus-within:border-primary/60",
+          "border-ui-control-border bg-ui-control focus-within:border-primary/60",
           /* On the chrome what defines the field is the BORDER, not the fill. The
              blue is already almost black, so sinking it gives no contrast (1.05:1) and
              raising it gives 1.21:1 — in both cases the field does not read as a
@@ -957,7 +959,8 @@ export function SearchBar({
               preguntas       «campo: valor» rows, as they will end up */}
       {open ? (
         <div
-          className={`absolute top-full z-30 mt-1 overflow-hidden rounded-box border border-line-strong bg-surface shadow-float ${
+          data-ui="search.suggestions"
+          className={`absolute top-full z-30 mt-1 overflow-hidden rounded-ui-popover border border-ui-popover-border bg-ui-popover shadow-ui-popover ${
             asTags ? "left-0 w-max max-w-full" : "right-0 left-0"
           }`}
         >
@@ -1014,8 +1017,8 @@ export function SearchBar({
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={() => pick(one)}
                   onMouseEnter={() => setActive(at)}
-                  className={`flex w-full cursor-pointer items-baseline gap-1.5 rounded-control px-2 py-1.5 text-left text-meta transition-colors duration-(--duration-instant) ${
-                    at === active ? "bg-primary/8" : "hover:bg-ink/4"
+                  className={`flex w-full cursor-pointer items-baseline gap-1.5 rounded-ui-option px-2 py-1.5 text-left text-meta transition-colors duration-(--duration-instant) ${
+                    at === active ? "bg-ui-option-active" : "hover:bg-ink/4"
                   }`}
                 >
                   <span className="shrink-0 font-medium text-ink">{one.label}</span>
@@ -1054,7 +1057,8 @@ export function SearchBar({
                DOM. React Aria keeps the nodes marked as its top layer usable, as it does with
                its own popovers and live regions. */
             data-react-aria-top-layer=""
-            className="z-30 flex w-max max-w-(--container-cuts) flex-wrap overflow-hidden rounded-box border border-line-strong bg-surface shadow-float"
+            data-ui="search.panel"
+            className="z-30 flex w-max max-w-(--container-cuts) flex-wrap overflow-hidden rounded-ui-popover border border-ui-popover-border bg-ui-popover shadow-ui-popover"
           >
             {columns.map((c, i) => (
               <div
@@ -1112,7 +1116,7 @@ export function SearchBar({
                     onOpenBuilder();
                     setPanel(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-control px-1.5 py-1 text-left text-meta text-ink transition-colors duration-(--duration-instant) hover:bg-primary/8 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+                  className="flex w-full items-center gap-2 rounded-ui-option px-1.5 py-1 text-left text-meta text-ink transition-colors duration-(--duration-instant) hover:bg-ui-option-active focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
                 >
                   <SlidersHorizontal className="size-(--size-icon-sm)" strokeWidth={2} />
                   {copy.search.openBuilder}

@@ -94,7 +94,9 @@ export function Tag({
   return (
     <span
       title={title}
-      className={`inline-flex shrink-0 items-center rounded-pill px-2 py-0.5 text-micro font-medium whitespace-nowrap ${TAG_TONE[tone][surface]}`}
+      data-ui="tag"
+      data-tone={tone}
+      className={`inline-flex shrink-0 items-center rounded-ui-tag px-2 py-0.5 text-micro font-medium whitespace-nowrap ${TAG_TONE[tone][surface]}`}
     >
       {children}
     </span>

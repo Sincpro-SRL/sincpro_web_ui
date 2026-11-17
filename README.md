@@ -169,6 +169,61 @@ The corners are one knob: `--brand-radius` multiplies the whole radius scale (`m
 its rows. `0` squares everything, the capsules too. A single step can still be set on its own —
 `--brand-radius-control: 6px`. Both go on `:root`.
 
+#### Customizing a component
+
+The brand changes the whole product. To change **one component** — square buttons for a
+till, a cooler menu, cards without a border — set its `--ui-*` tokens, on `:root` for the
+whole application or on any element for a zone. Each one falls back to the system's token, so
+setting nothing changes nothing, and each resolves on the element, so the dark theme still
+follows:
+
+```css
+:root {
+  --ui-button-radius: 0;
+  --ui-popover-bg: var(--color-ground);
+}
+.till {
+  --ui-control-radius: 0; /* only inside this zone */
+}
+```
+
+| Component                                                   | Tokens                                                                                 |
+| ----------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| `Button`, `ButtonLink`                                      | `--ui-button-radius`                                                                   |
+| `IconButton`, `IconLink`                                    | `--ui-icon-button-radius`                                                              |
+| Inputs, selects, date and pickers' boxes                    | `--ui-control-radius`, `--ui-control-bg`, `--ui-control-border`                        |
+| Menus, lists, popovers, the cuts panel                      | `--ui-popover-radius`, `--ui-popover-bg`, `--ui-popover-border`, `--ui-popover-shadow` |
+| A row inside them (menu item, option)                       | `--ui-option-radius`, `--ui-option-active-bg`                                          |
+| `Dialog`                                                    | `--ui-dialog-radius`, `--ui-dialog-bg`                                                 |
+| `Block`, `RecordCard`, `BoardTile`, `Metric`                | `--ui-card-radius`, `--ui-card-bg`, `--ui-card-border`                                 |
+| `Tag`, `Tags`, the search bar's chips                       | `--ui-tag-radius`                                                                      |
+| `SearchBar`'s field                                         | `--ui-search-radius` (and the control's bg and border)                                 |
+| The sidebar on the canvas                                   | `--ui-sidebar-bg`, `--ui-sidebar-border`                                               |
+| `NavigationTree`                                            | `--ui-nav-radius`, `--ui-nav-current-bg`                                               |
+| Table headers (`DataTable`, `EditableTable`, `ReportTable`) | `--ui-table-head-bg`                                                                   |
+
+What a token does not cover, a **part** does. Every customizable piece names its root
+`data-ui="<component>"` and its parts `data-ui="<component>.<part>"`, with its variant beside
+(`data-emphasis`, `data-size`, `data-surface`, `data-tone`) — stable names for your CSS, instead
+of classes that change with the next refactor:
+
+```css
+[data-ui="button"][data-emphasis="primary"] {
+  letter-spacing: 0.02em;
+}
+[data-ui="popover"] {
+  backdrop-filter: blur(8px);
+}
+```
+
+The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`,
+`menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card`, `board.tile`,
+`metric`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`, `search.panel`,
+`search.suggestions`, `table`, `table.head`, `topbar`, `topbar.brand`, `topbar.menus`,
+`topbar.actions`, `topbar.user`, `frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`,
+`sidebar.brand`, `sidebar.user`, `sidebar.nav`, `sidebar.account`, `navigation`,
+`navigation.item`. Put your rules in a cascade layer above web-ui's, or outside any layer.
+
 #### Living beside a site's own CSS
 
 The package's styles are in cascade layers (`@layer base`, `utilities`), and **CSS outside any
