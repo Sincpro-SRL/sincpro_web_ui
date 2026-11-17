@@ -34,14 +34,22 @@ export interface CheckItem {
   disabled?: boolean;
 }
 
-function Mark({
+/**
+ * The drawn box of a check, with no behaviour of its own.
+ *
+ * Context: exported for the rows that ARE a multiple choice without being a form input —
+ * the filters of the search panel, a grouping level — so they mark «on» with the same box
+ * as `Checkbox`. The host carries the semantics (`aria-pressed`, a listbox option); this
+ * is `aria-hidden`.
+ */
+export function CheckMark({
   on,
-  mixed,
+  mixed = false,
   focus = false,
   invalid = false,
 }: {
   on: boolean;
-  mixed: boolean;
+  mixed?: boolean;
   focus?: boolean;
   invalid?: boolean;
 }) {
@@ -109,7 +117,7 @@ export function Checkbox({
   if (useFormMode(mode) === "read") {
     return (
       <span className="flex min-h-(--size-control-md) items-center gap-2 text-meta text-ink">
-        <Mark on={on} mixed={mixed && !checked} />
+        <CheckMark on={on} mixed={mixed && !checked} />
         {label}
       </span>
     );
@@ -130,7 +138,7 @@ export function Checkbox({
     >
       {({ isSelected, isIndeterminate, isFocusVisible, isInvalid }) => (
         <>
-          <Mark
+          <CheckMark
             on={isSelected || isIndeterminate}
             mixed={isIndeterminate}
             focus={isFocusVisible}
@@ -234,7 +242,7 @@ export function CheckList({
           >
             {({ isSelected }) => (
               <>
-                <Mark on={isSelected} mixed={false} />
+                <CheckMark on={isSelected} />
                 <span className="flex min-w-0 flex-col">
                   <span className={`truncate text-meta text-ink ${mono ? "font-mono" : ""}`}>
                     {item.label}

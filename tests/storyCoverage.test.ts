@@ -18,6 +18,8 @@ import { test } from "vitest";
 const SHOWN_THROUGH: Readonly<Record<string, string>> = {
   SortMenu: "the list bar — 4 · Vistas/Lista",
   CriteriaChips: "SearchBar — 3 · Componentes/Búsqueda",
+  CheckMark:
+    "the cuts panel and GroupingLevels — 3 · Componentes/Búsqueda · barra, filtros y agrupador",
   JsonEditor: "CriteriaBuilder and FilterBuilder",
   RowActions: "DataTable rows — 3 · Componentes/Datos/Tabla",
   RecordLink: "the rows of Listing — 4 · Vistas/Lista",

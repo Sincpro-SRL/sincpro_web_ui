@@ -4,7 +4,7 @@ import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
 import { cn, focusRing } from "@sincpro/web-ui/foundations/variants";
-import { tagTone } from "@sincpro/web-ui/primitives/tag/Tag";
+import { chosenTone, tagTone } from "@sincpro/web-ui/primitives/tag/Tag";
 import { Avatar } from "@sincpro/web-ui/primitives/value/Person";
 import type { LucideIcon } from "lucide-react";
 import { X } from "lucide-react";
@@ -274,13 +274,7 @@ function paint(item: TagItem, surface: Surface): string {
       "border border-chrome-link bg-chrome-link text-chrome",
     );
   }
-  if (item.selected === true) {
-    return bySurface(
-      surface,
-      "border border-accent/40 bg-accent/18 text-ink",
-      "border border-chrome-link/40 bg-chrome-link/25 text-chrome-ink",
-    );
-  }
+  if (item.selected === true) return chosenTone(surface);
   if (item.tone !== undefined && item.tone !== "neutral") return tagTone(item.tone, surface);
   return bySurface(
     surface,

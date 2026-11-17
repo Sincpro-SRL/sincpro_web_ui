@@ -145,18 +145,29 @@ on `:root`, and every palette — light, dark, and a light subtree inside a dark
   --brand-chrome: #10203f; /* the application bar */
   --brand-chrome-raised: #1a2c52;
   --brand-chrome-edge: #10203f;
+  --brand-ground: #f7f8fa; /* the page's paper */
+  --brand-surface: #ffffff; /* raised boxes, menus */
 
   --brand-dark-accent: #e0b850; /* the same, for the dark palette */
   --brand-dark-chrome: #0a1428;
+  --brand-dark-ground: #121417;
+
+  --brand-radius: 0.5; /* the corners: 0 square everywhere · 1 the system's · 1.5 rounder */
 }
 ```
 
-The full list is `accent`, `accent-hover`, `on-accent`, `primary`, `primary-hover`, `chrome`,
-`chrome-raised`, `chrome-edge`, `chrome-accent` and `chrome-link`; `--brand-<token>` is the light
-palette's and `--brand-dark-<token>` the dark's. One left unset keeps the system's value. Do not
+The full list is `ground`, `surface`, `line`, `line-strong`, `ink`, `muted`, `accent`,
+`accent-hover`, `on-accent`, `primary`, `primary-hover`, `chrome`, `chrome-raised`, `chrome-edge`,
+`chrome-accent` and `chrome-link`; `--brand-<token>` is the light palette's and
+`--brand-dark-<token>` the dark's. One left unset keeps the system's value. Do not
 override `--color-*` directly: those are redefined per theme, so an override on `:root` loses to
 `[data-theme="light"]` and leaks into the dark palette. The system measures its own contrasts;
 your brand's are checked by Storybook's a11y pass if you render your stories with it.
+
+The corners are one knob: `--brand-radius` multiplies the whole radius scale (`mark`, `control`,
+`box`, `panel`, `pill`), so the steps keep their proportion and a dropdown stays concentric with
+its rows. `0` squares everything, the capsules too. A single step can still be set on its own —
+`--brand-radius-control: 6px`. Both go on `:root`.
 
 #### Living beside a site's own CSS
 

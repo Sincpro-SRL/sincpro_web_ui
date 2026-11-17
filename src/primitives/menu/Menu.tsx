@@ -10,7 +10,7 @@ import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
 import { Count } from "@sincpro/web-ui/primitives/tag/Count";
 import type { LucideIcon } from "lucide-react";
 import { Check, ChevronDown, ChevronRight } from "lucide-react";
-import type { ReactNode } from "react";
+import { type ReactNode, useState } from "react";
 import {
   Autocomplete,
   Button as AriaButton,
@@ -69,6 +69,28 @@ import {
  *  can cross diagonally to the submenu without closing it. Picking a child
  *  runs the same `onSelect` as a root option — the ids of the whole tree share
  *  one namespace, so they must be unique across levels.
+ *
+ *  ── Sections, and a big menu in columns ─────────────────────────────
+ *
+ *  A group with a `label` is a SECTION: «Pedidos», «Facturación», «Informes»
+ *  under one «Ventas». Its title is the step above the rows — semibold, with
+ *  the group's `icon` when it has one, on the rows' text column — so a menu of
+ *  twenty entries reads as four blocks of five. When the sections are many,
+ *  `layout="columns"` lays them side by side (stacked again on a phone): the
+ *  whole module in one look, as an application bar's big menus need. The
+ *  keyboard does not change — the arrows walk the rows in reading order.
+ *
+ *  A `collapsible` section is there without taking the room: one row —
+ *  «Reportes financieros ▾ 9» — that unfolds its options in place when
+ *  pressed, with the menu still open. It starts folded unless something in it
+ *  is ticked; under a search box every section shows open.
+ *
+ *  ── «Here»: `current` ───────────────────────────────────────────────
+ *
+ *  On an application bar the menu that holds the screen on view is marked with
+ *  a bar under its label — a shape, not only a colour — so «where am I» is
+ *  answered without opening any of them. `active` is another thing: something
+ *  chosen inside a control's menu (a filter on).
  * ==================================================================== */
 
 export interface MenuOption {
@@ -113,15 +135,21 @@ export interface MenuGroup {
   /** The group's label, in the brand voice. Without a label, the group is just
    *  a separator — which also serves a purpose. */
   label?: string;
+  /** Drawn beside the label: the sections of a big menu are told apart before they are
+   *  read. Only with a `label`. */
+  icon?: LucideIcon;
   /**
    * The group folds under its label, and starts folded unless something in it
    * is ticked.
    *
    * It exists for the DATE narrowings. «Fecha de pedido» is not one option, it
    * is eleven —three months, four quarters, three years— and eleven options
-   * always open push the rest of the panel off the screen. A date is the only
-   * field that brings its own little calendar, so it is the only one that
-   * folds; the others are a list and a list does not need a door.
+   * always open push the rest of the panel off the screen.
+   *
+   * In a `Menu` it is the section that is there without taking the room: «Reportes
+   * financieros ▾» is one row, and pressing it unfolds its nine reports in place —
+   * the menu stays open. A menu with a search box shows every section open: a fold
+   * would hide what the search finds.
    */
   collapsible?: boolean;
   options: MenuOption[];
@@ -133,6 +161,21 @@ const WIDTH = {
   md: "min-w-56 max-w-80",
   lg: "min-w-80 max-w-(--container-short)",
 } as const;
+
+/** Sections side by side take the width they need, up to the cuts panel's. */
+const COLUMNS_WIDTH = "w-max max-w-(--container-cuts)";
+
+/* A section after the first: a hairline above it in a list; in columns, a hairline on its
+   start edge from `sm` up (stacked again on a phone). */
+const SECTION = {
+  list: "[&:not(:first-child)]:mt-1 [&:not(:first-child)]:border-t [&:not(:first-child)]:border-line [&:not(:first-child)]:pt-1",
+  columns:
+    "min-w-48 flex-1 [&:not(:first-child)]:mt-1 [&:not(:first-child)]:border-t [&:not(:first-child)]:border-line [&:not(:first-child)]:pt-1 sm:[&:not(:first-child)]:mt-0 sm:[&:not(:first-child)]:ml-1 sm:[&:not(:first-child)]:border-t-0 sm:[&:not(:first-child)]:border-l sm:[&:not(:first-child)]:pt-0 sm:[&:not(:first-child)]:pl-1",
+} as const;
+
+/** The id of a folded section's own row. The options' ids share one namespace with it, so it
+ *  carries a prefix no option id has. */
+const FOLD = "\u0000fold:";
 
 /** A submenu opens beside its row, flush against the parent panel and pulled up by the
  *  panel's padding plus its hairline (`p-1` + 1), so its first row lines up with the row that
@@ -165,6 +208,7 @@ export function menuTriggerClasses({
   variant = "button",
   surface = "canvas",
   active = false,
+  current = false,
   open = false,
   focusVisible = false,
   iconOnly = false,
@@ -172,6 +216,8 @@ export function menuTriggerClasses({
   variant?: "button" | "text";
   surface?: "canvas" | "chrome";
   active?: boolean;
+  /** The screen on view is inside this menu: a bar under the label. */
+  current?: boolean;
   open?: boolean;
   focusVisible?: boolean;
   iconOnly?: boolean;
@@ -197,9 +243,18 @@ export function menuTriggerClasses({
         : `border-line-strong bg-surface hover:border-primary/45 hover:bg-primary/5 ${
             active ? "border-primary/60 text-primary" : "text-ink"
           }`;
+  /* «Here» is a SHAPE under the label, in the colour that marks the place on each surface:
+     the gold on the chrome (where it is legible, 6.70:1), the navy on the canvas. */
+  const here = current
+    ? `relative after:absolute after:inset-x-2.5 after:bottom-0.5 after:h-0.5 after:rounded-pill ${
+        surface === "chrome"
+          ? "text-chrome-ink after:bg-chrome-accent"
+          : "text-ink after:bg-primary"
+      }`
+    : "";
   return `inline-flex h-(--size-control-sm) shrink-0 cursor-default items-center gap-1.5 border text-micro font-medium whitespace-nowrap outline-0 transition-colors duration-(--duration-instant) ${
     focusVisible ? "outline-2 outline-offset-2 outline-primary" : ""
-  } ${iconOnly ? "w-(--size-control-sm) justify-center rounded-pill" : "rounded-control px-2.5"} ${tone}`;
+  } ${iconOnly ? "w-(--size-control-sm) justify-center rounded-pill" : "rounded-control px-2.5"} ${tone} ${here}`;
 }
 
 export function Menu({
@@ -223,6 +278,8 @@ export function Menu({
   title,
   closeOnSelect = true,
   count,
+  current = false,
+  layout = "list",
 }: {
   label: string;
   groups: readonly MenuGroup[];
@@ -269,6 +326,11 @@ export function Menu({
    *  without opening the menu. Zero is not drawn. Not with `iconOnly`, where there is no
    *  label for it to belong to. */
   count?: number;
+  /** The screen on view is inside this menu — an application bar's «here». */
+  current?: boolean;
+  /** `columns` lays the sections side by side: a big menu of an application bar, seen
+   *  whole. Stacked on a phone. */
+  layout?: "list" | "columns";
 }) {
   const copy = useUiCopy();
   const { contains } = useFilter({ sensitivity: "base" });
@@ -280,6 +342,8 @@ export function Menu({
       label={label}
       groups={groups}
       width={width}
+      layout={layout}
+      foldable={searchPlaceholder === undefined}
       closeOnSelect={closeOnSelect}
       onAction={(key) => {
         const option = byId.get(String(key));
@@ -301,6 +365,7 @@ export function Menu({
                 variant,
                 surface,
                 active,
+                current,
                 open: isPressed,
                 focusVisible: isFocusVisible,
                 iconOnly,
@@ -328,7 +393,7 @@ export function Menu({
       </AriaButton>
       <Popover
         placement={align === "end" ? "bottom end" : "bottom start"}
-        className={WIDTH[width]}
+        className={layout === "columns" ? COLUMNS_WIDTH : WIDTH[width]}
       >
         {searchPlaceholder === undefined ? (
           menu
@@ -369,6 +434,8 @@ export function MenuList({
   closeOnSelect,
   emptyText,
   width = "md",
+  layout = "list",
+  foldable = true,
 }: {
   label: string;
   groups: readonly MenuGroup[];
@@ -376,14 +443,46 @@ export function MenuList({
   closeOnSelect: boolean;
   emptyText: string;
   width?: keyof typeof WIDTH;
+  layout?: "list" | "columns";
+  /** `false` shows every `collapsible` section open — under a search box. */
+  foldable?: boolean;
 }) {
-  /* Per panel: a submenu without icons does not inherit its parent's mark column. */
-  const hasMarks = groups.some((g) =>
-    g.options.some((o) => o.checked !== undefined || o.icon !== undefined),
+  const sectionKey = (g: MenuGroup, index: number) => g.label ?? String(index);
+  const folds = (g: MenuGroup) => foldable && g.collapsible === true && g.label !== undefined;
+  /* Which folded sections are open. One that holds something ticked starts open: otherwise
+     what is set hides behind a chevron and you have to guess where. */
+  const [unfolded, setUnfolded] = useState<ReadonlySet<string>>(
+    () =>
+      new Set(
+        groups
+          .filter((g) => folds(g) && g.options.some((o) => o.checked === true))
+          .map((g) => g.label!),
+      ),
+  );
+  const act = (key: Key) => {
+    const id = String(key);
+    if (!id.startsWith(FOLD)) {
+      onAction(key);
+      return;
+    }
+    const section = id.slice(FOLD.length);
+    setUnfolded((current) => {
+      const next = new Set(current);
+      if (!next.delete(section)) next.add(section);
+      return next;
+    });
+  };
+
+  /* Per panel: a submenu without icons does not inherit its parent's mark column. A section's
+     icon sits in that column too, so its title starts where its rows' text does. */
+  const hasMarks = groups.some(
+    (g) =>
+      (g.label !== undefined && g.icon !== undefined) ||
+      g.options.some((o) => o.checked !== undefined || o.icon !== undefined),
   );
   const hasHints = groups.some((g) => g.options.some((o) => o.hint !== undefined));
 
-  const row = (o: MenuOption) => {
+  const row = (o: MenuOption, nested = false) => {
     const Icon = o.icon;
     const opens = o.items !== undefined;
     const checked = !opens && o.checked === true;
@@ -395,7 +494,7 @@ export function MenuList({
         isDisabled={o.disabled}
         className={`flex w-full cursor-default rounded-control ${
           hasHints ? "items-start py-1.5" : "items-center py-1"
-        } gap-2 px-2 text-left outline-0 transition-colors duration-(--duration-instant) data-focused:bg-primary/8 data-open:bg-primary/8 disabled:opacity-45`}
+        } gap-2 ${nested ? "pr-2 pl-(--spacing-indent)" : "px-2"} text-left outline-0 transition-colors duration-(--duration-instant) data-focused:bg-primary/8 data-open:bg-primary/8 disabled:opacity-45`}
       >
         {/* The mark column exists only when some option carries an icon
             or a checked state, and then for every row, so toggling one
@@ -467,61 +566,105 @@ export function MenuList({
     <AriaMenu
       aria-label={label}
       shouldCloseOnSelect={closeOnSelect}
-      onAction={onAction}
+      onAction={act}
       renderEmptyState={() => (
         <p className="px-3 py-3 text-meta text-muted italic">{emptyText}</p>
       )}
-      className="max-h-[inherit] overflow-y-auto p-1 outline-0"
+      className={`max-h-[inherit] overflow-y-auto p-1 outline-0 ${
+        layout === "columns" ? "flex flex-col sm:flex-row sm:items-stretch" : ""
+      }`}
     >
-      {groups.map((g, gi) => (
-        <MenuSection
-          key={g.label ?? gi}
-          className="[&:not(:first-child)]:mt-1 [&:not(:first-child)]:border-t [&:not(:first-child)]:border-line [&:not(:first-child)]:pt-1"
-        >
-          {g.label === undefined ? null : (
-            /* Same skeleton as the row: the label sits on the text column. */
-            <Header className="flex items-center gap-2 px-2 pt-1 pb-0.5 text-micro font-medium text-muted">
-              {hasMarks ? (
-                <span className="size-(--size-icon-sm) shrink-0" aria-hidden />
-              ) : null}
-              {g.label}
-            </Header>
-          )}
-          {g.options.flatMap((o) => {
-            const item =
-              o.items === undefined ? (
-                row(o)
-              ) : (
-                <SubmenuTrigger key={o.id}>
-                  {row(o)}
-                  <Popover
-                    offset={SUBMENU_OFFSET}
-                    crossOffset={SUBMENU_CROSS_OFFSET}
-                    className={WIDTH[width]}
-                  >
-                    <MenuList
-                      label={o.label}
-                      groups={[{ options: [...o.items] }]}
-                      onAction={onAction}
-                      closeOnSelect={closeOnSelect}
-                      emptyText={emptyText}
-                      width={width}
-                    />
-                  </Popover>
-                </SubmenuTrigger>
-              );
-            return o.divider === true
-              ? [
-                  <Separator
-                    key={`${o.id}-divider`}
-                    className="my-1 h-px border-0 bg-line"
-                  />,
-                  item,
-                ]
-              : [item];
-          })}
-        </MenuSection>
-      ))}
+      {groups.map((g, gi) => {
+        const key = sectionKey(g, gi);
+        const folding = folds(g);
+        const open = !folding || unfolded.has(key);
+        return (
+          <MenuSection key={key} className={SECTION[layout]}>
+            {g.label === undefined ? null : folding ? (
+              /* A folded section is a ROW you press — it is the door to the options, so it
+               reads as one (ink, the row's size) and says how many wait behind it. The
+               chevron points down and turns: a submenu's points to the side. */
+              <MenuItem
+                id={`${FOLD}${key}`}
+                textValue={g.label}
+                shouldCloseOnSelect={false}
+                aria-expanded={open}
+                className="flex w-full cursor-default items-center gap-2 rounded-control px-2 py-1 text-left outline-0 transition-colors duration-(--duration-instant) data-focused:bg-primary/8"
+              >
+                {g.icon !== undefined ? (
+                  <g.icon
+                    className="size-(--size-icon-sm) shrink-0 text-muted"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                ) : hasMarks ? (
+                  <span className="size-(--size-icon-sm) shrink-0" aria-hidden />
+                ) : null}
+                <span className="min-w-0 flex-1 truncate text-meta font-semibold text-ink">
+                  {g.label}
+                </span>
+                {open ? null : <Count value={g.options.length} aria-hidden />}
+                <ChevronDown
+                  className={`size-(--size-icon-sm) shrink-0 text-muted transition-transform duration-(--duration-instant) ${
+                    open ? "rotate-180" : ""
+                  }`}
+                  strokeWidth={2}
+                  aria-hidden
+                />
+              </MenuItem>
+            ) : (
+              /* Same skeleton as the row: the label sits on the text column, its icon on the
+               mark column. A step above the rows — semibold — and still quieter than them:
+               it names the block, it is not one more thing to choose. */
+              <Header className="flex items-center gap-2 px-2 pt-1.5 pb-1 text-micro font-semibold text-muted">
+                {g.icon !== undefined ? (
+                  <g.icon
+                    className="size-(--size-icon-sm) shrink-0"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                ) : hasMarks ? (
+                  <span className="size-(--size-icon-sm) shrink-0" aria-hidden />
+                ) : null}
+                {g.label}
+              </Header>
+            )}
+            {(open ? g.options : []).flatMap((o) => {
+              const item =
+                o.items === undefined ? (
+                  row(o, folding)
+                ) : (
+                  <SubmenuTrigger key={o.id}>
+                    {row(o, folding)}
+                    <Popover
+                      offset={SUBMENU_OFFSET}
+                      crossOffset={SUBMENU_CROSS_OFFSET}
+                      className={WIDTH[width]}
+                    >
+                      <MenuList
+                        label={o.label}
+                        groups={[{ options: [...o.items] }]}
+                        onAction={onAction}
+                        closeOnSelect={closeOnSelect}
+                        emptyText={emptyText}
+                        width={width}
+                      />
+                    </Popover>
+                  </SubmenuTrigger>
+                );
+              return o.divider === true
+                ? [
+                    <Separator
+                      key={`${o.id}-divider`}
+                      className="my-1 h-px border-0 bg-line"
+                    />,
+                    item,
+                  ]
+                : [item];
+            })}
+          </MenuSection>
+        );
+      })}
     </AriaMenu>
   );
 }

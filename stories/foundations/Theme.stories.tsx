@@ -3,6 +3,7 @@ import {
   Callout,
   Field,
   Meter,
+  SegmentedControl,
   Tag,
   TextInput,
   type Theme,
@@ -11,8 +12,8 @@ import {
   type Tone,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { type CSSProperties, useState } from "react";
-import { expect } from "storybook/test";
+import { type CSSProperties, useEffect, useState } from "react";
+import { expect, userEvent, waitFor, within } from "storybook/test";
 
 /* ==================================================================== *
  *  THEME — the same tokens, two palettes.
@@ -133,6 +134,8 @@ const MARCA = {
   "--brand-chrome-raised": "#163c35",
   "--brand-chrome-edge": "#0d2b26",
   "--brand-chrome-link": "#9fd6c6",
+  "--brand-ground": "#f4f7f6",
+  "--brand-dark-ground": "#111816",
   "--brand-dark-primary": "#7fcbb6",
   "--brand-dark-primary-hover": "#a3dccb",
   "--brand-dark-accent": "#e2a93b",
@@ -174,7 +177,60 @@ export const Marca: Story = {
     await expect(token("claro", "--color-primary")).toBe("#0f5c4d");
     await expect(token("oscuro", "--color-primary")).toBe("#7fcbb6");
     await expect(token("claro", "--color-chrome")).toBe("#0d2b26");
+    // The paper is the brand's too: a cooler white, a deeper night.
+    await expect(token("claro", "--color-ground")).toBe("#f4f7f6");
+    await expect(token("oscuro", "--color-ground")).toBe("#111816");
     // What a brand leaves unset keeps the system's value.
     await expect(token("claro", "--color-on-accent")).toBe("#1a1714");
+  },
+};
+
+const ESQUINAS = [
+  { value: "0", label: "Recto" },
+  { value: "1", label: "Sistema" },
+  { value: "1.5", label: "Redondo" },
+];
+
+/** The knob goes on `:root`, as a brand would put it; leaving the story gives it back. */
+function Esquinas() {
+  const [radius, setRadius] = useState("1");
+  useEffect(() => {
+    const root = document.documentElement;
+    root.style.setProperty("--brand-radius", radius);
+    return () => {
+      root.style.removeProperty("--brand-radius");
+    };
+  }, [radius]);
+  return (
+    <div className="flex flex-col gap-4">
+      <SegmentedControl
+        aria-label="Esquinas"
+        value={radius}
+        onChange={setRadius}
+        options={ESQUINAS}
+      />
+      <Sample />
+    </div>
+  );
+}
+
+/** **Las esquinas, con una sola perilla.** `--brand-radius` en `:root` multiplica toda la
+ *  escala: `0` es todo recto (las cápsulas también), `1` es la del sistema, `1.5` más redonda.
+ *  Los pasos guardan su proporción, así un menú sigue concéntrico con sus filas. Un paso
+ *  suelto también se puede fijar (`--brand-radius-control: 6px`). */
+export const EsquinasDeLaMarca: Story = {
+  name: "Esquinas",
+  render: () => <Esquinas />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const corner = () =>
+      getComputedStyle(canvas.getByRole("button", { name: "Duplicar" })).borderTopLeftRadius;
+    await expect(corner()).toBe("8px");
+    await userEvent.click(canvas.getByRole("radio", { name: "Recto" }));
+    await waitFor(() => expect(corner()).toBe("0px"));
+    await userEvent.click(canvas.getByRole("radio", { name: "Redondo" }));
+    await waitFor(() => expect(corner()).toBe("12px"));
+    await userEvent.click(canvas.getByRole("radio", { name: "Sistema" }));
+    await waitFor(() => expect(corner()).toBe("8px"));
   },
 };

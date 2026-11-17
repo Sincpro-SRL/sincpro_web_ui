@@ -67,7 +67,7 @@ export function JoinWord({
         {word}
       </button>
       {open ? (
-        <span className="absolute top-full left-0 z-40 mt-1 rounded-panel border border-line-strong bg-surface p-1.5 shadow-float">
+        <span className="absolute top-full left-0 z-40 mt-1 rounded-box border border-line-strong bg-surface p-1 shadow-float">
           <Tags
             stack
             surface="canvas"

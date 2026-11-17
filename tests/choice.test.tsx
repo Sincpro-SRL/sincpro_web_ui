@@ -9,6 +9,7 @@ import {
   SegmentedControl,
   Slider,
   SPANISH_COPY,
+  SurfaceProvider,
   Switch,
   UiCopyProvider,
 } from "@sincpro/web-ui";
@@ -170,4 +171,24 @@ test("nothing chosen, or a value that is not an option, reads as empty instead o
   assert.doesNotThrow(() =>
     renderToStaticMarkup(<RadioGroup value={null} options={MONEDAS} />),
   );
+});
+
+test("a segmented control on the chrome speaks the chrome's palette, not a white box", () => {
+  const options = [
+    { value: "light", label: "Claro" },
+    { value: "dark", label: "Oscuro" },
+  ];
+  const chrome = renderToStaticMarkup(
+    <SurfaceProvider value="chrome">
+      <SegmentedControl aria-label="Tema" value="light" options={options} />
+    </SurfaceProvider>,
+  );
+  assert.match(chrome, /border-chrome-ink\/25 bg-chrome-ink\/6/);
+  assert.match(chrome, /bg-chrome-ink\/15 text-chrome-ink/, "the chosen one");
+  assert.doesNotMatch(chrome, /bg-surface/);
+
+  const canvas = renderToStaticMarkup(
+    <SegmentedControl aria-label="Tema" value="light" options={options} />,
+  );
+  assert.match(canvas, /border-line-strong bg-surface/, "the canvas is as it was");
 });

@@ -27,7 +27,12 @@ export {
   CardNumberInput,
 } from "@sincpro/web-ui/primitives/field/CardNumberInput";
 /* An address to reach someone: typed with its keyboard, read as a link. */
-export { Checkbox, type CheckItem, CheckList } from "@sincpro/web-ui/primitives/field/Checks";
+export {
+  Checkbox,
+  type CheckItem,
+  CheckList,
+  CheckMark,
+} from "@sincpro/web-ui/primitives/field/Checks";
 export { CodeInput } from "@sincpro/web-ui/primitives/field/CodeInput";
 export { ColorInput } from "@sincpro/web-ui/primitives/field/ColorInput";
 export {

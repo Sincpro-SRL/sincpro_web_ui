@@ -19,6 +19,7 @@ import { GRAIN_ORDER } from "@sincpro/web-ui/foundations/grouping";
 import { useSurface } from "@sincpro/web-ui/foundations/surface";
 import { Rule } from "@sincpro/web-ui/primitives/block/Block";
 import { Button } from "@sincpro/web-ui/primitives/button/index";
+import { chosenTone } from "@sincpro/web-ui/primitives/tag/Tag";
 import { Tags } from "@sincpro/web-ui/primitives/tag/Tags";
 import { Plus, Trash2 } from "lucide-react";
 import { Fragment, useMemo, useState } from "react";
@@ -176,7 +177,7 @@ function AddTag({
         {label}
       </button>
       {open ? (
-        <span className="absolute top-full left-0 z-40 mt-1 max-h-64 overflow-y-auto rounded-panel border border-line-strong bg-surface p-1 shadow-float">
+        <span className="absolute top-full left-0 z-40 mt-1 max-h-64 overflow-y-auto rounded-box border border-line-strong bg-surface p-1 shadow-float">
           <Tags
             stack
             label={label}
@@ -732,7 +733,7 @@ export function CriteriaBuilder({
                   })
                 }
                 className={`rounded-pill border px-2 py-0.5 text-micro ${
-                  chosen ? "border-accent/40 bg-accent/18 text-ink" : `text-muted ${box}`
+                  chosen ? chosenTone("canvas") : `text-muted ${box}`
                 }`}
               >
                 {name}
