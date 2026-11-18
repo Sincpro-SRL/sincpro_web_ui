@@ -232,67 +232,68 @@ export function Row({
           />
         )}
 
-        {/* One line while the two of them fit, two when they do not. It is not a
-          preference: with the name and the metadata on the same line, the
-          metadata of the row above and the one below fall at the same height
-          and get compared without reading — which is the only thing a metadata
-          in a list is good for. When there is no room for that, what wraps is
-          the metadata and never the name.
+        {/* ONE structure for every row: the name, its meta UNDER it, the tags at the end.
 
-          **There is no width written here, and that is the whole point.** The
-          zone asks for `--container-name` and the metadata for what it says; if
-          both fit on the line they stay on it, and if they do not, the line
-          breaks by itself. A checkbox, an icon or an open actions menu take
-          their width from this same line, so a list that selects wraps a little
-          earlier than one that does not without anybody declaring it — and a
-          row inside a drawer, a card or the peek does the right thing without
-          being told where it is. */}
-        <div
-          className={`flex min-w-0 shrink grow basis-(--container-name) flex-wrap items-center gap-y-0 ${byDensity(
-            d,
-            "gap-x-3",
-            "gap-x-2",
-          )}`}
-        >
-          <span className="min-w-0 grow basis-(--container-name)">
-            {/* The name opens the record; a row that only offers a preview opens the preview —
-                the name used to swallow the click (`stopPropagation`) and do nothing. */}
-            <RecordLink
-              {...((onOpen ?? onPeek) === undefined ? {} : { onClick: (onOpen ?? onPeek)! })}
-              title={name}
+          It used to be one line while the name and the meta fit and two when they did not —
+          and that was decided row by row, by the length of each meta. In the same list a row
+          with a short meta put it to the RIGHT of the name and the next one UNDER it, and on
+          a 2000 px workspace the meta landed 1300 px away from the name it describes. Now
+          the meta is always under the name, and the text has a reading width
+          (`--container-row-text`): the tags sit right after it, at the same place in every
+          row, instead of at the far edge of the window.
+
+          What the WIDTH changes is decided by the list, not by the row's content: this box
+          is a container, and under `--container-row-split` — the name's ask plus the tags'
+          — the tags drop to a line of their own. Every row has the same box, so every row
+          makes the same decision. A checkbox, an icon or a row of actions take their width
+          from the same line, so a list that selects drops the tags a little earlier without
+          anybody declaring it. */}
+        <div className="@container/row min-w-0 grow">
+          <div
+            className={`flex min-w-0 items-center gap-y-1 @max-row-split/row:flex-wrap ${byDensity(
+              d,
+              "gap-x-3",
+              "gap-x-2",
+            )}`}
+          >
+            <span
+              data-slot="row-text"
+              className="flex min-w-0 shrink grow basis-(--container-name) flex-col @row-split/row:max-w-(--container-row-text)"
             >
-              {name}
-            </RecordLink>
-          </span>
-          {meta === undefined ? null : (
-            /* Wrapped or not, the metadata is still there —it is what saves
-             having to open a set to know whether it is a thousand rows or a
-             million— and it truncates instead of wrapping into itself: three
-             lines per row in a 480 px drawer means three rows fit on screen. */
-            <span className="min-w-0 truncate text-micro tabular-nums text-muted">
-              {meta}
+              {/* The name opens the record; a row that only offers a preview opens the
+                  preview — the name used to swallow the click (`stopPropagation`) and do
+                  nothing. */}
+              <RecordLink
+                {...((onOpen ?? onPeek) === undefined
+                  ? {}
+                  : { onClick: (onOpen ?? onPeek)! })}
+                title={name}
+              >
+                {name}
+              </RecordLink>
+              {meta === undefined ? null : (
+                /* It truncates instead of wrapping into itself: three lines per row in a
+                   480 px drawer means three rows fit on screen. In mono figures: under the
+                   name, row after row, the dates and amounts line up. */
+                <span className="min-w-0 truncate text-micro tabular-nums text-muted">
+                  {meta}
+                </span>
+              )}
             </span>
-          )}
-          {/* The tags go in their own column and not glued to the name. Hanging off
-            the name they land wherever each one ends —one in the middle, the next
-            at twice that— and twelve tags at twelve different heights is exactly
-            what makes a list read as cluttered. In a column they get compared top
-            to bottom without reading, which is what a tag exists for.
-
-            The column is the END of the name's line (`ms-auto`), and it ASKS FOR
-            `--container-tags`. With room it takes all of it and the tags fall on the
-            same vertical, which is the point. Without room it does what the metadata
-            does: it drops to the line below, still on the right edge, and the name
-            keeps the first line whole. It used to be a column beside the line, and
-            on a 390 px phone it held its width while the name shrank to «Ve…» — the
-            one thing a row exists to say. It stops at the width of its own tags:
-            what would shrink below that is a tag, and a tag that shrinks stops being
-            readable. */}
-          {tags === undefined ? null : (
-            <span className="ms-auto flex min-w-fit shrink basis-(--container-tags) items-center justify-end gap-1.5">
-              {tags}
-            </span>
-          )}
+            {/* The tags in their own column, right after the text, so they are compared
+                top to bottom without reading — which is what a tag exists for. The column
+                asks for `--container-tags` and stops at the width of its own tags: what
+                would shrink below that is a tag, and a tag that shrinks stops being
+                readable. On a narrow list it takes a line of its own, under the meta. */}
+            {tags === undefined ? null : (
+              <span
+                data-slot="row-tags"
+                className="flex min-w-fit shrink-0 basis-(--container-tags) flex-wrap items-center gap-1.5 @max-row-split/row:basis-full"
+              >
+                {tags}
+              </span>
+            )}
+          </div>
         </div>
 
         {/* The gesture, made visible. It shows up on hover and always occupies its
@@ -412,24 +413,28 @@ export function RowHeader({
       ) : !withIcon ? null : (
         <span className="size-(--size-icon-md) shrink-0" aria-hidden />
       )}
-      {/* The same box `Row` builds, with the same requests: when the row
-          splits its line, the `meta` label drops to the second just like the
-          `meta` it labels. Tracing the box is the only thing that keeps aligned
-          two things that are drawn separately. */}
-      <div
-        className={`flex min-w-0 shrink grow basis-(--container-name) flex-wrap items-center gap-y-0 ${byDensity(
-          d,
-          "gap-x-3",
-          "gap-x-2",
-        )}`}
-      >
-        <span className={`min-w-0 grow basis-(--container-name) ${rotulo}`}>{name}</span>
-        {meta === undefined ? null : <span className={`min-w-0 ${rotulo}`}>{meta}</span>}
-        {tags === undefined ? null : (
-          <span className="ms-auto flex min-w-fit shrink basis-(--container-tags) items-center justify-end">
-            <span className={rotulo}>{tags}</span>
+      {/* The same box `Row` builds, with the same container and the same requests: the
+          `meta` label goes under the `name` label, as the meta goes under the name, and the
+          `tags` label where the tags column starts. Tracing the box is the only thing that
+          keeps aligned two things that are drawn separately. */}
+      <div className="@container/row min-w-0 grow">
+        <div
+          className={`flex min-w-0 items-center gap-y-1 @max-row-split/row:flex-wrap ${byDensity(
+            d,
+            "gap-x-3",
+            "gap-x-2",
+          )}`}
+        >
+          <span className="flex min-w-0 shrink grow basis-(--container-name) flex-col @row-split/row:max-w-(--container-row-text)">
+            <span className={rotulo}>{name}</span>
+            {meta === undefined ? null : <span className={rotulo}>{meta}</span>}
           </span>
-        )}
+          {tags === undefined ? null : (
+            <span className="flex min-w-fit shrink-0 basis-(--container-tags) items-center @max-row-split/row:basis-full">
+              <span className={rotulo}>{tags}</span>
+            </span>
+          )}
+        </div>
       </div>
       {trail !== undefined ? (
         <span inert aria-hidden className="invisible flex shrink-0 items-center gap-1">

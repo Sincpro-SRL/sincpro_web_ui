@@ -102,6 +102,7 @@ export const SPANISH_COPY: UiCopyOverride = {
     openAsPanel: "Abrir como panel",
     openNavigation: "Abrir la navegación",
     navigation: "Navegación",
+    search: "Buscar…",
   },
   field: {
     drop: "Soltá un archivo acá, o elegí uno.",

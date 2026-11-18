@@ -2,6 +2,7 @@ import { GroupHeader, Row, Tag } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { FileText, Receipt, ShoppingCart } from "lucide-react";
 import { useState } from "react";
+import { expect } from "storybook/test";
 
 /**
  * Context: acá van las PIEZAS de una lista, cada una sola. La lista armada vive
@@ -130,4 +131,92 @@ export const Grupos: Story = {
       </Caja>
     </div>
   ),
+};
+
+/* quipu's dashboard: the shop's orders, one with a short meta and one with a long one — the
+   pair that, before, laid out two different ways in the same list. */
+const COMPRAS = [
+  { id: "c1", n: "Pedido 0007 · Ana Gutiérrez", m: "2 ítems · Bs 120,00", t: "por enviar" },
+  {
+    id: "c2",
+    n: "Pedido 0008 · Colegio de Auditores de Oruro",
+    m: "14 ítems · 12/11/2026 · retiro en oficina · Bs 880,00",
+    t: "pagado",
+  },
+  { id: "c3", n: "Pedido 0009 · Luis Mamani", m: "1 ítem · Bs 45,00", t: "por enviar" },
+] as const;
+
+const ANCHOS = [390, 1280, 2000] as const;
+
+/**
+ * **Una sola estructura para cada fila, en cualquier ancho.** El nombre, el `meta` debajo y las
+ * fichas al final. Antes la fila decidía sola: con un `meta` corto lo ponía a la DERECHA del
+ * nombre y con uno largo DEBAJO — en la misma lista. Y en un espacio de 2000 px el `meta` y la
+ * ficha quedaban a 1300 px del nombre. Ahora el texto tiene un ancho de lectura y las fichas
+ * van justo después; en un ancho angosto bajan a una línea propia, en TODAS las filas.
+ */
+export const MismaEstructura: Story = {
+  name: "Una estructura · en 390, 1280 y 2000 px",
+  args: { name: "" },
+  render: () => (
+    <div className="flex flex-col gap-6 overflow-x-auto bg-ground p-8">
+      {ANCHOS.map((ancho) => (
+        <div key={ancho} data-ancho={ancho} style={{ width: ancho }}>
+          <Caja label={`${ancho} px`}>
+            {COMPRAS.map((c) => (
+              <Row
+                key={c.id}
+                icon={ShoppingCart}
+                name={c.n}
+                meta={c.m}
+                tags={<Tag tone={c.t === "pagado" ? "good" : "warn"}>{c.t}</Tag>}
+                onOpen={() => {}}
+                onPeek={() => {}}
+              />
+            ))}
+          </Caja>
+        </div>
+      ))}
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    for (const ancho of ANCHOS) {
+      const caja = canvasElement.querySelector<HTMLElement>(`[data-ancho="${ancho}"]`)!;
+      const filas = [...caja.querySelectorAll<HTMLElement>('[data-slot="row"]')];
+      await expect(filas).toHaveLength(COMPRAS.length);
+      const medidas = filas.map((fila) => {
+        const texto = fila.querySelector<HTMLElement>('[data-slot="row-text"]')!;
+        const [nombre, meta] = [...texto.children].map((el) => el.getBoundingClientRect());
+        return {
+          texto: texto.getBoundingClientRect(),
+          nombre: nombre!,
+          meta: meta!,
+          fichas: fila
+            .querySelector<HTMLElement>('[data-slot="row-tags"]')!
+            .getBoundingClientRect(),
+        };
+      });
+      for (const m of medidas) {
+        // The meta is UNDER the name, short or long.
+        await expect(m.meta.top).toBeGreaterThanOrEqual(m.nombre.bottom - 1);
+        await expect(Math.abs(m.meta.left - m.nombre.left)).toBeLessThan(1);
+      }
+      // Every row puts its tags at the same place.
+      const lefts = medidas.map((m) => Math.round(m.fichas.left));
+      await expect(Math.max(...lefts) - Math.min(...lefts)).toBeLessThanOrEqual(1);
+      const primera = medidas[0]!;
+      if (ancho === 390) {
+        // Narrow: the tags take a line of their own, under the meta — in every row.
+        for (const m of medidas)
+          await expect(m.fichas.top).toBeGreaterThanOrEqual(m.meta.bottom - 1);
+      } else {
+        // Wide: beside the text, and close to it — the text stops at its reading width.
+        for (const m of medidas) await expect(m.fichas.top).toBeLessThan(m.meta.bottom);
+        const lectura = parseFloat(getComputedStyle(document.documentElement).fontSize) * 40;
+        await expect(primera.fichas.left - primera.texto.left).toBeLessThanOrEqual(
+          lectura + 16,
+        );
+      }
+    }
+  },
 };

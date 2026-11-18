@@ -30,7 +30,8 @@ import { cloneElement, isValidElement, type ReactElement, type ReactNode } from 
  *
  *  What goes in it is decided, not composed:
  *
- *   1. With `dirty`, the bar holds «sin guardar», Discard and Save — the same
+ *   1. With `dirty`, the bar holds Discard and Save — and why it cannot be saved yet, when
+ *      it cannot (`blocked`) — the same
  *      precedence the rail already has: while there are unsaved changes the
  *      only things that can be done are confirm or throw them away.
  *   2. Otherwise, the action written with `role="primary"` and NOTHING else.

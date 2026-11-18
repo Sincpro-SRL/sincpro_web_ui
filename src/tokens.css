@@ -541,29 +541,32 @@
      It is asked for and not imposed —a base and not a fixed width— because a
      row also lands in a 480 px drawer, and there a quarter of the box reserved
      for the word «vencida» is a quarter taken away from the name. When there
-     is not enough for everyone the column gives back what it is not using, and
-     it stops at the width of its own tags: from there down what shrinks is a
-     tag, not the column. */
+     is not enough for both, the column takes a line of its own under the
+     name and its meta (`--container-row-split`); it never shrinks below the
+     width of its own tags: from there down what shrinks is a tag, not the
+     column. */
   --container-tags: 8rem;
 
-  /* What a name ASKS FOR in a list row before the rest of the line gives up
-     its place.
+  /* What a name ASKS FOR in a list row before the tags give up its line.
 
-     It is the only measure the row needs to lay itself out, and it is not a
-     breakpoint: there is no width at which a row «becomes narrow». There is a
-     name that asks for 12 rem, a metadata that asks for what it says, a tag
-     column that asks for `--container-tags`, and a box. When the three do not
-     fit, the metadata drops to the line below and the name keeps the first one
-     whole — it is what identifies the record, and cut down to «ve…» it
-     identifies nothing.
-
-     That it is an ask and not a minimum is what makes the row work in a box
-     narrower than this: with the metadata already below, the name uses whatever
-     there is instead of overflowing. And it is what makes a checkbox, an icon
-     or a row of actions shift the moment it wraps without anyone declaring it
-     — they take their width from the same line, and the ask stops being met
-     earlier. */
+     It is an ask and not a minimum: in a box narrower than this the name uses
+     whatever there is instead of overflowing — it is what identifies the record,
+     and cut down to «ve…» it identifies nothing. With the tags' ask it makes
+     `--container-row-split`, the width under which the tags take a line of
+     their own. */
   --container-name: 12rem;
+
+  /* The widest the TEXT of a list row gets — its name and the meta under it. On a 2000 px
+     workspace a row that stretched its text to the edge put the tags 1300 px away from the
+     name they describe; capped, the tags sit right after it, at the same place in every
+     row, and what is left of the line is empty, not a gap to jump across. */
+  --container-row-text: 40rem;
+
+  /* Under this width a list row's tags leave the name's line for one of their own: it is
+     the name's ask (`--container-name`), the tags' (`--container-tags`) and the gap
+     between, rounded up. Written as a figure because a container query cannot read a
+     variable. It is a query on the ROW'S box, so every row of a list decides the same. */
+  --container-row-split: 21rem;
 
   /* The widest a chip of the search bar gets before it truncates. A filter written by hand
      («cliente contiene Importadora y Exportadora…») would otherwise take a whole line of the

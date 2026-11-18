@@ -43,7 +43,7 @@ const meta: Meta = {
     docs: {
       description: {
         component:
-          "`Sidebar` va en `AppFrame sidebar` sin `menu`: marca y usuario arriba, la navegación (`NavigationTree`) en el medio con su propio scroll, y las acciones de la cuenta abajo. En el teléfono `AppFrame` la abre como un cajón desde `narrowMenu` (una `TopBar` con el nombre del producto, que dibuja el botón primero).",
+          "`Sidebar` va en `AppFrame sidebar` sin `menu`: marca y usuario arriba, la navegación (`NavigationTree`) en el medio con su propio scroll, y las acciones de la cuenta abajo. `search` dibuja «Buscar…  ⌘K» bajo el usuario: la paleta de la aplicación, a la vista. En el teléfono `AppFrame` la abre como un cajón desde `narrowMenu` (una `TopBar` con el nombre del producto, que dibuja el botón primero).",
       },
     },
   },
@@ -136,6 +136,7 @@ function Portal({
         <Sidebar
           brand={logo === undefined ? MARCA : { ...MARCA, logo }}
           user={{ name: "Ana Gutiérrez", detail: "Tesorería" }}
+          search={{ onSearch: () => setUltima("buscar") }}
           actions={CUENTA}
           onAction={setUltima}
           footer={<ThemeSwitcher />}
@@ -146,6 +147,7 @@ function Portal({
       narrowMenu={
         <TopBar
           app={MARCA}
+          search={{ onSearch: () => setUltima("buscar") }}
           systray={
             <SystrayButton
               icon={Bell}
@@ -173,8 +175,9 @@ function Portal({
 }
 
 /** **La columna es el cromo.** Tan alta como la ventana: el producto arriba a la izquierda,
- *  las secciones con lo que espera en cada una, y la cuenta abajo, siempre a la vista aunque
- *  el mapa scrollee. Elegí «Teléfono» en la barra de tamaños para verla como cajón. */
+ *  «Buscar…» con su atajo debajo — la paleta de la aplicación, a la vista —, las secciones con
+ *  lo que espera en cada una, y la cuenta abajo, siempre a la vista aunque el mapa scrollee.
+ *  Elegí «Teléfono» en la barra de tamaños para verla como cajón. */
 export const ComoCromo: Story = {
   render: () => <Portal />,
   play: async ({ canvasElement }) => {
@@ -183,6 +186,13 @@ export const ComoCromo: Story = {
     await expect(window.innerWidth).toBe(1280);
     // Beside the view, with nothing on top of it: the phone's bar is not drawn.
     await expect(canvas.queryByRole("button", { name: "Abrir la navegación" })).toBeNull();
+    /* The palette, made visible: it says its shortcut the way this keyboard writes it, and a
+       press calls `onSearch`. It does not listen for the key itself — the palette does. */
+    const buscar = canvas.getByRole("button", { name: "Buscar…" });
+    await expect(buscar.getAttribute("aria-keyshortcuts")).toMatch(/^(Meta|Control)\+K$/);
+    await expect(buscar.textContent).toMatch(/⌘K|Ctrl K/);
+    await userEvent.click(buscar);
+    await expect(canvasElement.textContent).toContain("buscar");
     await userEvent.click(canvas.getByRole("link", { name: /Comprobantes por revisar/ }));
     await expect(canvas.getByTestId("pantalla").textContent).toBe("Comprobantes por revisar");
     await userEvent.click(canvas.getByRole("button", { name: "Salir" }));
@@ -191,8 +201,8 @@ export const ComoCromo: Story = {
 };
 
 /** **En el teléfono, la misma columna es un cajón.** La barra de arriba tiene el nombre del
- *  producto y, primero, el botón que la abre. Elegir una pantalla la cierra: ya fuiste a
- *  donde ibas. El velo, Escape y la × también. */
+ *  producto y, primero, el botón que la abre; «Buscar…» queda en la lupa, a un toque. Elegir
+ *  una pantalla cierra el cajón: ya fuiste a donde ibas. El velo, Escape y la × también. */
 export const EnElTelefono: Story = {
   render: () => <Portal />,
   globals: { viewport: { value: "telefono", isRotated: false } },
@@ -200,6 +210,11 @@ export const EnElTelefono: Story = {
     const canvas = within(canvasElement);
     const page = within(canvasElement.ownerDocument.body);
     await expect(window.innerWidth).toBe(390);
+    /* The search folds to the magnifier: no shortcut drawn on a phone, the name stays. */
+    const lupa = canvas.getByRole("button", { name: "Buscar…" });
+    await expect(lupa.getBoundingClientRect().width).toBeLessThanOrEqual(44);
+    await userEvent.click(lupa);
+    await expect(canvasElement.textContent).toContain("buscar");
     await userEvent.click(canvas.getByRole("button", { name: "Abrir la navegación" }));
     const cajon = await page.findByRole("dialog", { name: "Navegación" });
     await userEvent.click(within(cajon).getByRole("link", { name: /Padrón/ }));

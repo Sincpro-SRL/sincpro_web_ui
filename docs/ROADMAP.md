@@ -17,7 +17,7 @@ data comes from). What is marked ✅ with a date was done in the round of 2026-1
 | What changed, while editing: a mark per field and «2 cambios sin guardar» | ✅ 11-03 | `Field changed`, `DirtyState.changes`                                              |
 | Save without losing focus or saving twice                                 | ✅ 11-03 | `Button busy` (in `DirtyActions`); when done, focus returns to the name            |
 | Knowing it was saved, without the app writing it                          | ✅ 11-03 | «✓ Guardado» in the rail (`useJustSaved`, `status` region)                         |
-| Why it cannot be saved, in view and not in a `title`                      | ✅ 11-03 | `DirtyState.blocked` in place of «sin guardar», and it describes the button        |
+| Why it cannot be saved, in view and not in a `title`                      | ✅ 11-03 | `DirtyState.blocked`, the rail's only mark (11-17), and it describes the button    |
 | Focus is seen arriving and the label goes with it                         | ✅ 11-03 | `focus-in` (only with motion allowed), `Field` with `focus-within`                 |
 | A fast load does not flash a skeleton                                     | ✅ 11-03 | `animate-reveal-late` (appears at 200 ms) in `Skeleton` and `RecordSkeleton`       |
 | A long fact (an email) does not overlap the one beside it                 | ✅ 11-03 | `Sheet` (`wrap-anywhere`); density is given by `DensityProvider`                   |

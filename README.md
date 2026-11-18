@@ -218,11 +218,13 @@ of classes that change with the next refactor:
 
 The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`,
 `menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card`, `board.tile`,
-`metric`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`, `search.panel`,
-`search.suggestions`, `table`, `table.head`, `topbar`, `topbar.brand`, `topbar.menus`,
-`topbar.actions`, `topbar.user`, `frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`,
-`sidebar.brand`, `sidebar.user`, `sidebar.nav`, `sidebar.account`, `navigation`,
-`navigation.item`. Put your rules in a cascade layer above web-ui's, or outside any layer.
+`metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
+`search.panel`, `search.suggestions`, `search-entry`, `search-entry.keys`, `table`,
+`table.head`, `topbar`, `topbar.brand`, `topbar.menus`, `topbar.actions`, `topbar.user`,
+`frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`, `sidebar.brand`,
+`sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
+`navigation.item`, `dirty.blocked`. Put your rules in a cascade layer above web-ui's, or
+outside any layer.
 
 #### Living beside a site's own CSS
 

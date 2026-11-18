@@ -123,6 +123,7 @@ test("each customizable component names its root and its parts", () => {
   part(draw(<RecordCard title="Factura" />), "record-card");
   part(draw(<BoardTile title="Por canal">x</BoardTile>), "board.tile");
   part(draw(<Metric value={4} label="vencidas" />), "metric");
+  part(draw(<Metric value={6} label="por revisar" detail="Bs 1.000,00" />), "metric.detail");
   part(
     draw(
       <DataTable
@@ -148,6 +149,7 @@ test("each customizable component names its root and its parts", () => {
         <Sidebar
           brand={{ label: "Colegio" }}
           user={{ name: "Ana" }}
+          search={{ onSearch: () => {} }}
           actions={[{ id: "s", label: "Salir" }]}
         >
           <NavigationTree items={[{ id: "a", label: "Padrón" }]} current="a" />
@@ -165,12 +167,20 @@ test("each customizable component names its root and its parts", () => {
     "sidebar",
     "sidebar.brand",
     "sidebar.user",
+    "sidebar.search",
+    "search-entry",
     "sidebar.nav",
     "sidebar.account",
     "navigation",
     "navigation.item",
   ])
     part(frame, name);
+});
+
+test("every part a component names is documented — a part nobody lists is not a contract", () => {
+  const named = new Set([...SRC.matchAll(/data-ui="([a-z.-]+)"/g)].map(([, name]) => name!));
+  const missing = [...named].filter((name) => !README.includes(`\`${name}\``));
+  assert.deepEqual(missing, []);
 });
 
 test("the look reads the tokens: the system's classes are gone from what an app can turn", () => {

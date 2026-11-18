@@ -1,6 +1,10 @@
 "use client";
 
 import { type BrandLogo, BrandMark } from "@sincpro/web-ui/components/shell/brandMark";
+import {
+  SearchEntry,
+  type SearchEntryProps,
+} from "@sincpro/web-ui/components/shell/SearchEntry";
 import { useSidebarDrawer } from "@sincpro/web-ui/components/shell/sidebarDrawer";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
@@ -16,6 +20,7 @@ import type { ReactNode } from "react";
  *      │ ◆ Colegio            │   ← the product
  *      │ (AG) Ana Gutiérrez   │   ← who I am
  *      │      Tesorería       │
+ *      │ ⌕ Buscar…        ⌘K  │   ← the way into the palette
  *      ├──────────────────────┤
  *      │ ▾ Socios             │   ← the navigation (a `NavigationTree`):
  *      │     Padrón       12  │     it scrolls on its own
@@ -65,6 +70,9 @@ export type SidebarProps = {
   brand?: { label: string; icon?: LucideIcon; logo?: BrandLogo };
   /** Who is signed in. */
   user?: { name: string; detail?: string; avatar?: string };
+  /** «Buscar…  ⌘K» under the product and the user: the application's palette, made visible.
+   *  `onSearch` opens it; the palette keeps listening for its own key. */
+  search?: Omit<SearchEntryProps, "layout" | "surface">;
   /** The navigation: a `NavigationTree`. It scrolls; the top and the bottom stay. */
   children: ReactNode;
   /** The account, pinned to the bottom: change the password, view the site, sign out. */
@@ -199,6 +207,7 @@ function Action({
 export function Sidebar({
   brand,
   user,
+  search,
   children,
   actions,
   onAction,
@@ -208,7 +217,7 @@ export function Sidebar({
   const copy = useUiCopy();
   const sup = useSurface(surface);
   const skin = SKIN[sup];
-  const head = brand !== undefined || user !== undefined;
+  const head = brand !== undefined || user !== undefined || search !== undefined;
   const foot = (actions !== undefined && actions.length > 0) || footer !== undefined;
   return (
     <SurfaceProvider value={sup}>
@@ -221,6 +230,11 @@ export function Sidebar({
           <div className={`shrink-0 border-b pb-2 ${skin.line}`}>
             {brand === undefined ? null : <Brand brand={brand} skin={skin} />}
             {user === undefined ? null : <User user={user} skin={skin} />}
+            {search === undefined ? null : (
+              <div data-ui="sidebar.search" className="px-2 pt-2">
+                <SearchEntry {...search} />
+              </div>
+            )}
           </div>
         ) : null}
         <div

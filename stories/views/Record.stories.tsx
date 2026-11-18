@@ -732,14 +732,20 @@ export const EditarSinAcciones: Story = {
     /* Every letter landed in the same field, and it still has the focus. */
     await expect(field).toHaveValue("Constructora Illimani SRL");
     await expect(field).toHaveFocus();
-    /* What changed is said: by the field, and by the rail with a count. */
+    /* What changed is said by the field. The rail adds no third «sin guardar» mark: its
+       two buttons only exist while something changed. The count still reaches a screen
+       reader, as the Save button's description. */
     await expect(field).toHaveAccessibleDescription("modificado");
+    await expect(
+      canvas.queryAllByText(/sin guardar/).every((mark) => mark.offsetParent === null),
+    ).toBe(true);
     /* The rail's, not the phone's thumb bar (hidden on a desk). */
-    const marks = canvas.getAllByText("1 cambio sin guardar");
-    await expect(marks.some((mark) => mark.offsetParent !== null)).toBe(true);
+    const save = canvas
+      .getAllByRole("button", { name: /Guardar/ })
+      .find((button) => button.offsetParent !== null)!;
+    await expect(save).toHaveAccessibleDescription("1 cambio sin guardar");
     /* Saving, the button keeps the focus and says it is busy; a second press is not a
        second save. */
-    const save = canvas.getByRole("button", { name: /Guardar/ });
     await userEvent.click(save);
     const busy = canvas.getByRole("button", { name: /Guardando/ });
     await expect(busy).toHaveAttribute("aria-busy", "true");

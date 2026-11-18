@@ -72,9 +72,10 @@ export type UiCopy = {
     location: string;
     status: string;
     faces: string;
-    /** The mark of a record with changes that are not saved yet. */
+    /** @deprecated Not drawn since 2.4: the Save and Discard buttons already say it. Kept so
+     *  a copy table written for an earlier version still type-checks. */
     unsaved: string;
-    /** The same mark when the record says how many fields changed. */
+    /** How many fields changed — the Save button's description, for a screen reader. */
     unsavedOne: string;
     unsavedMany: string;
     save: string;
@@ -112,6 +113,8 @@ export type UiCopy = {
     openNavigation: string;
     /** The drawer's name: what a screen reader hears when it opens. */
     navigation: string;
+    /** The way into the application's palette, in the sidebar or the bar. */
+    search: string;
   };
   field: {
     drop: string;
@@ -1093,6 +1096,7 @@ export const ENGLISH_COPY: UiCopy = {
     openAsPanel: "Open as panel",
     openNavigation: "Open the navigation",
     navigation: "Navigation",
+    search: "Search…",
   },
   field: {
     drop: "Drop a file here, or choose one.",
