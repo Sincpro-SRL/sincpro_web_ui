@@ -189,6 +189,9 @@ export function NavigationTree({
     return (
       <AriaNavigationTreeItem
         data-ui="navigation.item"
+        /* Which one of many it is, for an application's CSS and for a tour that points at
+           one item (`{ part: "navigation.item", key }`). */
+        data-key={item.id}
         key={item.id}
         id={item.id}
         textValue={item.label}

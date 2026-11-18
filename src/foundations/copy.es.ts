@@ -104,6 +104,15 @@ export const SPANISH_COPY: UiCopyOverride = {
     navigation: "Navegación",
     search: "Buscar…",
   },
+  guide: {
+    label: "Recorrido",
+    progress: "{current} de {total}",
+    step: "{progress}: {title}",
+    next: "Siguiente",
+    back: "Atrás",
+    skip: "Saltar el recorrido",
+    finish: "Terminar",
+  },
   field: {
     drop: "Soltá un archivo acá, o elegí uno.",
     dropMany: "Soltá archivos acá, o elegilos.",

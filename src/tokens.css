@@ -654,6 +654,10 @@
      which is where a thumb taps to close it. */
   --container-drawer: min(20rem, calc(100vw - 3rem));
 
+  /* A tour's card: a title and two or three lines read without moving the eye far, and on a
+     phone the screen minus a margin each side, so it never touches an edge. */
+  --container-guide: min(21rem, calc(100vw - 2rem));
+
   /* The record sheet. The rail above it spans the whole window; the sheet does not: a form
      stretched to 1,400 px puts the label and its value half a screen apart and turns every
      input into a bar nobody fills. 72rem holds two columns of fields at a readable width —
@@ -803,6 +807,18 @@
 
   /* A table's header band. */
   --color-ui-table-head: var(--ui-table-head-bg, var(--color-ground));
+
+  /* A guided tour: its card, and the veil around what a step points at. */
+  --radius-ui-guide: var(--ui-guide-radius, var(--radius-panel));
+  --color-ui-guide: var(--ui-guide-bg, var(--color-surface));
+  --color-ui-guide-scrim: var(
+    --ui-guide-scrim,
+    color-mix(in srgb, var(--color-scrim) 55%, transparent)
+  );
+  /* The veil itself: the cut-out around the target throws a spread as wide as the window, in
+     its own colour (`text-ui-guide-scrim`) — the hole is exact and rounded, and it glides. The
+     same in both themes: the colour is the scrim's, which already is per theme. */
+  --shadow-guide-veil: 0 0 0 100vmax currentColor;
 }
 
 @keyframes reveal {

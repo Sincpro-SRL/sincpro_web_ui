@@ -116,6 +116,20 @@ export type UiCopy = {
     /** The way into the application's palette, in the sidebar or the bar. */
     search: string;
   };
+  /** A guided tour (`Guide`). */
+  guide: {
+    /** The tour's name when the application gives none. */
+    label: string;
+    /** «2 de 5»: `{current}` and `{total}`. */
+    progress: string;
+    /** What a screen reader hears on each step: `{progress}` and `{title}`. */
+    step: string;
+    next: string;
+    back: string;
+    skip: string;
+    /** The last step's button, in place of «next». */
+    finish: string;
+  };
   field: {
     drop: string;
     /** The drop zone's sentence when it takes several files at once. */
@@ -1097,6 +1111,15 @@ export const ENGLISH_COPY: UiCopy = {
     openNavigation: "Open the navigation",
     navigation: "Navigation",
     search: "Search…",
+  },
+  guide: {
+    label: "Guided tour",
+    progress: "{current} of {total}",
+    step: "{progress}: {title}",
+    next: "Next",
+    back: "Back",
+    skip: "Skip the tour",
+    finish: "Done",
   },
   field: {
     drop: "Drop a file here, or choose one.",

@@ -155,7 +155,7 @@ association (members, dues, courses, a shop, a gallery), themed with its own col
 | A loading and failed state per board tile, and for the board's own numbers                | ✅ 11-16 | `BoardTile state`, `Board state` (`BoardState`); issue #27               |
 | Public pages (hero, carousel, product grid, checkout) on the same tokens                  | ❓       | not web-ui — a sibling package that imports `tokens.css` (to be decided) |
 
-## 4c. Saying what each thing is (round of 2026-11-17, issue #37)
+## 4c. Saying what each thing is (round of 2026-11-17, issues #37 and #40)
 
 quipu shown as a demo: what the screen already does, it has to SAY.
 
@@ -167,6 +167,9 @@ quipu shown as a demo: what the screen already does, it has to SAY.
 | Every row of a list has the same structure, at 390, 1280 and 2000 px     | ✅ 11-17 | `Row`: meta under the name, `--container-row-text`, `--container-row-split` |
 | A counter says how many and how much                                     | ✅ 11-17 | `Metric detail`                                                             |
 | Every `data-ui` part is documented, or the build fails                   | ✅ 11-17 | `tests/componentTokens.test.tsx`                                            |
+| A guided tour: the screen names each thing where it is (issue #40)       | ✅ 11-17 | `Guide`, `GuideSpot`; stops are `data-ui` parts, `data-key`, `data-guide`   |
+| A tour on a phone goes through the sidebar's drawer and back             | ✅ 11-17 | `Guide` opens and closes the frame's drawer (`useSidebarDrawer`)            |
+| A «¿Qué es esto?» mode and hotspots on new features                      | ❓       | later, on the same anchors                                                  |
 
 ## 5. Tests
 
