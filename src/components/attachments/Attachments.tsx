@@ -1,11 +1,11 @@
 "use client";
 
 import {
-  type AttachmentKind,
+  type AttachmentFile,
   attachmentKind,
-  fileExtension,
   formatFileSize,
 } from "@sincpro/web-ui/components/attachments/files";
+import { FileThumb } from "@sincpro/web-ui/components/attachments/FileThumb";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { type FormMode, useFormMode } from "@sincpro/web-ui/foundations/form";
 import { Button, IconButton, IconLink } from "@sincpro/web-ui/primitives/button/Button";
@@ -15,19 +15,7 @@ import { useToastIfAny } from "@sincpro/web-ui/primitives/notice/Toast";
 import { DateValue } from "@sincpro/web-ui/primitives/value/DateValue";
 import { UserChip } from "@sincpro/web-ui/primitives/value/Person";
 import { ProgressBar } from "@sincpro/web-ui/primitives/value/ProgressBar";
-import {
-  Download,
-  File,
-  FileImage,
-  FileSpreadsheet,
-  FileText,
-  FileType,
-  type LucideIcon,
-  RotateCcw,
-  Trash2,
-  TriangleAlert,
-  X,
-} from "lucide-react";
+import { Download, RotateCcw, Trash2, TriangleAlert, X } from "lucide-react";
 import { useEffect, useId, useRef } from "react";
 
 /* ==================================================================== *
@@ -63,36 +51,6 @@ import { useEffect, useId, useRef } from "react";
  *  files, but cannot gain or lose one — no drop zone, no trash.
  * ==================================================================== */
 
-export type AttachmentStatus = "ready" | "uploading" | "failed";
-
-export type AttachmentFile = {
-  /** The attachment's identity: the server's id, or a local key while it uploads. */
-  id: string;
-  /** The file name as it was saved: «Factura proveedor 0418.pdf». */
-  name: string;
-  /** In bytes. Written in the copy's locale: «1,2 MB». */
-  size?: number;
-  /** The MIME type, when the server knows it. With the name, it picks the icon. */
-  type?: string;
-  /** Where it downloads from. Absent = no download (still uploading, or not allowed). */
-  url?: string;
-  /** A small image for the thumbnail. Defaults to `url` for an image — pass a smaller one
-   *  when the server has it, so a list of 4 MB photos does not load 4 MB photos. */
-  thumbnail?: string;
-  /** Who added it. */
-  by?: string;
-  /** Their face, for the chip. */
-  byAvatar?: string;
-  /** When it was added. */
-  at?: Date | string | number;
-  /** `ready` by default. The application owns it: it is what the upload is really doing. */
-  status?: AttachmentStatus;
-  /** 0 to 100 while `uploading`. Absent = under way without a figure yet. */
-  progress?: number;
-  /** Why it `failed`, in the server's words. */
-  error?: string;
-};
-
 export type AttachmentsProps = {
   files: readonly AttachmentFile[];
   /** Files to add: dropped, pasted or chosen. Present = the drop zone is drawn (in edit
@@ -125,44 +83,6 @@ export type AttachmentsProps = {
    *  text every minute. */
   now?: Date;
 };
-
-const KIND_ICON: Record<AttachmentKind, LucideIcon> = {
-  image: FileImage,
-  pdf: FileText,
-  sheet: FileSpreadsheet,
-  doc: FileType,
-  other: File,
-};
-
-/** The type, at the size of a row: the image itself when there is one, otherwise the icon
- *  of its kind over its extension. The extension is written because three of the five
- *  icons are a page with lines on it — «PDF» and «DOCX» are what tell them apart, and a
- *  word is never a colour that only some people see. */
-function Thumb({ file, kind }: { file: AttachmentFile; kind: AttachmentKind }) {
-  const picture =
-    kind === "image" && file.status !== "failed" ? (file.thumbnail ?? file.url) : undefined;
-  const Icon = KIND_ICON[kind];
-  const extension = fileExtension(file.name).slice(0, 4);
-  return (
-    /* Decorative: the name next to it says which file it is, and the image's `alt` would
-       say it twice. */
-    <span
-      aria-hidden
-      className="flex size-(--size-control-lg) shrink-0 flex-col items-center justify-center gap-0.5 overflow-clip rounded-control border border-line bg-ink/4 text-muted"
-    >
-      {picture === undefined ? (
-        <>
-          <Icon className="size-(--size-icon-md)" strokeWidth={1.75} />
-          {extension === "" ? null : (
-            <span className="text-micro leading-none font-medium uppercase">{extension}</span>
-          )}
-        </>
-      ) : (
-        <img src={picture} alt="" loading="lazy" className="size-full object-cover" />
-      )}
-    </span>
-  );
-}
 
 export function Attachments({
   files,
@@ -253,7 +173,7 @@ export function Attachments({
                 data-status={status}
                 className="flex min-w-0 items-center gap-3 py-2"
               >
-                <Thumb file={file} kind={kind} />
+                <FileThumb file={file} kind={kind} />
                 <div className="flex min-w-0 flex-1 flex-col gap-1">
                   {onOpen === undefined || status !== "ready" ? (
                     <span

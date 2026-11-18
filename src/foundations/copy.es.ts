@@ -611,6 +611,9 @@ export const SPANISH_COPY: UiCopyOverride = {
     cancelUpload: "Cancelar la subida",
     failed: "No se pudo subir el archivo.",
     retry: "Reintentar",
+    files: "Archivos",
+    downloadAll: "Descargar todo",
+    downloadFailed: "No se pudo descargar «{name}».",
   },
   fieldPath: {
     choose: "Elegir un campo",

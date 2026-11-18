@@ -5,6 +5,40 @@
  *  Pure on purpose: the list draws with it, and a test checks it without a browser.
  * ==================================================================== */
 
+/* The shape of a file, shared by every piece that shows one — `Attachments` (the record's
+   list), `FileList` (files inside a message, a card, a section) and the messages that carry
+   them. It lives here, in the pure module, so a model can name it without a component. */
+
+export type AttachmentStatus = "ready" | "uploading" | "failed";
+
+export type AttachmentFile = {
+  /** The attachment's identity: the server's id, or a local key while it uploads. */
+  id: string;
+  /** The file name as it was saved: «Factura proveedor 0418.pdf». */
+  name: string;
+  /** In bytes. Written in the copy's locale: «1,2 MB». */
+  size?: number;
+  /** The MIME type, when the server knows it. With the name, it picks the icon. */
+  type?: string;
+  /** Where it downloads from. Absent = no download (still uploading, or not allowed). */
+  url?: string;
+  /** A small image for the thumbnail. Defaults to `url` for an image — pass a smaller one
+   *  when the server has it, so a list of 4 MB photos does not load 4 MB photos. */
+  thumbnail?: string;
+  /** Who added it. */
+  by?: string;
+  /** Their face, for the chip. */
+  byAvatar?: string;
+  /** When it was added. */
+  at?: Date | string | number;
+  /** `ready` by default. The application owns it: it is what the upload is really doing. */
+  status?: AttachmentStatus;
+  /** 0 to 100 while `uploading`. Absent = under way without a figure yet. */
+  progress?: number;
+  /** Why it `failed`, in the server's words. */
+  error?: string;
+};
+
 /** The five kinds a list of attachments tells apart. Five and not twenty: the icon is there
  *  to say «this one is the spreadsheet» at a glance, and twenty icons are read, not seen. */
 export type AttachmentKind = "image" | "pdf" | "sheet" | "doc" | "other";

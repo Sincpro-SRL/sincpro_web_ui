@@ -178,3 +178,63 @@ export const LeyendoHaciaArriba: Story = {
     await expect(await canvas.findByText("Mensaje 30: corto")).toBeVisible();
   },
 };
+
+/* A download that works offline: the browser saves this text with the file's name. */
+const ejemplo = (name: string) =>
+  `data:text/plain;charset=utf-8,${encodeURIComponent(`Archivo de ejemplo: ${name}`)}`;
+
+const CON_ARCHIVO: ChatMessage[] = [
+  {
+    id: "a1",
+    author: "Luis David",
+    body: "Brochure de la competencia",
+    at: hoy(9, 34),
+    files: [
+      {
+        id: "pdf",
+        name: "Presentación · Control Facilito · MULTISERVICIOS TÉCNICOS.pdf",
+        type: "application/pdf",
+        size: 5_976_883,
+        url: ejemplo("presentacion.pdf"),
+      },
+    ],
+  },
+  {
+    id: "a2",
+    author: "Andrés",
+    body: "",
+    at: hoy(9, 40),
+    mine: true,
+    pending: true,
+    files: [
+      {
+        id: "up",
+        name: "Propuesta Sincpro 2027.pdf",
+        type: "application/pdf",
+        size: 1_200_000,
+        status: "uploading",
+        progress: 45,
+      },
+    ],
+  },
+];
+
+/**
+ * **Con un archivo.** Lo que se manda va en el mensaje, debajo del texto: una tarjeta con el
+ * tipo, el nombre, «PDF · 5,7 MB» y la flecha para bajarlo. El propio que todavía sube muestra
+ * su avance en vez del tamaño, y no se baja hasta que el servidor lo tenga.
+ */
+export const ConUnArchivo: Story = {
+  name: "Con un archivo",
+  args: { messages: CON_ARCHIVO },
+  render: () => <ChatThread messages={CON_ARCHIVO} now={AHORA} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText("Brochure de la competencia")).toBeVisible();
+    await expect(canvas.getByText("5,7 MB")).toBeVisible();
+    await expect(canvas.getAllByRole("link", { name: "Descargar" })).toHaveLength(1);
+    await expect(
+      canvas.getByRole("progressbar", { name: "Subiendo Propuesta Sincpro 2027.pdf" }),
+    ).toBeVisible();
+  },
+};
