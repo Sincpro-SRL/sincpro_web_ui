@@ -1,5 +1,7 @@
 "use client";
 
+import { FileList } from "@sincpro/web-ui/components/attachments/FileList";
+import type { AttachmentFile } from "@sincpro/web-ui/components/attachments/files";
 import {
   type ChatMessage,
   dayLabel,
@@ -51,6 +53,12 @@ export type ChatThreadProps = {
   label?: string;
   /** The «now» the day names are relative to. */
   now?: Date;
+  /** Open a file a message carries. Present = its name is a button; WHERE it opens — a
+   *  peek, a `FilePreview` — is the application's. */
+  onOpenFile?: (file: AttachmentFile, message: ChatMessage) => void;
+  /** Download a file a message carries by code (a token, a signed URL). Without it, a file
+   *  with a `url` downloads by link. Busy while the promise runs; a rejection is said. */
+  onDownloadFile?: (file: AttachmentFile, message: ChatMessage) => void | Promise<unknown>;
 };
 
 export function ChatThread({
@@ -59,6 +67,8 @@ export function ChatThread({
   loadingOlder = false,
   label,
   now,
+  onOpenFile,
+  onDownloadFile,
 }: ChatThreadProps) {
   const copy = useUiCopy();
   const scroller = useRef<HTMLDivElement>(null);
@@ -127,6 +137,8 @@ export function ChatThread({
                 message={message}
                 first={startsRun(group.messages, index)}
                 locale={copy.locale}
+                onOpenFile={onOpenFile}
+                onDownloadFile={onDownloadFile}
               />
             ))}
           </section>
@@ -149,12 +161,14 @@ function Bubble({
   message,
   first,
   locale,
+  onOpenFile,
+  onDownloadFile,
 }: {
   message: ChatMessage;
   /** The first of a run: its author's name is drawn above it. */
   first: boolean;
   locale: string;
-}) {
+} & Pick<ChatThreadProps, "onOpenFile" | "onDownloadFile">) {
   const copy = useUiCopy();
   const time = new Intl.DateTimeFormat(locale, { hour: "2-digit", minute: "2-digit" }).format(
     message.at,
@@ -163,15 +177,32 @@ function Bubble({
     <div
       className={`flex ${message.mine ? "justify-end" : "justify-start"} ${first ? "mt-2" : ""}`}
     >
+      {/* Not confirmed yet: a dashed edge, and «Enviando…» in words. Not a faded bubble —
+          faded, its grey text (the time, a file's size) fell under 4.5:1. */}
       <div
         className={`max-w-prose rounded-control border px-3 py-2 ${
           message.mine ? "border-primary/30 bg-primary/10" : "border-line bg-surface"
-        } ${message.pending === true ? "opacity-70" : ""}`}
+        } ${message.pending === true ? "border-dashed" : ""}`}
       >
         {first && !message.mine ? (
           <p className="text-meta font-medium text-muted">{message.author}</p>
         ) : null}
-        <p className="text-body break-words whitespace-pre-wrap text-ink">{message.body}</p>
+        {message.body === "" ? null : (
+          <p className="text-body break-words whitespace-pre-wrap text-ink">{message.body}</p>
+        )}
+        {message.files === undefined ? null : (
+          <div className="mt-1.5">
+            <FileList
+              files={message.files}
+              {...(onOpenFile === undefined
+                ? {}
+                : { onOpen: (file: AttachmentFile) => onOpenFile(file, message) })}
+              {...(onDownloadFile === undefined
+                ? {}
+                : { onDownload: (file: AttachmentFile) => onDownloadFile(file, message) })}
+            />
+          </div>
+        )}
         <p className="mt-1 text-micro text-muted">
           <time dateTime={message.at.toISOString()}>{time}</time>
           {message.pending === true ? ` · ${copy.chat.sending}` : null}

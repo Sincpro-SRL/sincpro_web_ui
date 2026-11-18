@@ -1,6 +1,8 @@
 "use client";
 
 import type { Message } from "@sincpro/web-ui/components/activity/Messages";
+import { FileList } from "@sincpro/web-ui/components/attachments/FileList";
+import type { AttachmentFile } from "@sincpro/web-ui/components/attachments/files";
 import { usePagination } from "@sincpro/web-ui/components/listing/pages";
 import { Pagination } from "@sincpro/web-ui/components/listing/Pagination";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
@@ -188,6 +190,12 @@ export type ActivityProps = {
   /** The panel's name. «Actividad» by default. */
   label?: string;
   layout?: ActivityLayout;
+  /** Open a file a message carries. Present = its name is a button; WHERE it opens — a
+   *  peek, a `FilePreview` — is the application's. */
+  onOpenFile?: (file: AttachmentFile, message: Message) => void;
+  /** Download a file a message carries by code (a token, a signed URL). Without it, a file
+   *  with a `url` downloads by link. Busy while the promise runs; a rejection is said. */
+  onDownloadFile?: (file: AttachmentFile, message: Message) => void | Promise<unknown>;
 };
 
 /* The most urgent tone first: the alerts' count takes the tone of the first. */
@@ -233,7 +241,13 @@ function at(when: Date | string | number): number {
    event's node) on the left, the text beside it, the meta line under it. Two geometries
    in one list read as two lists glued together. */
 
-function MessageEntry({ message }: { message: Message }) {
+function MessageEntry({
+  message,
+  onOpenFile,
+  onDownloadFile,
+}: {
+  message: Message;
+} & Pick<ActivityProps, "onOpenFile" | "onDownloadFile">) {
   const copy = useUiCopy();
   const internal = message.internal === true;
   return (
@@ -258,14 +272,27 @@ function MessageEntry({ message }: { message: Message }) {
         {/* A message is somebody speaking, so it sits in a bubble on the ground; an
             internal note is the same bubble with a warm edge — the mark that it does not
             leave the building, and the lock says it in words too. */}
-        <p
-          className={cn(
-            "max-w-(--container-prose) rounded-box px-2.5 py-1.5 text-body whitespace-pre-line text-ink",
-            internal ? "border border-warn/35 bg-warn/6" : "bg-ground",
-          )}
-        >
-          {message.body}
-        </p>
+        {message.body === "" ? null : (
+          <p
+            className={cn(
+              "max-w-(--container-prose) rounded-box px-2.5 py-1.5 text-body whitespace-pre-line text-ink",
+              internal ? "border border-warn/35 bg-warn/6" : "bg-ground",
+            )}
+          >
+            {message.body}
+          </p>
+        )}
+        {message.files === undefined ? null : (
+          <FileList
+            files={message.files}
+            {...(onOpenFile === undefined
+              ? {}
+              : { onOpen: (file: AttachmentFile) => onOpenFile(file, message) })}
+            {...(onDownloadFile === undefined
+              ? {}
+              : { onDownload: (file: AttachmentFile) => onDownloadFile(file, message) })}
+          />
+        )}
       </div>
     </li>
   );
@@ -576,6 +603,8 @@ export function Activity({
   onToggle,
   label: ownLabel,
   layout = "auto",
+  onOpenFile,
+  onDownloadFile,
 }: ActivityProps) {
   const copy = useUiCopy();
   const label = ownLabel ?? copy.activity.title;
@@ -884,7 +913,11 @@ export function Activity({
                       </li>
                     ) : null}
                     {entry.kind === "message" ? (
-                      <MessageEntry message={entry.message} />
+                      <MessageEntry
+                        message={entry.message}
+                        onOpenFile={onOpenFile}
+                        onDownloadFile={onDownloadFile}
+                      />
                     ) : (
                       <EventEntry event={entry.event} />
                     )}

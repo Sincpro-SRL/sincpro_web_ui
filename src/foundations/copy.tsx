@@ -893,6 +893,12 @@ export type UiCopy = {
     /** A failed upload, when the server did not say why. */
     failed: string;
     retry: string;
+    /** The name of a `FileList` that has no title of its own. */
+    files: string;
+    /** Every file of a `FileList` at once (`onDownloadAll`). */
+    downloadAll: string;
+    /** A download by code (`onDownload`) failed. `{name}` is the file. */
+    downloadFailed: string;
   };
   /** The field picker that walks relations: «Líneas > Impuestos > Monto». */
   fieldPath: {
@@ -1657,6 +1663,9 @@ export const ENGLISH_COPY: UiCopy = {
     cancelUpload: "Cancel the upload",
     failed: "The file could not be uploaded.",
     retry: "Try again",
+    files: "Files",
+    downloadAll: "Download all",
+    downloadFailed: "«{name}» could not be downloaded.",
   },
   fieldPath: {
     choose: "Choose a field",

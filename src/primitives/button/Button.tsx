@@ -431,6 +431,10 @@ export type IconButtonProps = NativeProps<
   /** The system's `Tooltip` with the `label`, on hover and focus. On by default; `false`
    *  falls back to the native `title`. */
   tooltip?: boolean;
+  /** What it started is running — a download fetched by code. As `Button`'s: it keeps the
+   *  focus, says so (`aria-busy`, a turning mark in place of the icon) and ignores presses
+   *  until it is done — never `disabled`, which drops the focus to the page. */
+  busy?: boolean;
 };
 
 /** Only an icon, and that is why the label is mandatory even though it is not
@@ -451,11 +455,14 @@ export function IconButton({
   expanded,
   haspopup,
   tooltip = true,
+  busy = false,
   ref,
+  onClick,
   ...native
 }: IconButtonProps) {
   const surface = useSurface(surfaceProp);
   const ic = ICON[size];
+  const Mark = busy ? LoaderCircle : Icon;
   return (
     <Labelled label={label} tooltip={tooltip}>
       {(title) => (
@@ -466,14 +473,26 @@ export function IconButton({
           title={title}
           aria-label={label}
           disabled={disabled}
+          {...(busy ? { "aria-busy": true, "aria-disabled": true } : {})}
+          onClick={(event) => {
+            if (busy) {
+              event.preventDefault();
+              return;
+            }
+            onClick?.(event);
+          }}
           {...popupAttrs(expanded, haspopup)}
           data-ui="icon-button"
           data-tone={tone}
           data-size={size}
           data-surface={surface}
-          className={`${BOX} disabled:pointer-events-none disabled:opacity-45 ${SQUARE[size]} ${TONE[tone][surface]}`}
+          className={`${BOX} disabled:pointer-events-none disabled:opacity-45 ${SQUARE[size]} ${TONE[tone][surface]}${busy ? " cursor-progress" : ""}`}
         >
-          <Icon className={ic.size} strokeWidth={ic.stroke} aria-hidden />
+          <Mark
+            className={`${ic.size}${busy ? " motion-safe:animate-spin" : ""}`}
+            strokeWidth={ic.stroke}
+            aria-hidden
+          />
         </button>
       )}
     </Labelled>

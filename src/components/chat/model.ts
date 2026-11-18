@@ -4,6 +4,8 @@
  *  is called. No React here, so the rules are tested in Node.
  * ==================================================================== */
 
+import type { AttachmentFile } from "@sincpro/web-ui/components/attachments/files";
+
 export type ChatMessage = {
   id: string;
   /** Who wrote it, as the screen names them: «Ana Ruiz». */
@@ -15,6 +17,9 @@ export type ChatMessage = {
   mine?: boolean;
   /** Sent but not yet confirmed by the server. Said, never a silent success. */
   pending?: boolean;
+  /** The files it carries, drawn under the text as cards (`FileList`). A message may be
+   *  only its files: then `body` is empty. One still uploading says so with its progress. */
+  files?: readonly AttachmentFile[];
 };
 
 export type DayGroup = {

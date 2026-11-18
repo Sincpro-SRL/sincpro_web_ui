@@ -1,5 +1,6 @@
 "use client";
 
+import type { AttachmentFile } from "@sincpro/web-ui/components/attachments/files";
 import { currentCopy, type UiCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { TextArea } from "@sincpro/web-ui/primitives/field/Field";
@@ -40,6 +41,9 @@ export type Message = {
   body: string;
   /** An internal note: it stays inside. Drawn differently on purpose. */
   internal?: boolean;
+  /** What it carries — the receipt, the signed contract —, drawn under the text as cards
+   *  (`FileList`). A message may be only its files: then `body` is empty. */
+  files?: readonly AttachmentFile[];
 };
 
 /** A way of writing. `note` stays inside; everything else leaves, and what

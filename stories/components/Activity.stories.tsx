@@ -304,3 +304,78 @@ export const CambiosAuditables: Story = {
     await expect(canvas.getByText("Matrícula")).toBeVisible();
   },
 };
+
+/* A download that works offline: the browser saves this text with the file's name. */
+const ejemplo = (name: string) =>
+  `data:text/plain;charset=utf-8,${encodeURIComponent(`Archivo de ejemplo: ${name}`)}`;
+
+const CON_COMPROBANTE: Message[] = [
+  {
+    id: "p1",
+    author: "Andrés Gutiérrez",
+    at: "2026-11-17T06:35:00Z",
+    body: "adjunto comprobante",
+    files: [
+      {
+        id: "f1",
+        name: "receipt_c0f86abf-e9b1-45f8-b46a-f9cc86e6c809.pdf",
+        type: "application/pdf",
+        size: 184_320,
+        url: ejemplo("receipt.pdf"),
+      },
+    ],
+  },
+  {
+    id: "p2",
+    author: "Carla Rojas",
+    at: "2026-11-17T07:10:00Z",
+    internal: true,
+    body: "",
+    files: [
+      {
+        id: "f2",
+        name: "Extracto BNB noviembre.xlsx",
+        size: 48_200,
+        url: ejemplo("extracto.xlsx"),
+      },
+    ],
+  },
+];
+
+/**
+ * **Un mensaje con su comprobante** — el chatter de una factura pagada. Lo que un mensaje lleva
+ * va debajo de lo que dice, como una tarjeta: el tipo, el nombre, «PDF · 180 KB» y la flecha
+ * para bajarlo. Una nota puede ser sólo su archivo. Abrirlo (`onOpenFile`) y bajarlo por código
+ * (`onDownloadFile`) los decide la aplicación; sin ellos, el archivo con `url` se baja por enlace.
+ */
+export const ConUnComprobante: Story = {
+  name: "Un mensaje con su comprobante",
+  args: { open: true, onToggle: () => {} },
+  render: function Render() {
+    const panel = useActivity(true);
+    return (
+      <Escenario>
+        <Activity
+          open={panel.open}
+          onToggle={panel.toggle}
+          messages={CON_COMPROBANTE}
+          onOpenFile={() => {}}
+        />
+      </Escenario>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText("adjunto comprobante")).toBeVisible();
+    await expect(
+      canvas.getByRole("button", {
+        name: "receipt_c0f86abf-e9b1-45f8-b46a-f9cc86e6c809.pdf",
+      }),
+    ).toBeVisible();
+    /* A note that is only its file: no empty bubble, the card alone. */
+    await expect(
+      canvas.getByRole("button", { name: "Extracto BNB noviembre.xlsx" }),
+    ).toBeVisible();
+    await expect(canvas.getAllByRole("link", { name: "Descargar" })).toHaveLength(2);
+  },
+};
