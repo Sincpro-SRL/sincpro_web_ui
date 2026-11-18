@@ -1,11 +1,26 @@
 import {
+  type BuiltCondition,
+  type BuiltFilter,
+  filterCriteria,
+  type RecordOption,
+  type SearchCriteria,
+} from "@sincpro/web-ui/components/search/criteria";
+import {
+  choiceLabel,
   type FieldDefinition,
   fieldLabel,
   isFilterable,
   isNumericType,
   type ModelDefinition,
 } from "@sincpro/web-ui/components/search/model";
+import {
+  recordsFilter,
+  type RecordTarget,
+  recordTarget,
+  sameKey,
+} from "@sincpro/web-ui/components/search/records";
 import { currentCopy, fillCopy } from "@sincpro/web-ui/foundations/copy";
+import { matches as contains } from "@sincpro/web-ui/foundations/match";
 
 /* ==================================================================== *
  *  THE BAR'S GRAMMAR — what can be asked, and with what.
@@ -69,11 +84,24 @@ export type QueryField = {
   ops: readonly string[];
   /** The possible values, when it is an enum: the third list comes from there. */
   choices?: readonly string[];
+  /** The word for each value of the enum, when the model has one: «Pagada» for `paid`. */
+  choiceLabels?: Readonly<Record<string, string>>;
   /** When reached through a relation: which aggregate is really being asked
    *  about. It is what lets you write «el proyecto se llama X» without anyone
    *  knowing that inside, another column is compared. */
   through?: string;
+  /**
+   * For a relation: how it is compared once records of it are chosen by name — directly by a
+   * column of this record (a many2one) or crossing it (a one2many, a many2many). A to-many
+   * relation has no column here, so its `ops` are empty: it is asked ONLY by its records.
+   */
+  relation?: RecordTarget;
 };
+
+/** How a value of a field reads: an enum's word, or the value as it is. */
+export function valueLabel(field: QueryField, value: string): string {
+  return field.choiceLabels?.[value] ?? value;
+}
 
 /** What shape what somebody wrote has. It is what decides which fields can
  *  answer it. */
@@ -228,7 +256,7 @@ export function queryFields(model: ModelDefinition, locale: string): QueryField[
      one that is understood is the relation's. */
   const naming = new Set(
     Object.values(model.fields)
-      .filter((one) => one.kind === "relation")
+      .filter((one) => one.kind === "relation" && one.many !== true)
       .map((one) => one.identifiedBy)
       .filter((one): one is string => one !== null && one !== undefined),
   );
@@ -238,32 +266,55 @@ export function queryFields(model: ModelDefinition, locale: string): QueryField[
     const kind = kindOf(definition);
 
     if (kind === "relation") {
-      const through = definition.identifiedBy;
-      if (through === null || through === undefined) continue;
-      const identifying = model.fields[through];
-      if (identifying === undefined || !isFilterable(identifying)) continue;
+      /* A to-one relation is compared by a column of this record —its foreign key, or a
+         column that names it—. A to-many one has none here (the column that points back lives
+         on the other side): it enters with no operators, and is asked only by its records —
+         `suggest` drops it when nobody can search them. */
+      const target = recordTarget(model, name);
+      if (target === undefined) continue;
       out.push({
-        field: through,
+        field: target.column ?? name,
         label: fieldLabel(model, name, locale),
         kind: "relation",
-        ops: identifying.ops,
-        through: definition.relation ?? name,
+        ops: target.ops,
+        through: target.relation,
+        relation: target,
       });
       continue;
     }
 
     if (!isFilterable(definition) || naming.has(name)) continue;
+    const choices = definition.choices?.map((one) => String(one));
     out.push({
       field: name,
       label: fieldLabel(model, name, locale),
       kind,
       ops: definition.ops,
-      ...(definition.choices === undefined
+      ...(choices === undefined
         ? {}
-        : { choices: definition.choices.map((one) => String(one)) }),
+        : {
+            choices,
+            choiceLabels: Object.fromEntries(
+              choices.map((one) => [one, choiceLabel(model, name, one, locale)]),
+            ),
+          }),
     });
   }
   return out;
+}
+
+/** One field of the bar by its name in the model — a relation by the relational field
+ *  («customer_id»), anything else by itself. It is what an application uses to build, by code,
+ *  the same chips the bar builds: `valuesCriteria(queryField(model, "customer_id", locale)!, …)`. */
+export function queryField(
+  model: ModelDefinition,
+  name: string,
+  locale: string,
+): QueryField | undefined {
+  return queryFields(model, locale).find(
+    (one) =>
+      one.relation?.name === name || (one.relation === undefined && one.field === name),
+  );
 }
 
 /**
@@ -292,18 +343,22 @@ export function answers(field: QueryField, typed: TypedValue): boolean {
     if (ORDERING.has(typed.op) && !ORDERED.has(field.kind)) return false;
   }
   if (typed.shape === "empty") return true;
+  /* A relation answers a text only through a column that NAMES it —one that takes `like`—.
+     Through its foreign key, «cliente es andres» compares a name against a number: a question
+     that gives zero. Its records, chosen by name, are the way to ask it (`searchRecords`). */
+  const named = field.kind === "relation" && field.ops.includes("like");
   switch (typed.shape) {
     case "number":
       return field.kind === "number" || field.kind === "choice";
     case "date":
       return field.kind === "date";
     case "glob":
-      return field.kind === "text" || field.kind === "relation";
+      return field.kind === "text" || named;
     default:
       /* A text is answered by what has letters inside, and also an enum: its
          values are words. A number does not —«test» is not a number— and a date
          neither. */
-      return field.kind === "text" || field.kind === "relation" || field.kind === "choice";
+      return field.kind === "text" || named || field.kind === "choice";
   }
 }
 
@@ -346,7 +401,8 @@ export type QuerySuggestion =
   | { kind: "op"; id: string; label: string; op: string }
   /** Open a GROUP: what is written afterwards goes inside. */
   | { kind: "group"; id: string; label: string; join: "all" | "any" | "not" }
-  /** The whole question, ready to enter as a chip. */
+  /** The whole question, ready to enter as a chip. With `unfolds`, it can also open the
+   *  records it is about (→): «Cliente contiene andres» or one Andrés in particular. */
   | {
       kind: "condition";
       id: string;
@@ -355,6 +411,34 @@ export type QuerySuggestion =
       field: QueryField;
       op: string;
       value: string;
+      unfolds?: true;
+    }
+  /**
+   * A field asked by its VALUES, which choosing it unfolds: a relation by its records (they
+   * come from `searchRecords`), an enum by the values that contain what was typed. Nothing is
+   * put until one is chosen — a relation through its foreign key has no text to compare.
+   */
+  | {
+      kind: "unfold";
+      id: string;
+      label: string;
+      hint: string;
+      field: QueryField;
+      text: string;
+    }
+  /**
+   * ONE VALUE of a field, ready to enter: a record of a relation, a value of an enum. Values
+   * of the same field enter as one chip — «Estado: Pagada o Vencida» (`withValue`). `under`
+   * is the row it was unfolded from.
+   */
+  | {
+      kind: "value";
+      id: string;
+      label: string;
+      hint: string;
+      field: QueryField;
+      option: RecordOption;
+      under?: string;
     }
   /** The set's own search over the text — every field it searches, at once. What it asks is
    *  the consumer's (`SearchBar literal`): the bar only offers it and puts the chip. */
@@ -393,16 +477,33 @@ function matches(field: QueryField, text: string): boolean {
   );
 }
 
-/**
- * What is offered right now.
- *
- * It is a single list and not three screens: in the first step the fields
- * named like what was typed coexist —«nombr» → «nombre»— with the whole questions
- * that what was typed already allows building —«test» en el nombre—. Whoever writes a field's
- * name wants to continue that way; whoever writes a value wants to ask it
- * right away. The two intentions are written the same, so both are offered, with the
- * fields first: it is the step that has not decided anything yet.
- */
+/** Two words are the same one, whatever their case and accents: «pagada» is «Pagada». */
+function same(a: string, b: string): boolean {
+  return a.trim() !== "" && contains(a, b) && contains(b, a);
+}
+
+/** Which field a value chip belongs to: a relation by the relational field, anything else
+ *  by itself. Two chips with the same key are the same question with more values. */
+export function fieldKey(field: QueryField): string {
+  return field.relation?.name ?? field.field;
+}
+
+/** The values of an enum that contain what was typed — by their word or their value — as
+ *  options: what an unfolded enum shows, and what the builder offers. */
+export function choiceValues(field: QueryField, text: string): RecordOption[] {
+  return (field.choices ?? [])
+    .map((value) => ({ id: value, name: valueLabel(field, value) }))
+    .filter(
+      (one) => text.trim() === "" || contains(one.name, text) || contains(one.id, text),
+    );
+}
+
+/** Whether the field can be asked anything from the bar: it has operators, or its records
+ *  can be searched. A to-many relation has neither without `searchRecords`. */
+function askable(field: QueryField, records: boolean): boolean {
+  return field.ops.length > 0 || (records && field.relation !== undefined);
+}
+
 /**
  * Whether the MODEL reads what was typed as a question of its own: an operator written in
  * front («> 100»), the name of a field («estado»), a value of an enum («pagada»), or a number or
@@ -415,8 +516,13 @@ function readByModel(
   fields: readonly QueryField[],
 ): boolean {
   if (typed.op !== undefined || byName.length > 0) return true;
-  const value = typed.value.toLowerCase();
-  if (fields.some((field) => field.choices?.some((one) => one.toLowerCase() === value)))
+  if (
+    fields.some((field) =>
+      field.choices?.some(
+        (one) => same(one, typed.value) || same(valueLabel(field, one), typed.value),
+      ),
+    )
+  )
     return true;
   return (
     (typed.shape === "number" || typed.shape === "date") &&
@@ -424,17 +530,109 @@ function readByModel(
   );
 }
 
+/**
+ * The first step's question about ONE field, for what was typed — or none.
+ *
+ *      an enum            its value when one is exactly what was typed («pagada» → Estado:
+ *                         Pagada); else a row that unfolds the values that contain it; none
+ *                         when no value does — «estado es xyz» gives zero
+ *      a relation         by the column that names it («contiene»), which ALSO unfolds its
+ *                         records when they can be searched
+ *      anything else      the condition, with the operator the shape asks for
+ */
+function questionAbout(
+  field: QueryField,
+  typed: TypedValue,
+  records: boolean,
+): QuerySuggestion | null {
+  if (field.choices !== undefined && (typed.op === undefined || typed.op === "=")) {
+    const values = choiceValues(field, typed.value);
+    const exact = values.find(
+      (one) => same(one.name, typed.value) || same(String(one.id), typed.value),
+    );
+    if (exact !== undefined) {
+      return {
+        kind: "value",
+        id: `v:${fieldKey(field)}:${exact.id}`,
+        label: field.label,
+        hint: exact.name,
+        field,
+        option: exact,
+      };
+    }
+    if (values.length === 0) return null;
+    return {
+      kind: "unfold",
+      id: `u:${fieldKey(field)}`,
+      label: field.label,
+      hint: typed.value,
+      field,
+      text: typed.value,
+    };
+  }
+  const op = defaultOp(field, typed);
+  return {
+    kind: "condition",
+    id: `c:${field.field}`,
+    label: field.label,
+    hint: `${opLabel(op)} ${valueFor(op, typed)}`,
+    field,
+    op,
+    value: valueFor(op, typed),
+    ...(records && field.relation !== undefined && op === "like"
+      ? { unfolds: true as const }
+      : {}),
+  };
+}
+
+/**
+ * What is offered right now.
+ *
+ * It is a single list and not three screens: in the first step the fields
+ * named like what was typed coexist —«nombr» → «nombre»— with the whole questions
+ * that what was typed already allows building —«test» en el nombre—. Whoever writes a field's
+ * name wants to continue that way; whoever writes a value wants to ask it
+ * right away. The two intentions are written the same, so both are offered, with the
+ * fields first: it is the step that has not decided anything yet.
+ *
+ * With `records` (the bar has `searchRecords`) a relation is ALSO asked by its records: its
+ * row unfolds them, and a relation that cannot compare a text —its foreign key, a many2many—
+ * is offered only that way.
+ */
 export function suggest(
   draft: QueryDraft,
-  fields: readonly QueryField[],
-  /** The set has a literal search (`SearchBar literal`): offer it for free text. */
-  options: { literal?: boolean } = {},
+  all: readonly QueryField[],
+  options: {
+    /** The set has a literal search (`SearchBar literal`): offer it for free text. */
+    literal?: boolean;
+    /** The records of a relation can be searched (`SearchBar searchRecords`). */
+    records?: boolean;
+  } = {},
 ): QuerySuggestion[] {
+  const records = options.records === true;
+  const fields = all.filter((field) => askable(field, records));
   const typed = readTyped(draft.text);
 
   /* Step 3 — the field and the operator are already there: the value is missing. */
   if (draft.field !== undefined && draft.op !== undefined) {
     const field = draft.field;
+    /* A relation chosen by its name, with its records searchable: what is typed searches
+       them —the bar unfolds them below—, and the text itself is a question only through a
+       column that names it. */
+    if (records && field.relation !== undefined) {
+      if (typed.shape === "empty" || !field.ops.includes("like")) return [];
+      return [
+        {
+          kind: "condition",
+          id: "v:typed",
+          label: valueFor("like", typed),
+          hint: `${field.label} ${opLabel("like")}`,
+          field,
+          op: "like",
+          value: valueFor("like", typed),
+        },
+      ];
+    }
     /* Writing a pattern CHANGES the comparison: «igual a ventas_*» searches for a
        name that ends in an asterisk, which does not exist and nobody meant to ask for.
        It only overrides equality —whoever chose «mayor que» and wrote a `*` is
@@ -443,22 +641,30 @@ export function suggest(
       typed.shape === "glob" && EQUALITY.has(draft.op) && field.ops.includes("like")
         ? "like"
         : draft.op;
-    const values =
-      field.choices === undefined
-        ? []
-        : field.choices.filter((one) =>
-            one.toLowerCase().includes(typed.value.toLowerCase()),
-          );
-    const ready: QuerySuggestion[] = values.map((one) => ({
-      kind: "condition",
-      id: `v:${one}`,
-      label: one,
-      hint: `${field.label} ${opLabel(op)}`,
-      field,
-      op,
-      value: one,
-    }));
-    if (typed.shape !== "empty" && !values.includes(typed.value)) {
+    /* An enum's values, by their word. With «es» each one is a VALUE —choosing two makes one
+       chip, «Estado: Pagada o Vencida»—; with any other comparison, a question of its own. */
+    const values = choiceValues(field, typed.value);
+    const ready: QuerySuggestion[] = values.map((one) =>
+      op === "="
+        ? {
+            kind: "value",
+            id: `v:${fieldKey(field)}:${one.id}`,
+            label: one.name,
+            hint: `${field.label} ${opLabel(op)}`,
+            field,
+            option: one,
+          }
+        : {
+            kind: "condition",
+            id: `v:${one.id}`,
+            label: one.name,
+            hint: `${field.label} ${opLabel(op)}`,
+            field,
+            op,
+            value: String(one.id),
+          },
+    );
+    if (typed.shape !== "empty" && !values.some((one) => same(one.name, typed.value))) {
       ready.unshift({
         kind: "condition",
         id: "v:typed",
@@ -479,7 +685,7 @@ export function suggest(
     const field = draft.field;
     const first = defaultOp(field, typed);
     const ops = [first, ...field.ops.filter((one) => one !== first)].filter(
-      (op) => !withTwoValues(op),
+      (op) => !withTwoValues(op) && field.ops.includes(op),
     );
     return ops.map((op) =>
       /* The one that takes NO value is a whole question as soon as it is chosen: sending it
@@ -532,7 +738,7 @@ export function suggest(
         .filter((field) => matches(field, typed.value))
         .map((field) => ({
           kind: "field" as const,
-          id: `f:${field.field}`,
+          id: `f:${fieldKey(field)}`,
           label: field.label,
           ...(field.through === undefined ? {} : { hint: field.through }),
           field,
@@ -548,26 +754,11 @@ export function suggest(
           .filter((field) => matches(field, draft.text))
           .map((field) => ({
             kind: "field",
-            id: `f:${field.field}`,
+            id: `f:${fieldKey(field)}`,
             label: field.label,
             ...(field.through === undefined ? {} : { hint: field.through }),
             field,
           }));
-
-  const ready: QuerySuggestion[] = fields
-    .filter((field) => answers(field, typed))
-    .map((field) => {
-      const op = defaultOp(field, typed);
-      return {
-        kind: "condition" as const,
-        id: `c:${field.field}`,
-        label: field.label,
-        hint: `${opLabel(op)} ${valueFor(op, typed)}`,
-        field,
-        op,
-        value: valueFor(op, typed),
-      };
-    });
 
   /* Without a VALUE there is no question to build yet —a question without a value
      is not a question— so fields are offered. But if the operator was already written,
@@ -578,21 +769,55 @@ export function suggest(
       .filter((field) => answers(field, typed))
       .map((field) => ({
         kind: "field",
-        id: `f:${field.field}`,
+        id: `f:${fieldKey(field)}`,
         label: field.label,
         ...(field.through === undefined ? {} : { hint: field.through }),
         field,
       }));
   }
 
+  const asked = fields
+    .filter((field) => answers(field, typed))
+    .map((field) => questionAbout(field, typed, records))
+    .filter((one): one is QuerySuggestion => one !== null);
+  /* An enum's value written whole —«pagada»— is the likeliest reading of all: it goes before
+     «número contiene pagada», which every text field would answer. */
+  const ready = [
+    ...asked.filter((one) => one.kind === "value"),
+    ...asked.filter((one) => one.kind !== "value"),
+  ];
+
+  /* A relation that cannot compare a text —its foreign key, a many2many— is asked by its
+     records: the row unfolds the ones that match what was typed. Only for a text: a number
+     or an operator written in front is a question about a column, not a name. */
+  const byRecords: QuerySuggestion[] =
+    records && typed.op === undefined && (typed.shape === "text" || typed.shape === "glob")
+      ? fields
+          .filter((field) => field.relation !== undefined && !answers(field, typed))
+          .map((field) => ({
+            kind: "unfold",
+            id: `u:${fieldKey(field)}`,
+            label: field.label,
+            hint: typed.value,
+            field,
+            text: typed.value,
+          }))
+      : [];
+
   /* A field named like what was typed is not offered twice: if «nombre»
      appears above to continue by it, below it is no longer needed as a
      question already made — unless what was typed is also a reasonable value, which is
      precisely the case of «test». */
-  const named = new Set(byName.map((one) => (one.kind === "field" ? one.field.field : "")));
+  const named = new Set(
+    byName.map((one) => (one.kind === "field" ? fieldKey(one.field) : "")),
+  );
   const byModel = [
     ...byName,
-    ...ready.filter((one) => one.kind !== "condition" || !named.has(one.field.field)),
+    ...[...ready, ...byRecords].filter(
+      (one) =>
+        (one.kind !== "condition" && one.kind !== "unfold") ||
+        !named.has(fieldKey(one.field)),
+    ),
   ];
   if (options.literal !== true) return byModel;
   /* The literal search is always offered for text: what the model reads goes first, and
@@ -628,4 +853,89 @@ export function sayCondition(label: string, op: string, value: string): string {
 /** How an already-made question reads, for the chip: «el nombre contiene test». */
 export function describeCondition(field: QueryField, op: string, value: string): string {
   return sayCondition(field.label, op, value);
+}
+
+/* ---------------------------------------------------------------- *
+ *  Chips made by code — the same ones the bar makes
+ *
+ *  A list that opens on «mis facturas», a chooser that opens on the customer of the form, a
+ *  link that carries «Estado: Vencida»: the application puts the SAME instances the bar puts
+ *  when somebody types, so they read, open in the builder and are removed the same. The bar
+ *  is controlled (`criteria`), so a default is the first value of that state.
+ * ---------------------------------------------------------------- */
+
+/** The question about one field as a chip — what the bar puts when a condition is chosen:
+ *  «nombre contiene test». */
+export function conditionCriteria(
+  field: QueryField,
+  op: string,
+  value: string,
+): SearchCriteria {
+  return filterCriteria(
+    /* The one that takes no value travels with `true`, which is what the engine expects of
+       «está vacío»: sending it the empty string would be asking for the field that is "". */
+    { field: field.field, operator: op, value: withoutValue(op) ? true : value },
+    describeCondition(field, op, value),
+  );
+}
+
+/** What asks for these values of a field: records of a relation by their key (see
+ *  `recordsFilter`), values of an enum or of any column with `=` / `in`. */
+export function valuesSelection(
+  field: QueryField,
+  values: readonly RecordOption[],
+): BuiltCondition | BuiltFilter {
+  const keys = values.map((one) => one.id);
+  if (field.relation !== undefined) return recordsFilter(field.relation, keys);
+  if (keys.length === 1) return { field: field.field, operator: "=", value: keys[0] };
+  if (field.ops.includes("in")) return { field: field.field, operator: "in", value: keys };
+  return { any: keys.map((key) => ({ field: field.field, operator: "=", value: key })) };
+}
+
+/** How a chip of values reads: «Cliente: Andrés Pérez o Andrés Gutiérrez». Past three, the
+ *  rest is counted — the builder shows them whole. */
+export function sayValues(field: QueryField, values: readonly RecordOption[]): string {
+  const copy = currentCopy();
+  const names = values.slice(0, 3).map((one) => one.name);
+  const said =
+    values.length > 3
+      ? `${names.join(", ")} ${fillCopy(copy.search.andMore, { count: values.length - 3 })}`
+      : names.join(` ${copy.search.or} `);
+  return fillCopy(copy.search.valuesChip, { field: field.label, values: said });
+}
+
+/** The chip that asks for these values of a field. Its id says which field, so a second value
+ *  chosen lands in the SAME chip (`withValue`). */
+export function valuesCriteria(
+  field: QueryField,
+  values: readonly RecordOption[],
+): SearchCriteria {
+  return {
+    id: `v:${fieldKey(field)}`,
+    kind: "filter",
+    label: sayValues(field, values),
+    selection: valuesSelection(field, values),
+    values: [...values],
+  };
+}
+
+/**
+ * One more value of a field, where the bar puts things: into the chip that already asks about
+ * that field —«Cliente: Andrés Pérez» becomes «… o Andrés Gutiérrez»— or as a new chip at the
+ * end. Choosing a value that is already there changes nothing.
+ */
+export function withValue(
+  all: readonly SearchCriteria[],
+  field: QueryField,
+  value: RecordOption,
+): SearchCriteria[] {
+  const id = `v:${fieldKey(field)}`;
+  const at = all.findIndex((one) => one.id === id && one.kind === "filter");
+  if (at < 0) return [...all, valuesCriteria(field, [value])];
+  const held = all[at];
+  const before = held?.kind === "filter" ? (held.values ?? []) : [];
+  if (before.some((one) => sameKey(one.id, value.id))) return [...all];
+  return all.map((one, index) =>
+    index === at ? valuesCriteria(field, [...before, value]) : one,
+  );
 }

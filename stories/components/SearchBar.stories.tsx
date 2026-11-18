@@ -1,25 +1,32 @@
 import {
   at,
   type BuiltGrouping,
+  conditionCriteria,
   CriteriaBuilder,
   type CriteriaPath,
   Dialog,
+  FilterBuilder,
   filterCriteria,
   grainName,
   GroupingLevels,
   type GroupLevel,
   hasNamed,
   type ModelDefinition,
+  queryField,
   SearchBar,
   type SearchCriteria,
+  SearchProvider,
   selectionOf,
   toggleNamed,
   useGroupingControl,
+  valuesCriteria,
   withLevels,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useRef, useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
+
+import { INVOICE_SEARCH_MODEL, searchInvoiceRecords } from "../support/erp-search";
 
 const FACETAS = [
   { id: "number", label: "número" },
@@ -811,6 +818,181 @@ export const EnUnDialogo: Story = {
           </div>
         </Dialog>
       </div>
+    );
+  },
+};
+
+/* ================================================================== *
+ *  LOS REGISTROS DE UNA RELACIÓN — como el «Buscar Contacto: …» de Odoo.
+ * ================================================================== */
+
+/**
+ * **Escribí `andina` y desplegá «Cliente» (▸, o →).** La relación se despliega en los
+ * CLIENTES que coinciden, buscados por la aplicación (`searchRecords`) mientras escribís.
+ * Elegir uno filtra por ESE registro: viaja su clave (`customer_id`), se lee su nombre.
+ *
+ * - Un segundo cliente cae en la MISMA ficha: «Cliente: A o B», y viaja como `in`.
+ * - «Etiquetas» es un many2many: no tiene columna que compare un texto, así que se pregunta
+ *   sólo por sus registros.
+ * - «Estado» es un enum: se despliega en sus palabras («Pagada»), y `pagada` escrita entera se
+ *   ofrece directo.
+ * - `#cliente` va derecho a los registros del cliente.
+ * - Abajo de todo, «Búsqueda avanzada…» abre el constructor, que elige registros igual.
+ *
+ * El modelo es el que publica sincpro_framework: un many2one se identifica por su clave
+ * foránea, no por un nombre. Antes, «cliente es andina» comparaba un nombre contra esa clave.
+ */
+export const RegistrosDeUnaRelacion: Story = {
+  name: "Registros de una relación",
+  args: { facets: [], criteria: [], onCriteriaChange: () => {} },
+  render: function Render() {
+    const [criteria, setCriteria] = useState<SearchCriteria[]>([]);
+    const [building, setBuilding] = useState(false);
+    const travels = selectionOf(criteria);
+    return (
+      <SearchProvider searchRecords={searchInvoiceRecords}>
+        <Caja>
+          <SearchBar
+            facets={[]}
+            model={INVOICE_SEARCH_MODEL}
+            criteria={criteria}
+            onCriteriaChange={setCriteria}
+            onOpenBuilder={() => setBuilding(true)}
+            placeholder="buscá un cliente, un vendedor, una etiqueta…"
+          />
+          <p className="mt-3 font-mono text-micro text-muted" aria-label="lo que viaja">
+            {JSON.stringify(travels ?? null)}
+          </p>
+          {building ? (
+            <Dialog
+              open
+              width="lg"
+              title="Búsqueda avanzada"
+              onClose={() => setBuilding(false)}
+            >
+              <FilterBuilder
+                model={INVOICE_SEARCH_MODEL}
+                {...(travels === undefined ? {} : { initial: travels })}
+                onApply={(selection, said) => {
+                  setCriteria(
+                    selection === undefined ? [] : [filterCriteria(selection, said ?? "")],
+                  );
+                  setBuilding(false);
+                }}
+                onCancel={() => setBuilding(false)}
+              />
+            </Dialog>
+          ) : null}
+        </Caja>
+      </SearchProvider>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const box = canvas.getByRole("combobox", { name: "Buscar" });
+    const travels = canvas.getByLabelText("lo que viaja");
+
+    // The relation unfolds into the records that match, and one is chosen with the pointer.
+    await userEvent.type(box, "andina");
+    const list = () => within(canvas.getByRole("listbox", { name: "Sugerencias" }));
+    await userEvent.click(list().getByRole("option", { name: /^Cliente/ }));
+    await userEvent.click(
+      await list().findByRole("option", { name: /Distribuidora Andina/ }),
+    );
+    await expect(
+      await canvas.findByText("Cliente: Distribuidora Andina S.R.L."),
+    ).toBeVisible();
+    await expect(travels).toHaveTextContent(
+      '"field":"customer_id","operator":"=","value":"1028457021"',
+    );
+
+    // A second one, with the keys: ↓ to the relation, → to open it, ↓ to the record, Enter.
+    await userEvent.type(box, "progreso");
+    await waitFor(() =>
+      expect(list().getByRole("option", { name: /^Cliente/ })).toBeVisible(),
+    );
+    while (
+      !list()
+        .getByRole("option", { name: /^Cliente/ })
+        .getAttribute("aria-selected")
+        ?.includes("true")
+    ) {
+      await userEvent.keyboard("{ArrowDown}");
+    }
+    await userEvent.keyboard("{ArrowRight}");
+    await list().findByRole("option", { name: /Ferretería El Progreso/ });
+    await userEvent.keyboard("{ArrowDown}{Enter}");
+    // The same chip, now with both: what travels is `in`.
+    await expect(
+      await canvas.findByText(
+        /Cliente: Distribuidora Andina S\.R\.L\. o Ferretería El Progreso/,
+      ),
+    ).toBeVisible();
+    await expect(travels).toHaveTextContent('"operator":"in"');
+
+    // An enum's word written whole is offered right away, and what travels is its value.
+    await userEvent.type(box, "pagada");
+    await userEvent.keyboard("{Enter}");
+    await expect(await canvas.findByText("Estado: Pagada")).toBeVisible();
+    await expect(travels).toHaveTextContent('"field":"state","operator":"=","value":"paid"');
+  },
+};
+
+/**
+ * **Una lista que ya abre filtrada** —«mis facturas», el cliente de la ficha de la que se vino,
+ * un enlace que trae «Estado: Vencida»—. La aplicación pone las MISMAS fichas que pone la barra,
+ * con las mismas piezas, así que se leen, se abren en el constructor y se sacan igual:
+ *
+ * ```ts
+ * const cliente = queryField(model, "customer", locale)!;
+ * const estado = queryField(model, "state", locale)!;
+ * const [criteria, setCriteria] = useState(() => [
+ *   valuesCriteria(cliente, [{ id: "4587123018", name: "Ferretería El Progreso" }]),
+ *   valuesCriteria(estado, [{ id: "posted", name: "Publicada" }, { id: "overdue", name: "Vencida" }]),
+ *   conditionCriteria(queryField(model, "number", locale)!, "like", "FAC/2026"),
+ * ]);
+ * ```
+ *
+ * Elegir otro cliente en la barra cae en la ficha del cliente: es la misma.
+ */
+export const BusquedasPorDefecto: Story = {
+  name: "Búsquedas por defecto",
+  args: { facets: [], criteria: [], onCriteriaChange: () => {} },
+  render: function Render() {
+    const [criteria, setCriteria] = useState<SearchCriteria[]>(() => {
+      const cliente = queryField(INVOICE_SEARCH_MODEL, "customer", "es")!;
+      const estado = queryField(INVOICE_SEARCH_MODEL, "state", "es")!;
+      const numero = queryField(INVOICE_SEARCH_MODEL, "number", "es")!;
+      return [
+        valuesCriteria(cliente, [{ id: "4587123018", name: "Ferretería El Progreso" }]),
+        valuesCriteria(estado, [
+          { id: "posted", name: "Publicada" },
+          { id: "overdue", name: "Vencida" },
+        ]),
+        conditionCriteria(numero, "like", "FAC/2026"),
+      ];
+    });
+    return (
+      <Caja>
+        <SearchBar
+          facets={[]}
+          model={INVOICE_SEARCH_MODEL}
+          criteria={criteria}
+          onCriteriaChange={setCriteria}
+          searchRecords={searchInvoiceRecords}
+        />
+        <p className="mt-3 font-mono text-micro text-muted" aria-label="lo que viaja">
+          {JSON.stringify(selectionOf(criteria) ?? null)}
+        </p>
+      </Caja>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByText("Cliente: Ferretería El Progreso")).toBeVisible();
+    await expect(canvas.getByText("Estado: Publicada o Vencida")).toBeVisible();
+    await expect(canvas.getByLabelText("lo que viaja")).toHaveTextContent(
+      '"field":"state","operator":"in","value":["posted","overdue"]',
     );
   },
 };

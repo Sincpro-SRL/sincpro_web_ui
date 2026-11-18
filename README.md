@@ -267,7 +267,8 @@ of classes that change with the next refactor:
 The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`,
 `menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card`, `board.tile`,
 `board.stat`, `board.stat.value`, `activity.changes`, `file-list`, `file-list.file`, `metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
-`search.panel`, `search.suggestions`, `search-entry`, `search-entry.keys`, `table`,
+`search.panel`, `search.suggestions`, `search.suggestion`, `search.record`, `search.advanced`,
+`search.keys`, `search-entry`, `search-entry.keys`, `table`,
 `table.head`, `topbar`, `topbar.brand`, `topbar.menus`, `topbar.actions`, `topbar.user`,
 `frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`, `sidebar.brand`,
 `sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
@@ -295,6 +296,49 @@ written out under it on the left, the control on the right —, every `FormSecti
 `Record` with `dirty` floats Discard · Save at the bottom of the screen (`dirty.bar`) instead of
 the rail. The layout (`stacked` / `horizontal`) is still the screen's: stacked, the help and the
 control go under the label. Without the provider nothing changes.
+
+#### Searching the records of a relation — and extending the search
+
+Typing «andres» in the bar offers «Cliente con «andres» ▸», and the ▸ (or →) unfolds the
+CLIENTS that match — the way Odoo's «Search Contact for: …» does. Choosing one filters by that
+record: what travels is its key, what reads is its name («Cliente: Andrés Pérez»), and a second
+one lands in the same chip («… o Andrés Gutiérrez», sent as `in`). An enum unfolds into its
+words («Pagada», sent as `paid`), and the builder asks the same way: «Cliente es [Andrés Pérez]»
+with a picker, «está en» with tags, «está vacío» with nothing.
+
+web-ui does not know where the records live. The application gives **one** search, by prop or
+once for the whole app — web-framework wires it to the relation's literal search, the one a
+many2one already asks:
+
+```tsx
+const searchRecords: SearchRecords = ({ relation, path, text, keys, signal }) =>
+  keys !== undefined
+    ? api.names(relation, keys, { signal }) // name what a filter read back carries
+    : api.literalSearch(relation, text, { limit: 8, signal }); // what was typed
+
+<SearchProvider searchRecords={searchRecords} valueEditor={myValueEditor}>
+  <App /> {/* every SearchBar, FilterBuilder and CriteriaBuilder inside */}
+</SearchProvider>;
+```
+
+`RecordOption.id` is what the relation compares: for a many2one, what its identifying column
+(`identifiedBy`, its foreign key) holds; for a to-many relation, the key of the record on the
+other side (`relationKey`, `id` by default) — the filter crosses it with `through`. An enum's
+words come from `translations.choices`.
+
+What can be extended, and how:
+
+| You want                                         | Use                                                                                          |
+| ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
+| The records of a relation, from your server      | `searchRecords` (prop, or `SearchProvider` once)                                             |
+| A record drawn your way in the dropdown          | `SearchBar renderRecord`                                                                     |
+| «Buscar más…» under the records: your chooser    | `SearchBar onBrowseRecords(field, text)` + `withValue`                                       |
+| A field's value drawn your way in the builder    | `valueEditor` (prop or `SearchProvider`): answer `undefined` to keep ours                    |
+| A list that opens filtered (defaults, a link)    | `queryField` + `valuesCriteria` / `conditionCriteria` / `toggleNamed`                        |
+| One more value into a chip, by code              | `withValue(criteria, field, record)`                                                         |
+| The filter said with names, for your own chip    | `describeFilter(selection, model, modelAt, names)`, `FilterBuilder onApply(selection, said)` |
+| Your own builder                                 | `SelectionTree`, `RuleValue`, `liftRecords`, `recordsFilter`, `recordOps`                    |
+| The words of an operator («no está establecido») | the copy table: `ops`                                                                        |
 
 #### A guided tour: the screen says what each thing is
 

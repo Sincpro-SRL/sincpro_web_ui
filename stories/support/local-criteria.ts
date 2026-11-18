@@ -41,6 +41,12 @@ function test<T>(
       );
     case "in":
       return Array.isArray(wanted) && wanted.includes(value);
+    case "not in":
+      return Array.isArray(wanted) && !wanted.includes(value);
+    case "is null":
+      return value === null || value === undefined || value === "";
+    case "is not null":
+      return !(value === null || value === undefined || value === "");
     case ">":
       return Number(value) > Number(wanted);
     case "<":

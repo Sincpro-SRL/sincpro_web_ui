@@ -34,8 +34,17 @@ export interface FieldDefinition {
   /** For a relational field, the aggregate on the other side, by name. */
   relation?: string | null;
   /** For a relational field, the column that identifies it — the relational field
-   *  itself is never offered as the target of a filter, an order or a grouping level. */
+   *  itself is never offered as the target of a filter, an order or a grouping level.
+   *
+   *  For a to-one relation (a many2one) it is a column of THIS record: its foreign key, or a
+   *  column that names the record on the other side. A record chosen by name filters by what
+   *  this column holds for it (`RecordOption.id`). For a to-many relation it is the column on
+   *  the other side that points back, and it is not compared from here. */
   identifiedBy?: string | null;
+  /** For a to-many relation (one2many, many2many), the key of the records on the other side:
+   *  what a records search answers as `RecordOption.id`, compared THROUGH the relation when
+   *  some of them are chosen. Absent = `id`. */
+  relationKey?: string | null;
   /** The values an enum field can take — a `<select>` comes from there. */
   choices?: readonly unknown[];
 }
@@ -63,6 +72,10 @@ export interface ModelTranslations {
   name: Record<string, string>;
   labels: Record<string, Record<string, string>>;
   help?: Record<string, Record<string, string>>;
+  /** The word for each value of an enum, per field: `choices.state.paid = {default: "Pagada"}`.
+   *  The bar and the builder show the word and send the value — a person reads «Pagada», the
+   *  server is asked about `paid`. A value without a word shows as it is. */
+  choices?: Record<string, Record<string, Record<string, string>>>;
 }
 
 export interface ModelDefinition {
@@ -81,6 +94,17 @@ export interface ModelDefinition {
 export function fieldLabel(model: ModelDefinition, field: string, locale: string): string {
   const words = model.translations?.labels[field];
   return words?.[locale] ?? words?.default ?? field;
+}
+
+/** The word for one value of an enum field in the requested language, or the value as it is. */
+export function choiceLabel(
+  model: ModelDefinition,
+  field: string,
+  value: string,
+  locale: string,
+): string {
+  const words = model.translations?.choices?.[field]?.[value];
+  return words?.[locale] ?? words?.default ?? value;
 }
 
 /** The model's names that can be used as the target of a filter, an order or a grouping level

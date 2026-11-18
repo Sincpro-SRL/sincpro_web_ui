@@ -261,6 +261,24 @@ export type UiCopy = {
     /** The cut of a long phrase: a chip that does not fit in the bar says
      *  nothing, and the builder is there to see it whole. */
     andMore: string;
+    /** A chip of values of ONE field: «Cliente: Andrés Pérez o Andrés Gutiérrez». */
+    valuesChip: string;
+    /** What a row that unfolds says it unfolds, after the field: «con «andres»». */
+    unfoldHint: string;
+    /** The ▸ of a row: show the records (or values) that match, and hide them again. */
+    unfold: string;
+    fold: string;
+    /** While the records of a relation are being searched; when none matches; when the search
+     *  could not be done. */
+    searchingRecords: string;
+    noRecords: string;
+    recordsFailed: string;
+    /** The last record of an unfolded relation: the chooser with the whole list. */
+    moreRecords: string;
+    /** The way into the builder — in the dropdown, under what is offered, and in the panel. */
+    advanced: string;
+    /** The keys of the dropdown, said once at its foot. */
+    keysHint: string;
     placeholder: string;
     /** The titles of the three columns of the tools panel. */
     filters: string;
@@ -657,6 +675,9 @@ export type UiCopy = {
     ruleField: string;
     ruleOperator: string;
     noValue: string;
+    /** The value of a rule, when it is chosen and not written: an enum's word, a record. */
+    ruleValue: string;
+    chooseValue: string;
     from: string;
     to: string;
     value: string;
@@ -1216,6 +1237,16 @@ export const ENGLISH_COPY: UiCopy = {
     askValue: "to what",
     condition: "{field} {op} {value}",
     andMore: "and {count} more",
+    valuesChip: "{field}: {values}",
+    unfoldHint: "matching “{text}”",
+    unfold: "show the ones that match",
+    fold: "hide them",
+    searchingRecords: "Searching…",
+    noRecords: "Nothing matches",
+    recordsFailed: "The search could not be done",
+    moreRecords: "Search more…",
+    advanced: "Advanced search…",
+    keysHint: "↑↓ move · Enter set · → open · Esc undo",
     placeholder: "search…",
     filters: "Filters",
     groupBy: "Group by",
@@ -1493,6 +1524,8 @@ export const ENGLISH_COPY: UiCopy = {
     ruleField: "Field",
     ruleOperator: "Comparison",
     noValue: "no value",
+    ruleValue: "Value",
+    chooseValue: "Choose…",
     from: "from…",
     to: "to…",
     value: "value…",

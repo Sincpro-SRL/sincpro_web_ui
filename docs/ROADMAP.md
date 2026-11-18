@@ -93,30 +93,38 @@ reading (`mode="read"`) it draws it as a datum, in the copy's language.
 
 ## 3. Choose and search
 
-| Need                                                                                                | Status   | Piece / owner                                                                       |
-| --------------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------------------- |
-| Bar with facets, filters, grouping, favorites                                                       | ✅       | `SearchBar`                                                                         |
-| Many cuts without breaking the bar                                                                  | ✅ 10-31 | grouping chain, «+N», cap per chip                                                  |
-| Criteria builder with JSON                                                                          | ✅       | `CriteriaBuilder`                                                                   |
-| many2one with columns to tell them apart                                                            | ✅       | `Picker`                                                                            |
-| «Buscar más…» (one and many/add), with the list's search, order and pages                           | ✅ 10-31 | `api.pick` + `List onChoose` (many: `selection.actions`)                            |
-| many2many as chips, with «Buscar más…»                                                              | ✅ 10-31 | `TagsField onBrowseAll`                                                             |
-| many2many: the datum that tells two options apart (the NIT), searchable and off the chip            | ✅ 11-03 | `TagOption.meta`                                                                    |
-| An option that does not fit «name + datum + aside»                                                  | ✅ 11-03 | `renderOption` in `Picker` and `TagsField`; `MatchedText`                           |
-| Command palette                                                                                     | ✅       | composer (⌘K)                                                                       |
-| Literal search highlighted (accent-insensitive), and «coincide NIT…» when it matches what is hidden | ✅ 10-31 | `Picker`, `TagsField` (`foundations/match`)                                         |
-| Create from the field: «Crear «…»» and «Crear y editar…»                                            | ✅ 10-31 | `Picker onCreate`, `onCreateAndEdit`                                                |
-| Chooser rows with widgets (face, state, balance on the right)                                       | ✅ 10-31 | `PickerItem.avatar`, `tags`, `aside`                                                |
-| «Buscar más…» with several presentations (table, rows, sheet, calendar)                             | 🟡       | the chooser is a `List`: table and rows ✅; sheet and calendar, still to show       |
-| Search against the server with the model's facets                                                   | 🟡       | web-ui gives the bar; web-framework brings the model                                |
-| A selector that searches on the SERVER: it does not filter or cut what it is given                  | ✅ 10-31 | `Picker onSearch`; the chosen one's name outside the page, `valueLabel`             |
-| A many2many that searches on the SERVER (chips over thousands)                                      | ✅ 10-31 | `TagsField onSearch`: it does not filter what it is given; the chosen do not return |
-| A group says how much it sums, not just how many there are                                          | ✅ 10-31 | `Pile.detail` → `GroupHeader detail` (summed by whoever holds the data)             |
-| Literal search in the bar («Buscar «X»» over the whole set, with Enter)                             | ✅ 10-31 | `SearchBar literal`: first, unless the model reads what is typed as a question      |
-| An amount (`decimal`, `monetary`) is asked as a number                                              | ✅ 10-31 | `kindOf` read it as text: «total <= 1000» could not be asked                        |
-| The bar with chips placed: the field and the panel button keep their name                           | ✅ 11-03 | `SearchBar`: «Buscar» and «Filtrar, agrupar y favoritos, N puestos»                 |
-| The bar's suggestions are options (ARIA combobox)                                                   | ✅ 11-03 | `SearchBar`: `listbox` / `option`, `aria-activedescendant`                          |
-| The application's words with the same mechanism as the package's                                    | ✅ 11-03 | `createCopy`; a `Provider` changes its branch and never the installed copy          |
+| Need                                                                                                    | Status   | Piece / owner                                                                           |
+| ------------------------------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------------------- |
+| Bar with facets, filters, grouping, favorites                                                           | ✅       | `SearchBar`                                                                             |
+| Many cuts without breaking the bar                                                                      | ✅ 10-31 | grouping chain, «+N», cap per chip                                                      |
+| Criteria builder with JSON                                                                              | ✅       | `CriteriaBuilder`                                                                       |
+| many2one with columns to tell them apart                                                                | ✅       | `Picker`                                                                                |
+| «Buscar más…» (one and many/add), with the list's search, order and pages                               | ✅ 10-31 | `api.pick` + `List onChoose` (many: `selection.actions`)                                |
+| many2many as chips, with «Buscar más…»                                                                  | ✅ 10-31 | `TagsField onBrowseAll`                                                                 |
+| many2many: the datum that tells two options apart (the NIT), searchable and off the chip                | ✅ 11-03 | `TagOption.meta`                                                                        |
+| An option that does not fit «name + datum + aside»                                                      | ✅ 11-03 | `renderOption` in `Picker` and `TagsField`; `MatchedText`                               |
+| Command palette                                                                                         | ✅       | composer (⌘K)                                                                           |
+| Literal search highlighted (accent-insensitive), and «coincide NIT…» when it matches what is hidden     | ✅ 10-31 | `Picker`, `TagsField` (`foundations/match`)                                             |
+| Create from the field: «Crear «…»» and «Crear y editar…»                                                | ✅ 10-31 | `Picker onCreate`, `onCreateAndEdit`                                                    |
+| Chooser rows with widgets (face, state, balance on the right)                                           | ✅ 10-31 | `PickerItem.avatar`, `tags`, `aside`                                                    |
+| «Buscar más…» with several presentations (table, rows, sheet, calendar)                                 | 🟡       | the chooser is a `List`: table and rows ✅; sheet and calendar, still to show           |
+| Search against the server with the model's facets                                                       | 🟡       | web-ui gives the bar; web-framework brings the model                                    |
+| A selector that searches on the SERVER: it does not filter or cut what it is given                      | ✅ 10-31 | `Picker onSearch`; the chosen one's name outside the page, `valueLabel`                 |
+| A many2many that searches on the SERVER (chips over thousands)                                          | ✅ 10-31 | `TagsField onSearch`: it does not filter what it is given; the chosen do not return     |
+| A group says how much it sums, not just how many there are                                              | ✅ 10-31 | `Pile.detail` → `GroupHeader detail` (summed by whoever holds the data)                 |
+| Literal search in the bar («Buscar «X»» over the whole set, with Enter)                                 | ✅ 10-31 | `SearchBar literal`: first, unless the model reads what is typed as a question          |
+| An amount (`decimal`, `monetary`) is asked as a number                                                  | ✅ 10-31 | `kindOf` read it as text: «total <= 1000» could not be asked                            |
+| The bar with chips placed: the field and the panel button keep their name                               | ✅ 11-03 | `SearchBar`: «Buscar» and «Filtrar, agrupar y favoritos, N puestos»                     |
+| The bar's suggestions are options (ARIA combobox)                                                       | ✅ 11-03 | `SearchBar`: `listbox` / `option`, `aria-activedescendant`                              |
+| A relation's row unfolds into its records (Odoo's «Search Contact for: …»), chosen by name, sent by key | ✅ 11-18 | `SearchBar searchRecords` (or `SearchProvider`), ▸ / →, `withValue` (one chip)          |
+| An enum asked by its words, not its raw values («Pagada», sent as `paid`)                               | ✅ 11-18 | `translations.choices`, `choiceLabel`; unfolds in the bar, select / tags in the builder |
+| The builder picks records: es / no es (one), está en (tags), está vacío; reads keys back as names       | ✅ 11-18 | `FilterBuilder` / `CriteriaBuilder searchRecords`, `liftRecords`, `useRecordNames`      |
+| A value control of the application's own in the builder                                                 | ✅ 11-18 | `valueEditor` (`ValueEditorProps`), prop or `SearchProvider`                            |
+| A list that opens filtered, built by code with the bar's own chips                                      | ✅ 11-18 | `queryField`, `valuesCriteria`, `conditionCriteria`                                     |
+| The way into the advanced search, where people look                                                     | ✅ 11-18 | «Búsqueda avanzada…» under the suggestions and as the panel's action                    |
+| «Empieza con» and other operators the model does not publish                                            | 🟡       | the server publishes the operator; web-ui names it from the copy table (`ops`)          |
+| The bar as a compound piece (`SearchBar.Suggestions`, `SearchBar.Panel` slots)                          | 🟡       | proposed — a breaking change, its own round                                             |
+| The application's words with the same mechanism as the package's                                        | ✅ 11-03 | `createCopy`; a `Provider` changes its branch and never the installed copy              |
 
 ## 4. Where it opens (workspace)
 

@@ -21,6 +21,10 @@ const SHOWN_THROUGH: Readonly<Record<string, string>> = {
   CheckMark:
     "the cuts panel and GroupingLevels — 3 · Componentes/Búsqueda · barra, filtros y agrupador",
   JsonEditor: "CriteriaBuilder and FilterBuilder",
+  SelectionTree:
+    "the rules of FilterBuilder and CriteriaBuilder — 3 · Componentes/Búsqueda · filtro a medida",
+  RuleValue:
+    "the value of each rule — 3 · Componentes/Búsqueda · filtro a medida · Elegir registros",
   RowActions: "DataTable rows — 3 · Componentes/Datos/Tabla",
   RecordLink: "the rows of Listing — 4 · Vistas/Lista",
   PivotExplorer: "List.Pivot fields — 4 · Vistas/Lista · Pivote explorado",

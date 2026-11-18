@@ -1,19 +1,29 @@
 "use client";
 
+import {
+  useSearchSettings,
+  type ValueEditor,
+} from "@sincpro/web-ui/components/search/context";
 import type { BuiltFilter } from "@sincpro/web-ui/components/search/criteria";
 import {
   blankGroup,
+  describeFilter,
   ExpressionView,
+  liftRecords,
+  namesOf,
   SelectionTree,
   treeFromFilter,
   type TreeGroup,
+  type TreeNode,
   treeToFilter,
+  useRecordNames,
 } from "@sincpro/web-ui/components/search/FilterBuilder";
 import { LazyJsonEditor } from "@sincpro/web-ui/components/search/LazyJsonEditor";
 import {
   filterableNames,
   type ModelDefinition,
 } from "@sincpro/web-ui/components/search/model";
+import type { SearchRecords } from "@sincpro/web-ui/components/search/records";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { GRAIN_ORDER } from "@sincpro/web-ui/foundations/grouping";
 import { useSurface } from "@sincpro/web-ui/foundations/surface";
@@ -211,10 +221,17 @@ export function CriteriaBuilder({
   focus,
   onApply,
   onCancel,
+  searchRecords: ownSearchRecords,
+  valueEditor: ownValueEditor,
 }: {
   model: ModelDefinition;
   /** The criteria that was already set. Reopening has to continue where it was left. */
   initial?: BuiltCriteria;
+  /** Searches the records of a relation: a rule can then be about a relation itself, its
+   *  records picked by name (see `records.ts`). Absent, the `SearchProvider`'s. */
+  searchRecords?: SearchRecords;
+  /** The application's own value controls (see `ValueEditor`). Absent, the provider's. */
+  valueEditor?: ValueEditor;
   /**
    * The condition's field to show first: the chip somebody
    * touched in the bar.
@@ -224,18 +241,31 @@ export function CriteriaBuilder({
    * edit the wrong one.
    */
   focus?: string;
-  onApply: (criteria: BuiltCriteria | undefined) => void;
+  /** The criteria applied, and how its filter reads —with the names of the records chosen—
+   *  for the chip that shows it. */
+  onApply: (criteria: BuiltCriteria | undefined, said?: string) => void;
   onCancel?: () => void;
 }) {
   const surface = useSurface();
+  const settings = useSearchSettings({
+    ...(ownSearchRecords === undefined ? {} : { searchRecords: ownSearchRecords }),
+    ...(ownValueEditor === undefined ? {} : { valueEditor: ownValueEditor }),
+  });
+  /* A filter read back carries keys; with records searchable, the rules about records are
+     drawn as such again — by name. */
+  const read = (filter: unknown): TreeNode | null => {
+    const node = treeFromFilter(filter);
+    return node === null || settings.searchRecords === undefined
+      ? node
+      : liftRecords(node, model);
+  };
   const names = Object.keys(model.fields).sort();
   /* Never a relational nor a value-object: neither has a comparison of its own
      (empty `ops`), so neither serves as a target for a filter, an order or a level. */
   const scalarNames = filterableNames(model);
   const sortable = names.filter((name) => model.fields[name]?.sortable === true);
 
-  const decomposed =
-    initial?.selection === undefined ? null : treeFromFilter(initial.selection);
+  const decomposed = initial?.selection === undefined ? null : read(initial.selection);
   const [tree, setTree] = useState<TreeGroup>(() =>
     decomposed !== null && decomposed.kind === "group"
       ? decomposed
@@ -284,6 +314,9 @@ export function CriteriaBuilder({
     initial === undefined ? "" : JSON.stringify(initial, null, 2),
   );
   const [rawError, setRawError] = useState<string | null>(null);
+  useRecordNames(tree, settings.searchRecords, (named) =>
+    setTree((current) => named(current) as TreeGroup),
+  );
 
   /** What the controls say, together: it is what is applied and what the JSON shows. */
   function assemble(next: {
@@ -372,7 +405,7 @@ export function CriteriaBuilder({
     }
     setRawError(null);
 
-    const node = parsed.selection === undefined ? null : treeFromFilter(parsed.selection);
+    const node = parsed.selection === undefined ? null : read(parsed.selection);
     if (node !== null) {
       setTree(
         node.kind === "group" ? node : { kind: "group", join: "all", children: [node] },
@@ -415,6 +448,7 @@ export function CriteriaBuilder({
               model={model}
               group={tree}
               onChange={(next) => push({ tree: next })}
+              {...settings}
               {...(focus === undefined ? {} : { focus })}
             />
           )}
@@ -759,11 +793,16 @@ export function CriteriaBuilder({
         <Button
           role="primary"
           disabled={rawError !== null}
-          onClick={() =>
+          onClick={() => {
+            const built =
+              rawText.trim() === "" ? undefined : (JSON.parse(rawText) as BuiltCriteria);
             onApply(
-              rawText.trim() === "" ? undefined : (JSON.parse(rawText) as BuiltCriteria),
-            )
-          }
+              built,
+              built?.selection === undefined
+                ? undefined
+                : describeFilter(built.selection, model, undefined, namesOf(tree)),
+            );
+          }}
         >
           {copy.builder.apply}
         </Button>

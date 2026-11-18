@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchSettings } from "@sincpro/web-ui/components/search/context";
 import {
   at,
   type BuiltCondition,
@@ -8,6 +9,7 @@ import {
   type CriteriaJoin,
   type CriteriaPath,
   filterCriteria,
+  type RecordOption,
   removeAt,
   replaceAt,
   type SearchCriteria,
@@ -15,32 +17,43 @@ import {
 import { CriteriaChips } from "@sincpro/web-ui/components/search/CriteriaChips";
 import type { ModelDefinition } from "@sincpro/web-ui/components/search/model";
 import {
-  describeCondition,
+  choiceValues,
+  conditionCriteria,
+  fieldKey,
   opLabel,
   type QueryField,
   queryFields,
+  type QueryKind,
   type QuerySuggestion,
   readTyped,
   suggest,
-  withoutValue,
+  withValue,
 } from "@sincpro/web-ui/components/search/query";
+import type { SearchRecords } from "@sincpro/web-ui/components/search/records";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
 import { CheckMark } from "@sincpro/web-ui/primitives/field/Checks";
 import type { MenuGroup, MenuOption } from "@sincpro/web-ui/primitives/menu/Menu";
+import { MatchedText } from "@sincpro/web-ui/primitives/picker/MatchedText";
 import { Count } from "@sincpro/web-ui/primitives/tag/Count";
 import { chosenTone } from "@sincpro/web-ui/primitives/tag/Tag";
 import { Tags } from "@sincpro/web-ui/primitives/tag/Tags";
 import {
+  CalendarDays,
   ChevronRight,
   CornerDownRight,
+  Hash,
   Layers,
+  Link2,
+  List,
   ListFilter,
   type LucideIcon,
   Search,
   SlidersHorizontal,
   Star,
+  ToggleLeft,
+  Type,
   X,
 } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
@@ -90,6 +103,16 @@ import { mergeProps, Overlay, useOverlay, useOverlayPosition } from "react-aria"
  *  Odoo hangs its panel from a chevron, and that is its flaw: a `▾` does not say what
  *  is on the other side, so you have to open it to find out. Here the trigger
  *  is a filter icon with its counter — you see that it filters, and how much.
+ *
+ *  ── A relation is asked by its RECORDS ──────────────────────────────
+ *
+ *  What Odoo does right: «andres» offers «Search Contact for: andres ▸», and the ▸ unfolds
+ *  the contacts that match. A many2one compared through its foreign key cannot answer a
+ *  text, and «contiene andres» would also take the second Andrés: choosing ONE filters by
+ *  that record. With `searchRecords` (the application's, see `records.ts`) a relation's row
+ *  unfolds —▸ or →— into its records, an enum's into its words, and values of the same field
+ *  land in one chip. Under everything offered, «Búsqueda avanzada…»: whoever typed what the
+ *  bar cannot write is looking at this list when they find out.
  * ==================================================================== */
 
 /** Where you can search. The domain declares it, not this piece. */
@@ -113,6 +136,206 @@ interface Column {
   checks?: boolean;
   content?: ReactNode;
   onSelect?: (id: string) => void;
+}
+
+/** What kind of field a row asks about, at a glance: its icon. */
+const KIND_ICON: Record<QueryKind, LucideIcon> = {
+  text: Type,
+  number: Hash,
+  date: CalendarDays,
+  boolean: ToggleLeft,
+  choice: List,
+  relation: Link2,
+};
+
+/** How long the bar waits for the typing to stop before searching records: every key would
+ *  be a request, and the answer to «a», «an», «and» is thrown away anyway. */
+const RECORDS_DELAY = 200;
+
+/**
+ * A row of the dropdown: what `suggest` offers, the values a row unfolded into, and the rows
+ * that are not a question — a status while records are searched, «Buscar más…», the way into
+ * the builder.
+ */
+type Item =
+  | {
+      kind: "suggestion";
+      id: string;
+      suggestion: QuerySuggestion;
+      child?: true;
+      query?: string;
+    }
+  | { kind: "status"; id: string; text: string; child?: true }
+  | { kind: "more"; id: string; field: QueryField; text: string; child?: true }
+  | { kind: "advanced"; id: string };
+
+/** The records found for a relation: for which search (`key`) and of which field. */
+type Found = {
+  key: string;
+  field: string;
+  status: "loading" | "ready" | "failed";
+  options: readonly RecordOption[];
+};
+
+/** A row the keyboard and the pointer stop on — every one but a status. */
+function selectable(item: Item): boolean {
+  return item.kind !== "status";
+}
+
+/** A row that opens what is under it with → (or its ▸). */
+function unfoldable(item: Item | undefined): boolean {
+  if (item?.kind !== "suggestion" || item.child === true) return false;
+  const one = item.suggestion;
+  return one.kind === "unfold" || (one.kind === "condition" && one.unfolds === true);
+}
+
+/**
+ * What one row of the dropdown says. The row around it —its role, its mark, what pressing it
+ * does— is the bar's; this is only its content, so every kind reads the same way:
+ *
+ *     ▢ Cliente : contiene andres           ▸     a question; ▸ opens its records
+ *     ▢ Etiquetas  con «urg»                ▸     a field asked only by its values
+ *         Andrés Pérez               1028457      a value under its row
+ *         Buscar más…
+ *     ⚙ Búsqueda avanzada…
+ */
+function SuggestionRow({
+  item,
+  open,
+  onToggle,
+  renderRecord,
+}: {
+  item: Item;
+  open: boolean;
+  onToggle: () => void;
+  renderRecord?: SearchBarProps["renderRecord"];
+}) {
+  const copy = useUiCopy();
+  const indent = "ml-6 border-l border-line pl-2.5";
+
+  if (item.kind === "status") {
+    return (
+      <span
+        className={`min-w-0 truncate text-micro text-muted ${item.child === true ? indent : ""}`}
+      >
+        {item.text}
+      </span>
+    );
+  }
+  if (item.kind === "more") {
+    return (
+      <span
+        className={`flex min-w-0 items-center gap-1.5 font-medium text-primary ${item.child === true ? indent : ""}`}
+      >
+        <Search className="size-(--size-icon-sm) shrink-0" strokeWidth={2} aria-hidden />
+        {copy.search.moreRecords}
+      </span>
+    );
+  }
+  if (item.kind === "advanced") {
+    return (
+      <span className="-mx-2 -my-1.5 flex w-full min-w-0 items-center gap-2 border-t border-line px-2 pt-2 pb-1.5 font-medium text-primary">
+        <SlidersHorizontal
+          className="size-(--size-icon-sm) shrink-0"
+          strokeWidth={2}
+          aria-hidden
+        />
+        {copy.search.advanced}
+      </span>
+    );
+  }
+
+  const one = item.suggestion;
+  /* A VALUE under its row: the record's name with what was typed marked —it says why it is
+     listed—, and what tells two of the same name apart on the right. */
+  if (one.kind === "value" && item.child === true) {
+    const query = item.query ?? "";
+    return (
+      <span className={`flex min-w-0 flex-1 items-baseline gap-2 ${indent}`}>
+        {renderRecord !== undefined ? (
+          renderRecord(one.option, { field: one.field, query })
+        ) : (
+          <>
+            <span className="min-w-0 flex-1 truncate text-ink">
+              <MatchedText text={one.option.name} query={query} />
+            </span>
+            {one.option.meta === undefined ? null : (
+              <span className="shrink-0 text-micro text-muted tabular-nums">
+                {one.option.meta}
+              </span>
+            )}
+          </>
+        )}
+      </span>
+    );
+  }
+
+  const Icon =
+    one.kind === "literal"
+      ? Search
+      : one.kind === "condition" ||
+          one.kind === "unfold" ||
+          one.kind === "value" ||
+          one.kind === "field"
+        ? KIND_ICON[one.field.kind]
+        : undefined;
+  const opens = one.kind === "unfold" || (one.kind === "condition" && one.unfolds === true);
+
+  return (
+    <>
+      {Icon === undefined ? null : (
+        <Icon
+          className="size-(--size-icon-sm) shrink-0 text-muted"
+          strokeWidth={2}
+          aria-hidden
+        />
+      )}
+      <span className="flex min-w-0 flex-1 items-baseline gap-1.5">
+        <span className="shrink-0 font-medium text-ink">{one.label}</span>
+        {one.kind === "condition" || one.kind === "literal" || one.kind === "value" ? (
+          one.hint === "" ? null : (
+            <>
+              <span className="shrink-0 text-muted">:</span>
+              <span className="min-w-0 truncate font-mono text-micro text-ink">
+                {one.hint}
+              </span>
+            </>
+          )
+        ) : one.kind === "unfold" ? (
+          <span className="min-w-0 truncate text-micro text-muted">
+            {fillCopy(copy.search.unfoldHint, { text: one.hint })}
+          </span>
+        ) : one.kind === "field" && one.hint !== undefined ? (
+          <span className="inline-flex shrink-0 items-center rounded-pill border border-line-strong bg-ink/5 px-2 py-0.5 text-micro text-muted">
+            {one.hint}
+          </span>
+        ) : null}
+      </span>
+      {/* ▸ opens what is under the row, without choosing it. Not a button of its own: an
+          option holds no control, and the keyboard has → for it. */}
+      {!opens ? null : (
+        <span
+          aria-hidden
+          title={open ? copy.search.fold : copy.search.unfold}
+          onClick={(event) => {
+            event.stopPropagation();
+            onToggle();
+          }}
+          className="-my-1 -mr-1 inline-flex shrink-0 items-center rounded-control p-1 text-muted hover:bg-ink/6 hover:text-ink"
+        >
+          <ChevronRight
+            className={`size-(--size-icon-sm) transition-transform duration-(--duration-instant) ${
+              open ? "rotate-90" : ""
+            }`}
+            strokeWidth={2}
+          />
+        </span>
+      )}
+      {!opens ? null : (
+        <span className="sr-only">{open ? copy.search.fold : copy.search.unfold}</span>
+      )}
+    </>
+  );
 }
 
 function Option({
@@ -317,6 +540,27 @@ export type SearchBarProps = {
    * enum's value, a number a numeric field answers): then that goes first and this after it.
    */
   literal?: (text: string) => BuiltCondition | BuiltFilter | null;
+  /**
+   * Searches the records of a relation — the application's, the SAME function the builder
+   * takes (see `records.ts`). With it a relation's row unfolds (▸, or →) into the records that
+   * match what was typed, and choosing one filters by THAT record, sent by its key and read by
+   * its name: «Cliente: Andrés Pérez». A second one of the same relation lands in the same chip
+   * — «… o Andrés Gutiérrez». A relation that cannot compare a text (its foreign key, a
+   * many2many) is offered only this way; `#cliente` goes straight to its records.
+   *
+   * Absent, the one of the nearest `SearchProvider`.
+   */
+  searchRecords?: SearchRecords;
+  /** «Buscar más…» under an unfolded relation's records: the chooser with the whole list
+   *  (`api.pick` + `List onChoose`), on what was typed. What is chosen there, the application
+   *  puts with `withValue(criteria, field, record)`. */
+  onBrowseRecords?: (field: QueryField, text: string) => void;
+  /** How a record found reads in the dropdown — a face, a NIT, a balance —, for one that does
+   *  not fit «name + meta». The row around it stays the bar's: keys, focus, choosing. */
+  renderRecord?: (
+    record: RecordOption,
+    state: { field: QueryField; query: string },
+  ) => ReactNode;
   /** What goes stuck to the field, on its right. */
   trailing?: ReactNode;
   /** How many facets the bar shows before folding the rest into «+N»; the grouping chain
@@ -340,12 +584,19 @@ export function SearchBar({
   onFavoriteSelect,
   onOpenBuilder,
   literal,
+  searchRecords: ownSearchRecords,
+  onBrowseRecords,
+  renderRecord,
   trailing,
   collapseAfter,
   surface,
 }: SearchBarProps) {
   const copy = useUiCopy();
   const sup = useSurface(surface);
+  /* Its own, or the application's (`SearchProvider`): wired once for every bar. */
+  const { searchRecords } = useSearchSettings(
+    ownSearchRecords === undefined ? {} : { searchRecords: ownSearchRecords },
+  );
   const [text, setText] = useState("");
   const [panel, setPanel] = useState(false);
   /* Which edge of the field the panel hangs from. It is wider than the field when the
@@ -355,9 +606,14 @@ export function SearchBar({
   /** The step the question being written is at: no field, with a field, or
    *  with a field and operator. */
   const [step, setStep] = useState<{ field?: QueryField; op?: string }>({});
-  /** Which of the offered is marked. It starts on the first, which is the one
-   *  Enter takes without going down even once. */
-  const [active, setActive] = useState(0);
+  /** Which of the offered is marked, by its id: `null` is the first, which is the one Enter
+   *  takes without going down even once. By id and not by place, because records arriving
+   *  under an unfolded row push the rows below them down. */
+  const [activeId, setActiveId] = useState<string | null>(null);
+  /** The row unfolded into its values — a relation's records, an enum's values. One at a time:
+   *  two lists open are two places to look for the same thing. */
+  const [unfolded, setUnfolded] = useState<string | null>(null);
+  const [found, setFound] = useState<Found | null>(null);
   /**
    * The OPEN group: where the next thing written lands.
    *
@@ -427,9 +683,7 @@ export function SearchBar({
         }))
       : queryFields(model, copy.locale);
 
-  /* What is marked goes back to the first when what is offered changes: leaving the mark on the
-     fourth row while you keep writing makes Enter take something that is no
-     longer what the screen says. */
+  const records = searchRecords !== undefined;
   const suggestions = suggest(
     {
       ...(step.field === undefined ? {} : { field: step.field }),
@@ -437,25 +691,189 @@ export function SearchBar({
       text,
     },
     fields,
-    { literal: literal !== undefined },
+    { literal: literal !== undefined, records },
   );
 
   /* What was typed, already read: needed here to know whether an
      ATTRIBUTE is being chosen —what starts with `#`— and to draw chips instead of rows. */
   const asked = readTyped(text);
-  /* It opens when there is something to offer AND somebody has started: typing, or
-     choosing a field, which is already having started. */
-  const open = suggestions.length > 0 && (text.trim() !== "" || step.field !== undefined);
 
   /* CHIPS are chosen when what is chosen is an attribute or a comparison, and
      rows when what is chosen is a whole question. */
   const asTags =
     asked.attribute === true || (step.field !== undefined && step.op === undefined);
 
+  /* The unfolded row, while it is still offered: typing more keeps it open —«andr», «andres»
+     narrow the same records— and a row that left the list takes its values with it. */
+  const unfoldedRow = suggestions.find(
+    (one): one is Extract<QuerySuggestion, { kind: "unfold" | "condition" }> =>
+      one.id === unfolded &&
+      (one.kind === "unfold" || (one.kind === "condition" && one.unfolds === true)),
+  );
+  /* Whose records are searched, and for what: the relation chosen with `#` (its records ARE
+     the value step), or the relation row unfolded. */
+  const searching: { field: QueryField; text: string; under?: string } | undefined = !records
+    ? undefined
+    : step.field?.relation !== undefined && step.op !== undefined
+      ? { field: step.field, text: text.trim() }
+      : unfoldedRow !== undefined && unfoldedRow.field.relation !== undefined
+        ? {
+            field: unfoldedRow.field,
+            text: unfoldedRow.kind === "unfold" ? unfoldedRow.text : asked.value,
+            under: unfoldedRow.id,
+          }
+        : undefined;
+  const searchKey =
+    searching === undefined ? "" : `${fieldKey(searching.field)}\u0000${searching.text}`;
+
+  /* The records are ASKED, never filtered here: the application searches thousands where the
+     bar would hold ten. A newer question cancels the one on its way (`signal`), and the
+     records already shown stay while the next ones come — a list that empties on every key
+     jumps under the hand. */
+  useEffect(() => {
+    if (searching === undefined || searchRecords === undefined) return;
+    const relation = searching.field.relation;
+    if (relation === undefined) return;
+    const key = searchKey;
+    const which = fieldKey(searching.field);
+    const asking = searching.text;
+    const controller = new AbortController();
+    setFound((before) => ({
+      key,
+      field: which,
+      status: "loading",
+      options: before?.field === which ? before.options : [],
+    }));
+    const timer = window.setTimeout(() => {
+      searchRecords({
+        relation: relation.relation,
+        path: [relation.name],
+        text: asking,
+        signal: controller.signal,
+      }).then(
+        (options) => {
+          if (!controller.signal.aborted)
+            setFound({ key, field: which, status: "ready", options: [...options] });
+        },
+        () => {
+          if (!controller.signal.aborted)
+            setFound({ key, field: which, status: "failed", options: [] });
+        },
+      );
+    }, RECORDS_DELAY);
+    return () => {
+      window.clearTimeout(timer);
+      controller.abort();
+    };
+    // Asked again only when WHAT is searched changes, not on every render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchKey]);
+
+  /** The records of the relation being searched, as rows: each one a value, then what the
+   *  search says when there is nothing to list, then «Buscar más…». */
+  function recordRows(field: QueryField, query: string, under?: string): Item[] {
+    const which = fieldKey(field);
+    const answer = found !== null && found.field === which ? found : null;
+    const settled = answer !== null && answer.key === searchKey ? answer.status : "loading";
+    const rows: Item[] = (answer?.options ?? []).map((option) => ({
+      kind: "suggestion",
+      id: `r:${which}:${option.id}`,
+      suggestion: {
+        kind: "value",
+        id: `r:${which}:${option.id}`,
+        label: option.name,
+        hint: option.meta ?? "",
+        field,
+        option,
+        ...(under === undefined ? {} : { under }),
+      },
+      ...(under === undefined ? {} : { child: true as const }),
+      query,
+    }));
+    const nested = under === undefined ? {} : { child: true as const };
+    const status =
+      settled === "loading"
+        ? copy.search.searchingRecords
+        : settled === "failed"
+          ? copy.search.recordsFailed
+          : rows.length === 0
+            ? copy.search.noRecords
+            : undefined;
+    if (status !== undefined)
+      rows.push({ kind: "status", id: `s:${which}`, text: status, ...nested });
+    if (onBrowseRecords !== undefined) {
+      rows.push({ kind: "more", id: `m:${which}`, field, text: query, ...nested });
+    }
+    return rows;
+  }
+
+  /** What an unfolded row opens into: a relation's records, or an enum's values. */
+  function unfoldedRows(row: QuerySuggestion): Item[] {
+    if (row.kind !== "unfold" && row.kind !== "condition") return [];
+    const query = row.kind === "unfold" ? row.text : asked.value;
+    if (row.field.relation !== undefined) return recordRows(row.field, query, row.id);
+    return choiceValues(row.field, query).map((option) => ({
+      kind: "suggestion",
+      id: `v:${fieldKey(row.field)}:${option.id}`,
+      suggestion: {
+        kind: "value",
+        id: `v:${fieldKey(row.field)}:${option.id}`,
+        label: option.name,
+        hint: "",
+        field: row.field,
+        option,
+        under: row.id,
+      },
+      child: true,
+      query,
+    }));
+  }
+
+  const items: Item[] = [];
+  for (const one of suggestions) {
+    items.push({ kind: "suggestion", id: one.id, suggestion: one });
+    if (one.id === unfoldedRow?.id) items.push(...unfoldedRows(one));
+  }
+  if (searching !== undefined && searching.under === undefined) {
+    items.push(...recordRows(searching.field, searching.text));
+  }
+
+  /* It opens when there is something to offer AND somebody has started: typing, or
+     choosing a field, which is already having started. */
+  const open = items.some(selectable) && (text.trim() !== "" || step.field !== undefined);
+  /* THE WAY INTO THE BUILDER, under what is offered: whoever typed a question the bar cannot
+     write —a range, a group of three, «ninguna línea con…»— is looking at this list when they
+     find out. It was only at the foot of the panel, behind another button. */
+  if (open && onOpenBuilder !== undefined && !asTags && step.field === undefined) {
+    items.push({ kind: "advanced", id: "a:advanced" });
+  }
+
+  const firstSelectable = items.findIndex(selectable);
+  const marked = items.findIndex((one) => one.id === activeId && selectable(one));
+  const active = marked >= 0 ? marked : firstSelectable;
+  const activeItem = items[active];
+
+  /* What is marked goes back to the first when what is offered changes: leaving the mark on the
+     fourth row while you keep writing makes Enter take something that is no
+     longer what the screen says. Only what `suggest` offers counts — records arriving under an
+     unfolded row do not move the mark. */
   const shown = suggestions.map((one) => one.id).join("\u0000");
   useEffect(() => {
-    setActive(0);
+    setActiveId(null);
   }, [shown]);
+
+  /** Marks the row `by` places away, skipping what cannot be chosen; it wraps around. */
+  function move(by: 1 | -1) {
+    const count = items.length;
+    if (count === 0) return;
+    for (let step = 1; step <= count; step++) {
+      const next = items[(active + by * step + count * step) % count];
+      if (next !== undefined && selectable(next)) {
+        setActiveId(next.id);
+        return;
+      }
+    }
+  }
 
   /** A column with no options is not a column: the trigger would appear and the
    *  panel would open blank. Passing `[]` is what whoever has a list that
@@ -557,26 +975,57 @@ export function SearchBar({
     );
     setText("");
     setStep({});
+    setUnfolded(null);
     input.current?.focus();
   }
 
   function commit(field: QueryField, op: string, value: string) {
-    const one = filterCriteria(
-      /* The one that takes no value travels with `true`, which is what the engine expects of
-         «está vacío»: sending it the empty string would be asking for the field that
-         is "". */
-      { field: field.field, operator: op, value: withoutValue(op) ? true : value },
-      describeCondition(field, op, value),
-    );
-    put(one);
+    put(conditionCriteria(field, op, value));
+  }
+
+  /**
+   * A VALUE of a field —a record, an enum's word— where things land: into the chip that
+   * already asks about that field, or as a new one (`withValue`). Inside the open group, the
+   * same: «Cliente: A o B» is still one chip there.
+   */
+  function putValue(field: QueryField, option: RecordOption) {
+    const node = openGroup === null ? undefined : at(criteria, openGroup);
+    if (openGroup !== null && node?.kind === "join") {
+      onCriteriaChange(
+        replaceAt(criteria, openGroup, { ...node, of: withValue(node.of, field, option) }),
+      );
+    } else {
+      onCriteriaChange(withValue(criteria, field, option));
+    }
+    setText("");
+    setStep({});
+    setUnfolded(null);
+    input.current?.focus();
   }
 
   /** What was chosen in the dropdown, depending on what kind it is. */
   function pick(suggestion: QuerySuggestion) {
     if (suggestion.kind === "field") {
-      setStep({ field: suggestion.field });
+      /* A relation whose records can be searched skips the comparison: what is typed next
+         searches its records, and choosing one is «es». «No es» and the rest are the
+         builder's. */
+      setStep(
+        records && suggestion.field.relation !== undefined
+          ? { field: suggestion.field, op: "=" }
+          : { field: suggestion.field },
+      );
       setText("");
+      setUnfolded(null);
       input.current?.focus();
+      return;
+    }
+    if (suggestion.kind === "unfold") {
+      setUnfolded(suggestion.id);
+      input.current?.focus();
+      return;
+    }
+    if (suggestion.kind === "value") {
+      putValue(suggestion.field, suggestion.option);
       return;
     }
     if (suggestion.kind === "op") {
@@ -614,6 +1063,29 @@ export function SearchBar({
       return;
     }
     commit(suggestion.field, suggestion.op, suggestion.value);
+  }
+
+  /** A row chosen — with Enter or the pointer. */
+  function choose(item: Item | undefined) {
+    if (item === undefined) return;
+    if (item.kind === "suggestion") pick(item.suggestion);
+    else if (item.kind === "more") onBrowseRecords?.(item.field, item.text);
+    else if (item.kind === "advanced") {
+      /* What was typed was not a question the bar could write — that is why the builder was
+         chosen —: it goes, and the dropdown with it, instead of staying open behind the
+         builder. */
+      setText("");
+      setStep({});
+      setUnfolded(null);
+      onOpenBuilder?.();
+    }
+  }
+
+  /** Opens or closes what is under a row; the mark stays on the row. */
+  function toggle(id: string) {
+    setUnfolded((current) => (current === id ? null : id));
+    setActiveId(id);
+    input.current?.focus();
   }
 
   /** The node with one more instance inside. */
@@ -770,7 +1242,7 @@ export function SearchBar({
             aria-autocomplete="list"
             aria-expanded={open}
             {...(open ? { "aria-controls": listId } : {})}
-            {...(open && !asTags && suggestions[active] !== undefined
+            {...(open && !asTags && activeItem !== undefined
               ? { "aria-activedescendant": optionId(active) }
               : {})}
             value={text}
@@ -792,14 +1264,37 @@ export function SearchBar({
                  list was seen and could not be touched without the mouse, which is
                  precisely what a search bar cannot ask for. */
               if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-                if (suggestions.length === 0) return;
+                if (!items.some(selectable)) return;
                 e.preventDefault();
-                setActive((current) => {
-                  const next = e.key === "ArrowDown" ? current + 1 : current - 1;
-                  /* It wraps around: with five fields, going down six times returns to the
-                     first instead of getting stuck on the last. */
-                  return (next + suggestions.length) % suggestions.length;
-                });
+                move(e.key === "ArrowDown" ? 1 : -1);
+                return;
+              }
+              /* → OPENS what is under the marked row —a relation's records, an enum's values—
+                 and ← closes it and goes back to the row, the way a tree and Odoo's bar do.
+                 Only with the caret at the end: in the middle of the text the arrows are still
+                 the text's. */
+              const atEnd = e.currentTarget.selectionStart === text.length;
+              if (e.key === "ArrowRight" && atEnd && open && unfoldable(activeItem)) {
+                if (activeItem !== undefined && activeItem.id !== unfolded) {
+                  e.preventDefault();
+                  toggle(activeItem.id);
+                }
+                return;
+              }
+              if (e.key === "ArrowLeft" && atEnd && open && unfolded !== null) {
+                const parent =
+                  activeItem?.kind === "suggestion" && activeItem.suggestion.kind === "value"
+                    ? activeItem.suggestion.under
+                    : activeItem?.kind === "status" || activeItem?.kind === "more"
+                      ? unfolded
+                      : activeItem?.id === unfolded
+                        ? unfolded
+                        : undefined;
+                if (parent !== undefined) {
+                  e.preventDefault();
+                  setUnfolded(null);
+                  setActiveId(parent);
+                }
                 return;
               }
               /* Enter takes what is MARKED, which starts out being the first — and the
@@ -807,17 +1302,23 @@ export function SearchBar({
                  with «<= 100» the only one that can answer it. */
               if (e.key === "Enter") {
                 e.preventDefault();
-                const chosen = suggestions[active] ?? suggestions[0];
-                if (chosen !== undefined) pick(chosen);
+                choose(activeItem);
               }
               /* Escape UNDOES, one step at a time and always the last: first what is
-                 written, then the comparison, then the field. Whoever
+                 unfolded, then what is written, then the comparison, then the field. Whoever
                  got the field wrong wants to change it, not start over — and
                  whoever is not building anything does not expect anything to happen.
 
                  Before, it only dismantled the step when a field had already been chosen,
                  so with «vent» half-written it did nothing: the key that
                  everybody presses to undo did not undo. */
+              if (e.key === "Escape" && unfolded !== null && open) {
+                e.preventDefault();
+                e.stopPropagation();
+                setActiveId(unfolded);
+                setUnfolded(null);
+                return;
+              }
               if (e.key === "Escape") {
                 if (text !== "") {
                   e.preventDefault();
@@ -828,7 +1329,13 @@ export function SearchBar({
                 if (step.op !== undefined) {
                   e.preventDefault();
                   e.stopPropagation();
-                  setStep({ field: step.field });
+                  /* A relation searched by its records skipped the comparison: undoing goes
+                     back to choosing the field, not to a step it never showed. */
+                  setStep(
+                    records && step.field?.relation !== undefined
+                      ? {}
+                      : { field: step.field },
+                  );
                   return;
                 }
                 if (step.field !== undefined) {
@@ -1001,42 +1508,59 @@ export function SearchBar({
               />
             </div>
           ) : (
-            <div
-              id={listId}
-              role="listbox"
-              aria-label={copy.search.suggestions}
-              className="p-1"
-            >
-              {suggestions.map((one, at) => (
-                <div
-                  key={one.id}
-                  id={optionId(at)}
-                  role="option"
-                  aria-selected={at === active}
-                  /* The input keeps the focus: pressing an option must not take it. */
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => pick(one)}
-                  onMouseEnter={() => setActive(at)}
-                  className={`flex w-full cursor-pointer items-baseline gap-1.5 rounded-ui-option px-2 py-1.5 text-left text-meta transition-colors duration-(--duration-instant) ${
-                    at === active ? "bg-ui-option-active" : "hover:bg-ink/4"
-                  }`}
-                >
-                  <span className="shrink-0 font-medium text-ink">{one.label}</span>
-                  {one.kind === "condition" || one.kind === "literal" ? (
-                    <>
-                      <span className="shrink-0 text-muted">:</span>
-                      <span className="min-w-0 truncate font-mono text-micro text-ink">
-                        {one.hint}
-                      </span>
-                    </>
-                  ) : one.kind === "field" && one.hint !== undefined ? (
-                    <span className="inline-flex shrink-0 items-center rounded-pill border border-line-strong bg-ink/5 px-2 py-0.5 text-micro text-muted">
-                      {one.hint}
-                    </span>
-                  ) : null}
-                </div>
-              ))}
-            </div>
+            <>
+              <div
+                id={listId}
+                role="listbox"
+                aria-label={copy.search.suggestions}
+                className="max-h-96 overflow-y-auto p-1"
+              >
+                {items.map((item, at) => (
+                  <div
+                    key={item.id}
+                    id={optionId(at)}
+                    role="option"
+                    aria-selected={at === active}
+                    {...(item.kind === "status" ? { "aria-disabled": true } : {})}
+                    data-ui={
+                      item.kind === "advanced"
+                        ? "search.advanced"
+                        : item.kind === "suggestion" && item.child !== true
+                          ? "search.suggestion"
+                          : "search.record"
+                    }
+                    /* The input keeps the focus: pressing an option must not take it. */
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => {
+                      if (item.kind === "suggestion" && item.suggestion.kind === "unfold") {
+                        toggle(item.id);
+                      } else choose(item);
+                    }}
+                    onMouseEnter={selectable(item) ? () => setActiveId(item.id) : undefined}
+                    className={`flex w-full items-center gap-2 rounded-ui-option px-2 py-1.5 text-left text-meta transition-colors duration-(--duration-instant) ${
+                      item.kind === "status" ? "cursor-default" : "cursor-pointer"
+                    } ${
+                      item.kind === "advanced" ? "mt-1" : ""
+                    } ${at === active ? "bg-ui-option-active" : selectable(item) ? "hover:bg-ink/4" : ""}`}
+                  >
+                    <SuggestionRow
+                      item={item}
+                      open={item.id === unfoldedRow?.id}
+                      onToggle={() => toggle(item.id)}
+                      {...(renderRecord === undefined ? {} : { renderRecord })}
+                    />
+                  </div>
+                ))}
+              </div>
+              {/* The keys, said once at the foot — → is the one nobody guesses. Not on a phone:
+                  there are no arrows to press. */}
+              <p
+                data-ui="search.keys"
+                className="hidden border-t border-line px-3 py-1 text-micro text-muted sm:block"
+              >
+                {copy.search.keysHint}
+              </p>
+            </>
           )}
         </div>
       ) : null}
@@ -1109,17 +1633,25 @@ export function SearchBar({
               exists could not be opened from the only place where somebody
               looked for it. */}
             {onOpenBuilder === undefined ? null : (
-              <div className="w-full border-t border-line p-1">
+              <div className="w-full border-t border-line p-1.5">
+                {/* An ACTION, and it reads as one: the quiet row it was looked like one more
+                    option of the columns above, and nobody found the builder behind it. */}
                 <button
                   type="button"
+                  data-ui="search.advanced"
+                  title={copy.search.openBuilder}
                   onClick={() => {
                     onOpenBuilder();
                     setPanel(false);
                   }}
-                  className="flex w-full items-center gap-2 rounded-ui-option px-1.5 py-1 text-left text-meta text-ink transition-colors duration-(--duration-instant) hover:bg-ui-option-active focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+                  className="flex w-full items-center gap-2 rounded-ui-option px-2 py-1.5 text-left text-meta font-medium text-primary transition-colors duration-(--duration-instant) hover:bg-primary/8 focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
                 >
-                  <SlidersHorizontal className="size-(--size-icon-sm)" strokeWidth={2} />
-                  {copy.search.openBuilder}
+                  <SlidersHorizontal
+                    className="size-(--size-icon-sm)"
+                    strokeWidth={2}
+                    aria-hidden
+                  />
+                  {copy.search.advanced}
                 </button>
               </div>
             )}
