@@ -67,6 +67,11 @@ idea; this file is how to keep it.
   control, connect the same way.
 - **Client boundary.** A module with hooks, context, event handlers or `document`/`window`
   starts with `"use client";` (`tests/clientBoundary.test.ts`). Pure logic stays without it.
+- **An application ships what it uses.** A heavy library is reached with `lazy(import())`
+  (`tests/heavyChunks.test.ts`); its stylesheet is imported by the component that draws it,
+  never by `tokens.css`; and a `Button`, a form, a `Record` and a `List` keep a first-load
+  budget (`tests/bundle.test.ts`). What only a browser can draw (a canvas) renders after
+  hydration — `useSyncExternalStore`, as `RecordGantt` does — so server rendering matches.
 - **Public means exported from its family `index.ts`.** The level barrel re-exports the
   families, and `src/index.ts` re-exports the levels. Not in a family barrel = internal.
 

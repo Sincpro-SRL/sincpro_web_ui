@@ -1,0 +1,37 @@
+/* ====================================================================
+ *  THE RECORD CALENDAR (FullCalendar v7, `forma` theme) in these tokens.
+ *
+ *  Context: FullCalendar's structure and its `forma` theme, then the palette that theme reads.
+ *  It comes with `RecordCalendar` — imported by the component, not by `tokens.css` — so it
+ *  travels in the calendar's chunk: a screen that never opens a calendar never downloads it.
+ *
+ *  The theme reads a palette of `--fc-forma-*` variables. Pointed at web-ui's tokens it takes
+ *  the theme — light, dark, a brand — with no dark block of its own: the tokens already flip.
+ *  Aliases, so no contrast of their own to measure; the translucent washes are mixed from the
+ *  ink so they read on either theme.
+ * ==================================================================== */
+@import "@fullcalendar/react/skeleton.css";
+@import "@fullcalendar/react/themes/forma/theme.css";
+
+:root {
+  --fc-forma-primary: var(--color-primary);
+  --fc-forma-primary-over: var(--color-primary-hover);
+  --fc-forma-primary-down: var(--color-primary-hover);
+  --fc-forma-primary-foreground: var(--color-surface);
+  --fc-forma-event: var(--color-primary);
+  --fc-forma-event-contrast: var(--color-surface);
+  --fc-forma-background-event: var(--color-primary);
+  --fc-forma-highlight: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  --fc-forma-background: var(--color-surface);
+  --fc-forma-faint: color-mix(in srgb, var(--color-ink) 3%, transparent);
+  --fc-forma-muted: color-mix(in srgb, var(--color-ink) 7%, transparent);
+  --fc-forma-strong: color-mix(in srgb, var(--color-ink) 12%, transparent);
+  --fc-forma-stronger: color-mix(in srgb, var(--color-ink) 16%, transparent);
+  --fc-forma-strongest: color-mix(in srgb, var(--color-ink) 20%, transparent);
+  --fc-forma-foreground: var(--color-ink);
+  --fc-forma-faint-foreground: var(--color-muted);
+  --fc-forma-muted-foreground: var(--color-muted);
+  --fc-forma-border: var(--color-line);
+  --fc-forma-muted-border: var(--color-line);
+  --fc-forma-strong-border: var(--color-line-strong);
+}

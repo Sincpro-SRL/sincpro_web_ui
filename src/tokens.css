@@ -11,15 +11,12 @@
 @import "@fontsource/ibm-plex-mono/latin-ext-400.css";
 @import "@fontsource/ibm-plex-mono/latin-500.css";
 @import "@fontsource/ibm-plex-mono/latin-ext-500.css";
-/* streamdown's animations for text that is still arriving (see Markdown). */
-@import "streamdown/styles.css";
-/* The record calendar (`RecordCalendar`, FullCalendar v7): its structure and the `forma`
-   theme. The palette that theme reads is defined below, from web-ui's tokens. */
-@import "@fullcalendar/react/skeleton.css";
-@import "@fullcalendar/react/themes/forma/theme.css";
-/* The record Gantt (`RecordGantt`, SVAR): its styles, Willow theme included. Its variables
-   are pointed at web-ui's tokens below. */
-@import "@svar-ui/react-gantt/all.css";
+/* Only what every screen uses is imported here. A library's own stylesheet — the Gantt's
+ * (SVAR, ~160 KB), the calendar's (FullCalendar), markdown's (streamdown), React Flow's — is
+ * imported by the component that draws it, together with the mapping of its variables to
+ * these tokens (`gantt.css`, `calendar.css`, `canvas.css`), so it travels in that component's
+ * chunk: an application that never opens a Gantt never downloads its CSS.
+ * `tests/bundle.test.ts` keeps it that way. */
 
 @import "tailwindcss";
 
@@ -1177,82 +1174,6 @@
   --sc-text: var(--text-meta);
   --sc-text-small: var(--text-micro);
   --sc-icon: var(--size-icon-md);
-}
-
-/* ====================================================================
- *  THE RECORD CALENDAR (FullCalendar v7, `forma` theme) in these tokens.
- *
- *  Context: the theme reads a palette of `--fc-forma-*` variables. Pointed at web-ui's tokens it
- *  takes the theme — light, dark, a brand — with no dark block of its own: the tokens already
- *  flip. Aliases, so no contrast of their own to measure; the translucent washes are mixed from
- *  the ink so they read on either theme.
- * ==================================================================== */
-:root {
-  --fc-forma-primary: var(--color-primary);
-  --fc-forma-primary-over: var(--color-primary-hover);
-  --fc-forma-primary-down: var(--color-primary-hover);
-  --fc-forma-primary-foreground: var(--color-surface);
-  --fc-forma-event: var(--color-primary);
-  --fc-forma-event-contrast: var(--color-surface);
-  --fc-forma-background-event: var(--color-primary);
-  --fc-forma-highlight: color-mix(in srgb, var(--color-primary) 18%, transparent);
-  --fc-forma-background: var(--color-surface);
-  --fc-forma-faint: color-mix(in srgb, var(--color-ink) 3%, transparent);
-  --fc-forma-muted: color-mix(in srgb, var(--color-ink) 7%, transparent);
-  --fc-forma-strong: color-mix(in srgb, var(--color-ink) 12%, transparent);
-  --fc-forma-stronger: color-mix(in srgb, var(--color-ink) 16%, transparent);
-  --fc-forma-strongest: color-mix(in srgb, var(--color-ink) 20%, transparent);
-  --fc-forma-foreground: var(--color-ink);
-  --fc-forma-faint-foreground: var(--color-muted);
-  --fc-forma-muted-foreground: var(--color-muted);
-  --fc-forma-border: var(--color-line);
-  --fc-forma-muted-border: var(--color-line);
-  --fc-forma-strong-border: var(--color-line-strong);
-}
-
-/* ====================================================================
- *  THE RECORD GANTT (SVAR, Willow theme) in these tokens.
- *
- *  Context: Willow declares its `--wx-*` on `.wx-willow-theme`; redeclared on the same class
- *  here, later, they win. Bars are the navy of the system, a summary the ink, a milestone the
- *  info tone; the type is the system's. Aliases: they flip with the theme.
- * ==================================================================== */
-.wx-willow-theme {
-  --wx-color-primary: var(--color-primary);
-  --wx-color-primary-selected: color-mix(in srgb, var(--color-primary) 14%, transparent);
-  --wx-color-primary-font: var(--color-surface);
-  --wx-color-secondary-hover: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  --wx-color-success: var(--color-good);
-  --wx-color-warning: var(--color-warn);
-  --wx-color-info: var(--color-info);
-  --wx-color-danger: var(--color-danger);
-  --wx-color-font: var(--color-ink);
-  --wx-color-font-alt: var(--color-muted);
-  --wx-background: var(--color-surface);
-  --wx-background-alt: var(--color-ground);
-  --wx-background-hover: color-mix(in srgb, var(--color-ink) 5%, transparent);
-  --wx-font-family: inherit;
-  --wx-font-size: var(--text-meta);
-  --wx-font-size-sm: var(--text-micro);
-  --wx-icon-color: var(--color-muted);
-  --wx-border-color: var(--color-line);
-  --wx-border-radius: var(--radius-control);
-  --wx-radius-major: var(--radius-box);
-  --wx-gantt-border-color: var(--color-line);
-  --wx-gantt-task-color: var(--color-primary);
-  --wx-gantt-task-fill-color: var(--color-primary-hover);
-  --wx-gantt-task-border-color: var(--color-primary-hover);
-  --wx-gantt-task-font-color: var(--color-surface);
-  --wx-gantt-summary-color: var(--color-line-strong);
-  --wx-gantt-summary-fill-color: color-mix(in srgb, var(--color-ink) 45%, transparent);
-  --wx-gantt-summary-border-color: var(--color-line-strong);
-  --wx-gantt-summary-font-color: var(--color-ink);
-  --wx-gantt-milestone-color: var(--color-info);
-  --wx-gantt-select-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
-  --wx-gantt-link-color: var(--color-muted);
-  --wx-gantt-link-color-hovered: var(--color-ink);
-  --wx-gantt-holiday-background: var(--color-ground);
-  --wx-gantt-holiday-color: var(--color-muted);
 }
 
 @layer base {

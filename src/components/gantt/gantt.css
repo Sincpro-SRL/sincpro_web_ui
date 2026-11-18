@@ -1,0 +1,52 @@
+/* ====================================================================
+ *  THE RECORD GANTT (SVAR, Willow theme) in these tokens.
+ *
+ *  Context: SVAR's stylesheet (~160 KB, Willow included), then its variables pointed at
+ *  web-ui's tokens. It comes with `RecordGantt` — imported by the component, not by
+ *  `tokens.css` — so it travels in the Gantt's chunk: a screen that never opens a Gantt never
+ *  downloads it.
+ *
+ *  Willow DECLARES its `--wx-*` on `.wx-willow-theme`; redeclared on the same class here, after
+ *  its import in the same file, they win — whenever the chunk arrives. Bars are the navy of the
+ *  system, a summary the ink, a milestone the info tone; the type is the system's. Aliases:
+ *  they flip with the theme.
+ * ==================================================================== */
+@import "@svar-ui/react-gantt/all.css";
+
+.wx-willow-theme {
+  --wx-color-primary: var(--color-primary);
+  --wx-color-primary-selected: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  --wx-color-primary-font: var(--color-surface);
+  --wx-color-secondary-hover: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  --wx-color-success: var(--color-good);
+  --wx-color-warning: var(--color-warn);
+  --wx-color-info: var(--color-info);
+  --wx-color-danger: var(--color-danger);
+  --wx-color-font: var(--color-ink);
+  --wx-color-font-alt: var(--color-muted);
+  --wx-background: var(--color-surface);
+  --wx-background-alt: var(--color-ground);
+  --wx-background-hover: color-mix(in srgb, var(--color-ink) 5%, transparent);
+  --wx-font-family: inherit;
+  --wx-font-size: var(--text-meta);
+  --wx-font-size-sm: var(--text-micro);
+  --wx-icon-color: var(--color-muted);
+  --wx-border-color: var(--color-line);
+  --wx-border-radius: var(--radius-control);
+  --wx-radius-major: var(--radius-box);
+  --wx-gantt-border-color: var(--color-line);
+  --wx-gantt-task-color: var(--color-primary);
+  --wx-gantt-task-fill-color: var(--color-primary-hover);
+  --wx-gantt-task-border-color: var(--color-primary-hover);
+  --wx-gantt-task-font-color: var(--color-surface);
+  --wx-gantt-summary-color: var(--color-line-strong);
+  --wx-gantt-summary-fill-color: color-mix(in srgb, var(--color-ink) 45%, transparent);
+  --wx-gantt-summary-border-color: var(--color-line-strong);
+  --wx-gantt-summary-font-color: var(--color-ink);
+  --wx-gantt-milestone-color: var(--color-info);
+  --wx-gantt-select-color: color-mix(in srgb, var(--color-primary) 10%, transparent);
+  --wx-gantt-link-color: var(--color-muted);
+  --wx-gantt-link-color-hovered: var(--color-ink);
+  --wx-gantt-holiday-background: var(--color-ground);
+  --wx-gantt-holiday-color: var(--color-muted);
+}
