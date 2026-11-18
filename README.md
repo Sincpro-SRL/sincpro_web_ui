@@ -83,7 +83,7 @@ the tokens once — fonts, theme and Tailwind come with it:
 ```tsx
 import { Field, installCopy, SPANISH_COPY, TextInput } from "@sincpro/web-ui";
 
-installCopy(SPANISH_COPY); // optional: the interface in Spanish
+installCopy(SPANISH_COPY); // optional: the interface in Spanish — once, where the app starts
 
 export function CompanyName({
   value,
@@ -103,10 +103,56 @@ export function CompanyName({
 Each level is also its own entry — `@sincpro/web-ui/foundations`, `/primitives`,
 `/components`, `/views` — so what a level offers is one import away.
 
-**React Server Components.** Every module that needs the browser (hooks, context, events)
-starts with `"use client"`, and a test keeps it that way; pure logic (calendar, pivot,
-criteria) stays callable from the server. The views are client components: compose
-`Record` inside a client component of your own.
+**What your application ships.** Only what it uses: a `Button` alone is ~2.5 KB gzip, a form
+~74, a `Record` ~130, a `List` ~283 — React aside. The heavy pieces (calendar, Gantt, rich-text
+and JSON editors, charts, PDF) load in their own chunk when they are drawn, and a library's
+stylesheet comes with the component that draws it (the Gantt's alone is ~160 KB), not with
+`tokens.css`. `tests/bundle.test.ts` holds those numbers. Your bundler only needs to handle a
+CSS import from a dependency — Vite, webpack, Turbopack and Next.js do. Tests that load the
+package in Node (Vitest's `node` environment) inline it so those imports go through Vite:
+`test: { server: { deps: { inline: [/@sincpro\/web-ui/] } } }`.
+
+### Server rendering (Next.js)
+
+It works as it is with the App Router and the Pages Router, under Turbopack and webpack.
+`tokens.css` goes in your global stylesheet, with Tailwind's PostCSS plugin:
+
+```js
+// postcss.config.mjs
+export default { plugins: { "@tailwindcss/postcss": {} } };
+```
+
+- **Server Components** may import from `@sincpro/web-ui`. Every module that needs the browser
+  (hooks, context, events) starts with `"use client"`, and a test keeps it that way; pure logic
+  (calendar, pivot, criteria) stays callable from the server. The views are client components:
+  compose `Record` or `List` inside a client component of your own.
+- **The language.** `installCopy` sets the one global there is — and on a server, one process
+  renders every page and every request. Installed in one page, it leaks into the next page the
+  server renders, which the browser then draws in English: a hydration error. Install it in a
+  module EVERY page loads (your root layout's client providers), or — when the language changes
+  per user — give it with `UiCopyProvider`, which never writes the global:
+
+  ```tsx
+  // app/providers.tsx — rendered by app/layout.tsx around {children}
+  "use client";
+  import { SPANISH_COPY, UiCopyProvider } from "@sincpro/web-ui";
+
+  export function Providers({ children }: { children: React.ReactNode }) {
+    return <UiCopyProvider copy={SPANISH_COPY}>{children}</UiCopyProvider>;
+  }
+  ```
+
+- **webpack** (`next build --webpack`): a Server Component that imports from the package root
+  makes webpack send the WHOLE library to the browser (~1.2 MB gzip for one `Button`). Let Next
+  rewrite those imports — Turbopack, the default, does not need it:
+
+  ```js
+  // next.config.mjs
+  export default { experimental: { optimizePackageImports: ["@sincpro/web-ui"] } };
+  ```
+
+- What only a browser can draw is drawn there: the Gantt (SVAR paints its grid on a canvas)
+  renders its skeleton on the server and the chart after hydration.
 
 ### Theming (light / dark)
 

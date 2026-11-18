@@ -1,9 +1,16 @@
 "use client";
 
+import "@sincpro/web-ui/components/gantt/gantt.css";
+
 import { TimelineToolbar } from "@sincpro/web-ui/components/timeline/TimelineToolbar";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { Skeleton } from "@sincpro/web-ui/primitives/notice/Notice";
 import { Gantt, type IApi, Willow } from "@svar-ui/react-gantt";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
+
+/* Nothing to listen to: the answer («is this a browser?») never changes after the first
+   render. Only the hydrating pass reads the server's `false`. */
+const subscribe = () => () => {};
 
 /** A dependency between two records: «B starts when A ends» (`e2s`, the usual one). */
 export type GanttLink = {
@@ -79,7 +86,14 @@ export type RecordGanttProps<T> = {
  * Records on a timeline — Odoo's Gantt view: projects, tasks, manufacturing orders.
  *
  * Context: drawn by SVAR React Gantt (MIT core: move, resize, progress, dependencies, zoom),
- * dressed by `tokens.css` (its Willow theme's `--wx-*` variables point at web-ui's tokens).
+ * dressed by `gantt.css` — SVAR's stylesheet and its Willow theme's `--wx-*` variables pointed
+ * at web-ui's tokens —, imported here so it travels in the Gantt's chunk.
+ *
+ * The chart is drawn in the browser only: SVAR paints its grid with a canvas, which a server
+ * does not have, so a server-rendered chart (Next.js) would not match the browser's first
+ * render. The server — and the hydrating pass — draw the skeleton; the chart comes right
+ * after. An SPA, which does not hydrate, draws the chart at once.
+ *
  * The chart keeps its own state while dragging; every finished change is reported (`onMove`,
  * `onProgress`) and the app passes the saved `items` back, which the chart re-reads. Without
  * `onMove` / `onProgress` it is read-only. Auto-scheduling, critical path and resource load are
@@ -137,6 +151,11 @@ export function RecordGantt<T>({
     };
   });
   const editable = onMove !== undefined || onProgress !== undefined;
+  const inBrowser = useSyncExternalStore(
+    subscribe,
+    () => true,
+    () => false,
+  );
 
   /* The chart reports through its store's actions: `update-task` for a move, a stretch or the
      progress handle — the finished one, not every pixel of the drag (`inProgress`). */
@@ -179,17 +198,21 @@ export function RecordGantt<T>({
         }}
       />
       <div className="min-h-0 flex-1">
-        <Willow fonts={false}>
-          <Gantt
-            tasks={tasks}
-            links={links.map((link) => ({ ...link, type: link.type ?? "e2s" }))}
-            scales={time.scales}
-            cellWidth={cellWidth}
-            readonly={!editable}
-            columns={[{ id: "text", header: nameHeader ?? "", width: 260 }]}
-            init={init}
-          />
-        </Willow>
+        {inBrowser ? (
+          <Willow fonts={false}>
+            <Gantt
+              tasks={tasks}
+              links={links.map((link) => ({ ...link, type: link.type ?? "e2s" }))}
+              scales={time.scales}
+              cellWidth={cellWidth}
+              readonly={!editable}
+              columns={[{ id: "text", header: nameHeader ?? "", width: 260 }]}
+              init={init}
+            />
+          </Willow>
+        ) : (
+          <Skeleton label={copy.failed.loading} />
+        )}
       </div>
     </div>
   );

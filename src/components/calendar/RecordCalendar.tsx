@@ -1,5 +1,9 @@
 "use client";
 
+/* FullCalendar's stylesheet and its palette in web-ui's tokens: imported here, not in
+   `tokens.css`, so it travels in the calendar's chunk. */
+import "@sincpro/web-ui/components/calendar/calendar.css";
+
 import FullCalendar from "@fullcalendar/react";
 import dayGridPlugin from "@fullcalendar/react/daygrid";
 import interactionPlugin from "@fullcalendar/react/interaction";
@@ -68,7 +72,7 @@ export type RecordCalendarProps<T> = {
  * Records on a calendar — Odoo's calendar view: meetings, deliveries, due dates.
  *
  * Context: drawn by FullCalendar v7 (MIT standard views: month, week, day, agenda), dressed by
- * `tokens.css` (its `forma` palette points at web-ui's tokens, so it follows the theme). It is a
+ * `calendar.css` (its `forma` palette points at web-ui's tokens, so it follows the theme). It is a
  * CONTROLLED view of the records: dragging or stretching an event reports `onMove` and the
  * library's own change is undone at once — the app persists and passes the new `items`, so the
  * screen never shows a date the backend refused. Resource rows (per person, per room) are
