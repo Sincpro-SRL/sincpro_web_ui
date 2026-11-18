@@ -4,7 +4,7 @@ import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { bySurface, SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
 import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { Check, Save, Undo2 } from "lucide-react";
-import { useEffect, useId, useRef, useState } from "react";
+import { type CSSProperties, useEffect, useId, useRef, useState } from "react";
 
 export interface DirtyState {
   onSave: () => void;
@@ -42,7 +42,13 @@ export function DirtyActions({
   label,
   blocked,
   changes,
-}: DirtyState) {
+  floating = false,
+}: DirtyState & {
+  /** In the floating bar (`DirtyBar`): the count is WRITTEN — the changed fields may be far
+   *  up a long form, out of sight, and their marks with them — and Discard is the quiet
+   *  ghost, so the bar reads «what is pending · undo · save» and not two equal boxes. */
+  floating?: boolean;
+}) {
   const copy = useUiCopy();
   const blockedId = useId();
   const changesId = useId();
@@ -70,13 +76,30 @@ export function DirtyActions({
         </span>
       )}
       {counted ? (
-        <span id={changesId} hidden>
+        <span
+          id={changesId}
+          /* In the rail the changed fields are in sight and the count only describes Save;
+             in the floating bar it is written. */
+          {...(floating
+            ? {
+                /* One row on a phone too: the count gives way (it truncates), never the
+                   buttons — a pill broken in two rows is a blob. */
+                className: `min-w-0 shrink! truncate px-2.5 text-meta ${bySurface(surface, "text-muted", "text-chrome-muted")}`,
+              }
+            : { hidden: true })}
+        >
           {fillCopy(changes === 1 ? copy.record.unsavedOne : copy.record.unsavedMany, {
             count: changes.toLocaleString(copy.locale),
           })}
         </span>
       ) : null}
-      <Button surface={surface} onClick={onDiscard} disabled={saving} icon={Undo2}>
+      <Button
+        {...(floating ? { role: "ghost" as const } : {})}
+        surface={surface}
+        onClick={onDiscard}
+        disabled={saving}
+        icon={Undo2}
+      >
         {copy.record.discard}
       </Button>
       {/* Busy, not disabled, while it saves: the focus stays on it and a second press is
@@ -143,7 +166,7 @@ function SavedChip() {
   return (
     <span
       aria-hidden
-      className={`inline-flex h-(--size-control-md) shrink-0 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium transition-[opacity,translate] duration-(--duration-quick) ease-(--ease-out) starting:-translate-y-0.5 starting:opacity-0 ${bySurface(
+      className={`inline-flex h-(--size-control-md) shrink-0 items-center gap-1.5 rounded-ui-button px-2.5 text-meta font-medium transition-[opacity,translate] duration-(--duration-quick) ease-(--ease-out) starting:-translate-y-0.5 starting:opacity-0 ${bySurface(
         surface,
         "bg-good/12 text-good",
         "bg-chrome-good/15 text-chrome-good",
@@ -178,7 +201,37 @@ export function SavedMark({ saved }: { saved: boolean }) {
  * change, in the dark band (the chrome) so it reads apart from the cards, and says «Guardado»
  * for a moment where Save was. Sticky and last in the record, as the thumb bar: at the end of
  * the form it settles under the last card and covers nothing.
+ *
+ * ── It never covers the field being typed into ──────────────────────
+ *
+ * The bar appears with the first keystroke, and on a phone the field being typed into is
+ * often the one at the bottom of the screen — right where the bar lands. So while the bar is
+ * up, the field that has the focus (when the bar appears, and each time the focus moves) is
+ * scrolled up out from under it: a form that hides what you are writing is broken, however
+ * nice the bar.
+ *
+ * ── Its shape ─────────────────────────────────────────────────────────
+ *
+ * A pill holds pills: the buttons inside take the pill's radius (`--ui-button-radius`), or a
+ * full-round bar around 8 px corners reads as two boxes in a tube. On the dark theme the
+ * chrome is as dark as the ground, so the bar carries the chrome's hairline (`chrome-edge`) —
+ * invisible on light, where the chrome already stands apart by luminance.
  */
+const PILL = { "--ui-button-radius": "var(--radius-pill)" } as CSSProperties;
+
+/** Scrolls `field` up from under `bar` when they overlap, with a little air above the bar. */
+function clearOf(bar: HTMLElement, field: Element | null) {
+  if (!(field instanceof HTMLElement) || field === document.body || bar.contains(field))
+    return;
+  const over = bar.getBoundingClientRect();
+  const under = field.getBoundingClientRect();
+  if (over.height === 0 || under.bottom <= over.top || under.top >= over.bottom) return;
+  const before = field.style.scrollMarginBottom;
+  field.style.scrollMarginBottom = `${String(Math.ceil(over.height + 12))}px`;
+  field.scrollIntoView({ block: "nearest" });
+  field.style.scrollMarginBottom = before;
+}
+
 export function DirtyBar({
   dirty,
   saved,
@@ -188,10 +241,24 @@ export function DirtyBar({
 }) {
   const copy = useUiCopy();
   const shown = dirty !== undefined || saved;
+  const ref = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const bar = ref.current;
+    if (!shown || bar === null) return;
+    /* After the bar has its height: the frame it was drawn in. */
+    const frame = requestAnimationFrame(() => clearOf(bar, document.activeElement));
+    const onFocus = (event: FocusEvent) => clearOf(bar, event.target as Element | null);
+    document.addEventListener("focusin", onFocus);
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("focusin", onFocus);
+    };
+  }, [shown]);
   /* Always mounted, so «Guardado» is announced (see `SavedMark`); with nothing to say it has
      no height and covers nothing. */
   return (
     <div
+      ref={ref}
       data-ui="dirty.bar"
       className={`pointer-events-none sticky bottom-0 z-20 mt-auto flex justify-center px-3 ${
         shown ? "pt-3 safe-bottom" : ""
@@ -202,8 +269,11 @@ export function DirtyBar({
       </span>
       {shown ? (
         <SurfaceProvider value="chrome">
-          <div className="pointer-events-auto flex max-w-full min-w-0 flex-wrap items-center justify-center gap-1.5 rounded-pill bg-chrome p-1.5 shadow-float">
-            {dirty === undefined ? <SavedChip /> : <DirtyActions {...dirty} />}
+          <div
+            style={PILL}
+            className="pointer-events-auto flex max-w-full min-w-0 items-center gap-1 rounded-pill border border-chrome-edge bg-chrome p-1.5 shadow-float *:shrink-0"
+          >
+            {dirty === undefined ? <SavedChip /> : <DirtyActions {...dirty} floating />}
           </div>
         </SurfaceProvider>
       ) : null}

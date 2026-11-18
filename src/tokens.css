@@ -1580,6 +1580,7 @@
   & > [data-under-control] {
     grid-column-start: 2;
   }
+  /* 40rem IS `--container-handheld`: a container query cannot read a custom property. */
   @container (width < 40rem) {
     grid-template-columns: minmax(0, 1fr);
     & > [data-under-control] {

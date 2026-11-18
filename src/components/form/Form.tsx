@@ -76,9 +76,11 @@ export function FormSection({
             {title === undefined && hint === undefined ? null : (
               <div className="flex min-w-0 flex-col gap-0.5">
                 {/* `h2`: a card is a part of the screen under its title, not a group inside
-                    another — the dense sheet's `h3` skipped a level here. */}
+                    another — the dense sheet's `h3` skipped a level here. In the title step,
+                    not the label's: at the same size and weight as «Usuario» the card's
+                    name read as one more field. */}
                 {title === undefined ? null : (
-                  <h2 className="min-w-0 text-body font-semibold text-ink">{title}</h2>
+                  <h2 className="min-w-0 text-title font-semibold text-ink">{title}</h2>
                 )}
                 {hint === undefined ? null : (
                   <p className="max-w-prose text-micro text-muted">{hint}</p>
