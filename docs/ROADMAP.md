@@ -155,6 +155,19 @@ association (members, dues, courses, a shop, a gallery), themed with its own col
 | A loading and failed state per board tile, and for the board's own numbers                | ✅ 11-16 | `BoardTile state`, `Board state` (`BoardState`); issue #27               |
 | Public pages (hero, carousel, product grid, checkout) on the same tokens                  | ❓       | not web-ui — a sibling package that imports `tokens.css` (to be decided) |
 
+## 4c. Saying what each thing is (round of 2026-11-17, issue #37)
+
+quipu shown as a demo: what the screen already does, it has to SAY.
+
+| Need                                                                     | Status   | Piece / owner                                                               |
+| ------------------------------------------------------------------------ | -------- | --------------------------------------------------------------------------- |
+| Editing shows Discard and Save only; a mark only when it cannot be saved | ✅ 11-17 | `DirtyActions` (`blocked` is the one mark; `changes` describes Save)        |
+| The palette is seen: «Buscar… ⌘K» in the sidebar and the bar             | ✅ 11-17 | `SearchEntry`; `Sidebar search`, `TopBar search`; composer listens for ⌘K   |
+| A shortcut drawn the way this keyboard writes it                         | ✅ 11-17 | `useKeyboardPlatform`, `modShortcut` (`foundations/shortcut`)               |
+| Every row of a list has the same structure, at 390, 1280 and 2000 px     | ✅ 11-17 | `Row`: meta under the name, `--container-row-text`, `--container-row-split` |
+| A counter says how many and how much                                     | ✅ 11-17 | `Metric detail`                                                             |
+| Every `data-ui` part is documented, or the build fails                   | ✅ 11-17 | `tests/componentTokens.test.tsx`                                            |
+
 ## 5. Tests
 
 | Need                                                 | Status   | Owner                                                       |
