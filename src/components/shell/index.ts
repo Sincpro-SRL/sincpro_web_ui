@@ -8,6 +8,12 @@ export {
   type SidebarAction,
   type SidebarProps,
 } from "@sincpro/web-ui/components/shell/Sidebar";
+/* The way into the application's palette, drawn: «Buscar…  ⌘K». The sidebar and the bar draw
+   it from their `search`; on its own, for any other place. */
+export {
+  SearchEntry,
+  type SearchEntryProps,
+} from "@sincpro/web-ui/components/shell/SearchEntry";
 /* The sidebar's phone drawer, for a bar an application writes itself. */
 export {
   type SidebarDrawer,

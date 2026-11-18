@@ -102,6 +102,16 @@ export const SPANISH_COPY: UiCopyOverride = {
     openAsPanel: "Abrir como panel",
     openNavigation: "Abrir la navegación",
     navigation: "Navegación",
+    search: "Buscar…",
+  },
+  guide: {
+    label: "Recorrido",
+    progress: "{current} de {total}",
+    step: "{progress}: {title}",
+    next: "Siguiente",
+    back: "Atrás",
+    skip: "Saltar el recorrido",
+    finish: "Terminar",
   },
   field: {
     drop: "Soltá un archivo acá, o elegí uno.",

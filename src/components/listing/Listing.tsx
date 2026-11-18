@@ -45,11 +45,13 @@ import { createPortal } from "react-dom";
  *  ── The row lays itself out; nobody tells it how ────────────────────
  *
  *  WHICH presentation is the consumer's call. How a row arranges itself inside
- *  the one that was chosen is nobody's: there is no width at which a row «turns
- *  narrow», and no breakpoint written anywhere. Every zone asks for what it
- *  needs —the name `--container-name`, the tags `--container-tags`, the
- *  metadata what it says— and the line does what a line does: what does not fit
- *  wraps, and the name keeps the first one.
+ *  the one that was chosen is the row's, and it is the same for every row: the
+ *  name, its metadata under it, the tags after the text (`--container-row-text`
+ *  wide at most). The one thing the width changes — the tags leaving the name's
+ *  line for one of their own — is a container query on the row's box
+ *  (`--container-row-split`), so it is decided by the LIST's width, never by
+ *  how long one row's metadata happens to be. Deciding it per row by wrapping
+ *  put one meta beside its name and the next one under it, in the same list.
  *
  *  **That is why it holds up with a checkbox, an icon, actions, no tags, or a
  *  metadata three times longer.** None of that is declared anywhere: they all

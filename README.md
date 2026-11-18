@@ -201,6 +201,7 @@ follows:
 | The sidebar on the canvas                                   | `--ui-sidebar-bg`, `--ui-sidebar-border`                                               |
 | `NavigationTree`                                            | `--ui-nav-radius`, `--ui-nav-current-bg`                                               |
 | Table headers (`DataTable`, `EditableTable`, `ReportTable`) | `--ui-table-head-bg`                                                                   |
+| `Guide` (a guided tour): its card and its veil              | `--ui-guide-radius`, `--ui-guide-bg`, `--ui-guide-scrim`                               |
 
 What a token does not cover, a **part** does. Every customizable piece names its root
 `data-ui="<component>"` and its parts `data-ui="<component>.<part>"`, with its variant beside
@@ -218,11 +219,54 @@ of classes that change with the next refactor:
 
 The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`,
 `menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card`, `board.tile`,
-`metric`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`, `search.panel`,
-`search.suggestions`, `table`, `table.head`, `topbar`, `topbar.brand`, `topbar.menus`,
-`topbar.actions`, `topbar.user`, `frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`,
-`sidebar.brand`, `sidebar.user`, `sidebar.nav`, `sidebar.account`, `navigation`,
-`navigation.item`. Put your rules in a cascade layer above web-ui's, or outside any layer.
+`metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
+`search.panel`, `search.suggestions`, `search-entry`, `search-entry.keys`, `table`,
+`table.head`, `topbar`, `topbar.brand`, `topbar.menus`, `topbar.actions`, `topbar.user`,
+`frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`, `sidebar.brand`,
+`sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
+`navigation.item`, `dirty.blocked`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
+`guide.progress`, `guide.title`, `guide.body`, `guide.actions`. A part that is one of many
+carries `data-key` too (`navigation.item`). Put your rules in a cascade layer above web-ui's, or
+outside any layer.
+
+#### A guided tour: the screen says what each thing is
+
+`Guide` walks a person through a screen: the rest dims, the thing being explained is cut out,
+and a card beside it names it. Its stops are the anchors above, so no component needs a prop to
+be pointed at:
+
+```tsx
+<Guide
+  open={open}
+  label="Recorrido del portal"
+  steps={[
+    { id: "hola", title: "Bienvenida", body: "Un minuto para ver dónde está cada cosa." },
+    { id: "buscar", target: { part: "sidebar.search" }, placement: "right", title: "Buscar", body: "…" },
+    { id: "cuotas", target: { part: "navigation.item", key: "socios.cuotas" }, title: "Cuotas", body: "…" },
+    { id: "cifras", target: { spot: "cifras" }, title: "Las cifras de hoy", body: "…" },
+  ]}
+  onClose={(reason, index) => {
+    setOpen(false);
+    markSeen(reason); // "finish" | "skip" | "dismiss" — remembering it is the application's
+  }}
+/>
+
+<GuideSpot id="cifras">
+  <Metrics>…</Metrics>
+</GuideSpot>
+```
+
+- **A target** is a part (`{ part }`), one item of a collection (`{ part, key }`), anything wrapped
+  in `GuideSpot` or carrying `data-guide` (`{ spot }`), a selector, or a function returning an
+  element. A step without one is centred.
+- **`before()`** runs first — navigate, open a tab — and the step waits for its target to appear.
+  A target that never appears is skipped; the tour does not break when the screen changes.
+- **On a phone**, a stop inside the frame's sidebar opens its drawer, and the next stop outside
+  closes it. Render the `Guide` inside the `AppFrame`.
+- It is a modal dialog: focus on «Siguiente» (Enter walks it), → and ←, Escape to leave, and
+  every step announced. `onStepChange` and `startAt` let an application save and resume it.
+- `placeCard`, `findTarget`, `selectorOf` and `boxOf` are exported: a tour of your own follows the
+  same rules.
 
 #### Living beside a site's own CSS
 

@@ -877,8 +877,8 @@ export const Filas: Story = {
 };
 
 /** **Filas en el ancho de un teléfono.** El nombre es lo que identifica el registro y se
- *  queda con su línea: el estado baja a la de abajo, sobre el mismo borde derecho, junto al
- *  `meta`. Antes la columna de fichas guardaba su ancho y el nombre quedaba en «Pe…». */
+ *  queda con su línea; el `meta` va debajo y el estado baja a una línea propia, en todas las
+ *  filas por igual. Antes la columna de fichas guardaba su ancho y el nombre quedaba en «Pe…». */
 export const FilasAngostas: Story = {
   name: "Filas · en 390 px",
   render: () => (

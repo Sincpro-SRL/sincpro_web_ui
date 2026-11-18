@@ -1,6 +1,10 @@
 "use client";
 
 import { type BrandLogo, BrandMark } from "@sincpro/web-ui/components/shell/brandMark";
+import {
+  SearchEntry,
+  type SearchEntryProps,
+} from "@sincpro/web-ui/components/shell/SearchEntry";
 import { SidebarToggle } from "@sincpro/web-ui/components/shell/sidebarDrawer";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { SurfaceProvider } from "@sincpro/web-ui/foundations/surface";
@@ -72,6 +76,7 @@ export function TopBar({
   menus,
   currentMenu,
   onMenuSelect,
+  search,
   systray,
   user,
   onUserSelect,
@@ -93,6 +98,9 @@ export function TopBar({
    *  I» is answered without opening any of them. */
   currentMenu?: string;
   onMenuSelect?: (menuId: string, optionId: string) => void;
+  /** «Buscar…  ⌘K» before the tray: the application's palette, made visible. On a phone it
+   *  folds to the magnifier. `onSearch` opens the palette; the palette keeps its own key. */
+  search?: Omit<SearchEntryProps, "layout" | "surface">;
   /** What happened while I was not looking: activity, alerts. Icons with a count. */
   systray?: ReactNode;
   user?: { name: string; detail?: string };
@@ -168,6 +176,7 @@ export function TopBar({
           data-ui="topbar.actions"
           className="ml-auto flex shrink-0 items-center gap-1 pl-2"
         >
+          {search === undefined ? null : <SearchEntry {...search} layout="bar" />}
           {systray}
           {user === undefined ? null : (
             <UserMenu

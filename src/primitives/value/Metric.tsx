@@ -35,6 +35,10 @@ export type MetricProps = {
    *  zero. */
   value?: number | string;
   label: string;
+  /** A second reading of the same count, already formatted, under the label: «6 · Bs
+   *  1.000,00» is how many AND how much. Muted and small — the figure on top is still the
+   *  one compared across the row. */
+  detail?: string;
   /** The figure is being read. The label stays and the box keeps its size, so a row of
    *  metrics does not jump when the numbers land one at a time. */
   loading?: boolean;
@@ -67,6 +71,7 @@ const TONE: Record<Tone, { background: string; text: string; edge: string }> = {
 export function Metric({
   value,
   label,
+  detail,
   tone = "neutral",
   icon: Icon,
   onClick,
@@ -137,6 +142,16 @@ export function Metric({
       <span className={`text-micro ${bySurface(sup, "text-muted", "text-chrome-muted")}`}>
         {label}
       </span>
+      {/* Hidden while the figure loads, like the change: an amount beside a skeleton reads
+          as the figure. */}
+      {detail === undefined || loading ? null : (
+        <span
+          data-ui="metric.detail"
+          className={`text-micro tabular-nums ${bySurface(sup, "text-muted", "text-chrome-muted")}`}
+        >
+          {detail}
+        </span>
+      )}
       {change === undefined || loading ? null : (
         <Change change={change} format={percent.format} />
       )}
@@ -148,7 +163,11 @@ export function Metric({
       <div
         data-ui="metric"
         className={box}
-        aria-label={loading ? `${label}: ${copy.failed.loading}` : `${figure} ${label}`}
+        aria-label={
+          loading
+            ? `${label}: ${copy.failed.loading}`
+            : `${figure} ${label}${detail === undefined ? "" : `, ${detail}`}`
+        }
         {...(loading ? { "aria-busy": true } : {})}
       >
         {content}

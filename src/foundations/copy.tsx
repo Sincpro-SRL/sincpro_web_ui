@@ -72,9 +72,10 @@ export type UiCopy = {
     location: string;
     status: string;
     faces: string;
-    /** The mark of a record with changes that are not saved yet. */
+    /** @deprecated Not drawn since 2.4: the Save and Discard buttons already say it. Kept so
+     *  a copy table written for an earlier version still type-checks. */
     unsaved: string;
-    /** The same mark when the record says how many fields changed. */
+    /** How many fields changed — the Save button's description, for a screen reader. */
     unsavedOne: string;
     unsavedMany: string;
     save: string;
@@ -112,6 +113,22 @@ export type UiCopy = {
     openNavigation: string;
     /** The drawer's name: what a screen reader hears when it opens. */
     navigation: string;
+    /** The way into the application's palette, in the sidebar or the bar. */
+    search: string;
+  };
+  /** A guided tour (`Guide`). */
+  guide: {
+    /** The tour's name when the application gives none. */
+    label: string;
+    /** «2 de 5»: `{current}` and `{total}`. */
+    progress: string;
+    /** What a screen reader hears on each step: `{progress}` and `{title}`. */
+    step: string;
+    next: string;
+    back: string;
+    skip: string;
+    /** The last step's button, in place of «next». */
+    finish: string;
   };
   field: {
     drop: string;
@@ -1093,6 +1110,16 @@ export const ENGLISH_COPY: UiCopy = {
     openAsPanel: "Open as panel",
     openNavigation: "Open the navigation",
     navigation: "Navigation",
+    search: "Search…",
+  },
+  guide: {
+    label: "Guided tour",
+    progress: "{current} of {total}",
+    step: "{progress}: {title}",
+    next: "Next",
+    back: "Back",
+    skip: "Skip the tour",
+    finish: "Done",
   },
   field: {
     drop: "Drop a file here, or choose one.",

@@ -16,11 +16,11 @@ export interface DirtyState {
    *  regla». */
   label?: string;
   /** Why it CANNOT be saved yet. Present = the button is off and the reason is written
-   *  where the «unsaved» mark was — a button that is off with no reason is a wall, and a
-   *  reason in a `title` reaches neither the keyboard nor a finger. */
+   *  beside it — a button that is off with no reason is a wall, and a reason in a `title`
+   *  reaches neither the keyboard nor a finger. It is the only mark the rail draws. */
   blocked?: string;
-  /** How many fields changed: «2 cambios sin guardar» instead of a bare «sin guardar». The
-   *  fields themselves are marked by their `Field changed`. */
+  /** How many fields changed. Not drawn: it describes the Save button, «Guardar — 2 cambios
+   *  sin guardar», for whoever cannot see the fields' own `Field changed` marks. */
   changes?: number;
 }
 
@@ -30,9 +30,11 @@ export interface DirtyState {
  *  the same rule as `FormActions`, and here it matters more: the rail is where
  *  the hand is after editing.
  *
- *  The «sin guardar» warning is text and not just a color: whoever is leaving
- *  the screen has to be able to read what is going on, not deduce it from a
- *  dot. */
+ *  There is no «sin guardar» mark. The two buttons only exist while something changed, and
+ *  each changed field already says so (`Field changed`): a third signal repeating the other
+ *  two was noise beside the one action that matters. The only thing written here is what
+ *  the buttons cannot say — WHY it cannot be saved yet (`blocked`). The count of changes
+ *  still reaches a screen reader, as the Save button's description. */
 export function DirtyActions({
   onSave,
   onDiscard,
@@ -43,31 +45,42 @@ export function DirtyActions({
 }: DirtyState) {
   const copy = useUiCopy();
   const blockedId = useId();
+  const changesId = useId();
   /* It follows the rail it sits on instead of assuming the dark one: on a light rail the
      chrome palette was white text on white. */
   const surface = useSurface();
+  const counted = changes !== undefined && changes > 0;
+  const describedBy = [
+    ...(blocked === undefined ? [] : [blockedId]),
+    ...(counted ? [changesId] : []),
+  ].join(" ");
   return (
     <>
-      <span
-        {...(blocked === undefined ? {} : { id: blockedId })}
-        className={`inline-flex h-(--size-control-md) min-w-0 shrink items-center gap-1.5 truncate rounded-control px-2.5 text-meta font-medium ${bySurface(
-          surface,
-          "bg-warn/12 text-warn",
-          "bg-chrome-warn/15 text-chrome-warn",
-        )}`}
-      >
-        {blocked ??
-          (changes === undefined || changes === 0
-            ? copy.record.unsaved
-            : fillCopy(changes === 1 ? copy.record.unsavedOne : copy.record.unsavedMany, {
-                count: changes.toLocaleString(copy.locale),
-              }))}
-      </span>
+      {blocked === undefined ? null : (
+        <span
+          id={blockedId}
+          data-ui="dirty.blocked"
+          className={`inline-flex h-(--size-control-md) min-w-0 shrink items-center gap-1.5 truncate rounded-control px-2.5 text-meta font-medium ${bySurface(
+            surface,
+            "bg-warn/12 text-warn",
+            "bg-chrome-warn/15 text-chrome-warn",
+          )}`}
+        >
+          {blocked}
+        </span>
+      )}
+      {counted ? (
+        <span id={changesId} hidden>
+          {fillCopy(changes === 1 ? copy.record.unsavedOne : copy.record.unsavedMany, {
+            count: changes.toLocaleString(copy.locale),
+          })}
+        </span>
+      ) : null}
       <Button surface={surface} onClick={onDiscard} disabled={saving} icon={Undo2}>
         {copy.record.discard}
       </Button>
       {/* Busy, not disabled, while it saves: the focus stays on it and a second press is
-          not a second save. The reason it cannot be saved is the mark at the left, and it
+          not a second save. The reason it cannot be saved is written at the left, and it
           names the button too. */}
       <Button
         role="primary"
@@ -76,7 +89,7 @@ export function DirtyActions({
         busy={saving}
         disabled={blocked !== undefined}
         icon={Save}
-        {...(blocked === undefined ? {} : { "aria-describedby": blockedId })}
+        {...(describedBy === "" ? {} : { "aria-describedby": describedBy })}
       >
         {saving ? copy.record.saving : (label ?? copy.record.save)}
       </Button>

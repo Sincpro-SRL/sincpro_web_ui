@@ -17,7 +17,7 @@ data comes from). What is marked ✅ with a date was done in the round of 2026-1
 | What changed, while editing: a mark per field and «2 cambios sin guardar» | ✅ 11-03 | `Field changed`, `DirtyState.changes`                                              |
 | Save without losing focus or saving twice                                 | ✅ 11-03 | `Button busy` (in `DirtyActions`); when done, focus returns to the name            |
 | Knowing it was saved, without the app writing it                          | ✅ 11-03 | «✓ Guardado» in the rail (`useJustSaved`, `status` region)                         |
-| Why it cannot be saved, in view and not in a `title`                      | ✅ 11-03 | `DirtyState.blocked` in place of «sin guardar», and it describes the button        |
+| Why it cannot be saved, in view and not in a `title`                      | ✅ 11-03 | `DirtyState.blocked`, the rail's only mark (11-17), and it describes the button    |
 | Focus is seen arriving and the label goes with it                         | ✅ 11-03 | `focus-in` (only with motion allowed), `Field` with `focus-within`                 |
 | A fast load does not flash a skeleton                                     | ✅ 11-03 | `animate-reveal-late` (appears at 200 ms) in `Skeleton` and `RecordSkeleton`       |
 | A long fact (an email) does not overlap the one beside it                 | ✅ 11-03 | `Sheet` (`wrap-anywhere`); density is given by `DensityProvider`                   |
@@ -154,6 +154,22 @@ association (members, dues, courses, a shop, a gallery), themed with its own col
 | Phone stories run at 390 × 844 in the test runner, not on the desk                        | ✅ 11-16 | `vitest.config.ts` alias; `.storybook/preview.ts` `defaultViewport`      |
 | A loading and failed state per board tile, and for the board's own numbers                | ✅ 11-16 | `BoardTile state`, `Board state` (`BoardState`); issue #27               |
 | Public pages (hero, carousel, product grid, checkout) on the same tokens                  | ❓       | not web-ui — a sibling package that imports `tokens.css` (to be decided) |
+
+## 4c. Saying what each thing is (round of 2026-11-17, issues #37 and #40)
+
+quipu shown as a demo: what the screen already does, it has to SAY.
+
+| Need                                                                     | Status   | Piece / owner                                                               |
+| ------------------------------------------------------------------------ | -------- | --------------------------------------------------------------------------- |
+| Editing shows Discard and Save only; a mark only when it cannot be saved | ✅ 11-17 | `DirtyActions` (`blocked` is the one mark; `changes` describes Save)        |
+| The palette is seen: «Buscar… ⌘K» in the sidebar and the bar             | ✅ 11-17 | `SearchEntry`; `Sidebar search`, `TopBar search`; composer listens for ⌘K   |
+| A shortcut drawn the way this keyboard writes it                         | ✅ 11-17 | `useKeyboardPlatform`, `modShortcut` (`foundations/shortcut`)               |
+| Every row of a list has the same structure, at 390, 1280 and 2000 px     | ✅ 11-17 | `Row`: meta under the name, `--container-row-text`, `--container-row-split` |
+| A counter says how many and how much                                     | ✅ 11-17 | `Metric detail`                                                             |
+| Every `data-ui` part is documented, or the build fails                   | ✅ 11-17 | `tests/componentTokens.test.tsx`                                            |
+| A guided tour: the screen names each thing where it is (issue #40)       | ✅ 11-17 | `Guide`, `GuideSpot`; stops are `data-ui` parts, `data-key`, `data-guide`   |
+| A tour on a phone goes through the sidebar's drawer and back             | ✅ 11-17 | `Guide` opens and closes the frame's drawer (`useSidebarDrawer`)            |
+| A «¿Qué es esto?» mode and hotspots on new features                      | ❓       | later, on the same anchors                                                  |
 
 ## 5. Tests
 

@@ -60,3 +60,39 @@ export const Cifras: Story = {
     await expect(canvasElement.textContent).toContain("—");
   },
 };
+
+/** **Cuántos y cuánto.** Un contador del tablero de quipu: seis mensualidades por revisar, y
+ *  lo que suman. El monto va debajo del rótulo (`detail`), apagado: la cifra de arriba sigue
+ *  siendo la que se compara entre tarjetas. Mientras se lee, el monto no aparece — junto a un
+ *  esqueleto se leería como la cifra. */
+export const ConMonto: Story = {
+  render: function Render() {
+    const [activa, setActiva] = useState(false);
+    return (
+      <Metrics>
+        <Metric
+          value={6}
+          label="Mensualidades por revisar"
+          detail="Bs 1.000,00"
+          tone="warn"
+          active={activa}
+          onClick={() => setActiva((a) => !a)}
+        />
+        <Metric value={14} label="Compras de la tienda" detail="Bs 3.240,50" />
+        <Metric label="Pagos del portal" detail="Bs 980,00" loading />
+      </Metrics>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const revisar = canvasElement.querySelector("button[data-ui='metric']");
+    await expect(revisar?.textContent).toContain("Bs 1.000,00");
+    /* The amount is part of what a screen reader hears for the card that only informs. */
+    const compras = canvasElement.querySelector("div[data-ui='metric']");
+    await expect(compras?.getAttribute("aria-label")).toBe(
+      "14 Compras de la tienda, Bs 3.240,50",
+    );
+    /* Loading: the label stays, the amount waits for the figure. */
+    const leyendo = canvasElement.querySelector('[aria-busy="true"]');
+    await expect(leyendo?.textContent).not.toContain("Bs 980,00");
+  },
+};

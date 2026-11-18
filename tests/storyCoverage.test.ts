@@ -43,6 +43,8 @@ const SHOWN_THROUGH: Readonly<Record<string, string>> = {
   AssistLabel: "AssistSuggestion, AssistPending and ChangeReview — 3 · Componentes/Asistente",
   AssistSourceLink:
     "AssistSuggestion, ChangeReview and AssistMark — 3 · Componentes/Asistente",
+  SearchEntry:
+    "Sidebar's and TopBar's `search` — 3 · Componentes/Shell · la barra lateral · Como cromo, En el teléfono",
   SidebarToggle:
     "TopBar draws it first inside a frame with a sidebar — 3 · Componentes/Shell · la barra lateral · En el teléfono",
 };

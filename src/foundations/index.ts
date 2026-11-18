@@ -35,6 +35,13 @@ export {
   useFieldIds,
   useFormMode,
 } from "@sincpro/web-ui/foundations/form";
+/* A SHORTCUT, drawn the way the person's keyboard says it: «⌘K» on a Mac, «Ctrl K» elsewhere. */
+export {
+  type KeyboardPlatform,
+  type ModShortcut,
+  modShortcut,
+  useKeyboardPlatform,
+} from "@sincpro/web-ui/foundations/shortcut";
 /* THE THEME — light, dark or the operating system's. The palettes live in `tokens.css`; this
    only writes `data-theme`. */
 export { bySurface, SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
