@@ -342,6 +342,20 @@
   --text-display: 1.75rem;
   --text-display--line-height: 1.2;
 
+  /* Two steps for FIGURES, not for text. A number a board leads with is read before anything
+     else on the page, and at 19 px (`title`) it read as one more label — the board's headline
+     figures sat in chips the size of a tag. They are not titles either: a title is read, a
+     figure is compared, so they get their own steps, set tighter (a figure at display size
+     with text tracking looks loose: its digits drift apart).
+       figure — the value of a board's stat tile
+       hero   — the ONE figure a board leads with (≥ 48 px), at most one per view */
+  --text-figure: 1.875rem;
+  --text-figure--line-height: 1.1;
+  --text-figure--letter-spacing: -0.02em;
+  --text-hero: 3rem;
+  --text-hero--line-height: 1;
+  --text-hero--letter-spacing: -0.03em;
+
   /* ---------------------------------------------------------------- *
    *  THE RADIUS SCALE — «it is very square», and that was true.
    *
@@ -533,6 +547,10 @@
      to «Referencia del cli…», and a truncated label is a question. */
   --container-label: 10rem;
 
+  /* The index of a «settings» form's sections (`FormIndex`), at the sheet's left: wide enough
+     for «Contacto y guía pública», narrow enough that the cards keep the page. */
+  --container-form-index: 12rem;
+
   /* The tag column of a list row. It is what the column ASKS FOR, and it
      belongs to the system: with a width of its own every tag starts where its
      own ends and twelve rows give twelve indents. Asking for the same 8 rem,
@@ -595,6 +613,11 @@
   /* A row of headline metrics while the board reads them: the height of one `Metric` with
      its figure and label, so the tiles below do not move down when the numbers arrive. */
   --size-metric: 3.75rem;
+
+  /* A stat tile's sparkline: the shape of the last periods under the figure, not a chart —
+     no axis, no grid. Tall enough to see a turn, short enough that the figure stays the
+     subject. */
+  --size-sparkline: 2.5rem;
 
   /* The width of the peek drawer. It is a system decision and not a component
      one: 30rem is what fits of a record without leaving the list behind it
@@ -783,10 +806,17 @@
   --radius-ui-dialog: var(--ui-dialog-radius, var(--radius-panel));
   --color-ui-dialog: var(--ui-dialog-bg, var(--color-surface));
 
-  /* A box of content: a block, a card of a list, a board tile, a metric. */
+  /* A box of content: a block, a card of a list, a metric. */
   --radius-ui-card: var(--ui-card-radius, var(--radius-box));
   --color-ui-card: var(--ui-card-bg, var(--color-surface));
   --color-ui-card-border: var(--ui-card-border, var(--color-line));
+
+  /* A board's tile and stat tile: a PANEL of a page, not a box inside one — the panel's
+     radius, like a window. Its colours fall back to the card's, so an application that
+     re-skinned its cards re-skins its boards too, and can still tell them apart. */
+  --radius-ui-tile: var(--ui-tile-radius, var(--radius-panel));
+  --color-ui-tile: var(--ui-tile-bg, var(--ui-card-bg, var(--color-surface)));
+  --color-ui-tile-border: var(--ui-tile-border, var(--ui-card-border, var(--color-line)));
 
   /* A capsule: a tag, a chip of the search bar. */
   --radius-ui-tag: var(--ui-tag-radius, var(--radius-pill));
@@ -1533,6 +1563,25 @@
     grid-column-start: 2;
   }
   @container (width < 21rem) {
+    grid-template-columns: minmax(0, 1fr);
+    & > [data-under-control] {
+      grid-column-start: auto;
+    }
+  }
+}
+
+/* A field of the «settings» form style (`FormStyleProvider`): what it asks — the label and its
+   help written out — on the left, two parts in five; the control on the right, three. The
+   label column grows with the row because it holds a sentence, not one word. Below
+   `--container-handheld` of the section it sits in, the row is one column: the help over a
+   control squeezed beside it was two half-read things. */
+@utility grid-setting {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  & > [data-under-control] {
+    grid-column-start: 2;
+  }
+  /* 40rem IS `--container-handheld`: a container query cannot read a custom property. */
+  @container (width < 40rem) {
     grid-template-columns: minmax(0, 1fr);
     & > [data-under-control] {
       grid-column-start: auto;

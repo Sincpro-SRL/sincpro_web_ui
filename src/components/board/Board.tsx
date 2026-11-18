@@ -1,9 +1,14 @@
 "use client";
 
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import type { Tone } from "@sincpro/web-ui/foundations/types";
 import { Button } from "@sincpro/web-ui/primitives/button/Button";
+import { Sparkline } from "@sincpro/web-ui/primitives/chart/Sparkline";
+import { Hint } from "@sincpro/web-ui/primitives/hint/Hint";
 import { Failed } from "@sincpro/web-ui/primitives/notice/Notice";
-import type { ReactNode } from "react";
+import { MetricChange, type MetricProps } from "@sincpro/web-ui/primitives/value/Metric";
+import type { LucideIcon } from "lucide-react";
+import { type ReactNode, useMemo } from "react";
 
 /**
  * A BOARD: the tiles of a dashboard — Odoo's «Tableros», a BI page — over one slice of data.
@@ -34,6 +39,18 @@ import type { ReactNode } from "react";
  * chart it will hold (`--size-tile-body`), so a neighbour landing never moves the grid. The
  * board's own `state` is the same for what the board reads as a whole: its headline numbers.
  * The application (or web-framework's boards) decides each state; web-ui only draws it.
+ *
+ * ── A tile is a panel of the page, and looks like one ──────────────────
+ *
+ * A tile used to be a box with a hard border (`line-strong`) and 16 px of air, the radius of
+ * a card inside a form: on the near-white ground the border did all the separating, and a
+ * page of them read as a wireframe. A tile is a PANEL — the panel's radius, the soft
+ * hairline every card has, more air — and its look is its own tokens (`--ui-tile-*`),
+ * falling back to the card's.
+ *
+ * The headline numbers are `BoardStat`s in a `BoardStats` row: tiles too, the same width as
+ * the columns under them, the figure in its own type step (`figure`, `hero`) and the trend
+ * beside it. `Metric` stays what it is — the chip that filters a list.
  */
 
 /** What a tile — or the board's own headline reading — is doing. */
@@ -156,14 +173,67 @@ const SPAN = {
   full: "col-span-full",
 } as const;
 
+const ROWS = { 1: "", 2: "@3xl:row-span-2" } as const;
+
+/** The skin every tile shares, a stat tile included: a panel on the ground. */
+const TILE = "rounded-ui-tile border border-ui-tile-border bg-ui-tile";
+
+/** The mark of what a tile is about: its icon in a quiet square, never in a colour of its
+ *  own — the colour of a tile is its state, not its subject. */
+function TileIcon({ icon: Icon, tone }: { icon: LucideIcon; tone?: Tone | undefined }) {
+  return (
+    <span
+      aria-hidden
+      className={`flex size-8 shrink-0 items-center justify-center rounded-control ${
+        tone === undefined || tone === "neutral" ? "bg-ink/5 text-muted" : TONE[tone].icon
+      }`}
+    >
+      <Icon className="size-(--size-icon-md)" strokeWidth={2} />
+    </span>
+  );
+}
+
+/** A tile's heading: the icon, the title and its ⓘ — what it counts, said on demand. */
+function TileHeading({
+  title,
+  icon,
+  hint,
+  tone,
+  size = "title",
+}: {
+  title: string;
+  icon?: LucideIcon | undefined;
+  hint?: ReactNode;
+  tone?: Tone | undefined;
+  size?: "title" | "label";
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      {icon === undefined ? null : <TileIcon icon={icon} tone={tone} />}
+      <h2
+        className={`min-w-0 truncate font-semibold text-ink ${size === "title" ? "text-lead" : "text-meta"}`}
+      >
+        {title}
+      </h2>
+      {hint === undefined ? null : <Hint>{hint}</Hint>}
+    </div>
+  );
+}
+
 export type BoardTileProps = {
   title: string;
+  /** What the tile is about, beside its title: a mailbox, a shield. */
+  icon?: LucideIcon;
+  /** What it counts and how, behind an ⓘ: the sentence that does not fit under the title. */
+  hint?: ReactNode;
   /** One line under the title: what it counts, or what a press on it does. */
   description?: ReactNode;
   /** The tile's own buttons, at its top right: open the list behind it, download. */
   actions?: ReactNode;
   /** How many columns it takes: a time series reads better wide. */
   span?: keyof typeof SPAN;
+  /** How many rows: a tall tile beside two short ones stacked. From two columns up. */
+  rows?: keyof typeof ROWS;
   /** Reading, ready or failed. Not ready, the body is the state, the height of a chart; the
    *  title, its description and its actions stay. */
   state?: BoardState;
@@ -173,9 +243,12 @@ export type BoardTileProps = {
 /** One tile of a `Board`: a titled surface around a chart, a list or a number. */
 export function BoardTile({
   title,
+  icon,
+  hint,
   description,
   actions,
   span = 1,
+  rows = 1,
   state = READY,
   children,
 }: BoardTileProps) {
@@ -185,11 +258,11 @@ export function BoardTile({
       aria-label={title}
       {...(state.status === "loading" ? { "aria-busy": true } : {})}
       data-ui="board.tile"
-      className={`flex min-w-0 flex-col gap-4 rounded-ui-card border border-line-strong bg-ui-card p-4 ${SPAN[span]}`}
+      className={`flex min-w-0 flex-col gap-4 p-5 ${TILE} ${SPAN[span]} ${ROWS[rows]}`}
     >
       <header className="flex min-w-0 items-start justify-between gap-3">
         <div className="min-w-0">
-          <h2 className="text-lead font-semibold text-ink">{title}</h2>
+          <TileHeading title={title} icon={icon} hint={hint} />
           {description === undefined ? null : (
             <p className="mt-0.5 text-meta text-muted">{description}</p>
           )}
@@ -212,5 +285,154 @@ export function BoardTile({
         children
       )}
     </section>
+  );
+}
+
+/* ==================================================================== *
+ *  THE STAT TILE — the headline numbers of a board.
+ * ==================================================================== */
+
+const TONE: Record<Tone, { tile: string; icon: string }> = {
+  neutral: { tile: "", icon: "bg-ink/5 text-muted" },
+  info: { tile: "bg-info/6 border-info/25", icon: "bg-info/12 text-info" },
+  good: { tile: "bg-good/6 border-good/25", icon: "bg-good/12 text-good" },
+  warn: { tile: "bg-warn/8 border-warn/30", icon: "bg-warn/14 text-warn" },
+  bad: { tile: "bg-bad/6 border-bad/25", icon: "bg-bad/12 text-bad" },
+  /* The gold never draws the border of a state (PRINCIPLES §3): only the wash. */
+  accent: { tile: "bg-accent/12", icon: "bg-accent/20 text-ink" },
+};
+
+export type BoardStatProps = {
+  /** What the figure counts: «Mensajes recibidos». Sentence case, no colon. */
+  label: string;
+  /** The figure, already written or a number (written in the copy's locale). Absent — and not
+   *  reading — it says «Sin datos»: nothing to compute it from, which is not zero. */
+  value?: number | string;
+  icon?: LucideIcon;
+  /** What it counts and how, behind an ⓘ beside the label. */
+  hint?: ReactNode;
+  /** A second reading under the figure, already formatted: «de 1.240 recibidos». */
+  detail?: string;
+  /** How it moved against a NAMED period — the same mark as `Metric.change`. */
+  change?: MetricProps["change"];
+  /** The last periods, oldest first: drawn as a sparkline beside the figure. */
+  trend?: readonly (number | null)[];
+  /** The ONE figure the board leads with: the hero step (≥ 48 px). At most one per board. */
+  hero?: boolean;
+  /**
+   * The STATE of the reading, never decoration: a share of clean mail under its floor is
+   * `bad`. It tints the tile and its icon; the label, the detail or the hint has to say why
+   * in words, because a colour alone is not read by everyone.
+   */
+  tone?: Tone;
+  /** Reading or failed: the figure's place keeps its size, the label stays. */
+  state?: BoardState;
+  /** Columns in the row of stats. */
+  span?: 1 | 2;
+};
+
+/**
+ * A board's headline figure as a tile: the label (with its icon and ⓘ), the figure big, and
+ * under it how it moved and the shape of the last periods.
+ *
+ * Context: it is NOT a `Metric`. A metric is a chip over a list that narrows it when pressed —
+ * small, the size of what it filters. A stat tile is read before anything else on a board
+ * and pressed for nothing; it has the width of the columns under it, so the page is one grid,
+ * and the figure is in the figure step, in proportional digits (tabular digits space a lone
+ * «121» like «000»; they are for columns).
+ */
+export function BoardStat({
+  label,
+  value,
+  icon,
+  hint,
+  detail,
+  change,
+  trend,
+  hero = false,
+  tone,
+  state = READY,
+  span = 1,
+}: BoardStatProps) {
+  const copy = useUiCopy();
+  const percent = useMemo(
+    () =>
+      new Intl.NumberFormat(copy.locale, {
+        style: "percent",
+        maximumFractionDigits: 1,
+        signDisplay: "exceptZero",
+      }),
+    [copy.locale],
+  );
+  const loading = state.status === "loading";
+  const missing = value === undefined;
+  const figure = missing
+    ? copy.board.noData
+    : typeof value === "number"
+      ? value.toLocaleString(copy.locale)
+      : value;
+  const shade = tone === undefined ? "" : TONE[tone].tile;
+  return (
+    <section
+      aria-label={label}
+      {...(loading ? { "aria-busy": true } : {})}
+      data-ui="board.stat"
+      {...(tone === undefined ? {} : { "data-tone": tone })}
+      className={`flex min-w-0 flex-col gap-3 p-5 ${TILE} ${shade} ${span === 2 ? "@xl:col-span-2" : ""}`}
+    >
+      {/* An h2 like any tile: the stats come right under the board's h1, and a heading
+          that skips a level loses a screen reader's outline. Its size is the label's. */}
+      <TileHeading title={label} icon={icon} hint={hint} tone={tone} size="label" />
+      {state.status === "failed" ? (
+        <Failure heading={fillCopy(copy.board.tileFailed, { title: label })} state={state} />
+      ) : (
+        <div className="flex min-w-0 items-end justify-between gap-4">
+          <div className="flex min-w-0 flex-col gap-1">
+            {loading ? (
+              <span
+                aria-hidden
+                className={`inline-block w-24 animate-reveal-late rounded-control bg-ink/8 ${hero ? "h-(--text-hero)" : "h-(--text-figure)"}`}
+              />
+            ) : (
+              <span
+                data-ui="board.stat.value"
+                className={`min-w-0 truncate font-semibold text-ink ${hero ? "text-hero" : "text-figure"} ${missing ? "text-muted" : ""}`}
+              >
+                {figure}
+              </span>
+            )}
+            {loading ? <span className="sr-only">{copy.failed.loading}</span> : null}
+            {loading || (detail === undefined && change === undefined) ? null : (
+              <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-0.5">
+                {change === undefined ? null : (
+                  <MetricChange change={change} format={percent.format} />
+                )}
+                {detail === undefined ? null : (
+                  <span className="min-w-0 truncate text-micro text-muted">{detail}</span>
+                )}
+              </div>
+            )}
+          </div>
+          {loading || trend === undefined ? null : (
+            <div className="w-2/5 max-w-40 shrink-0 pb-1">
+              <Sparkline values={trend} label={label} />
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
+
+/**
+ * The row of a board's stat tiles: as wide as the grid under it, every tile the same width —
+ * two per row when the board is narrow, all in one row from a wide board up. A row of
+ * figures of different widths reads as figures of different kinds.
+ */
+export function BoardStats({ children }: { children: ReactNode }) {
+  return (
+    <div className="grid min-w-0 grid-cols-1 gap-4 @xl:grid-cols-2 @5xl:grid-flow-col @5xl:grid-cols-none @5xl:auto-cols-fr">
+      {children}
+    </div>
   );
 }

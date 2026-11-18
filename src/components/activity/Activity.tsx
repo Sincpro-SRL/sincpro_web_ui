@@ -4,6 +4,7 @@ import type { Message } from "@sincpro/web-ui/components/activity/Messages";
 import { usePagination } from "@sincpro/web-ui/components/listing/pages";
 import { Pagination } from "@sincpro/web-ui/components/listing/Pagination";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { useFormStyle } from "@sincpro/web-ui/foundations/form";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
 import { cn } from "@sincpro/web-ui/foundations/variants";
 import { IconButton } from "@sincpro/web-ui/primitives/button/Button";
@@ -29,6 +30,7 @@ import {
   OctagonAlert,
   PanelRightClose,
   PanelRightOpen,
+  PencilLine,
   TriangleAlert,
   Zap,
 } from "lucide-react";
@@ -86,6 +88,7 @@ import { Fragment, type ReactNode, useId, useState } from "react";
  *
  *     by       WHO. Absent = the system did it, which is also an answer.
  *     moved    FROM WHAT TO WHAT. «borrador → confirmado» reads at a glance.
+ *     changes  WHICH FIELDS, each as it was → as it is: the edit an audit asks about.
  *     error    WHAT failed, whole and verbatim: whoever looks at this screen many
  *              times has no access to the logs.
  */
@@ -103,8 +106,27 @@ export type ActivityEvent = {
   detail?: ReactNode;
   /** What failed, verbatim. The FIRST line is shown and the rest opens. */
   error?: string;
-  /** The dot's icon, when the bolt does not say enough. */
+  /** The dot's icon, when the bolt does not say enough. An event with `changes` and no
+   *  icon of its own gets the pencil: it is an edit. */
   icon?: LucideIcon;
+  /**
+   * The fields an edit changed, each as it WAS and as it IS — Odoo's tracked values. Drawn
+   * under the event, always in sight (the first three, the rest one press away): an audit
+   * reads «who changed what, from what to what, when» without opening anything. Prefer it to
+   * writing «Observación: — → test» into `detail`, which can only be read, not scanned.
+   */
+  changes?: readonly ActivityChange[];
+};
+
+/**
+ * One field an edit changed: what it is called, what it held, what it holds. `from` / `to`
+ * absent, `null` or `""` mean EMPTY — written «vacío», because «—» beside an arrow reads as
+ * a dash somebody typed.
+ */
+export type ActivityChange = {
+  field: string;
+  from?: ReactNode;
+  to?: ReactNode;
 };
 
 /** A notice of the record, as the panel lists it: a `Callout` without its × label. */
@@ -267,6 +289,96 @@ function Moved({ from, to }: { from?: string; to: string }) {
   );
 }
 
+/* ── A change you can audit ─────────────────────────────────────────
+ *
+ * It used to be one grey line in the event's folded detail — «Observación: — → test» — read
+ * only after a press, the old value and the new one in the same weight, the empty one a dash.
+ * An audit asks three things of an edit, and each gets its own channel:
+ *
+ *   WHICH field  — its name on its own line, small: the column an eye runs down;
+ *   WAS          — `<del>`, muted and struck through: it is gone;
+ *   IS           — `<ins>`, in ink: what holds now.
+ *
+ * Not red and green: before and after are not bad and good (PRINCIPLES §3), and the strike
+ * plus the weight already say which is which — to a screen reader too, through `del`/`ins`
+ * and a word before each. An empty value is the word «vacío», never a dash. */
+
+const MANY_CHANGES = 3;
+
+function isEmpty(value: ReactNode): boolean {
+  return value === undefined || value === null || value === "" || value === false;
+}
+
+function ChangeValue({ value, was }: { value: ReactNode; was: boolean }) {
+  const copy = useUiCopy();
+  const lead = (
+    <span className="sr-only">{was ? copy.activity.before : copy.activity.after} </span>
+  );
+  if (isEmpty(value)) {
+    return (
+      <span className="text-muted italic">
+        {lead}
+        {copy.activity.empty}
+      </span>
+    );
+  }
+  return was ? (
+    <del className="min-w-0 break-words text-muted decoration-muted/70">
+      {lead}
+      {value}
+    </del>
+  ) : (
+    <ins className="min-w-0 break-words font-medium text-ink no-underline">
+      {lead}
+      {value}
+    </ins>
+  );
+}
+
+function Changes({ changes }: { changes: readonly ActivityChange[] }) {
+  const copy = useUiCopy();
+  const [all, setAll] = useState(false);
+  const shown = all ? changes : changes.slice(0, MANY_CHANGES);
+  return (
+    <div
+      data-ui="activity.changes"
+      className="mb-1 ml-10.5 flex min-w-0 flex-col gap-1.5 rounded-control border border-line px-2.5 py-2"
+    >
+      <dl className="flex min-w-0 flex-col divide-y divide-line">
+        {shown.map((change, at) => (
+          <div
+            key={`${change.field}\u0000${String(at)}`}
+            className="flex min-w-0 flex-col gap-0.5 py-1.5 first:pt-0 last:pb-0"
+          >
+            <dt className="truncate text-micro text-muted">{change.field}</dt>
+            <dd className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 gap-y-0.5 text-meta">
+              <ChangeValue value={change.from} was />
+              <ArrowRight
+                className="size-3 shrink-0 self-center text-muted"
+                strokeWidth={2.5}
+                aria-hidden
+              />
+              <ChangeValue value={change.to} was={false} />
+            </dd>
+          </div>
+        ))}
+      </dl>
+      {changes.length <= MANY_CHANGES ? null : (
+        <button
+          type="button"
+          onClick={() => setAll(!all)}
+          aria-expanded={all}
+          className="self-start cursor-pointer text-micro text-muted underline-offset-2 hover:text-ink hover:underline focus-visible:outline-2 focus-visible:outline-primary"
+        >
+          {all
+            ? copy.activity.less
+            : fillCopy(copy.activity.allChanges, { count: changes.length })}
+        </button>
+      )}
+    </div>
+  );
+}
+
 /** The error: the first line, and the rest one press away — kept, not dropped. */
 function ErrorLine({ error }: { error: string }) {
   const copy = useUiCopy();
@@ -309,7 +421,8 @@ function EventEntry({ event }: { event: ActivityEvent }) {
   const copy = useUiCopy();
   const failed = event.tone === "bad" || event.error !== undefined;
   const skin = failed ? "failed" : "ok";
-  const Icon = event.icon ?? EVENT_ICON;
+  const edited = event.changes !== undefined && event.changes.length > 0;
+  const Icon = event.icon ?? (edited ? PencilLine : EVENT_ICON);
   const [open, setOpen] = useState(false);
   const more =
     event.moved !== undefined || event.detail !== undefined || event.error !== undefined;
@@ -324,7 +437,10 @@ function EventEntry({ event }: { event: ActivityEvent }) {
       <span className="flex min-w-0 flex-1 flex-col gap-0.5">
         <span className="line-clamp-2 text-meta text-ink">{event.label}</span>
         <span className="flex min-w-0 flex-wrap items-baseline gap-x-1.5 text-micro text-muted">
-          <span className="truncate">{event.by ?? copy.activity.bySystem}</span>
+          {/* WHO is the first thing an audit asks: in ink, not in the muted of the date. */}
+          <span className="truncate font-medium text-ink">
+            {event.by ?? copy.activity.bySystem}
+          </span>
           <span aria-hidden>·</span>
           <DateValue when={event.at} format="relative" />
         </span>
@@ -367,6 +483,7 @@ function EventEntry({ event }: { event: ActivityEvent }) {
       ) : (
         <div className={box}>{row}</div>
       )}
+      {edited ? <Changes changes={event.changes ?? []} /> : null}
       {!open ? null : (
         <div className="mb-1 ml-10.5 flex min-w-0 flex-col gap-1.5 rounded-control bg-ground px-2.5 py-2">
           {event.moved === undefined ? null : (
@@ -466,6 +583,9 @@ export function Activity({
   const autoAlertsId = useId();
   const alertsId = ownAlertsId ?? autoAlertsId;
   const auto = layout === "auto";
+  /* Beside the sheet it is joined to it — the sheet's right edge is the line between the two.
+     In the «settings» form style there is no sheet, only cards on the ground: it stands apart. */
+  const joined = useFormStyle() !== "settings";
   /* The notes of the fields and rows of the record around — `Record` keeps them. */
   const notes = useNoteEntries();
 
@@ -542,7 +662,8 @@ export function Activity({
              where the eye starts, and under it the counts, stacked — nothing hidden
              silently. The sheet's own right edge is the hairline between the two. */
           auto &&
-            "@beside/page:w-auto @beside/page:flex-col @beside/page:justify-start @beside/page:gap-3 @beside/page:rounded-l-none @beside/page:border-l-0 @beside/page:px-2 @beside/page:py-3",
+            "@beside/page:w-auto @beside/page:flex-col @beside/page:justify-start @beside/page:gap-3 @beside/page:px-2 @beside/page:py-3",
+          auto && joined && "@beside/page:rounded-l-none @beside/page:border-l-0",
         )}
       >
         <span className={cn("hidden shrink-0 text-muted", auto && "@beside/page:block")}>
@@ -598,8 +719,8 @@ export function Activity({
       className={cn(
         "flex w-full min-w-0 flex-col rounded-box border border-line bg-surface",
         /* Beside the sheet: its column, joined to it — the sheet's right edge is the line. */
-        auto &&
-          "@beside/page:w-(--container-activity) @beside/page:rounded-l-none @beside/page:border-l-0",
+        auto && "@beside/page:w-(--container-activity)",
+        auto && joined && "@beside/page:rounded-l-none @beside/page:border-l-0",
       )}
     >
       <header className="flex min-w-0 items-center gap-2 border-b border-line py-1.5 pr-1.5 pl-3">

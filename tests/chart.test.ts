@@ -228,3 +228,58 @@ test("ordenar un gráfico ya armado deja la cola al final", () => {
   const ordered = orderChart(data, "asc");
   assert.equal(ordered.categories[ordered.categories.length - 1]?.rest, true);
 });
+
+/* ── What the axis writes ─────────────────────────────────────────────── */
+
+test("un eje de tiempo escribe el tick corto y el tooltip conserva la etiqueta entera", () => {
+  const data = chartFromPivot(byMonth(DATED));
+  assert.deepEqual(
+    data.categories.map((one) => one.tick),
+    ["Jun", "Jul", "Aug", "Sep"],
+  );
+  /* The label is still the whole month: the tooltip reads it. */
+  assert.equal(data.categories[0]?.label, "June 2025");
+});
+
+test("el tick lleva el año sólo cuando el eje cruza uno", () => {
+  const data = chartFromPivot(
+    byMonth([
+      { date: "2025-12-10", amount: 10 },
+      { date: "2026-01-05", amount: 20 },
+    ]),
+  );
+  assert.deepEqual(
+    data.categories.map((one) => one.tick),
+    ["Dec 25", "Jan 26"],
+  );
+});
+
+test("un eje que no es de tiempo no inventa ticks: escribe la etiqueta", () => {
+  const data = chartFromPivot(byBranchAndYear);
+  assert.ok(data.categories.every((one) => one.tick === undefined));
+});
+
+test("la medida lleva su forma corta hasta el gráfico, para el eje", () => {
+  const megabytes = (value: number) => `${String(Math.round(value / 1_048_576))} MB`;
+  const pivot = pivotFrom(DATED, {
+    rows: [{ field: "date", grain: "month" }],
+    columns: [],
+    of: (one, level) => dateKey(one.date, level.grain ?? "month"),
+    measures: [
+      {
+        id: "memory",
+        header: "memoria",
+        formatShort: megabytes,
+        fold: (all) => (all.length === 0 ? null : all.reduce((a, b) => a + b.amount, 0)),
+      },
+    ],
+  });
+  assert.equal(chartFromPivot(pivot).measure.formatShort?.(79_691_776), "76 MB");
+  assert.equal(
+    chartFromRecord(
+      { a: 1 },
+      { header: "memoria", formatShort: megabytes },
+    ).measure.formatShort?.(1_048_576),
+    "1 MB",
+  );
+});

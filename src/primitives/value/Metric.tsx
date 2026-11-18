@@ -153,7 +153,7 @@ export function Metric({
         </span>
       )}
       {change === undefined || loading ? null : (
-        <Change change={change} format={percent.format} />
+        <MetricChange change={change} format={percent.format} />
       )}
     </>
   );
@@ -190,7 +190,10 @@ export function Metric({
   );
 }
 
-function Change({
+/** How a figure moved against a named period: «↗ +18 % vs 2025». The arrow carries the
+ *  direction and the words the period, so the colour is never the only channel. A board's
+ *  stat tile says it the same way. */
+export function MetricChange({
   change,
   format,
 }: {

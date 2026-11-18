@@ -145,6 +145,11 @@ export type UiCopy = {
     /** The word next to a required label. The asterisk is the mark; this is
      *  what a screen reader says, because a star is not a word. */
     required: string;
+    /** Beside the label of a field that may stay empty, in the «settings» form style: there
+     *  every row says what it asks, and the asterisk alone left the rest unsaid. */
+    optional: string;
+    /** The accessible name of the index of a form's sections («settings» style). */
+    sections: string;
     /** The name of the button that opens a field's longer explanation. */
     help: string;
     /** What a field with no value says when it is read: an answer, not a blank. */
@@ -367,6 +372,15 @@ export type UiCopy = {
     yesterday: string;
     /** A filter that leaves nothing. */
     emptyFilter: string;
+    /** A field an edit left (or found) empty: a word, because «—» beside an arrow reads as a
+     *  dash somebody typed. */
+    empty: string;
+    /** Said before the old and the new value of a change, for a screen reader: the strike and
+     *  the weight carry it on screen. */
+    before: string;
+    after: string;
+    /** An edit of many fields shows three; this opens the rest. `{count}` is all of them. */
+    allChanges: string;
     /** A note in the timeline takes you to what it belongs to. `{owner}` is that field or
      *  line. */
     goTo: string;
@@ -470,6 +484,8 @@ export type UiCopy = {
    */
   calendar: {
     week: string;
+    /** A week under a chart's tick, where «Semana 12» does not fit: «S12». */
+    weekShort: string;
     weekOfYear: string;
     quarter: string;
     quarterOfYear: string;
@@ -696,6 +712,7 @@ export type UiCopy = {
     kind: string;
     bar: string;
     line: string;
+    area: string;
     pie: string;
     measure: string;
     categoriesAxis: string;
@@ -775,6 +792,9 @@ export type UiCopy = {
     tileFailed: string;
     /** The board's own reading (its headline numbers) failed. */
     failed: string;
+    /** A stat tile whose figure has nothing to be computed from — no messages, so no share of
+     *  clean ones. Said in words: «—» there reads as a broken tile. */
+    noData: string;
     emptyLane: string;
     moveHint: string;
     moved: string;
@@ -1132,6 +1152,8 @@ export const ENGLISH_COPY: UiCopy = {
     fileUnreadable: "We could not read the file",
     tryAnother: "Try another one",
     required: "required",
+    optional: "optional",
+    sections: "Sections of the form",
     help: "Help",
     unset: "not set",
     none: "None",
@@ -1255,6 +1277,10 @@ export const ENGLISH_COPY: UiCopy = {
     today: "Today",
     yesterday: "Yesterday",
     emptyFilter: "Nothing of this kind yet.",
+    empty: "empty",
+    before: "before:",
+    after: "now:",
+    allChanges: "See the {count} changes",
     goTo: "Go to {owner}",
     send: "Send",
     sending: "Sending…",
@@ -1339,6 +1365,7 @@ export const ENGLISH_COPY: UiCopy = {
   },
   calendar: {
     week: "Week {n}",
+    weekShort: "W{n}",
     weekOfYear: "Week {n}, {year}",
     quarter: "Q{n}",
     quarterOfYear: "Q{n} {year}",
@@ -1501,6 +1528,7 @@ export const ENGLISH_COPY: UiCopy = {
     kind: "Chart type",
     bar: "Bars",
     line: "Lines",
+    area: "Area",
     pie: "Pie",
     measure: "Measure",
     categoriesAxis: "Axis",
@@ -1555,6 +1583,7 @@ export const ENGLISH_COPY: UiCopy = {
   board: {
     tileFailed: "«{title}» could not be read",
     failed: "The board's numbers could not be read",
+    noData: "No data",
     emptyLane: "Nothing in this stage.",
     moveHint: "Drag it, or Alt + ← / → to move it to another stage",
     moved: "{name} moved to {column}",

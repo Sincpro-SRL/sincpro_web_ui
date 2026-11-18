@@ -168,6 +168,58 @@ export function dateLabel(
 }
 
 /**
+ * The SHORT label of a date key: what an axis writes under its tick — «ene», «T1», «18 nov».
+ *
+ * Context: the axis used to write «Enero de 2025» under each month. Twelve of those do not fit
+ * side by side, so the chart dropped whichever collided and the axis read «Enero, Marzo,
+ * Abril, Mayo, Julio» — uneven, as if months were missing. A tick only has to tell its
+ * neighbours apart; the full label stays in the tooltip. `withYear` is for an axis that
+ * crosses a new year: then «ene 26» beside «dic 25».
+ */
+export function dateTick(key: string, grain: GroupGrain, withYear = false): string {
+  const copy = currentCopy();
+  if (key === "") return copy.time.noDate;
+  const parts = KEY_SHAPES[grain].exec(key);
+  if (parts === null) return key;
+  const locale = currentCopyLocale();
+  const year = Number(parts[1]);
+  const short = pad(year % 100);
+  if (grain === "year") return String(year);
+  if (grain === "quarter") {
+    const quarter = fillCopy(copy.calendar.quarter, { n: Number(parts[2]) });
+    return withYear ? `${quarter} ${short}` : quarter;
+  }
+  if (grain === "week") {
+    const week = fillCopy(copy.calendar.weekShort, { n: Number(parts[2]) });
+    return withYear ? `${week} ${short}` : week;
+  }
+  /* `Intl`'s short month carries a dot in Spanish («ene.»): under a tick it is noise. */
+  const bare = (text: string) => text.replace(".", "");
+  if (grain === "month") {
+    const month = bare(
+      format(locale, { month: "short" }).format(new Date(year, Number(parts[2]) - 1, 1)),
+    );
+    return withYear ? `${month} ${short}` : month;
+  }
+  const day = Number(parts[3]);
+  const when = new Date(year, Number(parts[2]) - 1, day);
+  if (when.getDate() !== day) return key;
+  return bare(
+    format(locale, {
+      day: "numeric",
+      month: "short",
+      ...(withYear ? { year: "2-digit" } : {}),
+    }).format(when),
+  );
+}
+
+/** The year a date key of `grain` falls in, or `null` if the key does not have its shape. */
+export function dateKeyYear(key: string, grain: GroupGrain): number | null {
+  const parts = KEY_SHAPES[grain].exec(key);
+  return parts === null ? null : Number(parts[1]);
+}
+
+/**
  * The NEXT key in the same grain: «2026-09» → «2026-10», «2026-Q4» → «2027-Q1»,
  * «2026-W52» → the ISO week that follows. `null` if the key does not have the shape of its grain —
  * one counted elsewhere, which this layer did not write and so cannot continue.

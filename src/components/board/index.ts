@@ -3,7 +3,10 @@
 export {
   Board,
   type BoardProps,
+  BoardStat,
   type BoardState,
+  type BoardStatProps,
+  BoardStats,
   BoardTile,
   type BoardTileProps,
 } from "@sincpro/web-ui/components/board/Board";

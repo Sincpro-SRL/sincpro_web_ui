@@ -141,3 +141,38 @@ export function useFormMode(explicit?: FormMode): FormMode {
   const inherited = useContext(Ctx);
   return explicit ?? inherited;
 }
+
+/* ==================================================================== *
+ *  THE FORM STYLE — how a whole application draws its forms. Set once.
+ *
+ *  dense      Odoo's sheet: label | control, two columns of fields, help behind a `?` on
+ *             the label. Twenty fields at a glance — an ERP's form. The default.
+ *  settings   the settings page: every field a ROW that says what it asks — the label and
+ *             its help written under it on the left, the control on the right, a hairline
+ *             between rows —, each section a card with its title, an index of the sections
+ *             beside them, and Save floating at the bottom of the screen.
+ *
+ *  Context: it is orthogonal to the layout (`stacked` / `horizontal`), which the SCREEN
+ *  decides by its width; the style is the APPLICATION's, like density — a back office of
+ *  forms people fill once in a while reads better when each field explains itself, and an
+ *  ERP's dense sheet stays as it is. It is a context and not a prop for the reason the
+ *  layout is: nobody has to remember it on each field, section and record.
+ * ==================================================================== */
+
+export type FormStyle = "dense" | "settings";
+
+const StyleCtx = createContext<FormStyle>("dense");
+
+export function FormStyleProvider({
+  value,
+  children,
+}: {
+  value: FormStyle;
+  children: ReactNode;
+}) {
+  return <StyleCtx.Provider value={value}>{children}</StyleCtx.Provider>;
+}
+
+export function useFormStyle(): FormStyle {
+  return useContext(StyleCtx);
+}

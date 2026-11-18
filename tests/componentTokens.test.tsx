@@ -5,6 +5,7 @@ import { join } from "node:path";
 import {
   AppFrame,
   Block,
+  BoardStat,
   BoardTile,
   Button,
   type DataColumn,
@@ -122,6 +123,9 @@ test("each customizable component names its root and its parts", () => {
   part(draw(<Block title="Totales">x</Block>), "block");
   part(draw(<RecordCard title="Factura" />), "record-card");
   part(draw(<BoardTile title="Por canal">x</BoardTile>), "board.tile");
+  const stat = draw(<BoardStat label="Usuarios" value={27} />);
+  part(stat, "board.stat");
+  part(stat, "board.stat.value");
   part(draw(<Metric value={4} label="vencidas" />), "metric");
   part(draw(<Metric value={6} label="por revisar" detail="Bs 1.000,00" />), "metric.detail");
   part(

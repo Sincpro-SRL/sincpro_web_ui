@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import {
   dateKey,
   dateLabel,
+  dateTick,
   grainName,
   monthName,
 } from "@sincpro/web-ui/foundations/calendar";
@@ -152,4 +153,23 @@ test("el grano se llama como la copia llama a su unidad de tiempo", () => {
   });
   assert.equal(grainName("day"), "Día");
   assert.equal(grainName("quarter"), "Trimestre");
+});
+
+test("el tick corto de cada grano: lo que entra debajo de una marca del eje", () => {
+  assert.equal(dateTick("2026-09", "month"), "Sep");
+  assert.equal(dateTick("2026-09", "month", true), "Sep 26");
+  assert.equal(dateTick("2026-Q3", "quarter"), "Q3");
+  assert.equal(dateTick("2026-W38", "week"), "W38");
+  assert.equal(dateTick("2026-09-15", "day"), "Sep 15");
+  assert.equal(dateTick("2026", "year"), "2026");
+  /* A key this layer did not write is drawn as it is. */
+  assert.equal(dateTick("sin fecha", "month"), "sin fecha");
+});
+
+test("en español el mes corto va sin el punto de Intl", () => {
+  installCopy({ ...SPANISH, calendar: { ...SPANISH.calendar, weekShort: "S{n}" } });
+  assert.equal(dateTick("2026-09", "month"), "sept");
+  assert.equal(dateTick("2026-01", "month", true), "ene 26");
+  assert.equal(dateTick("2026-W38", "week"), "S38");
+  assert.equal(dateTick("2026-09-15", "day"), "15 sept");
 });

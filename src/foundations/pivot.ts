@@ -112,6 +112,12 @@ export type PivotMeasure = {
   /** For a percentage or a variation, which are not read like an amount. */
   format?: (value: number) => string;
   /**
+   * The same number where room is short — a chart's axis, beside a sparkline: «76 MB» for
+   * 79.691.776 bytes, «Bs 120 mil». Without it the axis writes the bare number, grouped, and
+   * compact from the millions.
+   */
+  formatShort?: (value: number) => string;
+  /**
    * How the measure reads in a SPREADSHEET: the Excel format code,
    * `#,##0.00`, `0.0%`, `#,##0 "Bs."`.
    *
@@ -349,6 +355,7 @@ export function pivotFrom<T>(items: readonly T[], spec: PivotSpec<T>): Pivot {
       id: one.id,
       header: one.header,
       ...(one.format === undefined ? {} : { format: one.format }),
+      ...(one.formatShort === undefined ? {} : { formatShort: one.formatShort }),
       ...(one.numberFormat === undefined ? {} : { numberFormat: one.numberFormat }),
       ...(one.additive === undefined ? {} : { additive: one.additive }),
     })),

@@ -1,4 +1,5 @@
 import {
+  BarList,
   Chart,
   chartFromPivot,
   chartFromRecord,
@@ -6,12 +7,20 @@ import {
   type GroupLevel,
   type PivotFold,
   pivotFrom,
+  Sparkline,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, userEvent, within } from "storybook/test";
 
 import { type Sale, SALES } from "../support/erp-lists";
+import {
+  MAIL_HOURS,
+  megabytes,
+  megabytesExact,
+  MEMORY_BYTES,
+  REJECTIONS,
+} from "../support/mail-server";
 
 /**
  * Context: **el pivote, dibujado.** Un gráfico de un ERP contesta lo mismo que un pivote —el
@@ -261,4 +270,118 @@ export const Vacio: Story = {
       <Chart data={chartFromRecord({}, { header: "importe" })} label="Importe" />
     </Caja>
   ),
+};
+
+/** **Área**: una cantidad en el tiempo que se lee como «tanto» —la memoria que ocupa un
+ *  servidor— y no sólo como «hacia dónde». El lavado de debajo es el color de la serie a un
+ *  décimo, y el eje dice la unidad de la medida (`formatShort`: «76 MB»), no un número pelado.
+ *  Veinticuatro horas no entran rotuladas una por una: el eje escribe una cada tantas, siempre
+ *  la misma cantidad. */
+export const Area: Story = {
+  name: "Área",
+  render: () => (
+    <Caja>
+      <Chart
+        data={chartFromRecord(MEMORY_BYTES, {
+          header: "memoria",
+          format: megabytesExact,
+          formatShort: megabytes,
+          additive: false,
+        })}
+        kind="area"
+        label="Memoria del servidor, últimas 24 horas"
+      />
+    </Caja>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    /* The unit rides the axis. */
+    await expect((await canvas.findAllByText(/MB$/)).length).toBeGreaterThan(0);
+  },
+};
+
+/** **Un hueco con su marca**: el mes sin datos no se dibuja como cero ni se deja como un
+ *  corte pelado — un puente punteado y tenue dice «acá no se registró nada». Un punto sólo
+ *  donde la línea no alcanza: el valor solo entre dos huecos, y el último (dónde está ahora). */
+export const Hueco: Story = {
+  render: () => (
+    <Caja>
+      <Chart
+        data={chartFromRecord(
+          [
+            ["Enero", 120],
+            ["Febrero", 135],
+            ["Marzo", null],
+            ["Abril", 150],
+            ["Mayo", null],
+            ["Junio", 160],
+            ["Julio", null],
+            ["Agosto", 158],
+            ["Septiembre", 171],
+          ],
+          { header: "pedidos" },
+        )}
+        kind="line"
+        label="Pedidos por mes"
+      />
+    </Caja>
+  ),
+  play: async ({ canvasElement }) => {
+    await within(canvasElement).findByText("Enero");
+    /* The bridge across the holes is dashed and is not the series' colour. */
+    await expect(canvasElement.querySelector('path[stroke-dasharray="3 4"]')).not.toBeNull();
+  },
+};
+
+/** **Sparkline**: la forma de las últimas horas al lado de una cifra — sin eje, sin grilla,
+ *  sin tooltip. No se lee un valor ahí (la cifra lo dice); se lee hacia dónde va. El último
+ *  punto, el de ahora, va marcado. Una serie en cero va al piso: no pasó nada. */
+export const Sparklines: Story = {
+  name: "Sparkline",
+  render: () => (
+    <Caja>
+      <div className="flex max-w-xs flex-col gap-6">
+        <Sparkline values={MAIL_HOURS.map((one) => one.received)} label="Recibidos, 24 h" />
+        <Sparkline
+          values={MEMORY_BYTES.map(([, bytes]) => bytes)}
+          label="Memoria, 24 h"
+          area={false}
+        />
+        <Sparkline values={MAIL_HOURS.map(() => 0)} label="Pendientes, 24 h" />
+      </div>
+    </Caja>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(canvas.getByRole("img", { name: "Recibidos, 24 h" })).toBeVisible();
+  },
+};
+
+/** **Lista de barras**: un ranking leído como lista — el nombre, una barra contra el mayor, el
+ *  número escrito. Seis motivos de rechazo no piden dos ejes y una grilla. Un cero es una
+ *  fila con la pista vacía: «0 spam» es una respuesta. Tocá una fila para abrirla. */
+export const ListaDeBarras: Story = {
+  name: "Lista de barras",
+  render: function Render() {
+    const [abierto, setAbierto] = useState("—");
+    return (
+      <Caja>
+        <div className="max-w-md">
+          <BarList
+            data={chartFromRecord(REJECTIONS, { header: "rechazos" })}
+            label="Rechazos por motivo"
+            onPoint={(category) => setAbierto(category.join(" · "))}
+          />
+        </div>
+        <p className="mt-3 text-meta text-muted">abierto: {abierto}</p>
+      </Caja>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(
+      await canvas.findByRole("button", { name: /^Logins fallidos\s*12$/ }),
+    );
+    await expect(await canvas.findByText("abierto: Logins fallidos")).toBeVisible();
+  },
 };

@@ -12,14 +12,13 @@ import { Empty } from "@sincpro/web-ui/primitives/notice/Notice";
 import { type CSSProperties, type ReactNode, useMemo, useState } from "react";
 import {
   Area,
-  AreaChart,
   Bar,
   BarChart,
   CartesianGrid,
   Cell,
+  ComposedChart,
   LabelList,
   Line,
-  LineChart,
   Pie,
   PieChart,
   ReferenceLine,
@@ -46,6 +45,19 @@ import {
  * for one series (`data`), the categorical palette only from two, a legend only from two,
  * and no animation: a chart that moves when it loads is decoration (MOTION in tokens.css).
  *
+ * ── What made it look unfinished, and the rule each fix keeps ─────────
+ *
+ *  - A time axis writes the SHORT tick («ene», «T1», `ChartPoint.tick`) and spaces them
+ *    evenly: «Enero de 2025» twelve times did not fit, and the axis dropped months at random.
+ *  - A line has no dot on every value — the line IS the values; the hover says each one. A
+ *    dot marks only what a line cannot draw: a value alone between two holes, and where the
+ *    series ends (where it is now).
+ *  - A hole is drawn as a hole WITH a mark: a faint dashed bridge across it, never the series
+ *    colour. A bare gap read as a broken chart, not as «nothing was recorded here».
+ *  - When every bar carries its number at the tip, the value axis and its grid go: they
+ *    would say the same thing twice. The axis stays whenever any value is unlabelled.
+ *  - The ticks read the measure's short form (`formatShort`: «76 MB»), not a bare number.
+ *
  * A primitive: it knows nothing about lists or toolbars. `ChartExplorer` puts the controls
  * around it; anyone can draw it alone with a `ChartData`.
  */
@@ -69,6 +81,8 @@ export type ChartProps = {
 
 const MAX_BAR = 24;
 const RADIUS = 4;
+/* The wash under a line: the series hue at a tenth, never a saturated block. */
+const WASH = 0.1;
 
 function colorOf(point: ChartPoint, index: number, alone: boolean): string {
   /* The tail and the previous period are context, not the subject: the de-emphasis grey. */
@@ -125,15 +139,20 @@ export function Chart({
   );
   const negative = data.values.some((row) => row.some((value) => (value ?? 0) < 0));
   /* In full up to the millions (7.000, 14.000), compact from there (2,5 M): Spanish compact
-     thousands come out as «7 K» next to «14 k» on the same axis. */
+     thousands come out as «7 K» next to «14 k» on the same axis. A measure that knows its
+     short form («76 MB») says it itself. */
   const tick = (value: number) =>
-    peak >= 1_000_000 ? compact.format(value) : number.format(value);
+    data.measure.formatShort?.(value) ??
+    (peak >= 1_000_000 ? compact.format(value) : number.format(value));
 
   /* One object per category, the shape Recharts reads: `s0`, `s1`… per series. */
   const rows = useMemo(
     () =>
       data.categories.map((category, c) => {
-        const row: Record<string, string | number | null> = { label: category.label };
+        const row: Record<string, string | number | null> = {
+          label: category.label,
+          tick: category.tick ?? category.label,
+        };
         data.series.forEach((_, s) => {
           row[`s${String(s)}`] = data.values[c]?.[s] ?? null;
         });
@@ -267,7 +286,18 @@ export function Chart({
         ? { height: `${String(data.categories.length * (1 + perCategory * 0.75) + 3)}rem` }
         : {};
 
-  const grid = (
+  /* The value rides the tip of its bar when there is ONE series: the axis gives the scale,
+     the tip gives the number, and nobody has to hover thirty bars to read them. With
+     several series it would be a number on every mark, which is noise. */
+  const tips =
+    kind === "bar" &&
+    !stacked &&
+    visible.length === 1 &&
+    (horizontal || data.categories.length <= 12);
+  /* Every bar says its number: the value axis and its grid would say it twice. */
+  const labelled = tips;
+
+  const grid = labelled ? null : (
     <CartesianGrid
       vertical={horizontal}
       horizontal={!horizontal}
@@ -281,10 +311,11 @@ export function Chart({
     tick: tickStyle,
     tickLine: false,
     axisLine: false,
+    hide: labelled,
   };
   const categoryAxis = {
     type: "category" as const,
-    dataKey: "label",
+    dataKey: "tick",
     tick: tickStyle,
     tickLine: false,
     axisLine: { stroke: "var(--color-line-strong)" },
@@ -296,7 +327,9 @@ export function Chart({
     </>
   ) : (
     <>
-      <XAxis {...categoryAxis} interval="preserveStartEnd" minTickGap={8} />
+      /* Every Nth tick, the same N all along: an axis that skips unevenly reads as missing
+      periods. */
+      <XAxis {...categoryAxis} interval="equidistantPreserveStart" minTickGap={12} />
       <YAxis {...valueAxis} width="auto" />
     </>
   );
@@ -309,12 +342,6 @@ export function Chart({
   const readout = (props: TooltipContentProps) => (
     <Readout {...props} format={format} compare={data.compare === true} />
   );
-
-  /* The value rides the tip of its bar when there is ONE series: the axis gives the scale,
-     the tip gives the number, and nobody has to hover thirty bars to read them. With
-     several series it would be a number on every mark, which is noise. */
-  const tips =
-    !stacked && visible.length === 1 && (horizontal || data.categories.length <= 12);
 
   let plot: ReactNode;
   if (kind === "bar") {
@@ -382,7 +409,6 @@ export function Chart({
       </BarChart>
     );
   } else {
-    const dots = rows.length <= 24;
     const common = {
       data: rows,
       responsive: true,
@@ -401,68 +427,105 @@ export function Chart({
           }),
     };
     const ring = { r: 5, stroke: "var(--color-surface)", strokeWidth: 2 };
-    const tooltip = (
-      <Tooltip
-        isAnimationActive={false}
-        cursor={{ stroke: "var(--color-line-strong)" }}
-        content={readout}
-      />
-    );
-    plot = stacked ? (
-      <AreaChart {...common} stackOffset={negative ? "sign" : "none"}>
+    const filled = kind === "area" || stacked;
+    const valueAt = (s: number, c: number) => data.values[c]?.[s] ?? null;
+    /* A dot only where the line cannot draw: a value alone between two holes (or at an edge
+       next to one), and the last value of a series — where it stands now. */
+    const marked = (s: number, c: number) => {
+      if (valueAt(s, c) === null) return false;
+      const before = c === 0 ? null : valueAt(s, c - 1);
+      const after = c === rows.length - 1 ? null : valueAt(s, c + 1);
+      const last = data.values.every((_, at) => at <= c || valueAt(s, at) === null);
+      return (before === null && after === null) || last;
+    };
+    /* A hole INSIDE a series: a null with a value somewhere before and after it. */
+    const holed = (s: number) =>
+      data.values.some(
+        (_, c) =>
+          valueAt(s, c) === null &&
+          data.values.some((__, at) => at < c && valueAt(s, at) !== null) &&
+          data.values.some((__, at) => at > c && valueAt(s, at) !== null),
+      );
+    plot = (
+      <ComposedChart {...common} stackOffset={negative ? "sign" : "none"}>
         {grid}
         {axes}
         {zero}
-        {tooltip}
-        {visible.map((one) => (
-          <Area
-            key={one.point.id}
-            type="monotone"
-            dataKey={one.key}
-            name={one.point.label}
-            stackId="stack"
-            stroke={one.color}
-            strokeWidth={2}
-            fill={one.color}
-            fillOpacity={0.12}
-            dot={false}
-            activeDot={{ ...ring, fill: one.color }}
-            isAnimationActive={false}
-          />
-        ))}
-      </AreaChart>
-    ) : (
-      <LineChart {...common}>
-        {grid}
-        {axes}
-        {zero}
-        {tooltip}
-        {visible.map((one) => (
-          <Line
-            key={one.point.id}
-            type="monotone"
-            dataKey={one.key}
-            name={one.point.label}
-            stroke={one.color}
-            strokeWidth={2}
-            dot={
-              dots
-                ? { r: 4, fill: one.color, stroke: "var(--color-surface)", strokeWidth: 2 }
-                : false
-            }
-            activeDot={{ ...ring, fill: one.color }}
-            connectNulls={false}
-            isAnimationActive={false}
-          />
-        ))}
-      </LineChart>
+        <Tooltip
+          isAnimationActive={false}
+          cursor={{ stroke: "var(--color-line-strong)" }}
+          content={readout}
+        />
+        {/* The bridges go first, under the series: across a hole, a faint dashed line says
+            «nothing recorded here» without wearing the series colour. */}
+        {stacked
+          ? null
+          : visible
+              .filter((one) => holed(one.index))
+              .map((one) => (
+                <Line
+                  key={`${one.point.id}\u0000gap`}
+                  type="monotone"
+                  dataKey={one.key}
+                  stroke="var(--color-line-strong)"
+                  strokeWidth={1.5}
+                  strokeDasharray="3 4"
+                  connectNulls
+                  dot={false}
+                  activeDot={false}
+                  legendType="none"
+                  tooltipType="none"
+                  isAnimationActive={false}
+                />
+              ))}
+        {visible.map((one) => {
+          const dot = (props: { index?: number; cx?: number; cy?: number }) =>
+            props.index !== undefined &&
+            props.cx !== undefined &&
+            props.cy !== undefined &&
+            marked(one.index, props.index) ? (
+              <circle
+                cx={props.cx}
+                cy={props.cy}
+                r={4}
+                fill={one.color}
+                stroke="var(--color-surface)"
+                strokeWidth={2}
+              />
+            ) : null;
+          const shared = {
+            type: "monotone" as const,
+            dataKey: one.key,
+            name: one.point.label,
+            stroke: one.color,
+            strokeWidth: 2,
+            dot,
+            activeDot: { ...ring, fill: one.color },
+            connectNulls: false,
+            isAnimationActive: false,
+          };
+          return filled ? (
+            <Area
+              key={one.point.id}
+              {...shared}
+              {...(stacked ? { stackId: "stack", dot: false } : {})}
+              fill={one.color}
+              fillOpacity={WASH}
+            />
+          ) : (
+            <Line key={one.point.id} {...shared} />
+          );
+        })}
+      </ComposedChart>
     );
   }
 
   return (
     <figure aria-label={label} className="flex min-w-0 flex-col gap-3">
       {alone ? null : (
-        <ul className="flex min-w-0 flex-wrap items-center gap-x-1 gap-y-1">
+        /* At the top right, where the eye ends the title: the key to the colours, out of
+           the way of the plot's own reading from the left. */
+        <ul className="flex min-w-0 flex-wrap items-center justify-end gap-x-1 gap-y-1">
           {series.map((one) => (
             <li key={one.point.id} className="min-w-0">
               <button
@@ -488,7 +551,7 @@ export function Chart({
               >
                 <Swatch
                   color={one.shown ? one.color : "var(--color-line-strong)"}
-                  line={kind === "line"}
+                  line={kind === "line" || kind === "area"}
                 />
                 <span className="truncate">{one.point.label}</span>
               </button>
@@ -573,7 +636,11 @@ function Readout({
     [copy.locale],
   );
   if (active !== true || payload === undefined || payload.length === 0) return null;
-  const heading = label ?? payload[0]?.name;
+  /* The full label of the category («Enero de 2025»), not the tick the axis wrote («ene»). */
+  const row: unknown = payload[0]?.payload;
+  const full =
+    typeof row === "object" && row !== null && "label" in row ? String(row.label) : undefined;
+  const heading = full ?? label ?? payload[0]?.name;
   /* Now against before, said as a change: the number a comparison is asked for. */
   const now = payload[0]?.value;
   const before = payload[1]?.value;

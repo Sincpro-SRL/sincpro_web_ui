@@ -1,6 +1,8 @@
 "use client";
 
+import { FormIndex, FormIndexScope } from "@sincpro/web-ui/components/form/FormIndex";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
+import { useFormStyle } from "@sincpro/web-ui/foundations/form";
 import {
   FieldLayoutProvider,
   type SheetLayout,
@@ -40,6 +42,13 @@ export type { SheetLayout };
  *                          describe the record on every page.
  *  Tabs only               no global fields; the notebook is the body.
  *                          A record does this by writing no `Record.Facts`.
+ *
+ *  ── The «settings» style: cards, and their index ────────────────────
+ *
+ *  With `FormStyleProvider value="settings"` each `FormSection` is a card and the sheet is
+ *  the ground they sit on, a step apart, with the index of their titles at its left
+ *  (`FormIndex`) once the sheet is wide enough to hold both. `@container/form` is what it
+ *  measures: a sheet in a 380 px panel has no room for an index, whatever the screen.
  * ==================================================================== */
 
 export type SheetField = {
@@ -161,6 +170,7 @@ export function Sheet({
   children?: ReactNode;
 }) {
   const d = useDensity();
+  const settings = useFormStyle() === "settings";
   const facts = fields !== undefined && fields.length > 0;
   if (!facts && head === undefined && children === undefined) return null;
 
@@ -171,6 +181,23 @@ export function Sheet({
         {head}
       </div>
     ) : null;
+
+  if (settings)
+    return (
+      <FieldLayoutProvider value={layout}>
+        <FormIndexScope>
+          <div className="@container/form min-w-0">
+            <div className="flex min-w-0 gap-6">
+              <FormIndex />
+              <div className="flex min-w-0 flex-1 flex-col gap-4">
+                {top}
+                {children}
+              </div>
+            </div>
+          </div>
+        </FormIndexScope>
+      </FieldLayoutProvider>
+    );
 
   return (
     <FieldLayoutProvider value={layout}>
