@@ -406,3 +406,44 @@ test("las esquinas se giran con una sola perilla, y cada paso se puede fijar sol
     );
   }
 });
+
+test("el velo se mezcla: --color-scrim nunca se pinta tal cual", () => {
+  /* `--color-scrim` is an opaque colour — «a veil, never text» — and a veil is a fraction of
+     it. Painted as is, the page behind disappears: composer's ⌘K palette opened over solid
+     black because `--sc-scrim` bridged to it unmixed (#43). So every CSS read of it, the
+     workspace's bridges included, mixes it below 100%, and every class takes an opacity. */
+  const root = join(import.meta.dirname, "..", "src");
+  const VEIL = /color-mix\(in srgb, var\(--color-scrim\) (\d+)%, transparent\)/g;
+  const offenders: string[] = [];
+  const walk = (dir: string) => {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+      const path = join(dir, entry.name);
+      if (entry.isDirectory()) walk(path);
+      else if (entry.name.endsWith(".css")) {
+        const css = squeeze(readFileSync(path, "utf8").replace(/\/\*[\s\S]*?\*\//g, ""));
+        const veils = [...css.matchAll(VEIL)];
+        const reads = css.split("var(--color-scrim)").length - 1;
+        if (veils.length !== reads || veils.some(([, share]) => Number(share) >= 100))
+          offenders.push(path.slice(root.length));
+      } else if (/\.tsx?$/.test(entry.name)) {
+        if (
+          /\b(?:bg|text|fill|stroke|border)-scrim(?![\w/-])/.test(readFileSync(path, "utf8"))
+        )
+          offenders.push(path.slice(root.length));
+      }
+    }
+  };
+  walk(root);
+  assert.deepEqual(offenders, [], "un velo pintado opaco");
+
+  /* The bridges to the workspace are named in the issue: each one translucent, by name. */
+  const bridges = [...FULL_CSS.matchAll(/--(sc-[a-z-]*scrim):\s*([^;]+);/g)];
+  assert.ok(bridges.length >= 2, "no se encontraron los velos del espacio de trabajo");
+  for (const [, token, value] of bridges) {
+    assert.match(
+      squeeze(value!),
+      /^color-mix\(in srgb, var\(--color-scrim\) \d{1,2}%, transparent\)$/,
+      `--${token}`,
+    );
+  }
+});

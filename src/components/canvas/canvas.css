@@ -14,6 +14,11 @@
   --xy-controls-button-border-color-default: var(--color-line);
   --xy-controls-button-color-default: var(--color-ink);
   --xy-minimap-background-color-default: var(--color-surface);
-  --xy-minimap-mask-background-color-default: var(--color-scrim);
+  /* The mask covers what is off screen; opaque, it would hide those nodes instead of dimming. */
+  --xy-minimap-mask-background-color-default: color-mix(
+    in srgb,
+    var(--color-scrim) 40%,
+    transparent
+  );
   --xy-handle-background-color-default: var(--color-primary);
 }
