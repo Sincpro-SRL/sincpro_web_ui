@@ -79,7 +79,9 @@ export {
 export {
   dateKey,
   dateKeysBetween,
+  dateKeyYear,
   dateLabel,
+  dateTick,
   grainName,
   monthName,
   nextDateKey,

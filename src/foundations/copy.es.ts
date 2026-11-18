@@ -331,6 +331,7 @@ export const SPANISH_COPY: UiCopyOverride = {
   time: { justNow: "recién", invalid: "fecha inválida", noDate: "sin fecha" },
   calendar: {
     week: "Semana {n}",
+    weekShort: "S{n}",
     weekOfYear: "Semana {n} de {year}",
     quarter: "T{n}",
     quarterOfYear: "T{n} de {year}",
@@ -480,6 +481,7 @@ export const SPANISH_COPY: UiCopyOverride = {
     kind: "Tipo de gráfico",
     bar: "Barras",
     line: "Líneas",
+    area: "Área",
     pie: "Torta",
     measure: "Medida",
     categoriesAxis: "Eje",
@@ -534,6 +536,7 @@ export const SPANISH_COPY: UiCopyOverride = {
   board: {
     tileFailed: "No se pudo leer «{title}»",
     failed: "No se pudieron leer los números del tablero",
+    noData: "Sin datos",
     emptyLane: "Nada en esta etapa.",
     moveHint: "Arrastrala, o Alt + ← / → para pasarla a otra etapa",
     moved: "{name} pasó a {column}",

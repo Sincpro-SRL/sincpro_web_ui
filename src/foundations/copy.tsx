@@ -470,6 +470,8 @@ export type UiCopy = {
    */
   calendar: {
     week: string;
+    /** A week under a chart's tick, where «Semana 12» does not fit: «S12». */
+    weekShort: string;
     weekOfYear: string;
     quarter: string;
     quarterOfYear: string;
@@ -696,6 +698,7 @@ export type UiCopy = {
     kind: string;
     bar: string;
     line: string;
+    area: string;
     pie: string;
     measure: string;
     categoriesAxis: string;
@@ -775,6 +778,9 @@ export type UiCopy = {
     tileFailed: string;
     /** The board's own reading (its headline numbers) failed. */
     failed: string;
+    /** A stat tile whose figure has nothing to be computed from — no messages, so no share of
+     *  clean ones. Said in words: «—» there reads as a broken tile. */
+    noData: string;
     emptyLane: string;
     moveHint: string;
     moved: string;
@@ -1339,6 +1345,7 @@ export const ENGLISH_COPY: UiCopy = {
   },
   calendar: {
     week: "Week {n}",
+    weekShort: "W{n}",
     weekOfYear: "Week {n}, {year}",
     quarter: "Q{n}",
     quarterOfYear: "Q{n} {year}",
@@ -1501,6 +1508,7 @@ export const ENGLISH_COPY: UiCopy = {
     kind: "Chart type",
     bar: "Bars",
     line: "Lines",
+    area: "Area",
     pie: "Pie",
     measure: "Measure",
     categoriesAxis: "Axis",
@@ -1555,6 +1563,7 @@ export const ENGLISH_COPY: UiCopy = {
   board: {
     tileFailed: "«{title}» could not be read",
     failed: "The board's numbers could not be read",
+    noData: "No data",
     emptyLane: "Nothing in this stage.",
     moveHint: "Drag it, or Alt + ← / → to move it to another stage",
     moved: "{name} moved to {column}",

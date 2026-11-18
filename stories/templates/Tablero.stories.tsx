@@ -1,7 +1,10 @@
 import {
   AppFrame,
+  BarList,
   Board,
+  BoardStat,
   type BoardState,
+  BoardStats,
   BoardTile,
   Button,
   Chart,
@@ -14,8 +17,6 @@ import {
   Field,
   type GroupLevel,
   List,
-  Metric,
-  Metrics,
   type PivotFold,
   pivotFrom,
   SegmentedControl,
@@ -23,7 +24,7 @@ import {
   TopBar,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { ChartColumn, X } from "lucide-react";
+import { Banknote, ChartColumn, Receipt, ShoppingCart, Store, X } from "lucide-react";
 import { useMemo, useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
@@ -31,9 +32,10 @@ import { BRANCHES, DATED_SALES, type DatedSale } from "../support/erp-lists";
 
 /**
  * Context: **a BI board** — Odoo's «Tableros» — built only from the package: `Board` puts the
- * filters in one row above every tile and the headline numbers before them; each tile is a
- * `Chart` reading a `Pivot`, the same one the list's chart and pivot read; a press on a bar
- * opens the records under it as a `List`, inside the board.
+ * filters in one row above every tile and the headline numbers before them, as `BoardStat`
+ * tiles with the month-by-month shape beside each figure; each tile is a `Chart` (or a
+ * `BarList` for a ranking) reading a `Pivot`, the same one the list's chart and pivot read;
+ * a press on a branch opens the records under it as a `List`, inside the board.
  *
  * What it proves:
  *
@@ -159,6 +161,11 @@ function SalesBoard({ readings = {} }: { readings?: Readings }) {
           );
     return {
       monthly,
+      /* The shape of the year under each headline figure: month by month. */
+      trend: byMonth.values.map((row) => row[0] ?? null),
+      count: chartFromPivot(fold(current, [{ field: "date", grain: "month" }]), {
+        measure: COUNT_MEASURE,
+      }).values.map((row) => row[0] ?? null),
       byBranch: chartFromPivot(fold(current, [{ field: "branch" }]), { order: "desc" }),
       byChannel: chartFromPivot(fold(current, [{ field: "channel" }]), {
         measure: COUNT_MEASURE,
@@ -213,27 +220,36 @@ function SalesBoard({ readings = {} }: { readings?: Readings }) {
         </>
       }
       metrics={
-        <Metrics>
-          <Metric
+        <BoardStats>
+          <BoardStat
+            label="Vendido"
+            icon={Banknote}
+            hint="La suma de las ventas del año, contado y crédito."
             value={bs(sold)}
-            label="vendido"
+            trend={charts.trend}
             {...withChange(changeOf(sold, soldBefore, before))}
           />
-          <Metric
+          <BoardStat
+            label="Ventas"
+            icon={ShoppingCart}
             value={current.length}
-            label="ventas"
+            trend={charts.count}
             {...withChange(changeOf(current.length, previous.length, before))}
           />
-          <Metric
+          <BoardStat
+            label="Ticket promedio"
+            icon={Receipt}
+            hint="Lo vendido dividido por la cantidad de ventas."
             value={bs(ticket)}
-            label="ticket promedio"
             {...withChange(changeOf(ticket, ticketBefore, before))}
           />
-          <Metric
+          <BoardStat
+            label="Sucursales"
+            icon={Store}
             value={new Set(current.map((sale) => sale.branch)).size}
-            label="sucursales"
+            detail="con ventas en el año"
           />
-        </Metrics>
+        </BoardStats>
       }
     >
       <BoardTile
@@ -247,8 +263,8 @@ function SalesBoard({ readings = {} }: { readings?: Readings }) {
       >
         <Chart data={charts.monthly} kind="line" label="Ventas por mes" />
       </BoardTile>
-      <BoardTile title="Por sucursal" description="tocá una barra para ver sus ventas">
-        <Chart
+      <BoardTile title="Por sucursal" description="tocá una sucursal para ver sus ventas">
+        <BarList
           data={charts.byBranch}
           label="Ventas por sucursal"
           onPoint={(category) => setDrill(category[0] ?? null)}
@@ -323,12 +339,9 @@ export const Ventas: Story = {
     ).toBeVisible();
     /* The comparison: against the same months of 2025. */
     await expect((await canvas.findAllByText("vs 2025")).length).toBeGreaterThan(0);
-    /* Drill-down: a bar of «Por sucursal» opens its sales inside the board. */
+    /* Drill-down: a branch of «Por sucursal» opens its sales inside the board. */
     const region = await canvas.findByRole("region", { name: "Por sucursal" });
-    await waitFor(() =>
-      expect(region.querySelector(".recharts-bar-rectangle path")).not.toBeNull(),
-    );
-    await userEvent.click(region.querySelector(".recharts-bar-rectangle path")!);
+    await userEvent.click(within(region).getAllByRole("button")[0]!);
     await expect(await canvas.findByRole("heading", { name: /^Ventas de / })).toBeVisible();
     await userEvent.click(canvas.getByRole("button", { name: "Cerrar" }));
     await expect(canvas.queryByRole("heading", { name: /^Ventas de / })).toBeNull();
@@ -395,7 +408,7 @@ export const SinSusNumeros: Story = {
     await expect(
       await canvas.findByText("No se pudieron leer los números del tablero"),
     ).toBeVisible();
-    await expect(canvas.queryByText("vendido")).toBeNull();
+    await expect(canvas.queryByText("Vendido")).toBeNull();
     await expect(canvas.getByRole("region", { name: "Por sucursal" })).toBeVisible();
   },
 };

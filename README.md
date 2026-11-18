@@ -195,7 +195,8 @@ follows:
 | Menus, lists, popovers, the cuts panel                      | `--ui-popover-radius`, `--ui-popover-bg`, `--ui-popover-border`, `--ui-popover-shadow` |
 | A row inside them (menu item, option)                       | `--ui-option-radius`, `--ui-option-active-bg`                                          |
 | `Dialog`                                                    | `--ui-dialog-radius`, `--ui-dialog-bg`                                                 |
-| `Block`, `RecordCard`, `BoardTile`, `Metric`                | `--ui-card-radius`, `--ui-card-bg`, `--ui-card-border`                                 |
+| `Block`, `RecordCard`, `Metric`                             | `--ui-card-radius`, `--ui-card-bg`, `--ui-card-border`                                 |
+| A board's `BoardTile` and `BoardStat`                       | `--ui-tile-radius`, `--ui-tile-bg`, `--ui-tile-border` (fall back to the card's)       |
 | `Tag`, `Tags`, the search bar's chips                       | `--ui-tag-radius`                                                                      |
 | `SearchBar`'s field                                         | `--ui-search-radius` (and the control's bg and border)                                 |
 | The sidebar on the canvas                                   | `--ui-sidebar-bg`, `--ui-sidebar-border`                                               |
@@ -219,7 +220,7 @@ of classes that change with the next refactor:
 
 The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`,
 `menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card`, `board.tile`,
-`metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
+`board.stat`, `board.stat.value`, `metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
 `search.panel`, `search.suggestions`, `search-entry`, `search-entry.keys`, `table`,
 `table.head`, `topbar`, `topbar.brand`, `topbar.menus`, `topbar.actions`, `topbar.user`,
 `frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`, `sidebar.brand`,

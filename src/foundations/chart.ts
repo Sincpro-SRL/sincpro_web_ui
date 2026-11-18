@@ -1,4 +1,4 @@
-import { dateKeysBetween } from "@sincpro/web-ui/foundations/calendar";
+import { dateKeysBetween, dateKeyYear, dateTick } from "@sincpro/web-ui/foundations/calendar";
 import { currentCopy, fillCopy } from "@sincpro/web-ui/foundations/copy";
 import { pathKey } from "@sincpro/web-ui/foundations/grouping";
 import {
@@ -35,7 +35,10 @@ import {
  *     pivot's order; sorting by size sorts the AXIS, never repaints.
  */
 
-export type ChartKind = "bar" | "line" | "pie";
+/** `area` is a line with its wash under it: one quantity over time read as an amount —memory
+ *  in use, the stock on hand— where the filled area says «this much», and a bare line only
+ *  says where it went. */
+export type ChartKind = "bar" | "line" | "area" | "pie";
 
 export type ChartOrder = "asc" | "desc";
 
@@ -53,6 +56,9 @@ export type ChartPoint = {
   /** `pathKey(key)`: the stable identity for React and for colour. */
   id: string;
   label: string;
+  /** What the axis writes under it when room is short: «ene» for «Enero de 2025». The
+   *  tooltip keeps `label`. Absent, the axis writes the label. */
+  tick?: string;
   /** The tail gathered into one: «otros (12)». Drawn quieter and does not open. */
   rest?: boolean;
   /** The previous period of a comparison: drawn quiet, behind the current one. */
@@ -63,6 +69,8 @@ export type ChartMeasure = {
   id: string;
   header: string;
   format?: (value: number) => string;
+  /** The number where room is short: the axis ticks, a sparkline (`PivotMeasure.formatShort`). */
+  formatShort?: (value: number) => string;
   additive: boolean;
 };
 
@@ -113,6 +121,7 @@ export function chartMeasures(pivot: Pivot): ChartMeasure[] {
       id: one.id,
       header: one.header,
       ...(one.format === undefined ? {} : { format: one.format }),
+      ...(one.formatShort === undefined ? {} : { formatShort: one.formatShort }),
       additive: one.additive === true,
     })),
   ];
@@ -233,6 +242,23 @@ export function chartFromPivot(pivot: Pivot, reading: ChartReading = {}): ChartD
       values = filled.map((one) => one.values);
       totals = filled.map((one) => one.total);
     }
+  }
+
+  /* 0b · The ticks of a time axis: «ene» under the month, the full label in the tooltip. The
+     year joins the tick only when the axis crosses one. */
+  if (grain !== undefined) {
+    const years = new Set(
+      categories
+        .map((point) => dateKeyYear(point.key[0] ?? "", grain))
+        .filter((year) => year !== null),
+    );
+    const withYear = years.size > 1;
+    categories = categories.map((point) => {
+      const key = point.key[0] ?? "";
+      return dateKeyYear(key, grain) === null
+        ? point
+        : { ...point, tick: dateTick(key, grain, withYear) };
+    });
   }
 
   /* 1 · The series that do not fit in the palette. */
@@ -409,7 +435,12 @@ export function chartCompare(
 export function chartFromRecord(
   entries:
     Readonly<Record<string, number | null>> | readonly (readonly [string, number | null])[],
-  measure: { header: string; format?: (value: number) => string; additive?: boolean },
+  measure: {
+    header: string;
+    format?: (value: number) => string;
+    formatShort?: (value: number) => string;
+    additive?: boolean;
+  },
 ): ChartData {
   const pairs: readonly (readonly [string, number | null])[] = Array.isArray(entries)
     ? entries
@@ -423,6 +454,7 @@ export function chartFromRecord(
       id: "value",
       header: measure.header,
       ...(measure.format === undefined ? {} : { format: measure.format }),
+      ...(measure.formatShort === undefined ? {} : { formatShort: measure.formatShort }),
       additive: measure.additive ?? true,
     },
     categoryTitle: "",

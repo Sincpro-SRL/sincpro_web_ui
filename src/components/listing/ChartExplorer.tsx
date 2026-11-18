@@ -31,6 +31,7 @@ import { Menu } from "@sincpro/web-ui/primitives/menu/Menu";
 import {
   ArrowDownWideNarrow,
   ArrowUpNarrowWide,
+  ChartArea,
   ChartColumnBig,
   ChartLine,
   ChartPie,
@@ -109,7 +110,12 @@ export type ChartExplorerProps<T> = {
   fileName?: string;
 };
 
-const KIND_ICON = { bar: ChartColumnBig, line: ChartLine, pie: ChartPie } as const;
+const KIND_ICON = {
+  bar: ChartColumnBig,
+  line: ChartLine,
+  area: ChartArea,
+  pie: ChartPie,
+} as const;
 
 /**
  * Odoo's GRAPH view, for any set: bars, lines or a pie; which measures; split by what along
@@ -203,7 +209,7 @@ export function ChartExplorer<T>({
     return measuresShown.map((measure): ChartData => {
       const reading = {
         measure: measure.id,
-        cumulative: kind === "line" && cumulative,
+        cumulative: (kind === "line" || kind === "area") && cumulative,
         ...(kind === "pie" ? { maxCategories: 7 } : {}),
       };
       const current = chartFromPivot(pivot, reading);
@@ -254,7 +260,7 @@ export function ChartExplorer<T>({
           size="sm"
           value={kind}
           onChange={(next) => setKind(next as ChartKind)}
-          options={(["bar", "line", "pie"] as const).map((one) => ({
+          options={(["bar", "line", "area", "pie"] as const).map((one) => ({
             value: one,
             label: words[one],
             icon: KIND_ICON[one],
@@ -317,7 +323,7 @@ export function ChartExplorer<T>({
               onClick={() => setStacked((now) => !now)}
             />
           ) : null}
-          {kind === "line" ? (
+          {kind === "line" || kind === "area" ? (
             <IconButton
               icon={TrendingUp}
               label={words.cumulative}
