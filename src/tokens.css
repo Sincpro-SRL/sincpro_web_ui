@@ -1137,7 +1137,9 @@
   --sc-accent: var(--color-primary);
   --sc-danger: var(--color-danger);
   --sc-on-danger: var(--color-surface);
-  --sc-scrim: var(--color-scrim);
+  /* `--color-scrim` is opaque — a veil is a share of it. Unmixed, ⌘K's palette (`.sc-scrim`)
+     opened over a solid page (#43); both veils dim the page the way `Dialog` does. */
+  --sc-scrim: color-mix(in srgb, var(--color-scrim) 40%, transparent);
   --sc-modal-scrim: color-mix(in srgb, var(--color-scrim) 40%, transparent);
   --sc-shadow: var(--shadow-window);
   --sc-radius: var(--radius-panel);
