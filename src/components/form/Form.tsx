@@ -1,6 +1,8 @@
 "use client";
 
+import { useFormIndexEntry } from "@sincpro/web-ui/components/form/FormIndex";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
+import { useFormStyle } from "@sincpro/web-ui/foundations/form";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
 import { Hint } from "@sincpro/web-ui/primitives/hint/Hint";
 import { Tag } from "@sincpro/web-ui/primitives/tag/Tag";
@@ -49,6 +51,8 @@ export function FormSection({
   children: ReactNode;
 }) {
   const d = useDensity();
+  const settings = useFormStyle() === "settings";
+  const indexed = useFormIndexEntry(settings ? title : undefined);
   const asGrid = columns > 1 && d === "comfortable";
   const grid = columns === 3 ? "grid-cols-3" : "grid-cols-2";
   const withHeader =
@@ -56,6 +60,43 @@ export function FormSection({
     status !== undefined ||
     hint !== undefined ||
     actions !== undefined;
+  if (settings) {
+    /* «settings»: the section is a card of rows, one under the other, a hairline between
+       them — `columns` does not apply, a row already has its two. Its help is written under
+       the title, like a field's under its label. `@container`: each row measures the card
+       to decide whether its label still fits beside the control (`grid-setting`). */
+    return (
+      <section
+        {...(indexed === undefined ? {} : { id: indexed })}
+        data-ui="form.section"
+        className="@container flex min-w-0 scroll-mt-3 flex-col gap-1 rounded-ui-card border border-ui-card-border bg-ui-card px-5 py-4"
+      >
+        {withHeader ? (
+          <header className="flex min-w-0 flex-wrap items-start gap-x-2.5 gap-y-1 pb-2">
+            {title === undefined && hint === undefined ? null : (
+              <div className="flex min-w-0 flex-col gap-0.5">
+                {/* `h2`: a card is a part of the screen under its title, not a group inside
+                    another — the dense sheet's `h3` skipped a level here. */}
+                {title === undefined ? null : (
+                  <h2 className="min-w-0 text-body font-semibold text-ink">{title}</h2>
+                )}
+                {hint === undefined ? null : (
+                  <p className="max-w-prose text-micro text-muted">{hint}</p>
+                )}
+              </div>
+            )}
+            {status === undefined ? null : <Tag tone={status.tone}>{status.label}</Tag>}
+            {actions === undefined ? null : (
+              <span className="ml-auto flex shrink-0 items-center gap-1.5">{actions}</span>
+            )}
+          </header>
+        ) : null}
+        <div className="flex min-w-0 flex-col divide-y divide-line *:py-3.5 *:first:pt-0 *:last:pb-0">
+          {children}
+        </div>
+      </section>
+    );
+  }
   return (
     <section className={`flex min-w-0 flex-col ${byDensity(d, "gap-3", "gap-2")}`}>
       {withHeader ? (

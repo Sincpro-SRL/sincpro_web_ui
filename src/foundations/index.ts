@@ -32,8 +32,11 @@ export {
   type FieldIds,
   type FormMode,
   FormModeProvider,
+  type FormStyle,
+  FormStyleProvider,
   useFieldIds,
   useFormMode,
+  useFormStyle,
 } from "@sincpro/web-ui/foundations/form";
 /* A SHORTCUT, drawn the way the person's keyboard says it: «⌘K» on a Mac, «Ctrl K» elsewhere. */
 export {

@@ -125,6 +125,8 @@ export const SPANISH_COPY: UiCopyOverride = {
     fileUnreadable: "No pudimos leer el archivo",
     tryAnother: "Probá con otro",
     required: "obligatorio",
+    optional: "opcional",
+    sections: "Secciones del formulario",
     help: "Ayuda",
     unset: "sin definir",
     none: "Ninguna",

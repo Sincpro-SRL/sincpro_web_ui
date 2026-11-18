@@ -225,10 +225,30 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `table.head`, `topbar`, `topbar.brand`, `topbar.menus`, `topbar.actions`, `topbar.user`,
 `frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`, `sidebar.brand`,
 `sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
-`navigation.item`, `dirty.blocked`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
+`navigation.item`, `dirty.blocked`, `dirty.bar`, `field`, `field.label`, `form.section`,
+`form.index`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
 `guide.progress`, `guide.title`, `guide.body`, `guide.actions`. A part that is one of many
 carries `data-key` too (`navigation.item`). Put your rules in a cascade layer above web-ui's, or
 outside any layer.
+
+#### A form that explains itself: the «settings» style
+
+The default form is the dense sheet of an ERP — label | control, two columns, help behind a
+`?`. An application whose forms are filled once in a while and read before they are typed into
+(a back office's settings, an account) can choose the **settings** style, once, around the app:
+
+```tsx
+<FormStyleProvider value="settings">
+  <App />
+</FormStyleProvider>
+```
+
+Then every `Field` is a row — the label with `*` or «(opcional)» (`optional`) and its `hint`
+written out under it on the left, the control on the right —, every `FormSection` is a card
+(`form.section`) with an index of the titled ones at the sheet's left (`form.index`), and a
+`Record` with `dirty` floats Discard · Save at the bottom of the screen (`dirty.bar`) instead of
+the rail. The layout (`stacked` / `horizontal`) is still the screen's: stacked, the help and the
+control go under the label. Without the provider nothing changes.
 
 #### A guided tour: the screen says what each thing is
 
