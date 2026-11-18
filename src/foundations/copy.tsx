@@ -145,6 +145,11 @@ export type UiCopy = {
     /** The word next to a required label. The asterisk is the mark; this is
      *  what a screen reader says, because a star is not a word. */
     required: string;
+    /** Beside the label of a field that may stay empty, in the «settings» form style: there
+     *  every row says what it asks, and the asterisk alone left the rest unsaid. */
+    optional: string;
+    /** The accessible name of the index of a form's sections («settings» style). */
+    sections: string;
     /** The name of the button that opens a field's longer explanation. */
     help: string;
     /** What a field with no value says when it is read: an answer, not a blank. */
@@ -1132,6 +1137,8 @@ export const ENGLISH_COPY: UiCopy = {
     fileUnreadable: "We could not read the file",
     tryAnother: "Try another one",
     required: "required",
+    optional: "optional",
+    sections: "Sections of the form",
     help: "Help",
     unset: "not set",
     none: "None",

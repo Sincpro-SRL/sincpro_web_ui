@@ -13,6 +13,7 @@ import {
   type FormMode,
   FormModeProvider,
   useFormMode,
+  useFormStyle,
 } from "@sincpro/web-ui/foundations/form";
 import { focusRing, tv } from "@sincpro/web-ui/foundations/variants";
 import { FieldGroup, listOptionStyles } from "@sincpro/web-ui/primitives/field/aria";
@@ -66,7 +67,55 @@ import {
  *  Help is a `?` next to the name, opened with a press. A paragraph above the
  *  control ate a line on every field. The error still goes below, close to
  *  the cursor, and it says what to put.
+ *
+ *  ── In the «settings» style a field is a ROW that explains itself ───
+ *
+ *  `FormStyleProvider value="settings"` (an application's choice, see `foundations/form`):
+ *  the label and its help — written out, muted, under it — on the left, the control on the
+ *  right, «(opcional)» beside a label that may stay empty. A form filled once in a while is
+ *  read before it is typed into, and there the paragraph is the point, not a lost line.
+ *  The ids do not change: the written help is still what describes the control.
  * ==================================================================== */
+
+/** The label of a field in the «settings» style: the name, `*` or «(opcional)», the
+ *  field's marks, and the help written out under it — it describes the control (`hintId`). */
+function SettingsLabel({
+  name,
+  hint,
+  hintId,
+  optional,
+  marks,
+  inline,
+}: {
+  name: ReactNode;
+  hint: string | undefined;
+  hintId: string | undefined;
+  optional: boolean;
+  marks: ReactNode;
+  /** Beside its control: the name lines up with the control's text, not its border. */
+  inline: boolean;
+}) {
+  const copy = useUiCopy();
+  return (
+    <div
+      data-ui="field.label"
+      className={`flex min-w-0 flex-col gap-0.5 ${inline ? "pt-1.5" : ""}`}
+    >
+      <span className="flex min-w-0 flex-wrap items-center gap-x-1.5 gap-y-0.5 text-meta font-medium text-ink transition-colors duration-(--duration-quick) group-focus-within/field:text-primary">
+        {name}
+        {optional ? (
+          <span className="text-micro font-normal text-muted">({copy.field.optional})</span>
+        ) : null}
+        {marks}
+      </span>
+      {hint === undefined ? null : (
+        <p id={hintId} className="max-w-prose text-micro text-muted">
+          {hint}
+        </p>
+      )}
+    </div>
+  );
+}
 
 export function Field({
   label,
@@ -80,10 +129,12 @@ export function Field({
   mode,
   note,
   changed = false,
+  optional = false,
   copy: copyAs,
 }: {
   label: string;
-  /** What is expected. A `?` on the label that opens it on press. */
+  /** What is expected. A `?` on the label that opens it on press — in the «settings» form
+   *  style, written out under the label. */
   hint?: string;
   /** What has to be corrected. It goes BELOW, close to the cursor, and it says
    *  what to put. */
@@ -115,6 +166,9 @@ export function Field({
    *  «2 cambios sin guardar» is about — in a form of twenty, the reason to look before
    *  saving — and it is read as part of the field's description. */
   changed?: boolean;
+  /** It may stay empty: «(opcional)» beside the label — drawn only in the «settings» form
+   *  style, where every row says what it asks. Ignored with `required`. */
+  optional?: boolean;
   /** The copy button by the label (see `clipboard.tsx`): on by default, copying what the
    *  control shows. A string copies that instead; `false` removes the button from this
    *  field. */
@@ -122,6 +176,7 @@ export function Field({
 }) {
   const d = useDensity();
   const copy = useUiCopy();
+  const settings = useFormStyle() === "settings";
   const copies = useFieldCopy() && copyAs !== false;
   const shown = useRef<HTMLDivElement>(null);
   const auto = useId();
@@ -142,27 +197,28 @@ export function Field({
     changed ? changedId : null,
   );
 
-  const labelNode = (
-    /* The label follows its control's focus: in a form of twenty fields, the eye finds the
-       row being written by its name as much as by the ring. */
-    <span
-      className={`flex min-w-0 items-center gap-1 text-micro font-medium text-muted transition-colors duration-(--duration-quick) group-focus-within/field:text-primary ${inline ? "pt-2" : ""}`}
+  const name = (
+    <label
+      id={`${id}-label`}
+      htmlFor={id}
+      className={inline && !settings ? "min-w-0 truncate" : ""}
     >
-      <label id={`${id}-label`} htmlFor={id} className={inline ? "min-w-0 truncate" : ""}>
-        {label}
-        {required ? (
-          <>
-            {/* Ink, not danger. Red means «this is wrong». Spending it on
-                «you still have to fill this» makes a fresh form look failed. */}
-            <span className="text-ink" aria-hidden>
-              {" "}
-              *
-            </span>
-            <span className="sr-only">, {copy.field.required}</span>
-          </>
-        ) : null}
-      </label>
-      {hint === undefined ? null : <Hint id={hintId}>{hint}</Hint>}
+      {label}
+      {required ? (
+        <>
+          {/* Ink, not danger. Red means «this is wrong». Spending it on
+              «you still have to fill this» makes a fresh form look failed. */}
+          <span className="text-ink" aria-hidden>
+            {" "}
+            *
+          </span>
+          <span className="sr-only">, {copy.field.required}</span>
+        </>
+      ) : null}
+    </label>
+  );
+  const marks = (
+    <>
       {note === undefined ? null : <NoteFlag note={note} />}
       {changed ? (
         <>
@@ -183,6 +239,26 @@ export function Field({
           {...(typeof copyAs === "string" ? { value: copyAs } : {})}
         />
       ) : null}
+    </>
+  );
+  const labelNode = settings ? (
+    <SettingsLabel
+      name={name}
+      hint={hint}
+      hintId={hintId}
+      optional={optional && !required}
+      marks={marks}
+      inline={inline}
+    />
+  ) : (
+    /* The label follows its control's focus: in a form of twenty fields, the eye finds the
+       row being written by its name as much as by the ring. */
+    <span
+      className={`flex min-w-0 items-center gap-1 text-micro font-medium text-muted transition-colors duration-(--duration-quick) group-focus-within/field:text-primary ${inline ? "pt-2" : ""}`}
+    >
+      {name}
+      {hint === undefined ? null : <Hint id={hintId}>{hint}</Hint>}
+      {marks}
     </span>
   );
   /* Last in the field so it is read last; absolutely placed, it still sits at the field's
@@ -235,6 +311,43 @@ export function Field({
       )}
     </>
   );
+
+  if (inline && settings) {
+    /* The row: what it asks on the left, the answer on the right (`grid-setting`). */
+    return (
+      <div
+        data-ui="field"
+        data-style="settings"
+        className="grid-setting grid min-w-0 items-start gap-x-8 gap-y-2 group/field"
+      >
+        {labelNode}
+        <div className="flex min-w-0 flex-col gap-1">{body}</div>
+        {action === undefined ? null : (
+          <div data-under-control className="flex items-center gap-2">
+            {action}
+          </div>
+        )}
+        {noteCard}
+      </div>
+    );
+  }
+
+  if (settings) {
+    return (
+      <div
+        data-ui="field"
+        data-style="settings"
+        className="group/field flex min-w-0 flex-col gap-2"
+      >
+        <div className="flex min-w-0 items-start gap-2">
+          {labelNode}
+          {action === undefined ? null : <span className="ml-auto shrink-0">{action}</span>}
+        </div>
+        {body}
+        {noteCard}
+      </div>
+    );
+  }
 
   if (inline) {
     return (
@@ -301,6 +414,7 @@ export function DataField({
   copy?: string | false;
 }) {
   const d = useDensity();
+  const settings = useFormStyle() === "settings";
   const shown = useRef<HTMLSpanElement>(null);
   const allowed = useFieldCopy() && copyAs !== false;
   const noteId = `${useId()}-note`;
@@ -310,12 +424,8 @@ export function DataField({
   const empty = value === undefined || value === null || value === "";
   const unset = useUiCopy().field.unset;
 
-  const labelNode = (
-    <span
-      className={`flex min-w-0 items-center gap-1 text-micro font-medium text-muted ${inline ? "pt-0.5" : ""}`}
-    >
-      <span className={inline ? "min-w-0 truncate" : ""}>{label}</span>
-      {hint === undefined ? null : <Hint>{hint}</Hint>}
+  const marks = (
+    <>
       {note === undefined ? null : <NoteFlag note={note} />}
       {/* Nothing there, nothing to copy: no button over the missing mark. */}
       {allowed && !empty ? (
@@ -325,6 +435,24 @@ export function DataField({
           {...(typeof copyAs === "string" ? { value: copyAs } : {})}
         />
       ) : null}
+    </>
+  );
+  const labelNode = settings ? (
+    <SettingsLabel
+      name={<span>{label}</span>}
+      hint={hint}
+      hintId={undefined}
+      optional={false}
+      marks={marks}
+      inline={false}
+    />
+  ) : (
+    <span
+      className={`flex min-w-0 items-center gap-1 text-micro font-medium text-muted ${inline ? "pt-0.5" : ""}`}
+    >
+      <span className={inline ? "min-w-0 truncate" : ""}>{label}</span>
+      {hint === undefined ? null : <Hint>{hint}</Hint>}
+      {marks}
     </span>
   );
   const noteCard =
@@ -341,6 +469,23 @@ export function DataField({
       {empty ? unset : value}
     </span>
   );
+
+  if (inline && settings) {
+    return (
+      <div
+        data-ui="field"
+        data-style="settings"
+        className="grid-setting grid min-w-0 items-start gap-x-8 gap-y-1 group/field"
+      >
+        {labelNode}
+        <span className="flex min-w-0 items-baseline gap-2">
+          {valueNode}
+          {action}
+        </span>
+        {noteCard}
+      </div>
+    );
+  }
 
   if (inline) {
     return (

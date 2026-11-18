@@ -1,7 +1,7 @@
 "use client";
 
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
+import { bySurface, SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
 import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { Check, Save, Undo2 } from "lucide-react";
 import { useEffect, useId, useRef, useState } from "react";
@@ -136,29 +136,77 @@ export function useJustSaved(dirty: DirtyState | undefined): boolean {
   return saved;
 }
 
+/** The «✓ Guardado» chip itself, without its live region: what is SEEN. */
+function SavedChip() {
+  const copy = useUiCopy();
+  const surface = useSurface();
+  return (
+    <span
+      aria-hidden
+      className={`inline-flex h-(--size-control-md) shrink-0 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium transition-[opacity,translate] duration-(--duration-quick) ease-(--ease-out) starting:-translate-y-0.5 starting:opacity-0 ${bySurface(
+        surface,
+        "bg-good/12 text-good",
+        "bg-chrome-good/15 text-chrome-good",
+      )}`}
+    >
+      <Check className="size-(--size-icon-sm)" strokeWidth={2.5} />
+      {copy.record.saved}
+    </span>
+  );
+}
+
 /** «✓ Guardado», where Save was, for a moment. The live region is always there — a region
  *  inserted together with its words is not reliably announced. */
 export function SavedMark({ saved }: { saved: boolean }) {
   const copy = useUiCopy();
-  const surface = useSurface();
   return (
     <>
       <span role="status" className="sr-only">
         {saved ? copy.record.saved : ""}
       </span>
-      {saved ? (
-        <span
-          aria-hidden
-          className={`inline-flex h-(--size-control-md) shrink-0 items-center gap-1.5 rounded-control px-2.5 text-meta font-medium transition-[opacity,translate] duration-(--duration-quick) ease-(--ease-out) starting:-translate-y-0.5 starting:opacity-0 ${bySurface(
-            surface,
-            "bg-good/12 text-good",
-            "bg-chrome-good/15 text-chrome-good",
-          )}`}
-        >
-          <Check className="size-(--size-icon-sm)" strokeWidth={2.5} />
-          {copy.record.saved}
-        </span>
-      ) : null}
+      {saved ? <SavedChip /> : null}
     </>
+  );
+}
+
+/**
+ * Save and Discard FLOATING at the bottom of the screen, centred — the «settings» form
+ * style's (`FormStyleProvider`), in place of the rail and the thumb bar.
+ *
+ * Context: a settings form is long and read top to bottom; the rail is left behind with the
+ * first card, and the last field changed is near the bottom. The bar appears with the first
+ * change, in the dark band (the chrome) so it reads apart from the cards, and says «Guardado»
+ * for a moment where Save was. Sticky and last in the record, as the thumb bar: at the end of
+ * the form it settles under the last card and covers nothing.
+ */
+export function DirtyBar({
+  dirty,
+  saved,
+}: {
+  dirty: DirtyState | undefined;
+  saved: boolean;
+}) {
+  const copy = useUiCopy();
+  const shown = dirty !== undefined || saved;
+  /* Always mounted, so «Guardado» is announced (see `SavedMark`); with nothing to say it has
+     no height and covers nothing. */
+  return (
+    <div
+      data-ui="dirty.bar"
+      className={`pointer-events-none sticky bottom-0 z-20 mt-auto flex justify-center px-3 ${
+        shown ? "pt-3 safe-bottom" : ""
+      }`}
+    >
+      <span role="status" className="sr-only">
+        {saved ? copy.record.saved : ""}
+      </span>
+      {shown ? (
+        <SurfaceProvider value="chrome">
+          <div className="pointer-events-auto flex max-w-full min-w-0 flex-wrap items-center justify-center gap-1.5 rounded-pill bg-chrome p-1.5 shadow-float">
+            {dirty === undefined ? <SavedChip /> : <DirtyActions {...dirty} />}
+          </div>
+        </SurfaceProvider>
+      ) : null}
+    </div>
   );
 }

@@ -4,6 +4,7 @@ import type { Message } from "@sincpro/web-ui/components/activity/Messages";
 import { usePagination } from "@sincpro/web-ui/components/listing/pages";
 import { Pagination } from "@sincpro/web-ui/components/listing/Pagination";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { useFormStyle } from "@sincpro/web-ui/foundations/form";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
 import { cn } from "@sincpro/web-ui/foundations/variants";
 import { IconButton } from "@sincpro/web-ui/primitives/button/Button";
@@ -466,6 +467,9 @@ export function Activity({
   const autoAlertsId = useId();
   const alertsId = ownAlertsId ?? autoAlertsId;
   const auto = layout === "auto";
+  /* Beside the sheet it is joined to it — the sheet's right edge is the line between the two.
+     In the «settings» form style there is no sheet, only cards on the ground: it stands apart. */
+  const joined = useFormStyle() !== "settings";
   /* The notes of the fields and rows of the record around — `Record` keeps them. */
   const notes = useNoteEntries();
 
@@ -542,7 +546,8 @@ export function Activity({
              where the eye starts, and under it the counts, stacked — nothing hidden
              silently. The sheet's own right edge is the hairline between the two. */
           auto &&
-            "@beside/page:w-auto @beside/page:flex-col @beside/page:justify-start @beside/page:gap-3 @beside/page:rounded-l-none @beside/page:border-l-0 @beside/page:px-2 @beside/page:py-3",
+            "@beside/page:w-auto @beside/page:flex-col @beside/page:justify-start @beside/page:gap-3 @beside/page:px-2 @beside/page:py-3",
+          auto && joined && "@beside/page:rounded-l-none @beside/page:border-l-0",
         )}
       >
         <span className={cn("hidden shrink-0 text-muted", auto && "@beside/page:block")}>
@@ -598,8 +603,8 @@ export function Activity({
       className={cn(
         "flex w-full min-w-0 flex-col rounded-box border border-line bg-surface",
         /* Beside the sheet: its column, joined to it — the sheet's right edge is the line. */
-        auto &&
-          "@beside/page:w-(--container-activity) @beside/page:rounded-l-none @beside/page:border-l-0",
+        auto && "@beside/page:w-(--container-activity)",
+        auto && joined && "@beside/page:rounded-l-none @beside/page:border-l-0",
       )}
     >
       <header className="flex min-w-0 items-center gap-2 border-b border-line py-1.5 pr-1.5 pl-3">

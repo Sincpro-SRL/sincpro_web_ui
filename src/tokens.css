@@ -533,6 +533,10 @@
      to «Referencia del cli…», and a truncated label is a question. */
   --container-label: 10rem;
 
+  /* The index of a «settings» form's sections (`FormIndex`), at the sheet's left: wide enough
+     for «Contacto y guía pública», narrow enough that the cards keep the page. */
+  --container-form-index: 12rem;
+
   /* The tag column of a list row. It is what the column ASKS FOR, and it
      belongs to the system: with a width of its own every tag starts where its
      own ends and twelve rows give twelve indents. Asking for the same 8 rem,
@@ -1533,6 +1537,24 @@
     grid-column-start: 2;
   }
   @container (width < 21rem) {
+    grid-template-columns: minmax(0, 1fr);
+    & > [data-under-control] {
+      grid-column-start: auto;
+    }
+  }
+}
+
+/* A field of the «settings» form style (`FormStyleProvider`): what it asks — the label and its
+   help written out — on the left, two parts in five; the control on the right, three. The
+   label column grows with the row because it holds a sentence, not one word. Below
+   `--container-handheld` of the section it sits in, the row is one column: the help over a
+   control squeezed beside it was two half-read things. */
+@utility grid-setting {
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  & > [data-under-control] {
+    grid-column-start: 2;
+  }
+  @container (width < 40rem) {
     grid-template-columns: minmax(0, 1fr);
     & > [data-under-control] {
       grid-column-start: auto;

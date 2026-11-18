@@ -3,12 +3,14 @@
 import { Breadcrumb, type Crumb } from "@sincpro/web-ui/components/record/Breadcrumb";
 import {
   DirtyActions,
+  DirtyBar,
   type DirtyState,
   SavedMark,
   useJustSaved,
 } from "@sincpro/web-ui/components/record/DirtyActions";
 import { isPrimary, ThumbBar, thumbPlan } from "@sincpro/web-ui/components/record/ThumbBar";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
+import { useFormStyle } from "@sincpro/web-ui/foundations/form";
 import { SurfaceProvider } from "@sincpro/web-ui/foundations/surface";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
 import { Line } from "@sincpro/web-ui/primitives/block/Line";
@@ -153,9 +155,14 @@ export function RecordHeader({
   children?: ReactNode;
 }) {
   const d = useDensity();
+  /* The «settings» form style (`FormStyleProvider`): Save and Discard float at the bottom
+     (`DirtyBar`) instead of taking the rail and the thumb bar, and the record has no white
+     sheet of its own — its sections are the cards, on the ground. */
+  const floating = useFormStyle() === "settings";
   /* «Guardado» is said where Save was; a record whose rail exists only while it has changes
      keeps it for that moment, or the answer would leave with the question. */
   const saved = useJustSaved(dirty);
+  const railDirty = floating ? undefined : dirty;
   /* Save is gone the moment it has saved, and the focus that was on it fell to the page —
      a keyboard was left at the top of the document. It comes back to the record's name:
      where reading the record starts, and announced together with «Guardado». */
@@ -166,12 +173,12 @@ export function RecordHeader({
     if (lost) nameRef.current?.focus({ preventScroll: true });
   }, [saved]);
   const hasRail =
-    saved ||
+    (saved && !floating) ||
     crumbs !== undefined ||
     pager !== undefined ||
     actions !== undefined ||
     status !== undefined ||
-    dirty !== undefined;
+    railDirty !== undefined;
 
   /* In compact the rail goes away ENTIRELY, and it is not for room: in a
      preview, the breadcrumbs and the pager belong to the surface that opened it
@@ -190,7 +197,7 @@ export function RecordHeader({
     rail: railActions,
     primaries,
     mode: thumb,
-  } = thumbPlan({ withRail, actions, dirty });
+  } = thumbPlan({ withRail, actions, dirty: railDirty });
 
   /* In compact the TITLE is not drawn either, for the same reason as in
      `Listing`: the surface header already says it. Drawing it here showed it
@@ -353,8 +360,8 @@ export function RecordHeader({
 
                 {actions === undefined &&
                 status === undefined &&
-                dirty === undefined &&
-                !saved ? null : (
+                railDirty === undefined &&
+                (!saved || floating) ? null : (
                   /* Row 2 — WHAT I CAN DO and WHERE IT IS AT: actions stuck to the
                left edge, the history and the state stuck to the right one. No
                `flex-wrap`: wrapping split the row in two and the state ended up
@@ -363,12 +370,14 @@ export function RecordHeader({
                     {/* The actions are NEVER clipped: they are the only thing in this
                   row that produces something, and a button cut in half is a
                   button that does not get pressed. What gives way is the state. */}
-                    {dirty !== undefined ? (
+                    {railDirty !== undefined ? (
                       <div className="flex shrink-0 items-center gap-1.5 @max-handheld/record:hidden">
-                        <DirtyActions {...dirty} />
+                        <DirtyActions {...railDirty} />
                       </div>
                     ) : actions === undefined ? (
-                      <SavedMark saved={saved} />
+                      floating ? null : (
+                        <SavedMark saved={saved} />
+                      )
                     ) : (
                       <div className="flex shrink-0 items-center gap-1.5">
                         {primaries.length === 0
@@ -388,7 +397,7 @@ export function RecordHeader({
                             )}
                         {/* After the actions, not before: the primary stays where the hand
                             left it, and «Guardado» is read as the answer to it. */}
-                        <SavedMark saved={saved} />
+                        {floating ? null : <SavedMark saved={saved} />}
                       </div>
                     )}
                     {status === undefined ? null : (
@@ -436,7 +445,9 @@ export function RecordHeader({
             <div
               className={`flex min-w-0 flex-col gap-3 ${column} ${
                 beside
-                  ? "@beside/page:flex-row @beside/page:items-stretch @beside/page:justify-center @beside/page:gap-0"
+                  ? `@beside/page:flex-row @beside/page:items-stretch @beside/page:justify-center ${
+                      floating ? "@beside/page:gap-4" : "@beside/page:gap-0"
+                    }`
                   : ""
               }`}
             >
@@ -451,9 +462,9 @@ export function RecordHeader({
                     paper, at the paper's width: always seen, never read as a field. */}
                 {blocking}
                 <div
-                  className={`relative flex min-w-0 flex-col overflow-clip rounded-box border border-line bg-surface ${
-                    beside ? "@beside/page:rounded-r-none" : ""
-                  }`}
+                  className={`relative flex min-w-0 flex-col overflow-clip ${
+                    floating ? "" : "rounded-box border border-line bg-surface"
+                  } ${beside && !floating ? "@beside/page:rounded-r-none" : ""}`}
                 >
                   {ribbon}
                   {identity}
@@ -487,7 +498,10 @@ export function RecordHeader({
         </div>
       )}
 
-      {thumb === null ? null : <ThumbBar mode={thumb} dirty={dirty} primaries={primaries} />}
+      {thumb === null ? null : (
+        <ThumbBar mode={thumb} dirty={railDirty} primaries={primaries} />
+      )}
+      {floating ? <DirtyBar dirty={dirty} saved={saved} /> : null}
     </>
   );
 }
