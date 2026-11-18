@@ -10,6 +10,7 @@ import {
   writeANote,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
+import { expect, userEvent, within } from "storybook/test";
 
 /**
  * Context: **todo lo que rodea a un registro, en una línea de tiempo.** Arriba lo que es
@@ -238,5 +239,68 @@ export const SiempreDebajo: Story = {
         />
       </div>
     );
+  },
+};
+
+/* An edit, as an audit reads it: who, when, and each field as it was → as it is. */
+const EDICIONES: ActivityEvent[] = [
+  {
+    id: "c1",
+    label: "Se registró el colegiado",
+    at: "2026-11-18T03:10:00Z",
+    moved: { to: "activo" },
+  },
+  {
+    id: "c2",
+    label: "Se editaron sus datos",
+    at: "2026-11-18T04:16:00Z",
+    by: "Carla Rojas",
+    changes: [{ field: "Observación", from: "", to: "test" }],
+  },
+  {
+    id: "c3",
+    label: "Se actualizó el contacto",
+    at: "2026-11-18T04:58:00Z",
+    by: "Josefa Muñoz",
+    changes: [
+      { field: "Teléfono", from: "70012345", to: "70098765" },
+      { field: "Correo", from: "jperez@gmail.com", to: "juan.perez@colegio.org.bo" },
+      { field: "Dirección", from: "Av. Ballivián 123, Cochabamba", to: "" },
+      { field: "Especialidad", from: "Medicina general", to: "Pediatría" },
+      { field: "Matrícula", from: "MP-2210", to: "MP-2210-A" },
+    ],
+  },
+];
+
+/**
+ * **Un cambio que se puede auditar.** Cada edición dice QUIÉN (en tinta, no en el gris de la
+ * fecha), CUÁNDO y, debajo, a la vista sin tocar nada, cada campo como ERA → como ES: lo de
+ * antes tachado y apagado, lo de ahora en tinta. Un campo vacío dice «vacío», no «—». Una
+ * edición de muchos campos muestra tres y abre el resto. Antes era una línea gris dentro del
+ * detalle plegado: «Observación: — → test».
+ */
+export const CambiosAuditables: Story = {
+  name: "Cambios auditables",
+  args: { open: true, onToggle: () => {} },
+  render: function Render() {
+    const panel = useActivity(true);
+    return (
+      <Escenario>
+        <Activity open={panel.open} onToggle={panel.toggle} events={EDICIONES} />
+      </Escenario>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    /* The diff is in sight without opening anything. */
+    await expect(await canvas.findByText("Observación")).toBeVisible();
+    await expect(canvas.getByText("test")).toBeVisible();
+    /* Empty is a word, and the old value is a deletion. */
+    await expect(canvas.getAllByText("vacío").length).toBeGreaterThan(0);
+    await expect(canvas.getByText("70012345").closest("del")).not.toBeNull();
+    /* Five changes: three shown, the rest one press away. */
+    await expect(canvas.queryByText("Matrícula")).toBeNull();
+    await userEvent.click(canvas.getByRole("button", { name: "Ver los 5 cambios" }));
+    await expect(canvas.getByText("Matrícula")).toBeVisible();
   },
 };

@@ -372,6 +372,15 @@ export type UiCopy = {
     yesterday: string;
     /** A filter that leaves nothing. */
     emptyFilter: string;
+    /** A field an edit left (or found) empty: a word, because «—» beside an arrow reads as a
+     *  dash somebody typed. */
+    empty: string;
+    /** Said before the old and the new value of a change, for a screen reader: the strike and
+     *  the weight carry it on screen. */
+    before: string;
+    after: string;
+    /** An edit of many fields shows three; this opens the rest. `{count}` is all of them. */
+    allChanges: string;
     /** A note in the timeline takes you to what it belongs to. `{owner}` is that field or
      *  line. */
     goTo: string;
@@ -1268,6 +1277,10 @@ export const ENGLISH_COPY: UiCopy = {
     today: "Today",
     yesterday: "Yesterday",
     emptyFilter: "Nothing of this kind yet.",
+    empty: "empty",
+    before: "before:",
+    after: "now:",
+    allChanges: "See the {count} changes",
     goTo: "Go to {owner}",
     send: "Send",
     sending: "Sending…",

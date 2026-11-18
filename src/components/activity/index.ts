@@ -2,6 +2,7 @@
 export {
   Activity,
   type ActivityAlert,
+  type ActivityChange,
   type ActivityEvent,
   type ActivityLayout,
   type ActivityProps,

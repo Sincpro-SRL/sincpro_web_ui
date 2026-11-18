@@ -322,3 +322,47 @@ test("the registry tells only when a note appears or goes", () => {
   assert.equal(told, 2);
   assert.equal(registry.snapshot().length, 0);
 });
+
+test("una edición se audita a la vista: quién, y cada campo como era → como es", () => {
+  const html = inSpanish(
+    <Activity
+      open
+      onToggle={() => {}}
+      events={[
+        {
+          id: "e",
+          label: "Se editaron sus datos",
+          at: "2026-11-18T04:16:00Z",
+          by: "Carla Rojas",
+          changes: [
+            { field: "Observación", from: "", to: "test" },
+            { field: "Teléfono", from: "70012345", to: "70098765" },
+          ],
+        },
+      ]}
+    />,
+  );
+  assert.match(html, /data-ui="activity\.changes"/);
+  /* The old value is a deletion, the new one an insertion — each said to a screen reader. */
+  assert.match(html, /<del[^>]*><span class="sr-only">antes: <\/span>70012345<\/del>/);
+  assert.match(html, /<ins[^>]*><span class="sr-only">ahora: <\/span>70098765<\/ins>/);
+  /* Empty is the word, not a dash. */
+  assert.match(html, /vacío/);
+  assert.ok(at(html, "Observación") < at(html, "Teléfono"));
+  /* Who did it is in ink. */
+  assert.match(html, /font-medium text-ink">Carla Rojas</);
+});
+
+test("una edición de muchos campos muestra tres y ofrece el resto", () => {
+  const changes = ["A", "B", "C", "D"].map((field) => ({ field, from: "1", to: "2" }));
+  const html = inSpanish(
+    <Activity
+      open
+      onToggle={() => {}}
+      events={[{ id: "e", label: "Se editó", at: "2026-11-18T04:16:00Z", changes }]}
+    />,
+  );
+  assert.match(html, />C</);
+  assert.doesNotMatch(html, /<dt[^>]*>D</);
+  assert.match(html, /Ver los 4 cambios/);
+});
