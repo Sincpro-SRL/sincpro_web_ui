@@ -3,7 +3,11 @@
 import type { ValueEditorProps } from "@sincpro/web-ui/components/search/context";
 import type { RecordOption } from "@sincpro/web-ui/components/search/criteria";
 import { choiceLabel } from "@sincpro/web-ui/components/search/model";
-import type { RecordTarget, SearchRecords } from "@sincpro/web-ui/components/search/records";
+import type {
+  BrowseRecords,
+  RecordTarget,
+  SearchRecords,
+} from "@sincpro/web-ui/components/search/records";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { Picker } from "@sincpro/web-ui/primitives/picker/Picker";
 import { TagsField } from "@sincpro/web-ui/primitives/picker/TagsField";
@@ -82,12 +86,41 @@ function RecordValue({
   props,
   target,
   searchRecords,
+  browseRecords,
+  relationLabel,
 }: {
   props: ValueEditorProps;
   target: RecordTarget;
   searchRecords: SearchRecords;
+  browseRecords?: BrowseRecords;
+  relationLabel: string;
 }) {
   const { values, onValues, path, operator, label } = props;
+  /* «Buscar más…»: the application's chooser over the relation —its own list, its own bar—,
+     on what was typed. Several add to what is there; one replaces it. */
+  const browse =
+    browseRecords === undefined
+      ? undefined
+      : (text: string, many: boolean) =>
+          browseRecords({
+            relation: target.relation,
+            path,
+            label: relationLabel,
+            text,
+            many,
+            chosen: values,
+            choose: (records) =>
+              onValues(
+                many
+                  ? [
+                      ...values,
+                      ...records.filter(
+                        (one) => !values.some((each) => String(each.id) === String(one.id)),
+                      ),
+                    ]
+                  : records.slice(0, 1),
+              ),
+          });
   const found = useRecordOptions(searchRecords, target, path);
   /* A record read back has no name until the builder asks for it (`useRecordNames`). */
   const shown = (one: RecordOption) => (one.name === "" ? `#${one.id}` : one.name);
@@ -107,6 +140,9 @@ function RecordValue({
             ...(one.meta === undefined ? {} : { meta: one.meta }),
           }))}
           onSearch={found.search}
+          {...(browse === undefined
+            ? {}
+            : { onBrowseAll: (text: string) => browse(text, true) })}
           onChange={(next) =>
             onValues(
               next
@@ -135,6 +171,9 @@ function RecordValue({
           ? {}
           : { value: String(chosen.id), valueLabel: shown(chosen) })}
         onSearch={found.search}
+        {...(browse === undefined
+          ? {}
+          : { onBrowseAll: (text: string) => browse(text, false) })}
         onChange={(id) => {
           const one = found.options.find((each) => String(each.id) === id);
           if (one !== undefined) onValues([one]);
@@ -153,6 +192,8 @@ export function RuleValue({
   props,
   target,
   searchRecords,
+  browseRecords,
+  relationLabel,
   box,
   inputType,
 }: {
@@ -160,6 +201,10 @@ export function RuleValue({
   /** The rule asks about records of a relation. */
   target?: RecordTarget;
   searchRecords?: SearchRecords;
+  /** «Buscar más…» under the records: the application's chooser. */
+  browseRecords?: BrowseRecords;
+  /** How the relation reads, for the chooser's title: «País». */
+  relationLabel?: string;
   /** The look of the row's other controls, for the native ones. */
   box: string;
   inputType: string;
@@ -168,7 +213,15 @@ export function RuleValue({
   const { field, name, model, operator, value, onValue, values, onValues, label } = props;
 
   if (target !== undefined && searchRecords !== undefined) {
-    return <RecordValue props={props} target={target} searchRecords={searchRecords} />;
+    return (
+      <RecordValue
+        props={props}
+        target={target}
+        searchRecords={searchRecords}
+        {...(browseRecords === undefined ? {} : { browseRecords })}
+        relationLabel={relationLabel ?? props.name}
+      />
+    );
   }
 
   const choices = (field.choices ?? []).map((one) => String(one));

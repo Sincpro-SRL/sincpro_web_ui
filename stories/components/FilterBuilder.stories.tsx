@@ -1,7 +1,9 @@
 import {
   type BuiltFilter,
+  Dialog,
   FilterBuilder,
   type ModelDefinition,
+  type RecordBrowse,
   SearchProvider,
   type ValueEditor,
 } from "@sincpro/web-ui";
@@ -9,7 +11,12 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
-import { INVOICE_SEARCH_MODEL, searchInvoiceRecords } from "../support/erp-search";
+import { RecordChooser } from "../support/erp-chooser";
+import {
+  INVOICE_SEARCH_MODEL,
+  loadInvoiceModel,
+  searchInvoiceRecords,
+} from "../support/erp-search";
 
 /**
  * Context: **el filtro a medida.** Los recortes con nombre —«vencidas», «por cobrar»— son
@@ -208,5 +215,97 @@ export const UnControlPropio: Story = {
     await expect(canvas.getByRole("slider", { name: "Valor" })).toHaveValue("20000");
     await userEvent.click(canvas.getByRole("button", { name: "Agregar" }));
     await expect(await canvas.findByText(/"value":20000/)).toBeVisible();
+  },
+};
+
+/**
+ * **Por un camino: Cliente › País.** Elegir un campo de un registro relacionado no te obliga a
+ * comparar un campo suyo. En cada nivel del camino está la relación misma —«País (el
+ * registro)»—: elegila y la regla pregunta por PAÍSES, elegidos de su lista por su búsqueda
+ * literal. Elegí «Nombre» o «Código» cuando la pregunta es sobre un campo («Código empieza
+ * con B»); las dos preguntas existen.
+ *
+ * **«Buscar más…»** al pie de la lista abre el elegidor de la aplicación (`browseRecords`): otro
+ * contexto, la lista de países con SU barra —se busca por región, por código—, que contesta con
+ * los elegidos. Con «es alguno de» se tildan varios y se agregan.
+ *
+ * El filtro abre con `{through: "customer", selection: {field: "country_id", …}}` —claves, como
+ * llega de un enlace—: el constructor recorre el camino, reconoce la regla sobre países y le pide
+ * a la aplicación sus nombres.
+ */
+export const PorUnCamino: Story = {
+  name: "Por un camino: Cliente › País",
+  render: function Render() {
+    const [said, setSaid] = useState<string | undefined>(undefined);
+    const [browsing, setBrowsing] = useState<RecordBrowse | null>(null);
+    return (
+      <SearchProvider searchRecords={searchInvoiceRecords} browseRecords={setBrowsing}>
+        <div className="flex max-w-3xl flex-col gap-3">
+          <div className="rounded-box border border-line bg-surface p-4">
+            <FilterBuilder
+              model={INVOICE_SEARCH_MODEL}
+              loadModel={loadInvoiceModel}
+              initial={{
+                through: "customer",
+                selection: { field: "country_id", operator: "in", value: ["BO", "PE"] },
+              }}
+              onApply={(_, reads) => setSaid(reads)}
+            />
+          </div>
+          <p className="text-meta text-ink" aria-label="cómo se lee">
+            {said ?? "sin filtro aplicado"}
+          </p>
+        </div>
+        {browsing === null ? null : (
+          <Dialog
+            open
+            width="lg"
+            title={browsing.label}
+            subtitle={browsing.many ? "Tildá los que quieras agregar." : "Elegí uno."}
+            onClose={() => setBrowsing(null)}
+          >
+            <RecordChooser
+              relation={browsing.relation}
+              text={browsing.text}
+              many={browsing.many}
+              chosen={browsing.chosen}
+              onChoose={(records) => {
+                browsing.choose(records);
+                setBrowsing(null);
+              }}
+            />
+          </Dialog>
+        )}
+      </SearchProvider>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // The countries it opened with, named by the application — the path walked to know it.
+    await expect(await canvas.findByText("Bolivia")).toBeVisible();
+    await expect(await canvas.findByText("Perú")).toBeVisible();
+    await expect(
+      await canvas.findByRole("button", { name: /Campo: Cliente > País/ }),
+    ).toBeVisible();
+    // «Buscar más…»: the countries' own list, with its own bar, leaving out the chosen ones.
+    await userEvent.type(canvas.getByRole("combobox", { name: "Valor" }), "a");
+    await userEvent.click(
+      await within(document.body).findByRole("option", { name: /Buscar más/ }),
+    );
+    const chooser = within(
+      await within(document.body).findByRole("dialog", { name: "País" }),
+    );
+    await expect(chooser.queryByText("Bolivia")).toBeNull();
+    // A press on the row ticks it: a chooser of many adds what is ticked at once.
+    await userEvent.click(chooser.getByText("Argentina"));
+    await userEvent.click(chooser.getByRole("button", { name: "Agregar 1" }));
+    await expect(await canvas.findByText("Argentina")).toBeVisible();
+
+    await userEvent.click(canvas.getByRole("button", { name: "Agregar" }));
+    await waitFor(() =>
+      expect(canvas.getByLabelText("cómo se lee")).toHaveTextContent(
+        /Cliente > País es alguno de Bolivia, Perú, Argentina/,
+      ),
+    );
   },
 };

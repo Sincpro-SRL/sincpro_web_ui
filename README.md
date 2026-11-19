@@ -316,7 +316,11 @@ const searchRecords: SearchRecords = ({ relation, path, text, keys, signal }) =>
     ? api.names(relation, keys, { signal }) // name what a filter read back carries
     : api.literalSearch(relation, text, { limit: 8, signal }); // what was typed
 
-<SearchProvider searchRecords={searchRecords} valueEditor={myValueEditor}>
+<SearchProvider
+  searchRecords={searchRecords}
+  browseRecords={(browse) => openChooser(browse)} // your list in choosing mode, its own bar
+  valueEditor={myValueEditor}
+>
   <App /> {/* every SearchBar, FilterBuilder and CriteriaBuilder inside */}
 </SearchProvider>;
 ```
@@ -326,13 +330,23 @@ const searchRecords: SearchRecords = ({ relation, path, text, keys, signal }) =>
 other side (`relationKey`, `id` by default) — the filter crosses it with `through`. An enum's
 words come from `translations.choices`.
 
+A path is walked the same way: in «Cliente › País» the first option is «País (el registro)» —
+the rule then asks for COUNTRIES, picked by name— above País's own fields, for when the
+question is about a field («Código empieza con B»). «Buscar más…» opens your chooser: another
+context, the relation's whole list with its own search bar (which unfolds relations too).
+
+Who does what: web-ui draws and notifies; **web-framework** wires `searchRecords` to the
+entity's literal search, `browseRecords` to the entity's list in choosing mode and `loadModel`
+to the related meta — once, for every entity; composer decides where the chooser opens (a modal
+over a page, beside a modal); the application only overrides what it wants.
+
 What can be extended, and how:
 
 | You want                                         | Use                                                                                          |
 | ------------------------------------------------ | -------------------------------------------------------------------------------------------- |
 | The records of a relation, from your server      | `searchRecords` (prop, or `SearchProvider` once)                                             |
 | A record drawn your way in the dropdown          | `SearchBar renderRecord`                                                                     |
-| «Buscar más…» under the records: your chooser    | `SearchBar onBrowseRecords(field, text)` + `withValue`                                       |
+| «Buscar más…» under the records: your chooser    | `browseRecords` (prop or `SearchProvider`), bar and builder; answer with `choose`            |
 | A field's value drawn your way in the builder    | `valueEditor` (prop or `SearchProvider`): answer `undefined` to keep ours                    |
 | A list that opens filtered (defaults, a link)    | `queryField` + `valuesCriteria` / `conditionCriteria` / `toggleNamed`                        |
 | One more value into a chip, by code              | `withValue(criteria, field, record)`                                                         |

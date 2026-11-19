@@ -120,6 +120,8 @@ reading (`mode="read"`) it draws it as a datum, in the copy's language.
 | An enum asked by its words, not its raw values («Pagada», sent as `paid`)                               | ✅ 11-18 | `translations.choices`, `choiceLabel`; unfolds in the bar, select / tags in the builder |
 | The builder picks records: es / no es (one), está en (tags), está vacío; reads keys back as names       | ✅ 11-18 | `FilterBuilder` / `CriteriaBuilder searchRecords`, `liftRecords`, `useRecordNames`      |
 | A value control of the application's own in the builder                                                 | ✅ 11-18 | `valueEditor` (`ValueEditorProps`), prop or `SearchProvider`                            |
+| By a path —Cliente › País— the related records themselves, not only their fields; read back by name     | ✅ 11-18 | `FieldPath` «(el registro)» at every level, `liftRecords(…, modelAt)`                   |
+| «Buscar más…» in the bar and the builder: the relation's list, another context with its own bar         | ✅ 11-18 | `browseRecords` (`RecordBrowse`, prop or `SearchProvider`)                              |
 | A list that opens filtered, built by code with the bar's own chips                                      | ✅ 11-18 | `queryField`, `valuesCriteria`, `conditionCriteria`                                     |
 | The way into the advanced search, where people look                                                     | ✅ 11-18 | «Búsqueda avanzada…» under the suggestions and as the panel's action                    |
 | «Empieza con» and other operators the model does not publish                                            | 🟡       | the server publishes the operator; web-ui names it from the copy table (`ops`)          |

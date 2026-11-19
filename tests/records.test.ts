@@ -385,3 +385,52 @@ test("la frase de lo aplicado dice los nombres, no las claves", () => {
   // Sin los nombres, las claves — pero con el rótulo de la relación, no el de la columna.
   assert.equal(describeFilter(filter, MODEL), "Cliente es alguno de 7, 9");
 });
+
+const PARTNER: ModelDefinition = {
+  aggregate: "partner",
+  identity: "id",
+  fields: {
+    name: { type: "text", nullable: false, sortable: true, ops: ["=", "like"] },
+    country: {
+      type: "many2one",
+      nullable: true,
+      sortable: false,
+      ops: [],
+      kind: "relation",
+      relation: "Country",
+      identifiedBy: "country_id",
+    },
+    country_id: { type: "text", nullable: true, sortable: true, ops: ["=", "in"] },
+  },
+  translations: {
+    name: { default: "Cliente" },
+    labels: { country: { default: "País" }, country_id: { default: "País" } },
+  },
+};
+
+test("por un camino —Cliente › País— la regla se reconoce con el modelo del camino", () => {
+  const filter = {
+    through: "customer",
+    selection: { field: "country_id", operator: "in", value: ["BO", "PE"] },
+  };
+  const modelAt = (path: readonly string[]) =>
+    path.join(".") === "customer" ? PARTNER : undefined;
+  // Sin el modelo del camino, sigue siendo una condición sobre una columna.
+  assert.equal(
+    (liftRecords(treeFromFilter(filter)!, MODEL) as TreeCondition).target,
+    undefined,
+  );
+  const lifted = liftRecords(treeFromFilter(filter)!, MODEL, modelAt) as TreeCondition;
+  assert.equal(lifted.field, "country");
+  assert.deepEqual(lifted.through, [{ field: "customer", match: "any" }]);
+  assert.deepEqual(treeToFilter(lifted), filter);
+  // Y se lee con los nombres, por el camino.
+  assert.equal(
+    describeFilter(filter, MODEL, modelAt, (relation, key) =>
+      relation === "country"
+        ? ({ BO: "Bolivia", PE: "Perú" } as Record<string, string>)[key]
+        : undefined,
+    ),
+    "Cliente > País es alguno de Bolivia, Perú",
+  );
+});
