@@ -1,5 +1,6 @@
 /* ATTACHMENTS — the files of a record (`Attachments`: add, remove, undo), files shown inside a
-   message, a card or a section (`FileList`), and how to save one fetched by code. */
+   message, a card or a section (`FileList`), one file as a value (`FileValue`), and how to save
+   one fetched by code. */
 export {
   Attachments,
   type AttachmentsProps,
@@ -18,3 +19,7 @@ export {
   fileExtension,
   formatFileSize,
 } from "@sincpro/web-ui/components/attachments/files";
+export {
+  FileValue,
+  type FileValueProps,
+} from "@sincpro/web-ui/components/attachments/FileValue";
