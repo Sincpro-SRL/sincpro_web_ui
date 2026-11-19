@@ -188,8 +188,12 @@ export function RecordHeader({
      draw both. Floating, the pill holds the actions AND Save / Discard: the rail keeps the
      rest. */
   const modern = useViewStyle(look) === "modern";
+  /* In compact (a peek) there is no rail to hold them: the dock floats at the bottom of the
+     drawer in either style. Dropping them with the rail left a previewed record with no
+     actions — and, edited, with no way to save. */
+  const asked = dock?.placement ?? (modern ? "bottom" : "rail");
   const dockWhere =
-    dock === undefined ? undefined : (dock.placement ?? (modern ? "bottom" : "rail"));
+    dock === undefined ? undefined : d === "compact" && asked === "rail" ? "bottom" : asked;
   const docked = dockWhere === "top" || dockWhere === "bottom";
   const railDirty = floating || docked ? undefined : dirty;
   /* ONE PILL PER SCREEN (see `DockHost`): floating at the bottom, the record's pill is the
@@ -232,8 +236,11 @@ export function RecordHeader({
 
   /* In compact the rail goes away ENTIRELY, and it is not for room: in a
      preview, the breadcrumbs and the pager belong to the surface that opened it
-     —the list behind is still there— and the actions are already in the
-     drawer's header. A rail inside another rail is two bars saying where I am.
+     —the list behind is still there—. A rail inside another rail is two bars
+     saying where I am. What the rail held for the RECORD does not go with it:
+     its actions as data (`Record.Dock`) float at the bottom of the drawer, and
+     Save / Discard too (`DirtyBar`). Actions drawn by hand (`Record.Actions`)
+     are the application's to place, in the drawer's own strip (`Peek actions`).
 
      The state does survive: it moves to the sheet, below the title. It is the
      only thing in the rail that belongs to the RECORD and not to my position in
@@ -728,7 +735,11 @@ export function RecordHeader({
       {thumb === null ? null : (
         <ThumbBar mode={thumb} dirty={railDirty} primaries={primaries} />
       )}
-      {floating && !docked ? <DirtyBar dirty={dirty} saved={saved} /> : null}
+      {/* Save / Discard float when the form style says so — and in compact, where the rail
+          that would hold them is not drawn. */}
+      {(floating || d === "compact") && !docked ? (
+        <DirtyBar dirty={dirty} saved={saved} />
+      ) : null}
       {dock === undefined || !hosting ? null : given ? (
         /* Given away: an empty band where the taker draws its pill. */
         <DockBand ref={setSlot} placement="bottom" />

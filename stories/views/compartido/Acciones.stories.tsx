@@ -1,8 +1,10 @@
 import {
   ActionDock,
+  DataField,
   Field,
   List,
   Pagination,
+  Peek,
   Record,
   SearchBar,
   SearchField,
@@ -23,10 +25,11 @@ import {
 import { useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
+import { STAGES } from "../../support/erp";
 import { ORDER_COUNTERS as COUNTERS } from "../../support/erp-lists";
 import type { Item } from "../lista/shared";
 import { FACETAS, filaDe, FILTROS, ITEMS, ORDENABLES, useLista } from "../lista/shared";
-import { invoiceActions } from "./shared";
+import { INVOICE, invoiceActions, REFERENCE } from "./shared";
 
 const meta: Meta = {
   /* Screens a person works on: one primary action, and a second pass in dark (vitest). */
@@ -439,4 +442,86 @@ export const EnUnaColeccionTradicional: Story = {
     await expect(canvas.getByRole("toolbar", { name: "Acciones del equipo" })).toBeVisible();
     await expect(canvasElement.querySelector('[data-ui="dock"]')).toBeNull();
   },
+};
+
+/* An invoice previewed beside the list it came from: compact, no rail. */
+function FacturaEnVistaPrevia() {
+  const [reference, setReference] = useState(REFERENCE);
+  const [kept, setKept] = useState(REFERENCE);
+  const [last, setLast] = useState("—");
+  return (
+    <div className="relative h-dvh bg-ground">
+      <Peek open title={INVOICE.number} subtitle={INVOICE.customer} onClose={() => {}}>
+        <Record
+          identity={{ title: INVOICE.number, tag: { label: "Publicada", tone: "info" } }}
+          {...(reference === kept
+            ? {}
+            : {
+                dirty: {
+                  changes: 1,
+                  saving: false,
+                  onDiscard: () => setReference(kept),
+                  onSave: () => setKept(reference),
+                },
+              })}
+        >
+          <Record.Rail>
+            <Record.Dock actions={invoiceActions(setLast)} label="Acciones de la factura" />
+            <Record.Status stages={STAGES} current="posted" />
+          </Record.Rail>
+          <Record.Paper>
+            <Field label="Referencia del cliente">
+              <TextInput value={reference} onChange={setReference} />
+            </Field>
+            <DataField label="Última acción" value={last} />
+          </Record.Paper>
+        </Record>
+      </Peek>
+    </div>
+  );
+}
+
+/** In a preview the record's actions float at the bottom of the drawer, and a change there is
+ *  saved there — in either style. */
+async function previewKeepsItsActions(canvasElement: HTMLElement) {
+  const canvas = within(canvasElement);
+  const drawer = within(await canvas.findByRole("complementary"));
+  const dock = await drawer.findByRole("toolbar", { name: "Acciones de la factura" });
+  /* The drawer comes in with a fade: seen once it has. */
+  await waitFor(() =>
+    expect(within(dock).getByRole("button", { name: "Registrar pago" })).toBeVisible(),
+  );
+  await expect(dock.closest('[data-ui="dock"]')?.getAttribute("data-placement")).toBe(
+    "bottom",
+  );
+
+  await userEvent.type(drawer.getByRole("textbox", { name: "Referencia del cliente" }), "-B");
+  const save = await drawer.findByRole("button", { name: /Guardar/ });
+  await expect(save).toBeVisible();
+  await userEvent.click(save);
+  await waitFor(() =>
+    expect(drawer.getByRole("button", { name: "Registrar pago" })).toBeVisible(),
+  );
+}
+
+/**
+ * **Un registro en la vista previa** (#68): el cajón no tiene riel —las migas y el paginador son
+ * de la lista que quedó detrás—, pero las acciones del registro no se van con él: flotan abajo,
+ * en el cajón, y un cambio se guarda ahí mismo. Antes, en el estilo tradicional, la vista previa
+ * se quedaba sin acciones y un campo editado no tenía cómo guardarse.
+ */
+export const EnUnaVistaPrevia: Story = {
+  name: "En una vista previa · moderno",
+  render: () => (
+    <ViewStyleProvider value="modern">
+      <FacturaEnVistaPrevia />
+    </ViewStyleProvider>
+  ),
+  play: async ({ canvasElement }) => previewKeepsItsActions(canvasElement),
+};
+
+export const EnUnaVistaPreviaTradicional: Story = {
+  name: "En una vista previa · tradicional",
+  render: () => <FacturaEnVistaPrevia />,
+  play: async ({ canvasElement }) => previewKeepsItsActions(canvasElement),
 };
