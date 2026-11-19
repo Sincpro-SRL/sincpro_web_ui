@@ -12,13 +12,13 @@ import {
   SavedMark,
   useJustSaved,
 } from "@sincpro/web-ui/components/record/DirtyActions";
-import { type RecordStyle, useRecordStyle } from "@sincpro/web-ui/components/record/style";
 import { isPrimary, ThumbBar, thumbPlan } from "@sincpro/web-ui/components/record/ThumbBar";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { useFormStyle } from "@sincpro/web-ui/foundations/form";
 import { stickyTop, useStickyLayer } from "@sincpro/web-ui/foundations/sticky";
 import { SurfaceProvider } from "@sincpro/web-ui/foundations/surface";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
+import { useViewStyle, type ViewStyle } from "@sincpro/web-ui/foundations/viewStyle";
 import { Line } from "@sincpro/web-ui/primitives/block/Line";
 import { Tag } from "@sincpro/web-ui/primitives/tag/Tag";
 import type { LucideIcon } from "lucide-react";
@@ -166,8 +166,8 @@ export function RecordHeader({
    */
   dock?: RecordDockProps;
   /** How the record is drawn — `traditional` or `modern` (experimental). Absent, the
-   *  `RecordStyleProvider`'s. See `style.tsx`. */
-  look?: RecordStyle;
+   *  `ViewStyleProvider`'s. See `style.tsx`. */
+  look?: ViewStyle;
   /** The record body. It sits IN the paper with the title, so groups, tabs
    *  and the page are one white sheet on the ground — Odoo's `<sheet>`. */
   children?: ReactNode;
@@ -184,7 +184,7 @@ export function RecordHeader({
      buttons in `traditional`, the floating pill at the bottom in `modern`. The same `DockAction`s
      draw both. Floating, the pill holds the actions AND Save / Discard: the rail keeps the
      rest. */
-  const modern = useRecordStyle(look) === "modern";
+  const modern = useViewStyle(look) === "modern";
   const dockWhere =
     dock === undefined ? undefined : (dock.placement ?? (modern ? "bottom" : "rail"));
   const docked = dockWhere === "top" || dockWhere === "bottom";

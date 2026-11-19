@@ -273,15 +273,20 @@ export type ListChart<T> = {
  */
 export type ListDock = {
   /** What the list starts or does to the whole set — «Nuevo» (the primary), «Importar»,
-   *  «Exportar ▸» —, in the bar, in place of `List.Actions`. */
+   *  «Exportar ▸» —, in place of `List.Actions`. */
   actions?: readonly DockAction[];
   /** What is done to the CHOSEN rows — «Enviar», «Imprimir ▸», «Archivar». Give the list a
    *  `selection` too. */
   selection?: readonly DockAction[];
-  /** Where the chosen rows' pill goes: floating at the BOTTOM of the list (the default — the
-   *  search stays in the bar, under the thumb on a phone), or in the BAR in place of the search,
-   *  as a plain selection does. */
+  /** Where the actions go: the BAR's buttons, or ONE pill floating at the BOTTOM, centred — the
+   *  list's actions, and the chosen rows' while some are chosen. Absent, the view style decides
+   *  (`ViewStyleProvider`): `traditional` → `bar`, `modern` → `bottom`. */
+  placement?: "bar" | "bottom";
+  /** Where the chosen rows' actions go when it is not where `placement` puts them: the BAR in
+   *  place of the search, or floating at the BOTTOM while the search stays in the bar. */
   selectionPlacement?: "bottom" | "bar";
+  /** The pill's band — `chrome` (dark) or `canvas` (light) — or `bare`, the bar's buttons. By
+   *  default `bare` in the bar and `chrome` floating. */
   look?: DockLook;
   /** How many secondary actions each pill shows before «Más». */
   visible?: number;

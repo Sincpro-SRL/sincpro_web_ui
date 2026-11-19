@@ -1,6 +1,11 @@
 "use client";
 
-import { fillCopy, type UiCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import {
+  currentCopyLocale,
+  fillCopy,
+  type UiCopy,
+  useUiCopy,
+} from "@sincpro/web-ui/foundations/copy";
 import { FieldBoundary } from "@sincpro/web-ui/foundations/form";
 import {
   pathKey,
@@ -104,8 +109,46 @@ export function aggregateFormat<T>(
   column: DataColumn<T>,
 ): ((value: number) => string) | undefined {
   return column.aggregate !== undefined && IN_COLUMN_UNITS.has(column.aggregate)
-    ? column.format
+    ? columnFormat(column)
     : undefined;
+}
+
+/** How a number of the column is written: its `format`; else with its `decimals`, every number
+ *  with the same — «6.057,10» over «8.370,57», not «6.057,1»; else `undefined`, the locale's. */
+export function columnFormat<T>(
+  column: DataColumn<T>,
+  locale: string = currentCopyLocale(),
+): ((value: number) => string) | undefined {
+  if (column.format !== undefined) return column.format;
+  const digits = column.decimals;
+  return digits === undefined
+    ? undefined
+    : (value) =>
+        value.toLocaleString(locale, {
+          minimumFractionDigits: digits,
+          maximumFractionDigits: digits,
+        });
+}
+
+/**
+ * What a pile adds up to under one column: what whoever keeps the data summed (`Pile.totals`),
+ * else the column's aggregate over the rows — only when the pile holds ALL of its rows.
+ * `null` when the column declared no aggregate or the pile cannot say it.
+ *
+ * Exported for the sheet's bands, so a pile says the same total in the table and the sheet.
+ * Not public.
+ */
+export function pileAggregate<T extends object>(
+  column: DataColumn<T>,
+  pile: Pile<T>,
+): number | null {
+  if (column.aggregate === undefined) return null;
+  const told =
+    pile.totals?.[column.id] ??
+    (column.field === undefined ? undefined : pile.totals?.[column.field]);
+  if (told !== undefined) return told;
+  const inside = pile.piles.length === 0 ? pile.items : pileItems(pile.piles);
+  return inside.length < pile.count ? null : aggregateOf(column, inside);
 }
 
 /** An aggregate of a column, written — or the bare number when nothing says how. */
@@ -118,8 +161,8 @@ function aggregateLabel<T>(copy: UiCopy, column: DataColumn<T>, v: number): stri
   const n = v.toLocaleString(copy.locale);
   /* Raw, a sum of amounts read «78.752,9»: one decimal lost and no currency, under a
      column whose every cell says «Bs. 12.300,00». */
-  const amount = (fallback: string) =>
-    column.format === undefined ? fallback : column.format(v);
+  const format = columnFormat(column, copy.locale);
+  const amount = (fallback: string) => (format === undefined ? fallback : format(v));
   switch (column.aggregate ?? "count") {
     case "sum":
       return amount(n);
@@ -150,7 +193,11 @@ function raw(copy: UiCopy, v: string | number | boolean | null): string {
 function drawCell<T>(copy: UiCopy, column: DataColumn<T>, row: T): ReactNode {
   if (column.cell !== undefined) return column.cell(row);
   if (column.text !== undefined) return column.text(row);
-  return raw(copy, column.value(row));
+  const value = column.value(row);
+  /* A number is written the way the column writes its numbers — the same way its footer and
+     its piles write them —, so a cell, its pile and the total never disagree on decimals. */
+  const format = typeof value === "number" ? columnFormat(column, copy.locale) : undefined;
+  return format === undefined ? raw(copy, value) : format(value as number);
 }
 
 export interface DataColumn<T> {
@@ -202,6 +249,9 @@ export interface DataColumn<T> {
    * the number in the copy table's locale, as before.
    */
   format?: (value: number) => string;
+  /** How many decimals EVERY number of the column is written with — cells, piles, footer —
+   *  when it has no `format`: `2` writes «6.057,10» beside «8.370,57», not «6.057,1». */
+  decimals?: number;
   sortable?: boolean;
   /** Odoo: fields without `optional` cannot leave the view. When true, the
    *  column appears in the columns submenu and can be hidden. */
@@ -338,6 +388,8 @@ type Entry<T> =
       label: string;
       count: number;
       detail: string | undefined;
+      /** What each column adds up to in the pile, column by column (`null` = nothing to say). */
+      totals: readonly (number | null)[];
       open: boolean;
       toggle: (() => void) | undefined;
     }
@@ -346,8 +398,9 @@ type Entry<T> =
 
 /** The piles someone else counted, as the body draws them: open ones with what is inside,
  *  the deepest with its records and, when it holds fewer than it counts, its «show more». */
-function entriesOfPiles<T>(
+function entriesOfPiles<T extends object>(
   piles: readonly Pile<T>[],
+  columns: readonly DataColumn<T>[],
   keyOf: (item: T) => string,
   collapsed: readonly string[] | undefined,
   onToggle: ((key: string) => void) | undefined,
@@ -364,12 +417,16 @@ function entriesOfPiles<T>(
       label: pile.label,
       count: pile.count,
       detail: pile.detail,
+      totals: columns.map((column) => pileAggregate(column, pile)),
       open,
       toggle: onToggle === undefined ? undefined : () => onToggle(key),
     };
     if (!open) return [head];
     if (pile.piles.length > 0) {
-      return [head, ...entriesOfPiles(pile.piles, keyOf, collapsed, onToggle, onMore)];
+      return [
+        head,
+        ...entriesOfPiles(pile.piles, columns, keyOf, collapsed, onToggle, onMore),
+      ];
     }
     const foot = pileFoot(pile, onMore !== undefined);
     return [
@@ -610,7 +667,7 @@ export function DataTable<T extends object>({
      server, a list said «187» in rows and «12» in the table. */
   const entries: readonly Entry<T>[] =
     piles !== undefined
-      ? entriesOfPiles(piles, getRowId, collapsed, onGroupToggle, onMore)
+      ? entriesOfPiles(piles, columns, getRowId, collapsed, onGroupToggle, onMore)
       : shown.map((row): Entry<T> => {
           if (row.subRows.length === 0)
             return { kind: "row", id: row.id, item: row.original };
@@ -618,6 +675,12 @@ export function DataTable<T extends object>({
           const key = pathKey(path);
           const depth = path.length - 1;
           const level = levels?.find((one) => one.id === row.groupingColumnId);
+          /* The rows INSIDE, not the subgroups: `subRows` of a pile with levels below are the
+             piles of the next level. */
+          const inside = row
+            .getLeafRows()
+            .filter((leaf) => leaf.subRows.length === 0)
+            .map((leaf) => leaf.original);
           /* The pile's KEY —the engine's— and the label, which the level sets: they are two
              texts and only the second changes with the language. */
           const value = path[depth] ?? key;
@@ -627,11 +690,10 @@ export function DataTable<T extends object>({
             depth,
             level: level?.label,
             label: level === undefined ? value : level.labelOf(value),
-            /* The rows INSIDE, not the subgroups: `subRows` of a pile with levels
-               below are the piles of the next level, and counting them said «2» where there are
-               forty rows. */
-            count: row.getLeafRows().filter((leaf) => leaf.subRows.length === 0).length,
+            /* Counting the subgroups said «2» where there are forty rows. */
+            count: inside.length,
             detail: undefined,
+            totals: columns.map((column) => aggregateOf(column, inside)),
             open: collapsed === undefined ? row.getIsExpanded() : !collapsed.includes(key),
             toggle: () =>
               onGroupToggle === undefined ? row.toggleExpanded() : onGroupToggle(key),
@@ -665,6 +727,13 @@ export function DataTable<T extends object>({
     () => (totals ? columns.map((c) => aggregateOf(c, data)) : null),
     [totals, columns, data],
   );
+  /* A pile's row is split where the numbers start: its name spans the columns up to the
+     first one that sums, and from there each column says what the pile adds up to UNDER
+     itself — Odoo's grouped list. With no column that sums, the name spans the row. */
+  const firstSum = columns.findIndex((c) => c.aggregate !== undefined && c.numeric === true);
+  const lead = selecting ? 1 : 0;
+  const labelSpan = firstSum < 0 ? width : Math.max(1, lead + firstSum);
+  const sumsFrom = firstSum < 0 ? columns.length : labelSpan - lead;
   const all = leaves.length > 0 && leaves.every((id) => selected?.has(id) === true);
   const some = leaves.some((id) => selected?.has(id) === true);
 
@@ -766,8 +835,17 @@ export function DataTable<T extends object>({
               gap,
               /* The pile's row: it spans the whole width, says which value it groups by
                  and how many are inside — what makes it useful without opening it. */
-              <tr key={entry.id} {...windowed} className="border-b border-line bg-ground">
-                <td colSpan={width} className="px-3 py-1.5" style={indent}>
+              <tr
+                key={entry.id}
+                {...windowed}
+                data-ui="table.pile"
+                className="border-b border-line bg-ground"
+              >
+                <td
+                  colSpan={labelSpan}
+                  className="px-3 py-1.5 whitespace-nowrap"
+                  style={indent}
+                >
                   {entry.toggle === undefined ? (
                     <span className="inline-flex items-center gap-1.5 text-meta font-medium text-ink">
                       {head}
@@ -783,6 +861,20 @@ export function DataTable<T extends object>({
                     </button>
                   )}
                 </td>
+                {columns.slice(sumsFrom).map((c, i) => {
+                  const value = entry.totals[sumsFrom + i] ?? null;
+                  return (
+                    <td
+                      key={c.id}
+                      className={`px-3 py-1.5 text-meta font-semibold tabular-nums whitespace-nowrap text-ink ${
+                        c.numeric === true ? "text-right" : ""
+                      }`}
+                    >
+                      {value === null ? null : aggregateLabel(copy, c, value)}
+                    </td>
+                  );
+                })}
+                {firstSum < 0 || rowActions === undefined ? null : <td />}
               </tr>,
             ];
           }

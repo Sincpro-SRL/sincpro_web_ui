@@ -11,6 +11,7 @@ import {
   aggregateOf,
   aggregateText,
   type DataColumn,
+  pileAggregate,
 } from "@sincpro/web-ui/primitives/table/DataTable";
 import type { ReportColumn, ReportRow } from "@sincpro/web-ui/primitives/table/ReportTable";
 import type { SheetColumn } from "@sincpro/web-ui/primitives/table/SheetTable";
@@ -147,7 +148,6 @@ export function sheetRowsOf<T extends object>(
   const walk = (list: readonly Pile<T>[]) => {
     for (const pile of list) {
       const open = isOpen(pile);
-      const inside = pile.piles.length === 0 ? pile.items : pileItems(pile.piles);
       out.push({
         band: {
           field: pile.field,
@@ -164,7 +164,9 @@ export function sheetRowsOf<T extends object>(
              `format`, so the bucket does not say «78752,9» under «Bs.». */
           total: (column: SheetColumn) => {
             const declared = columns?.find((one) => one.id === column.id);
-            const value = declared === undefined ? null : aggregateOf(declared, inside);
+            /* What the server summed, else the rows' sum when the pile holds them all — the
+               same number the table's pile row says (`pileAggregate`). */
+            const value = declared === undefined ? null : pileAggregate(declared, pile);
             return declared === undefined || value === null
               ? null
               : aggregateText(declared, value);

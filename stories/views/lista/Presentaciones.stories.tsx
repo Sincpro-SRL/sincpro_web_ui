@@ -226,6 +226,27 @@ export const Tabla: Story = {
   render: () => <Presentacion present="table" />,
 };
 
+/**
+ * **Tabla agrupada**: cada grupo dice lo que suma DEBAJO de su columna — «estado pedido 5 ·
+ * 185.200,50 · máx 5» —, como la lista agrupada de Odoo, escrito igual que el pie. Si el grupo
+ * lo cuenta el servidor, trae sus sumas (`Pile.totals`); si no, la tabla suma las filas cuando
+ * las tiene todas. Los montos van con dos decimales, en las celdas, en los grupos y en el pie
+ * (`decimals: 2`).
+ */
+export const TablaAgrupada: Story = {
+  render: () => <Presentacion present="table" groupBy={["stage"]} />,
+  play: async ({ canvasElement }) => {
+    const piles = [...canvasElement.querySelectorAll('[data-ui="table.pile"]')];
+    await expect(piles.length).toBe(3);
+    const pedido = piles.find((row) => /pedido/.test(row.textContent ?? ""));
+    // The pile's sum, under «total (Bs.)», and its max under «líneas».
+    await expect(pedido?.textContent).toContain("185.200,50");
+    await expect(pedido?.textContent).toContain("máx 5");
+    // Every amount with its two decimals: a cell, not only the total.
+    await expect(within(canvasElement).getByText("58.000,00")).toBeInTheDocument();
+  },
+};
+
 /** Tablero: una tarjeta por registro. */
 export const Tablero: Story = {
   render: () => <Presentacion present="board" />,

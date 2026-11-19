@@ -43,6 +43,7 @@ import {
 } from "@sincpro/web-ui/foundations/grouping";
 import { type Pivot, pivotFrom, pivotIsEmpty } from "@sincpro/web-ui/foundations/pivot";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
+import { useViewStyle } from "@sincpro/web-ui/foundations/viewStyle";
 import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { Empty, Failed, Skeleton } from "@sincpro/web-ui/primitives/notice/Notice";
 import { PivotTable } from "@sincpro/web-ui/primitives/table/PivotTable";
@@ -204,6 +205,7 @@ export function ListView<T extends object>({
   const surface = embedded ? undefined : requestedSurface;
 
   const density = useDensity();
+  const viewStyle = useViewStyle();
   const copy = useUiCopy();
   const loading = state?.loading === true;
   const refreshing = state?.refreshing === true && !loading;
@@ -309,27 +311,31 @@ export function ListView<T extends object>({
       </>
     );
 
-  /* THE DOCK (experimental): what the list starts, as a pill in the bar; what is done to the
-     chosen rows, as a pill floating at the bottom while some are chosen — the search stays in
-     the bar —, or in the bar in place of the search. */
-  const actions =
-    dock?.actions === undefined ? (
-      written
-    ) : (
-      <ActionDock
-        placement="inline"
-        actions={dock.actions}
-        {...(dock.look === undefined ? {} : { look: dock.look })}
-        {...(dock.visible === undefined ? {} : { visible: dock.visible })}
-        {...(dock.label === undefined ? {} : { label: dock.label })}
-      />
-    );
+  /* THE DOCK (experimental): the list's actions and what is done to the chosen rows, from the
+     same data. Where they go is the view style's: `traditional` draws them as the bar's buttons
+     (the primary first and gold, «⋯» with the rest), and the chosen rows' in the bar in place of
+     the search; `modern` floats ONE pill at the bottom, centred, as a record does — the list's
+     actions, and while rows are chosen, what is done to them instead («3 elegidas ✕ · …»). */
+  const dockAt = dock?.placement ?? (viewStyle === "modern" ? "bottom" : "bar");
   const chosen = selection?.count ?? 0;
   const selectionDock =
     dock?.selection === undefined || selection === undefined || chosen === 0
       ? undefined
       : dock.selection;
-  const floatsChosen = selectionDock !== undefined && dock?.selectionPlacement !== "bar";
+  const floatsChosen =
+    selectionDock !== undefined && (dock?.selectionPlacement ?? dockAt) === "bottom";
+  const listPill =
+    dock?.actions === undefined ? undefined : (
+      <ActionDock
+        placement={dockAt === "bottom" ? "bottom" : "inline"}
+        actions={dock.actions}
+        look={dock.look ?? (dockAt === "bottom" ? "chrome" : "bare")}
+        {...(dock.visible === undefined ? {} : { visible: dock.visible })}
+        {...(dock.label === undefined ? {} : { label: dock.label })}
+      />
+    );
+  const actions =
+    dock?.actions === undefined ? written : dockAt === "bar" ? listPill : undefined;
   const chosenLead =
     selection === undefined ? null : (
       <DockCount
@@ -344,11 +350,13 @@ export function ListView<T extends object>({
         placement={floatsChosen ? "bottom" : "inline"}
         actions={selectionDock}
         lead={chosenLead}
-        {...(dock?.look === undefined ? {} : { look: dock.look })}
+        look={dock?.look ?? (floatsChosen ? "chrome" : "bare")}
         {...(dock?.visible === undefined ? {} : { visible: dock.visible })}
         label={dock?.selectionLabel ?? copy.selection.more}
       />
     );
+  /* At the bottom there is ONE pill: the chosen rows' while some are chosen, else the list's. */
+  const floating = floatsChosen ? chosenPill : dockAt === "bottom" ? listPill : null;
 
   /* Embedded, the line is drawn only if it has something to OFFER: a count alone repeats
      what the rows (and the footer) already say. */
@@ -841,7 +849,7 @@ export function ListView<T extends object>({
         </div>
       )}
 
-      {floatsChosen ? chosenPill : null}
+      {floating}
       {children}
     </div>
   );

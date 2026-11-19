@@ -28,7 +28,6 @@ import {
   type OpenTarget,
   Picker,
   Record,
-  RecordStyleProvider,
   RelationValue,
   SearchField,
   Select,
@@ -44,6 +43,7 @@ import {
   type TopMenu,
   type TotalsProps,
   useToast,
+  ViewStyleProvider,
   writeANote,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
@@ -1325,7 +1325,7 @@ function Page({
   return docked === false ? (
     page
   ) : (
-    <RecordStyleProvider value="modern">{page}</RecordStyleProvider>
+    <ViewStyleProvider value="modern">{page}</ViewStyleProvider>
   );
 }
 
@@ -1373,7 +1373,7 @@ export const Borrador: Story = {
 };
 
 /**
- * **Estilo moderno** (experimental — `RecordStyleProvider value="modern"`): la MISMA factura, con
+ * **Estilo moderno** (experimental — `ViewStyleProvider value="modern"`): la MISMA factura, con
  * el mismo código. Las migas son el título de la página y el paginador va en su línea; un escalón
  * abajo, los contadores y el estado en pasos; y las acciones flotan en una píldora abajo, al
  * centro — «Registrar pago» dorada y última, «Enviar» e «Imprimir ▾» a la vista, en «Más ⋯» la

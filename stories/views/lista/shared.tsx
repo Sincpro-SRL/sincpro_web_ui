@@ -248,6 +248,7 @@ export const COLUMNAS = [
     id: "total",
     header: "total (Bs.)",
     value: (d: Item) => d.total,
+    decimals: 2,
     numeric: true as const,
     aggregate: "sum" as const,
   },
@@ -268,8 +269,19 @@ export const COLUMNAS = [
  * lo que estas historias tienen que mostrar es que **la barra es la misma en las
  * seis**.
  */
-export function Presentacion({ present }: { present: ListPresent }) {
+export function Presentacion({
+  present,
+  groupBy,
+}: {
+  present: ListPresent;
+  /** Opens grouped by these fields, until someone groups by others. */
+  groupBy?: readonly string[];
+}) {
   const l = useLista();
+  const levels =
+    l.grouping.levels.length > 0 || groupBy === undefined
+      ? l.grouping.levels
+      : groupBy.map((field) => ({ field }));
   return (
     <div className="bg-ground p-8">
       <div className="@container overflow-hidden rounded-box border border-line-strong bg-surface">
@@ -277,7 +289,7 @@ export function Presentacion({ present }: { present: ListPresent }) {
           items={ITEMS}
           keyOf={(d) => d.id}
           group={{
-            levels: l.grouping.levels,
+            levels,
             of: pileOf,
             collapsed: l.tree.collapsed,
             onToggle: l.tree.toggle,
@@ -379,8 +391,8 @@ export const COLUMNAS_CRUDAS: SheetColumn[] = [
   { id: "referencia", header: "referencia", type: "identificador" },
   { id: "agencia", header: "agencia", type: "categoría" },
   { id: "canal", header: "canal", type: "categoría" },
-  { id: "debe", header: "debe", type: "decimal", numeric: true },
-  { id: "haber", header: "haber", type: "decimal", numeric: true },
+  { id: "debe", header: "debe", type: "decimal", numeric: true, decimals: 2 },
+  { id: "haber", header: "haber", type: "decimal", numeric: true, decimals: 2 },
 ];
 
 export const CRUDAS: Cruda[] = Array.from({ length: 40_000 }, (_, i) => ({

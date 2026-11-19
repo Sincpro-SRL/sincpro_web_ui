@@ -6,7 +6,6 @@ import {
   type DockAction,
   Field,
   Record,
-  RecordStyleProvider,
   SheetGroup,
   SheetGroups,
   Table,
@@ -15,6 +14,7 @@ import {
   Th,
   THead,
   Tr,
+  ViewStyleProvider,
 } from "@sincpro/web-ui";
 import {
   Ban,
@@ -132,7 +132,7 @@ export function DockedInvoice(args: DockArgs) {
   const [last, setLast] = useState("—");
   const changed = reference !== kept;
   return (
-    <RecordStyleProvider value={args.style}>
+    <ViewStyleProvider value={args.style}>
       <div className="min-h-dvh bg-ground">
         <Record
           identity={{
@@ -227,7 +227,7 @@ export function DockedInvoice(args: DockArgs) {
           </Record.Paper>
         </Record>
       </div>
-    </RecordStyleProvider>
+    </ViewStyleProvider>
   );
 }
 

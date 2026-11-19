@@ -150,6 +150,7 @@ export const OrdenarPorVarios: Story = {
                   id: "total",
                   header: "total (Bs.)",
                   value: (d: Item) => d.total,
+                  decimals: 2,
                   numeric: true,
                 },
               ]}

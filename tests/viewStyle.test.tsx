@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 
 import { Breadcrumb } from "@sincpro/web-ui/components/record/Breadcrumb";
 import { StatusBar } from "@sincpro/web-ui/components/record/StatusBar";
-import { RecordStyleProvider, useRecordStyle } from "@sincpro/web-ui/components/record/style";
+import { useViewStyle, ViewStyleProvider } from "@sincpro/web-ui/foundations/viewStyle";
 import { renderToStaticMarkup } from "react-dom/server";
 import { test } from "vitest";
 
@@ -46,22 +46,22 @@ test("las migas grandes ponen el lugar actual al tamaño del título", () => {
 
 test("el estilo se elige una vez alrededor de la app, y un registro puede decir el suyo", () => {
   function Says({ own }: { own?: "traditional" | "modern" }) {
-    return <>{useRecordStyle(own)}</>;
+    return <>{useViewStyle(own)}</>;
   }
   assert.equal(renderToStaticMarkup(<Says />), "traditional");
   assert.equal(
     renderToStaticMarkup(
-      <RecordStyleProvider value="modern">
+      <ViewStyleProvider value="modern">
         <Says />
-      </RecordStyleProvider>,
+      </ViewStyleProvider>,
     ),
     "modern",
   );
   assert.equal(
     renderToStaticMarkup(
-      <RecordStyleProvider value="modern">
+      <ViewStyleProvider value="modern">
         <Says own="traditional" />
-      </RecordStyleProvider>,
+      </ViewStyleProvider>,
     ),
     "traditional",
   );

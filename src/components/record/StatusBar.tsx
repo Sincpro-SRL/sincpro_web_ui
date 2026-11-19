@@ -7,7 +7,7 @@ import type { Surface } from "@sincpro/web-ui/foundations/types";
 import { cn, focusRing, tv } from "@sincpro/web-ui/foundations/variants";
 import { MenuList } from "@sincpro/web-ui/primitives/menu/Menu";
 import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
-import { Check, ChevronDown, CircleAlert } from "lucide-react";
+import { Check, ChevronDown, CircleAlert, type LucideIcon } from "lucide-react";
 import { Button as AriaButton, MenuTrigger, Radio, RadioGroup } from "react-aria-components";
 
 /* ---------------------------------------------------------------- *
@@ -17,6 +17,14 @@ import { Button as AriaButton, MenuTrigger, Radio, RadioGroup } from "react-aria
 export interface Stage {
   id: string;
   label: string;
+  /** Drawn before its name in every widget — a truck for «En camino», a seal for «Firmada».
+   *  On the failed stage the alert takes its place: a failure is never hidden behind an icon. */
+  icon?: LucideIcon;
+  /** What the stage means, said when it is pointed at: «Publicada en el SIAT, ya no se edita». */
+  hint?: string;
+  /** How many are there — in a list grouped by stage, «Por cobrar 12». Zero is drawn: it is an
+   *  answer too. */
+  count?: number;
 }
 
 /** The track the stages sit in. Same rail as the other grouped controls on each
@@ -131,10 +139,11 @@ const stageStyles = tv({
 /**
  * How the state is drawn — the same stages, four widgets:
  *
- *     track     Odoo's statusbar: segments of one well, the current one filled. The default.
+ *     track     Odoo's statusbar: segments of one well, the current one filled. The default, in
+ *               both styles.
  *     steps     dots joined by a line, the current one ringed.
  *     progress  a segmented bar with each stage's name under its segment: how far it is, at a
- *               glance, and where — the record's modern style.
+ *               glance, and where.
  *     pill      ONE chip, «● Publicada · 2/3», that unfolds the stages when they can be chosen:
  *               the state where room is short.
  */
@@ -165,9 +174,8 @@ export function StatusBar({
   layout?: "trail" | "stacked";
   /**
    * `track` (the default) is Odoo's statusbar: segments of one well, the current one filled.
-   * `steps` is quieter: dots joined by a line, the current one ringed in its colour — the
-   * record's «modern» style, where the state sits on the ground beside the counters and a
-   * filled well was one more box among them.
+   * `steps`, `progress` and `pill` are the other widgets (`StatusLook`). Every one draws a
+   * stage's `icon`, `hint` and `count`.
    */
   look?: StatusLook;
 }) {
@@ -187,20 +195,35 @@ export function StatusBar({
   /** The check, the alert, or nothing. Stacked keeps the slot even when it is
    *  empty, so the labels line up in a column; side by side an empty slot would
    *  only be a gap. */
-  function mark(step: "done" | "current" | "next") {
+  function mark(stage: Stage, step: "done" | "current" | "next") {
     const icon = "size-(--size-icon-sm) shrink-0";
-    if (step === "done") return <Check className={icon} strokeWidth={2} aria-hidden />;
     if (step === "current" && failed) {
       return <CircleAlert className={icon} strokeWidth={2} aria-hidden />;
     }
+    /* The stage's own icon says it better than the check: done is still read in its ink. */
+    if (stage.icon !== undefined) {
+      const Icon = stage.icon;
+      return <Icon className={icon} strokeWidth={2} aria-hidden />;
+    }
+    if (step === "done") return <Check className={icon} strokeWidth={2} aria-hidden />;
     return stacked ? <span className={icon} aria-hidden /> : null;
+  }
+
+  /** How many are on the stage, after its name — quieter than the name. */
+  function countOf(stage: Stage) {
+    return stage.count === undefined ? null : (
+      <span className="shrink-0 tabular-nums opacity-70">
+        {stage.count.toLocaleString(copy.locale)}
+      </span>
+    );
   }
 
   function content(stage: Stage, step: "done" | "current" | "next", viewed: boolean) {
     return (
       <>
-        {mark(step)}
+        {mark(stage, step)}
         <span
+          title={stage.hint}
           aria-current={step === "current" && selectable ? "step" : undefined}
           className={cn(
             "min-w-0 truncate",
@@ -215,6 +238,7 @@ export function StatusBar({
         >
           {stage.label}
         </span>
+        {countOf(stage)}
       </>
     );
   }
@@ -237,7 +261,15 @@ export function StatusBar({
     const said = `${copy.record.status}: ${now?.label ?? current} ${at + 1}/${stages.length}`;
     const chip = (
       <>
-        <span aria-hidden className={`size-2 shrink-0 rounded-pill ${dot}`} />
+        {now?.icon !== undefined && !failed ? (
+          <now.icon
+            className={`size-(--size-icon-sm) shrink-0 ${chrome ? "text-chrome-link" : "text-primary"}`}
+            strokeWidth={2}
+            aria-hidden
+          />
+        ) : (
+          <span aria-hidden className={`size-2 shrink-0 rounded-pill ${dot}`} />
+        )}
         <span className="font-semibold">{now?.label ?? current}</span>
         <span className={`tabular-nums ${chrome ? "text-chrome-muted" : "text-muted"}`}>
           {`${at + 1}/${stages.length}`}
@@ -295,6 +327,10 @@ export function StatusBar({
                 options: stages.map((stage) => ({
                   id: stage.id,
                   label: stage.label,
+                  ...(stage.icon === undefined ? {} : { icon: stage.icon }),
+                  ...(stage.count === undefined
+                    ? {}
+                    : { hint: stage.count.toLocaleString(copy.locale) }),
                   checked: stage.id === (selected ?? current),
                 })),
               },
@@ -347,12 +383,17 @@ export function StatusBar({
               viewed && "underline decoration-2 underline-offset-4",
             )}
           >
-            {where === "done" ? (
-              <Check className="size-3 shrink-0" strokeWidth={2.5} aria-hidden />
-            ) : where === "current" && failed ? (
+            {where === "current" && failed ? (
               <CircleAlert className="size-3 shrink-0" strokeWidth={2.5} aria-hidden />
+            ) : stage.icon !== undefined ? (
+              <stage.icon className="size-3 shrink-0" strokeWidth={2.5} aria-hidden />
+            ) : where === "done" ? (
+              <Check className="size-3 shrink-0" strokeWidth={2.5} aria-hidden />
             ) : null}
-            <span className="min-w-0 truncate">{stage.label}</span>
+            <span className="min-w-0 truncate" title={stage.hint}>
+              {stage.label}
+            </span>
+            {countOf(stage)}
           </span>
         </>
       );
@@ -444,8 +485,15 @@ export function StatusBar({
               strokeWidth={2}
               aria-hidden
             />
+          ) : stage.icon !== undefined ? (
+            <stage.icon
+              className={`size-(--size-icon-sm) shrink-0 ${labelOf(where)}`}
+              strokeWidth={2}
+              aria-hidden
+            />
           ) : null}
           <span
+            title={stage.hint}
             aria-current={where === "current" && selectable ? "step" : undefined}
             className={cn(
               "min-w-0 truncate text-meta whitespace-nowrap",
@@ -455,6 +503,9 @@ export function StatusBar({
           >
             {stage.label}
           </span>
+          {stage.count === undefined ? null : (
+            <span className={`text-meta ${labelOf(where)}`}>{countOf(stage)}</span>
+          )}
         </>
       );
     };

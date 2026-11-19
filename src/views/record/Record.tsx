@@ -21,8 +21,11 @@ import {
 import { RecordRibbon } from "@sincpro/web-ui/components/record/RecordRibbon";
 import { RecordSkeleton } from "@sincpro/web-ui/components/record/RecordSkeleton";
 import { SmartButton, SmartButtons } from "@sincpro/web-ui/components/record/SmartButtons";
-import { type Stage, StatusBar } from "@sincpro/web-ui/components/record/StatusBar";
-import { type RecordStyle, useRecordStyle } from "@sincpro/web-ui/components/record/style";
+import {
+  type Stage,
+  StatusBar,
+  type StatusLook,
+} from "@sincpro/web-ui/components/record/StatusBar";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import {
@@ -34,6 +37,7 @@ import {
   slotOf,
 } from "@sincpro/web-ui/foundations/slots";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
+import { useViewStyle, type ViewStyle } from "@sincpro/web-ui/foundations/viewStyle";
 import {
   createNoteRegistry,
   NoteRegistryContext,
@@ -178,6 +182,8 @@ type StatusProps = {
   failed?: boolean;
   /** The stages can be chosen: pressing one moves the record there (a CRM's pipeline). */
   onSelect?: (id: string) => void;
+  /** Which widget draws it — `track`, Odoo's, by default in both styles (`StatusLook`). */
+  look?: StatusLook;
   /** The status escape hatch, for whatever is neither of the two. */
   children?: ReactNode;
 };
@@ -342,8 +348,8 @@ export type RecordProps = {
    */
   placement?: "page" | "card";
   /** How this record is drawn — `traditional` or `modern` (experimental). Absent, the
-   *  `RecordStyleProvider`'s: an application chooses once. */
-  look?: RecordStyle;
+   *  `ViewStyleProvider`'s: an application chooses once. */
+  look?: ViewStyle;
   children?: ReactNode;
 };
 
@@ -360,7 +366,7 @@ export function Record({
   look: ownLook,
   children,
 }: RecordProps) {
-  const look = useRecordStyle(ownLook);
+  const look = useViewStyle(ownLook);
   const d = useDensity();
   const copy = useUiCopy();
 
@@ -409,8 +415,7 @@ export function Record({
             current={status.current ?? status.stages[0]?.id ?? ""}
             failed={status.failed ?? false}
             surface={surface}
-            /* The modern style's state: how far, at a glance — a segmented bar, not a filled well. */
-            {...(look === "modern" ? { look: "progress" as const } : {})}
+            {...(status.look === undefined ? {} : { look: status.look })}
             {...(status.onSelect === undefined ? {} : { onSelect: status.onSelect })}
           />
         )}

@@ -268,7 +268,7 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card`, `board.tile`,
 `board.stat`, `board.stat.value`, `activity.changes`, `file-list`, `file-list.file`, `metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
 `search.panel`, `search.suggestions`, `search.suggestion`, `search.record`, `search.advanced`,
-`search.keys`, `search-entry`, `search-entry.keys`, `table`,
+`search.keys`, `search-entry`, `search-entry.keys`, `table`, `table.pile`,
 `table.head`, `topbar`, `topbar.brand`, `topbar.menus`, `topbar.actions`, `topbar.user`,
 `frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`, `sidebar.brand`,
 `sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
@@ -354,31 +354,46 @@ What can be extended, and how:
 | Your own builder                                 | `SelectionTree`, `RuleValue`, `liftRecords`, `recordsFilter`, `recordOps`                    |
 | The words of an operator («no está establecido») | the copy table: `ops`                                                                        |
 
-#### Experimental: one API, two record styles (`RecordStyleProvider`)
+#### A group says what it adds up to, under each column
 
-The record is written once — `Record.Dock` with its actions as data — and the application's
-style decides how it is drawn, the way it chooses its density:
+A table grouped by a field draws each pile's row like Odoo's grouped list: its name, how many,
+and under every column that declared an `aggregate` what the pile adds up to — written like
+the footer («185.200,50», «máx 5»). Whoever counts the piles (the server's grouped read) sends
+the sums in `Pile.totals`, by column id; without them the table sums the rows when the pile
+holds all of them — the sum of one page of a pile of thousands looks like its total and is
+not. The sheet's bands say the same numbers.
+
+A column's numbers are written ONE way, in its cells, its piles and its footer: its `format`,
+else its `decimals` (`DataColumn.decimals`, `SheetColumn.decimals`): `2` writes «6.057,10»
+under «8.370,57», not «6.057,1».
+
+#### Experimental: one API, two styles (`ViewStyleProvider`)
+
+A record and a list are written once — `Record.Dock` and `List.Dock` with their actions as
+data — and the application's style decides how they are drawn, the way it chooses its density:
 
 ```tsx
 // "traditional" is the default; a single Record can say its own with `look`.
-<RecordStyleProvider value="modern">
+<ViewStyleProvider value="modern">
   <App />
-</RecordStyleProvider>
+</ViewStyleProvider>
 ```
 
-- **traditional**: the ERP rail — a band with the trail, the counters and the pager; the dock's
-  actions as the rail's buttons (the primary first and gold, «⋯» with the rest), the state as
-  Odoo's filled well.
+- **traditional**: the ERP rail — a band with the trail, the counters and the pager; the
+  actions as the bar's buttons (the primary first and gold, «⋯» with the rest), in a record
+  and in a list alike.
 - **modern**: the trail is the page's heading (`Breadcrumb size="lg"`) with the pager as a
   translucent primary pill on its line (`Pager look="pill"`); a step down, the counters as
-  links (`SmartButton look="link"`) and the state as a segmented progress bar
-  (`StatusBar look="progress"`); the band is the ground; and the actions float in a pill at
-  the bottom, centred. `placement="top"` rests the pill in the rail and floats it at the top
-  on scroll.
+  links (`SmartButton look="link"`) and the state; the band is the ground; and the actions
+  float in ONE pill at the bottom, centred — a record's, and a list's (which turns into what is
+  done to the chosen rows while some are chosen). `placement="top"` rests a record's pill in
+  the rail and floats it at the top on scroll.
 
-`StatusBar look` has four widgets — `track` (Odoo's), `progress`, `steps` and `pill` (one chip
-that unfolds the stages) —, side by side in `3 · Componentes/Registro/Riel, estado y contadores`, with the two pagers and
-the two kinds of counter.
+The state is Odoo's track in both styles. Each stage can carry an `icon`, a `hint` (said when
+pointed at) and a `count` (how many are there, in a list grouped by stage); `StatusBar look`
+has the other widgets — `progress`, `steps` and `pill` (one chip that unfolds the stages) —,
+side by side in `3 · Componentes/Registro/Riel, estado y contadores` with the two pagers and
+the two kinds of counter. `Record.Status look` picks one.
 
 #### Keyboard shortcuts that run
 
@@ -427,10 +442,10 @@ Descartar · Guardar».
 </Record.Rail>
 ```
 
-A list says the same with `List.Dock`:
-what it starts is a pill in its bar, and what is done to the chosen rows floats at the bottom
-while some are chosen — «2 elegidos ✕ · Enviar · Imprimir ▾ · ⋯» — and the search stays in the
-bar (`selectionPlacement="bar"` puts it in the bar instead, as a plain selection does).
+A list says the same with `List.Dock` — `actions` (what it starts) and `selection` (what is
+done to the chosen rows). `placement` is `bar` (the bar's buttons; the chosen rows' in place of
+the search) or `bottom` (ONE floating pill, the chosen rows' while some are chosen); absent,
+the view style decides. `selectionPlacement` overrides where the chosen rows' actions go.
 
 `ActionDock` is the pill alone (`placement="inline"`, or sticky `top` / `bottom` anywhere, with
 a `lead` before the actions) and `dockPlan` the rule, for a screen that is neither.

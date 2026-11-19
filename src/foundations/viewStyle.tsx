@@ -3,7 +3,7 @@
 import { createContext, type ReactNode, useContext } from "react";
 
 /* ==================================================================== *
- *  THE RECORD STYLE — how a whole application draws its records. Set once. (experimental)
+ *  THE VIEW STYLE — how a whole application draws its views. Set once. (experimental)
  *
  *  traditional  the rail as an ERP has it: a band on top with the trail, the counters and the
  *               pager; the actions on its second row with the state. The default.
@@ -12,27 +12,28 @@ import { createContext, type ReactNode, useContext } from "react";
  *               not a white strip; and the actions float in a pill at the bottom of the
  *               screen (`Record.Dock`).
  *
- *  The SAME API draws both: `Record.Dock`'s actions are the rail's buttons in `traditional` and
- *  the floating pill in `modern`. An application chooses its look the way it chooses its
- *  density — once, around the app —, and a record can say its own (`Record look`).
+ *  The SAME API draws both: `Record.Dock`'s and `List.Dock`'s actions are the bar's buttons in
+ *  `traditional` and ONE floating pill at the bottom in `modern` — a record and a list alike.
+ *  An application chooses its look the way it chooses its density — once, around the app —,
+ *  and a record can say its own (`Record look`).
  * ==================================================================== */
 
-export type RecordStyle = "traditional" | "modern";
+export type ViewStyle = "traditional" | "modern";
 
-const Ctx = createContext<RecordStyle>("traditional");
+const Ctx = createContext<ViewStyle>("traditional");
 
-export function RecordStyleProvider({
+export function ViewStyleProvider({
   value,
   children,
 }: {
-  value: RecordStyle;
+  value: ViewStyle;
   children: ReactNode;
 }) {
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 
 /** The style in force: the record's own, else the provider's. */
-export function useRecordStyle(own?: RecordStyle): RecordStyle {
+export function useViewStyle(own?: ViewStyle): ViewStyle {
   const inherited = useContext(Ctx);
   return own ?? inherited;
 }

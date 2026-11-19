@@ -24,6 +24,13 @@ export {
   DensityProvider,
   useDensity,
 } from "@sincpro/web-ui/foundations/density";
+/* How a whole application draws its views — `traditional` or `modern` (experimental): the
+   record's rail and the actions of a record and of a list. Set once, like the density. */
+export {
+  useViewStyle,
+  type ViewStyle,
+  ViewStyleProvider,
+} from "@sincpro/web-ui/foundations/viewStyle";
 /* A CONTROL'S CONTRACT — the ids its `Field` gives it and whether it is viewed or written. The
    package's controls and the application's speak it alike. */
 export {

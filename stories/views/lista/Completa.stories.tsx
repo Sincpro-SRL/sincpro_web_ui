@@ -209,6 +209,7 @@ export const Catalogo: Story = {
                   id: "total",
                   header: "total (Bs.)",
                   value: (d: Item) => d.total,
+                  decimals: 2,
                   numeric: true,
                   aggregate: "sum",
                   optional: true,

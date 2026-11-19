@@ -32,9 +32,3 @@ export {
   StatusBar,
   type StatusLook,
 } from "@sincpro/web-ui/components/record/StatusBar";
-/* How a whole application draws its records — `traditional` or `modern` (experimental). */
-export {
-  type RecordStyle,
-  RecordStyleProvider,
-  useRecordStyle,
-} from "@sincpro/web-ui/components/record/style";

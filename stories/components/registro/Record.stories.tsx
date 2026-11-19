@@ -17,12 +17,18 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   BookOpen,
   CreditCard,
+  FileText,
   History,
   Info,
   ListOrdered,
+  Package,
+  PackageCheck,
   Receipt,
   RotateCcw,
+  Sparkles,
+  Target,
   TriangleAlert,
+  Trophy,
   Truck,
 } from "lucide-react";
 import { useState } from "react";
@@ -131,7 +137,7 @@ function Box({
 }
 
 /* An invoice's stages, for the forms side by side: the traditional style takes one of each,
-   the modern another (`RecordStyleProvider`). */
+   the modern another (`ViewStyleProvider`). */
 const INVOICE_STAGES: Stage[] = [
   { id: "draft", label: "Borrador" },
   { id: "posted", label: "Publicada" },
@@ -139,12 +145,8 @@ const INVOICE_STAGES: Stage[] = [
 ];
 
 const LOOKS: { look: StatusLook; name: string; note: string }[] = [
-  { look: "track", name: "Pista", note: "la de Odoo — el estilo tradicional" },
-  {
-    look: "progress",
-    name: "Progreso",
-    note: "cuánto falta, de un vistazo — el estilo moderno",
-  },
+  { look: "track", name: "Pista", note: "la de Odoo — la de los dos estilos" },
+  { look: "progress", name: "Progreso", note: "cuánto falta, de un vistazo" },
   { look: "steps", name: "Pasos", note: "puntos unidos por una línea" },
   { look: "pill", name: "Ficha", note: "una sola, para donde no hay lugar" },
 ];
@@ -358,6 +360,74 @@ export const EstadoEnCuatroFormas: Story = {
    se lee en la actividad, a la derecha o debajo (`3 · Componentes/Actividad`). Tenerla
    también acá arriba eran dos lugares para una cosa, y el de arriba obligaba a
    desplegar algo ENCIMA del registro para leerlo. */
+
+/**
+ * **Cada etapa con su ícono, su explicación y su cantidad** — la pista de Odoo, con lo que una
+ * aplicación le quiera agregar: `icon` antes del nombre (en la que falló, la alerta toma su
+ * lugar), `hint` al pasar el mouse, y `count` — en una lista agrupada por etapa, cuántos hay en
+ * cada una. Los mismos datos los dibujan las cuatro formas.
+ */
+export const EstadoConIconos: Story = {
+  name: "Estado · con íconos y cantidades",
+  args: { stages: STAGES, current: "sale" },
+  render: function Render() {
+    const [viewed, setViewed] = useState("transit");
+    const shipping: Stage[] = [
+      {
+        id: "ready",
+        label: "Preparado",
+        icon: Package,
+        hint: "Embalado, esperando al camión",
+      },
+      { id: "transit", label: "En camino", icon: Truck, hint: "Salió del almacén" },
+      {
+        id: "delivered",
+        label: "Entregado",
+        icon: PackageCheck,
+        hint: "Firmado por el cliente",
+      },
+    ];
+    const pipeline: Stage[] = [
+      { id: "new", label: "Nuevas", icon: Sparkles, count: 12 },
+      { id: "qualified", label: "Calificadas", icon: Target, count: 7 },
+      { id: "proposal", label: "Propuesta", icon: FileText, count: 3 },
+      { id: "won", label: "Ganadas", icon: Trophy, count: 0 },
+    ];
+    return (
+      <div className="max-w-4xl bg-ground p-8">
+        <Row name="Un registro" note="el ícono de cada etapa">
+          <StatusBar stages={shipping} current="transit" layout="trail" />
+          <StatusBar stages={shipping} current="transit" layout="trail" failed />
+        </Row>
+        <Row name="Una lista agrupada" note="cuántos hay en cada etapa — elegible">
+          <StatusBar
+            stages={pipeline}
+            current="new"
+            layout="trail"
+            selected={viewed}
+            onSelect={setViewed}
+          />
+        </Row>
+        <Row name="Las otras formas" note="los mismos datos">
+          <StatusBar stages={shipping} current="transit" layout="trail" look="progress" />
+          <StatusBar stages={shipping} current="transit" layout="trail" look="pill" />
+        </Row>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // The hint is said when the stage is pointed at.
+    await expect(canvas.getAllByTitle("Salió del almacén").length).toBeGreaterThan(0);
+    // The counts are part of what the stage says.
+    const pipeline = canvas.getByRole("radiogroup", { name: "Estado" });
+    await expect(
+      within(pipeline).getByRole("radio", { name: /Calificadas\s*7/ }),
+    ).toBeVisible();
+    await userEvent.click(within(pipeline).getByRole("radio", { name: /Propuesta/ }));
+    await expect(within(pipeline).getByRole("radio", { name: /Propuesta/ })).toBeChecked();
+  },
+};
 
 /** Los contadores que LLEVAN a otro lado. Un cero se dibuja apagado y sin clic:
  *  decir que no hay ninguna es información; esconder el contador sería otra cosa.
