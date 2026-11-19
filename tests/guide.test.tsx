@@ -7,7 +7,7 @@ import { test } from "vitest";
 /**
  * Context: a guided tour (#40). Where the card goes is pure and held here, with the selectors
  * a step's target names. Walking the tour — the veil, the drawer, the keyboard — is the
- * stories' play (`3 · Componentes/Guía`).
+ * stories' play (`3 · Componentes/Ayuda/Guía`).
  */
 
 const VIEW = { width: 1280, height: 800 };

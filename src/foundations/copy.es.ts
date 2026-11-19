@@ -68,6 +68,10 @@ export const SPANISH_COPY: UiCopyOverride = {
     prev: "Página anterior",
     next: "Página siguiente",
   },
+  dock: {
+    label: "Acciones",
+    more: "Más acciones",
+  },
   record: {
     prev: "Anterior",
     next: "Siguiente",
@@ -415,7 +419,12 @@ export const SPANISH_COPY: UiCopyOverride = {
     finish: "Terminar",
     working: "Procesando…",
   },
-  report: { open: "Abrir {name}", close: "Cerrar {name}", concept: "Concepto" },
+  report: {
+    open: "Abrir {name}",
+    close: "Cerrar {name}",
+    concept: "Concepto",
+    total: "Total",
+  },
   builder: {
     filter: "Filtro",
     order: "Orden",

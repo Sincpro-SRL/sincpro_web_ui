@@ -268,12 +268,12 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card`, `board.tile`,
 `board.stat`, `board.stat.value`, `activity.changes`, `file-list`, `file-list.file`, `metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
 `search.panel`, `search.suggestions`, `search.suggestion`, `search.record`, `search.advanced`,
-`search.keys`, `search-entry`, `search-entry.keys`, `table`,
+`search.keys`, `search-entry`, `search-entry.keys`, `table`, `table.pile`,
 `table.head`, `topbar`, `topbar.brand`, `topbar.menus`, `topbar.actions`, `topbar.user`,
 `frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`, `sidebar.brand`,
 `sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
 `navigation.item`, `dirty.blocked`, `dirty.bar`, `field`, `field.label`, `form.section`,
-`form.index`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
+`form.index`, `dock`, `dock.pill`, `dock.bare`, `pager`, `smart`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
 `guide.progress`, `guide.title`, `guide.body`, `guide.actions`. A part that is one of many
 carries `data-key` too (`navigation.item`). Put your rules in a cascade layer above web-ui's, or
 outside any layer.
@@ -296,6 +296,21 @@ written out under it on the left, the control on the right —, every `FormSecti
 `Record` with `dirty` floats Discard · Save at the bottom of the screen (`dirty.bar`) instead of
 the rail. The layout (`stacked` / `horizontal`) is still the screen's: stacked, the help and the
 control go under the label. Without the provider nothing changes.
+
+#### A dense record found by its index: the «sections» style
+
+`FormStyleProvider value="sections"` keeps the ERP's density and takes the settings' shape:
+every `SheetGroup` on the paper and every notebook page (`Record.Page`) is a card on the
+ground, listed in the index at the left (sticky under the application bar, marking the one
+being read), and inside each card the dense grid stays — label | value, two or three columns,
+a group inside a card stays a titled group. The notebook's pages are not tabs any more: a long
+record is read top to bottom and found by its index, nothing hidden behind a tab. Save and
+Discard float as in settings, and the activity stands apart. Pair it with the modern style:
+`5 · Plantillas/Registros/Ficha de contacto › En secciones`.
+
+A table's TITLE column (the card's title on a phone: `stack: "title"`, or the first column)
+keeps `--size-cell-title` (14 rem): a product name cut with «…» asks for no width of its own,
+and beside figures with a width it was squeezed to «Imp…».
 
 #### Searching the records of a relation — and extending the search
 
@@ -353,6 +368,132 @@ What can be extended, and how:
 | The filter said with names, for your own chip    | `describeFilter(selection, model, modelAt, names)`, `FilterBuilder onApply(selection, said)` |
 | Your own builder                                 | `SelectionTree`, `RuleValue`, `liftRecords`, `recordsFilter`, `recordOps`                    |
 | The words of an operator («no está establecido») | the copy table: `ops`                                                                        |
+
+#### A group says what it adds up to, under each column
+
+A table grouped by a field draws each pile's row like Odoo's grouped list: its name, how many,
+and under every column that declared an `aggregate` what the pile adds up to — written like
+the footer («185.200,50», «máx 5»). Whoever counts the piles (the server's grouped read) sends
+the sums in `Pile.totals`, by column id; without them the table sums the rows when the pile
+holds all of them — the sum of one page of a pile of thousands looks like its total and is
+not. The sheet's bands and the report built from the piles say the same numbers: in the report
+every pile is a group with its amounts, and a «Total» line closes it.
+
+A column's numbers are written ONE way, in its cells, its piles and its footer: its `format`,
+else its `decimals` (`DataColumn.decimals`, `SheetColumn.decimals`): `2` writes «6.057,10»
+under «8.370,57», not «6.057,1».
+
+#### The direction: the modern style (`ViewStyleProvider`)
+
+**Modern is where the system is going.** It is not a trial: it is how new screens are drawn,
+and it keeps being applied to the rest of the system and refined. `traditional` stays — same
+API, same data — for the applications already drawn in it. What the direction is:
+
+- **The page breathes on the ground.** No white band on top of the paper: the trail IS the
+  page's heading (`Breadcrumb size="lg"`), and the counters and the state sit a step down,
+  quieter.
+- **One floating pill holds the actions** — at the bottom, centred, under the thumb —, the
+  same on a record, a list and a settings form. It turns into «N cambios · Descartar ·
+  Guardar» while there are changes, and into what is done to the chosen rows while some are
+  chosen. Never two pills at once.
+- **Pills are the shape of the identity**: the actions' pill, the pager (a translucent primary
+  pill), the state as a pill of pills (`StatusBar look="segmented"`), the counters as links
+  with their count in a pill.
+- **Colour means something**: the gold is the one action that moves the record forward; the
+  translucent primary, where you are; red, what undoes.
+- **The keyboard reaches everything**: every action can carry its shortcut, drawn for the
+  person's keyboard (see below).
+- **A number reads the same everywhere**: its column's decimals and format in the cells, the
+  groups, the footer and the report.
+
+Already in the direction: dense records in sections with an index (`FormStyleProvider
+value="sections"`, below) and the state on a phone (`display="auto"`). Next: the rest of the
+screens taking the floating pill, and the phone's pill when an action does not fit.
+
+A record and a list are written once — `Record.Dock` and `List.Dock` with their actions as
+data — and the application's style decides how they are drawn, the way it chooses its density:
+
+```tsx
+// "traditional" is the default; a single Record can say its own with `look`.
+<ViewStyleProvider value="modern">
+  <App />
+</ViewStyleProvider>
+```
+
+- **traditional**: the ERP rail — a band with the trail, the counters and the pager; the
+  actions as the bar's buttons (the primary first and gold, «⋯» with the rest), in a record
+  and in a list alike.
+- **modern**: the trail is the page's heading with the pager as a translucent primary pill on
+  its line (`Pager look="pill"`); a step down, the counters as links (`SmartButton
+look="link"`) and the state; the band is the ground; and the actions float in ONE pill at
+  the bottom, centred — a record's, and a list's. `placement="top"` rests a record's pill in
+  the rail and floats it at the top on scroll.
+
+**The state.** `StatusBar look`: `track` (Odoo's — the traditional style's), `segmented` (a
+pill of pills, the actions' shape — the modern style's), `steps`, `progress` and `pill` (one chip that unfolds the stages). Each
+stage can carry an `icon`, an `activeIcon` (worn when it is the current or the chosen one:
+○ → ◉), a `hint` (said when pointed at) and a `count` (how many are there, in a list grouped by
+stage). `display` says what a stage shows — `auto` (the default: every name where there is
+room, on a phone only the current one's), `both`, `label`, `icon` (the name said to a screen
+reader and on hover) or `current` (the icons, and the current stage's name) —, and
+`renderStage` draws a stage your way inside the system's segment, which keeps the order, the
+paint, the focus and the names. `Record.Status look` picks one; all side by side in
+`3 · Componentes/Registro/Riel, estado y contadores`.
+
+#### Keyboard shortcuts that run
+
+A combination is written once — `"Alt+D"`, `"Mod+S"` (⌘ on a Mac, Ctrl elsewhere) — and is
+pressed, drawn and announced for the person's keyboard (`foundations/keys`: «⌥D» / «Alt+D»,
+`aria-keyshortcuts`). It RUNS while the piece that declares it is on screen, and declarations
+stack: the record in a peek over the page answers, not the page under it.
+
+- `DockAction.shortcut` — any action, a sub-action or one waiting in «Más» included.
+- `Record.Pager` / `Pager keys` — Alt+P and Alt+N by default (Odoo's), `false` for none.
+- Save answers Mod+S wherever it is (`DirtyActions`).
+- Your own: `useShortcuts([{ keys: "Alt+K", run, enabled }])`, and `useKeysHint(keys)` to draw
+  it.
+
+A combination with a modifier works while a field is being typed in; a bare key does not.
+
+#### The record's actions floating (`Record.Dock`)
+
+The «settings» style floats Save and Discard in a dark pill; `Record.Dock` tries that pill for
+ALL of a record's actions. In place of `Record.Actions`, the actions are written as data, and the
+pill decides what is seen: the primary, gold and last; `visible` secondary ones (one with
+sub-actions is a menu button, «Imprimir ▾»); the rest in «Más ⋯», sub-actions as submenus, what
+undoes apart and last, in red. Where it goes is `placement`: `rail` (the traditional buttons),
+`bottom` (the modern default, floating centred) or `top` (resting in the rail, a layer of the
+sticky stack once it scrolls away); while there are changes the same pill holds «N cambios ·
+Descartar · Guardar».
+
+```tsx
+<Record.Rail>
+  <Record.Crumbs crumbs={…} />
+  <Record.Dock
+    label="Acciones de la factura"
+    actions={[
+      { id: "pay", label: "Registrar pago", icon: CreditCard, primary: true, onSelect: pay },
+      { id: "send", label: "Enviar", icon: Send, onSelect: send },
+      { id: "print", label: "Imprimir", icon: Printer, items: [
+        { id: "print-invoice", label: "Factura", shortcut: "Mod+P", onSelect: printInvoice },
+        { id: "print-note", label: "Remito", onSelect: printNote },
+      ] },
+      { id: "copy", label: "Duplicar", icon: Copy, shortcut: "Alt+D", onSelect: duplicate },
+      { id: "void", label: "Anular en el SIAT", icon: Ban, danger: true, onSelect: voidIt },
+    ]}
+    // placement="rail" | "bottom" | "top", align="center" | "end", look="chrome" | "canvas", visible={2}
+  />
+  <Record.Status stages={…} current="posted" />
+</Record.Rail>
+```
+
+A list says the same with `List.Dock` — `actions` (what it starts) and `selection` (what is
+done to the chosen rows). `placement` is `bar` (the bar's buttons; the chosen rows' in place of
+the search) or `bottom` (ONE floating pill, the chosen rows' while some are chosen); absent,
+the view style decides. `selectionPlacement` overrides where the chosen rows' actions go.
+
+`ActionDock` is the pill alone (`placement="inline"`, or sticky `top` / `bottom` anywhere, with
+a `lead` before the actions) and `dockPlan` the rule, for a screen that is neither.
 
 #### A guided tour: the screen says what each thing is
 

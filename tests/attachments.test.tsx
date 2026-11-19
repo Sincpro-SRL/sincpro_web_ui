@@ -18,7 +18,7 @@ import { test } from "vitest";
  * Context: the files of a record. What a file IS (its kind, its size) is pure and checked
  * here; what is DRAWN for each state — ready, uploading, failed, read mode, empty — is
  * checked as static markup. Dropping, removing with undo and opening are driven in a browser
- * by `3 · Componentes/Adjuntos`.
+ * by `3 · Componentes/Archivos/Adjuntos`.
  */
 
 function spanish(children: ReactNode): string {

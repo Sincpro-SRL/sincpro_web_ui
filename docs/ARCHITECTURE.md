@@ -74,18 +74,18 @@ What two views need goes down to `components/`; what two tiers need goes down to
 
 The application builds its own with the public API (`@sincpro/web-ui`), with no forks or loose classes:
 
-| I want…                                                        | With                                                                                        |
-| -------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
-| A control of my own inside a `Field`                           | `useFieldIds`, `useFormMode` (`foundations/form`)                                           |
-| A cell with anything inside                                    | `DataColumn.cell`, `edit.render`, `rowActions`                                              |
-| Another way of looking at a list (map, gallery)                | `List.Present` → receives the set (`ListSet`)                                               |
-| A composed piece written as a tree                             | `slot()`, `pick`, `propsOf` (`foundations/slots`)                                           |
-| An operation over N records (the «wizard»)                     | `Record` in a modal + `api.pick` / `api.answer` (composer) — see `5 · Plantillas/Operación` |
-| My components with the same look                               | the token classes (`bg-surface text-ink …`)                                                 |
-| My product's colours, paper and corners                        | `--brand-*`, `--brand-radius` (README «Your brand»)                                         |
-| ONE component looking different (square buttons, another menu) | its `--ui-*` tokens and its `data-ui` parts (README «Customizing a component»)              |
-| My application's words, in its language                        | `createCopy` → `install`, `Provider`, `useCopy` (`foundations/catalog`)                     |
-| Several sets at once (reconciliation)                          | `Panes` / `Pane` — see `5 · Plantillas/Conciliación`                                        |
+| I want…                                                        | With                                                                                                 |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------- |
+| A control of my own inside a `Field`                           | `useFieldIds`, `useFormMode` (`foundations/form`)                                                    |
+| A cell with anything inside                                    | `DataColumn.cell`, `edit.render`, `rowActions`                                                       |
+| Another way of looking at a list (map, gallery)                | `List.Present` → receives the set (`ListSet`)                                                        |
+| A composed piece written as a tree                             | `slot()`, `pick`, `propsOf` (`foundations/slots`)                                                    |
+| An operation over N records (the «wizard»)                     | `Record` in a modal + `api.pick` / `api.answer` (composer) — see `5 · Plantillas/Procesos/Operación` |
+| My components with the same look                               | the token classes (`bg-surface text-ink …`)                                                          |
+| My product's colours, paper and corners                        | `--brand-*`, `--brand-radius` (README «Your brand»)                                                  |
+| ONE component looking different (square buttons, another menu) | its `--ui-*` tokens and its `data-ui` parts (README «Customizing a component»)                       |
+| My application's words, in its language                        | `createCopy` → `install`, `Provider`, `useCopy` (`foundations/catalog`)                              |
+| Several sets at once (reconciliation)                          | `Panes` / `Pane` — see `5 · Plantillas/Procesos/Conciliación`                                        |
 
 What stays closed on purpose: `className` and `style` on a component — a loose class per
 screen is how two screens stop looking alike — and the domain. The structure is open, and so
@@ -138,7 +138,7 @@ of your own, a composed piece with `slot()`, texts of your own. They import only
 ### Phase 4 — screens with several sets: reconciliation ✅ 2026-11-03
 
 `Panes` / `Pane` (`components/shell`): each pane scrolls on its own and what is pinned inside is pinned
-to its edge, not to the screen header; when narrow, they stack. `5 · Plantillas/Conciliación`
+to its edge, not to the screen header; when narrow, they stack. `5 · Plantillas/Procesos/Conciliación`
 uses it with two `List`s and a `Record`, each list with its search.
 
 ### Phase 5 — accessibility as an error ✅ 2026-11-03
@@ -158,6 +158,6 @@ panel that did not exist (`TabsScope` / `TabsPanel`).
 - **`Dialog` brings `Wizard`** for steps in a standalone dialog. Inside composer's workspace,
   a modal is a composer view (`stories/Estilo.mdx`), and a multi-step operation is written
   there with `StepFlow` (`components/flow`), which draws no dialog of its own:
-  `5 · Plantillas/Importar`.
+  `5 · Plantillas/Procesos/Importar`.
 - **The logic of `components/search` and `components/listing`** (`query.ts`, `pages.ts`, …) stays
   next to its interface: only its family uses it. It goes down to `foundations` the day another uses it.

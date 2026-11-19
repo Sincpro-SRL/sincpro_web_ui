@@ -1,6 +1,7 @@
 "use client";
 
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { useKeysHint, useShortcuts } from "@sincpro/web-ui/foundations/shortcut";
 import { bySurface, SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
 import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { Check, Save, Undo2 } from "lucide-react";
@@ -50,6 +51,10 @@ export function DirtyActions({
   floating?: boolean;
 }) {
   const copy = useUiCopy();
+  /* Mod+S saves wherever Save is — the rail, the thumb bar, a floating pill —: the gesture
+     every editor has, and in a browser it would otherwise save the PAGE. */
+  useShortcuts([{ keys: "Mod+S", run: onSave, enabled: blocked === undefined && !saving }]);
+  const saveHint = useKeysHint("Mod+S");
   const blockedId = useId();
   const changesId = useId();
   /* It follows the rail it sits on instead of assuming the dark one: on a light rail the
@@ -112,6 +117,12 @@ export function DirtyActions({
         busy={saving}
         disabled={blocked !== undefined}
         icon={Save}
+        {...(saveHint === undefined
+          ? {}
+          : {
+              title: `${copy.record.save} (${saveHint.label})`,
+              "aria-keyshortcuts": saveHint.aria,
+            })}
         {...(describedBy === "" ? {} : { "aria-describedby": describedBy })}
       >
         {saving ? copy.record.saving : (label ?? copy.record.save)}

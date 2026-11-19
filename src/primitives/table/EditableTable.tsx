@@ -1517,7 +1517,7 @@ export function EditableTable<T>({
                 <tr {...(view.on ? { "aria-rowindex": 1 } : {})}>
                   {reorderable ? <td className="w-0 border-b border-line-strong" /> : null}
                   {/* A column of buttons has no header: its top is a cell, not an empty one. */}
-                  {columns.map((c) =>
+                  {columns.map((c, ci) =>
                     c.header === "" ? (
                       <td key={c.id} className="w-0 border-b border-line-strong" />
                     ) : (
@@ -1530,7 +1530,13 @@ export function EditableTable<T>({
                          the product name was cut while «Cantidad» had room for ten digits. */
                         className={`border-b border-line-strong ${HEADER_TEXT} ${cell} ${
                           c.numeric === true ? "text-right" : "text-left"
-                        } ${c.numeric === true && c.width === undefined ? "w-0" : ""}`}
+                        } ${c.numeric === true && c.width === undefined ? "w-0" : ""} ${
+                          /* The title column — the card's title on a phone — keeps its
+                             least: a name cut with «…» asks for no width of its own. */
+                          places[ci] === "title" && c.width === undefined
+                            ? "min-w-(--size-cell-title)"
+                            : ""
+                        }`}
                       >
                         {c.header}
                       </th>

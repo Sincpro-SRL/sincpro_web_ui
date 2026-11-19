@@ -140,7 +140,7 @@ const STOCK_COLUMNS: DataColumn<Stock>[] = [
 
 /** **Una celda con lo que sea.** `cell` dibuja una pieza de la aplicación; `value` sigue siendo
  *  la clave por la que se ordena. Para mirar una lista de otra manera —un mapa, una galería—,
- *  `List.Present`: ver `4 · Vistas/Lista › Una presentación propia`. */
+ *  `List.Present`: ver `4 · Vistas/Lista/Extender › Una presentación propia`. */
 export const CeldaPropia: Story = {
   render: () => <DataTable data={STOCK} columns={STOCK_COLUMNS} getRowId={(s) => s.id} />,
   play: async ({ canvasElement }) => {

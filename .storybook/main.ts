@@ -22,12 +22,19 @@ const config: StorybookConfig = {
                          formulario.
 
        3 · Componentes   un organismo compone primitivas para contestar UNA
-                         pregunta del producto, y se agrupa por FAMILIA:
-                           Datos      qué muestra N cosas
+                         pregunta del producto, y se agrupa por CASO DE USO:
+                           Shell      el marco: arriba, al costado, el árbol
                            Búsqueda   cómo se recorta y se parte
-                           Registro   las piezas de un registro
+                           Datos      qué muestra N cosas
+                           Registro   las piezas de un registro y su forma
+                           Tiempo     calendario, gantt, línea de tiempo
                            Actividad  qué le pasó a algo y qué hay que saber
-                         Siguen siendo componentes: se usan sueltos.
+                           Archivos   adjuntos, en un mensaje, la vista previa
+                           Ayuda      la guía y el asistente
+                         Siguen siendo componentes: se usan sueltos. Las
+                         primitivas y las plantillas se agrupan igual, con
+                         las mismas palabras (el orden: `storySort`, en
+                         preview.ts).
 
        4 · Vistas        las DOS macros, y nada más. Una pantalla de este
                          producto —y de cualquier producto de gestión— es una
@@ -52,10 +59,10 @@ const config: StorybookConfig = {
     "../stories/Introduction.mdx",
     "../stories/Estilo.mdx",
     "../stories/foundations/*.stories.@(ts|tsx)",
-    "../stories/primitives/*.stories.@(ts|tsx)",
-    "../stories/components/*.stories.@(ts|tsx)",
-    "../stories/views/*.stories.@(ts|tsx)",
-    "../stories/templates/*.stories.@(ts|tsx)",
+    "../stories/primitives/**/*.stories.@(ts|tsx)",
+    "../stories/components/**/*.stories.@(ts|tsx)",
+    "../stories/views/**/*.stories.@(ts|tsx)",
+    "../stories/templates/**/*.stories.@(ts|tsx)",
     "../stories/Extender.mdx",
     "../stories/extend/*.stories.@(ts|tsx)",
   ],

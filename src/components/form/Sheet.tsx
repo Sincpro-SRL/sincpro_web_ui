@@ -1,6 +1,12 @@
 "use client";
 
-import { FormIndex, FormIndexScope } from "@sincpro/web-ui/components/form/FormIndex";
+import {
+  FormIndex,
+  FormIndexScope,
+  InCardScope,
+  useFormIndexEntry,
+  useInCard,
+} from "@sincpro/web-ui/components/form/FormIndex";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { useFormStyle } from "@sincpro/web-ui/foundations/form";
 import {
@@ -170,14 +176,27 @@ export function Sheet({
   children?: ReactNode;
 }) {
   const d = useDensity();
-  const settings = useFormStyle() === "settings";
+  const style = useFormStyle();
+  const settings = style === "settings" || style === "sections";
   const facts = fields !== undefined && fields.length > 0;
   if (!facts && head === undefined && children === undefined) return null;
 
   const top =
     facts || head !== undefined ? (
       <div className={`flex min-w-0 flex-col ${byDensity(d, "gap-4", "gap-3")}`}>
-        {facts ? <Facts fields={fields} columns={columns} layout={layout} /> : null}
+        {facts ? (
+          style === "sections" ? (
+            /* The record's own facts, a card with no name: they are its head, not a section
+               to find. */
+            <div className={CARD}>
+              <InCardScope>
+                <Facts fields={fields} columns={columns} layout={layout} />
+              </InCardScope>
+            </div>
+          ) : (
+            <Facts fields={fields} columns={columns} layout={layout} />
+          )
+        ) : null}
         {head}
       </div>
     ) : null;
@@ -222,6 +241,8 @@ export function SheetGroups({
   columns?: 2 | 3 | 4;
 }) {
   const d = useDensity();
+  const inCard = useInCard();
+  const cards = useFormStyle() === "sections" && !inCard;
   const stacked = d === "compact";
   // Below `handheld` the columns stack the way compact density does: two 180 px
   // columns on a phone left each label beside a control with no width at all. The
@@ -234,6 +255,15 @@ export function SheetGroups({
         ? "grid-cols-3 @max-handheld:grid-cols-1"
         : "grid-cols-2 @max-handheld:grid-cols-1";
   const items = Children.toArray(children);
+  /* «sections»: each group is a card of its own, side by side with a gap — no hairline: the
+     cards' edges already part them. */
+  if (cards) {
+    return (
+      <div className="@container min-w-0">
+        <div className={`grid min-w-0 items-start gap-4 ${grid}`}>{children}</div>
+      </div>
+    );
+  }
   return (
     <div className="@container min-w-0">
       <div className={`grid min-w-0 ${grid}`}>
@@ -277,8 +307,16 @@ export function SheetGroup({
 }) {
   const d = useDensity();
   const withHeader = title !== undefined;
-  return (
-    <section className={`flex min-w-0 flex-col ${byDensity(d, "gap-2.5", "gap-2")}`}>
+  /* «sections», on the ground: the group is a card, listed in the index by its title. */
+  const inCard = useInCard();
+  const card = useFormStyle() === "sections" && !inCard;
+  const indexed = useFormIndexEntry(card ? title : undefined);
+  const body = (
+    <section
+      {...(indexed === undefined ? {} : { id: indexed })}
+      {...(card ? { "data-ui": "form.section" } : {})}
+      className={`flex min-w-0 flex-col ${byDensity(d, "gap-2.5", "gap-2")} ${card ? `scroll-mt-3 ${CARD}` : ""}`}
+    >
       {withHeader ? (
         /* A group title is ABOVE its labels, not one of them: at the labels' size and weight
            «Cliente» the group read like «Cliente» the field. One step up in size and weight,
@@ -302,4 +340,9 @@ export function SheetGroup({
       </div>
     </section>
   );
+  return card ? <InCardScope>{body}</InCardScope> : body;
 }
+
+/* A card of the «sections» style: the settings' card, at the dense sheet's padding. */
+const CARD =
+  "rounded-ui-card border border-ui-card-border bg-ui-card px-5 py-4 @max-handheld:px-3 @max-handheld:py-3";

@@ -523,6 +523,10 @@
      line. Without it, «de dónde vengo» takes the room from what hangs off the
      record and the centre stops being in the centre. */
   --container-crumb: 12rem;
+  /* The current crumb when the trail IS the page's heading (`Breadcrumb size="lg"`, the modern
+     style): at the title's size 12 rem cut «Clínica San Gabriel …» with the line half empty.
+     It still has a cap — a fifty-character name must leave room for the pager. */
+  --container-crumb-heading: 28rem;
   --container-trail: 20rem;
 
   /* The grid of the app switcher: three columns of icon + word. */
@@ -547,6 +551,12 @@
   /* The index of a «settings» form's sections (`FormIndex`), at the sheet's left: wide enough
      for «Contacto y guía pública», narrow enough that the cards keep the page. */
   --container-form-index: 12rem;
+
+  /* The least a table's TITLE column keeps (`EditableTable`, `LineItems`): the product of an
+     invoice line. A name cut with «…» has almost no width of its own, so beside figures with
+     a width the table squeezed it to «Imp…» while «Precio» had room for ten digits. 14 rem
+     reads «Impresora térmica de tickets» whole; past it the table scrolls or stacks. */
+  --size-cell-title: 14rem;
 
   /* The tag column of a list row. It is what the column ASKS FOR, and it
      belongs to the system: with a width of its own every tag starts where its
@@ -1196,8 +1206,15 @@
     /* Horizontal only. Removing `overflow: hidden` entirely uncovered something that
      * overflows sideways —a panel hidden off-screen, measured for
      * a width that is no longer its own— and without this brake one could scroll to
-     * the right to see it. The height stays free: that is what was being fixed. */
-    overflow-x: hidden;
+     * the right to see it. The height stays free: that is what was being fixed.
+     *
+     * `clip`, not `hidden`: `hidden` on one axis turns the other into `auto`, so the body was
+     * a scroll container in waiting. While a menu or a dialog is open React Aria locks the
+     * page (`overflow: hidden` on `html`), the body's overflow stops reaching the viewport,
+     * and the body BECAME the scroller — every sticky thing (a list's bar, a table's header,
+     * the floating actions) let go and slid away with the page, menu and all. `clip` cuts
+     * the same and is never a scroller. */
+    overflow-x: clip;
   }
 
   /* Tabular figures on everything monospaced: a column of rows has to line up

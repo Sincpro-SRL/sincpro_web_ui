@@ -21,12 +21,13 @@ definido por lo que _sabe_, y cada uno importando sólo de los de abajo:
 
 - **1 · Fundamentos** — las decisiones; no hay componentes. Empezá por Color, Tipografía,
   Escalas y Superficies.
-- **2 · Primitivas** — no saben en qué pantalla están. Button, Controles de formulario, Menu.
-- **3 · Componentes** — contestan una pregunta del producto, por familia: Datos, Búsqueda,
-  Registro, Actividad.
-- **4 · Vistas** — las dos macros, y nada más: Registro (uno) y Lista (N).
-- **5 · Plantillas** — nada nuevo: páginas enteras armadas con lo de arriba. Facturas · un
-  módulo de ERP.
+- **2 · Primitivas** — no saben en qué pantalla están. Botón, Controles de formulario, Menú.
+- **3 · Componentes** — contestan una pregunta del producto: el shell, la búsqueda, los datos,
+  el registro, el tiempo, la actividad, los archivos, la ayuda.
+- **4 · Vistas** — las dos macros, y nada más: Registro (uno) y Lista (N) — los PATRONES, y lo
+  que comparten (estilos, acciones, estados).
+- **5 · Plantillas** — nada nuevo: páginas enteras armadas con lo de arriba — los EJEMPLOS.
+  Módulos · Facturas.
 
 Si algo no entra en ninguna de las dos vistas, no es una vista: es un componente disfrazado.
 Y si algo necesita saber qué es una factura o un cliente, no va acá — eso es dominio, y vive en
@@ -60,6 +61,24 @@ Cada nivel es también su propia entrada: `@sincpro/web-ui/primitives`,
 `@sincpro/web-ui/components`, `@sincpro/web-ui/views`.
 
 ## Dónde está cada cosa
+
+Dentro de cada nivel, las carpetas son **casos de uso**, con las mismas palabras en todos: lo
+que buscás está en la misma carpeta del nivel que corresponde.
+
+| Busco…                         | Primitivas                    | Componentes                                   | Vistas y plantillas                         |
+| ------------------------------ | ----------------------------- | --------------------------------------------- | ------------------------------------------- |
+| El marco de la aplicación      | —                             | Shell: barra de arriba, barra lateral, árbol  | Abrir y elegir · Espacio de trabajo         |
+| Botones y acciones             | Acciones: botón, menú         | —                                             | Compartido · Acciones (la píldora)          |
+| Un campo                       | Campos, Relacional a uno      | Registro · Formulario                         | Registro · Edición                          |
+| Buscar, filtrar, agrupar       | —                             | Búsqueda: barra, campo por relaciones, filtro | Abrir y elegir · Buscar más                 |
+| Muchos registros               | Valores (celdas, árbol)       | Datos: tabla, planilla, pivote, informe…      | Lista · Presentaciones, Análisis            |
+| Un registro                    | —                             | Registro: riel, estado, contadores            | Registro · Completo; Registros · Factura    |
+| Fechas y tiempo                | Campos · Fechas               | Tiempo: calendario, gantt, línea de tiempo    | —                                           |
+| Qué le pasó a algo             | —                             | Actividad: avisos, historial, chat            | Registro · Actividad y avisos               |
+| Archivos                       | Campos · Archivos (soltar)    | Archivos: adjuntos, en un mensaje, vista previa | —                                         |
+| Avisos, vacíos y errores       | Avisos                        | —                                             | Compartido · Estados                        |
+| Diálogos, cajones, pliegues    | Capas                         | —                                             | Abrir y elegir · Subcontextos               |
+| Explicar la pantalla           | —                             | Ayuda: guía, asistente                        | —                                           |
 
 Cuatro niveles —fundamentos, primitivas, componentes, vistas— y, dentro de las primitivas, tres
 tiers: lo que **muestra** (`Button`, `Tag`, `Avatar`, `Notice`), lo que **pregunta** (`Field`,

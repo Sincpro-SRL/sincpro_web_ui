@@ -68,6 +68,9 @@ export interface SheetColumn {
    *  seeing that `importe` was read as text explains the rest of the screen. */
   type?: string;
   numeric?: boolean;
+  /** How many decimals every number of the column is written with — cells and the totals of
+   *  its bands: `2` lines «6.057,10» up over «8.370,57». Absent, up to two, as each value has. */
+  decimals?: number;
   width?: number;
 }
 
@@ -450,7 +453,15 @@ export function SheetTable({
                           ) : total === null ? null : (
                             <span className="truncate text-meta font-medium tabular-nums text-ink">
                               {typeof total === "number"
-                                ? total.toLocaleString(copy.locale)
+                                ? total.toLocaleString(
+                                    copy.locale,
+                                    c.decimals === undefined
+                                      ? {}
+                                      : {
+                                          minimumFractionDigits: c.decimals,
+                                          maximumFractionDigits: c.decimals,
+                                        },
+                                  )
                                 : total}
                             </span>
                           )}
@@ -517,7 +528,26 @@ export function SheetTable({
                             }`}
                           />
                         ) : (
-                          <Cell value={value(item.index, c, ci)} max={24} />
+                          (() => {
+                            const v = value(item.index, c, ci);
+                            /* Cut by the column's WIDTH, with «…» and the whole text a hover
+                               away: «TRASPASO CTA PROPIA BN» fit the character limit and not
+                               the column, and was clipped mid-letter. */
+                            return (
+                              <span
+                                className="min-w-0 truncate"
+                                title={typeof v === "string" && v !== "" ? v : undefined}
+                              >
+                                <Cell
+                                  value={v}
+                                  max={24}
+                                  {...(c.decimals === undefined
+                                    ? {}
+                                    : { decimals: c.decimals })}
+                                />
+                              </span>
+                            );
+                          })()
                         )}
                       </div>
                     );

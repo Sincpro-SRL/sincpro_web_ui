@@ -1,11 +1,13 @@
 "use client";
 
 import { Activity, type ActivityProps } from "@sincpro/web-ui/components/activity/Activity";
+import { FormSection } from "@sincpro/web-ui/components/form/Form";
 import {
   Sheet,
   type SheetField,
   type SheetLayout,
 } from "@sincpro/web-ui/components/form/Sheet";
+import type { RecordDockProps } from "@sincpro/web-ui/components/record/ActionDock";
 import type { Crumb } from "@sincpro/web-ui/components/record/Breadcrumb";
 import type { DirtyState } from "@sincpro/web-ui/components/record/DirtyActions";
 import { Pager as PagerControl } from "@sincpro/web-ui/components/record/Pager";
@@ -20,9 +22,14 @@ import {
 import { RecordRibbon } from "@sincpro/web-ui/components/record/RecordRibbon";
 import { RecordSkeleton } from "@sincpro/web-ui/components/record/RecordSkeleton";
 import { SmartButton, SmartButtons } from "@sincpro/web-ui/components/record/SmartButtons";
-import { type Stage, StatusBar } from "@sincpro/web-ui/components/record/StatusBar";
+import {
+  type Stage,
+  StatusBar,
+  type StatusLook,
+} from "@sincpro/web-ui/components/record/StatusBar";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
+import { useFormStyle } from "@sincpro/web-ui/foundations/form";
 import {
   flatten,
   pick as pickSlot,
@@ -32,6 +39,7 @@ import {
   slotOf,
 } from "@sincpro/web-ui/foundations/slots";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
+import { useViewStyle, type ViewStyle } from "@sincpro/web-ui/foundations/viewStyle";
 import {
   createNoteRegistry,
   NoteRegistryContext,
@@ -99,6 +107,7 @@ type SlotName =
   | "pager"
   | "smart"
   | "actions"
+  | "dock"
   | "status"
   | "paper"
   | "activity"
@@ -144,6 +153,8 @@ export type RecordPager = {
   total: number;
   onPrev?: () => void;
   onNext?: () => void;
+  /** The combinations that move — Alt+P and Alt+N by default, `false` for none. */
+  keys?: { prev: string; next: string } | false;
 };
 
 export type { SheetField };
@@ -173,6 +184,9 @@ type StatusProps = {
   failed?: boolean;
   /** The stages can be chosen: pressing one moves the record there (a CRM's pipeline). */
   onSelect?: (id: string) => void;
+  /** Which widget draws it (`StatusLook`). Absent: `segmented` in the modern style, `track`
+   *  (Odoo's) in the traditional one. */
+  look?: StatusLook;
   /** The status escape hatch, for whatever is neither of the two. */
   children?: ReactNode;
 };
@@ -196,6 +210,12 @@ const Smart = slot("smart", (_props: SmartProps): ReactNode => null);
  *  where the thumb is — and with `dirty`, Save and Discard take that bar instead. The
  *  rest stay here. Nothing to declare: see THE THUMB BAR in `RecordHeader`. */
 const Actions = slot("actions", (_props: ActionsProps): ReactNode => null);
+
+/** The actions FLOATING, as data (`ActionDock`): in place of `Record.Actions`,
+ *  one pill over the paper that stays in view as the record scrolls, «Más» with the rest and
+ *  their sub-actions, and Save / Discard in the same pill while there are changes. */
+type DockProps = RecordDockProps;
+const Dock = slot("dock", (_props: DockProps): ReactNode => null);
 
 /** The status, as DATA and not as a node: the bar lives in the rail and
  *  whoever passed it already built had to remember the rail's surface. Forgetting it
@@ -330,6 +350,9 @@ export type RecordProps = {
    * whole tree under the paper the moment one of them appears or goes away.
    */
   placement?: "page" | "card";
+  /** How this record is drawn — `traditional` or `modern`. Absent, the
+   *  `ViewStyleProvider`'s: an application chooses once. */
+  look?: ViewStyle;
   children?: ReactNode;
 };
 
@@ -338,8 +361,17 @@ function NotebookScope({ tabs, children }: { tabs: boolean; children: ReactNode 
   return tabs ? <TabsScope>{children}</TabsScope> : children;
 }
 
-export function Record({ identity, error = null, dirty, placement, children }: RecordProps) {
+export function Record({
+  identity,
+  error = null,
+  dirty,
+  placement,
+  look: ownLook,
+  children,
+}: RecordProps) {
+  const look = useViewStyle(ownLook);
   const d = useDensity();
+  const formStyle = useFormStyle();
   const copy = useUiCopy();
 
   const top = flatten(children);
@@ -358,6 +390,7 @@ export function Record({ identity, error = null, dirty, placement, children }: R
   const pager = propsOf<RecordPager>(pick(rail, "pager"));
   const smart = propsOf<SmartProps>(pick(rail, "smart"))?.links;
   const actions = propsOf<ActionsProps>(pick(rail, "actions"))?.children;
+  const dock = propsOf<DockProps>(pick(rail, "dock"));
   const status = propsOf<StatusProps>(pick(rail, "status"));
 
   /* The status's two questions, with the surface already resolved: «¿dónde
@@ -386,6 +419,13 @@ export function Record({ identity, error = null, dirty, placement, children }: R
             current={status.current ?? status.stages[0]?.id ?? ""}
             failed={status.failed ?? false}
             surface={surface}
+            /* The modern style's state is a pill of pills — the actions' shape; the
+               traditional one, Odoo's track. `Record.Status look` says its own. */
+            {...(status.look !== undefined
+              ? { look: status.look }
+              : look === "modern"
+                ? { look: "segmented" as const }
+                : {})}
             {...(status.onSelect === undefined ? {} : { onSelect: status.onSelect })}
           />
         )}
@@ -437,7 +477,16 @@ export function Record({ identity, error = null, dirty, placement, children }: R
 
   const notebook = propsOf<PagesProps>(pick(inPaper, "pages"));
   const pages = flatten(notebook?.children).filter((node) => slotOf(node) === "page");
-  const tabs = pages
+  /* «sections» (`FormStyleProvider`): the notebook's pages are not tabs but CARDS, one under
+     the other, found by the index — the long record read top to bottom, nothing hidden
+     behind a tab. */
+  const sectioned = formStyle === "sections";
+  const pageCards = sectioned
+    ? pages
+        .map((node) => propsOf<PageProps>(node))
+        .filter((page): page is PageProps => page !== undefined)
+    : [];
+  const tabs = (sectioned ? [] : pages)
     .map((node) => propsOf<PageProps>(node))
     .filter((page): page is PageProps => page !== undefined)
     .map(({ id, label, icon, count, notice }) => ({
@@ -508,10 +557,15 @@ export function Record({ identity, error = null, dirty, placement, children }: R
                       surface={surface}
                       {...(pager.onPrev === undefined ? {} : { onPrev: pager.onPrev })}
                       {...(pager.onNext === undefined ? {} : { onNext: pager.onNext })}
+                      {...(pager.keys === undefined ? {} : { keys: pager.keys })}
+                      /* The modern style's position stands out: a translucent pill. */
+                      look={look === "modern" ? "pill" : "plain"}
                     />
                   ),
                 })}
             {...(actions === undefined ? {} : { actions })}
+            {...(dock === undefined ? {} : { dock })}
+            look={look}
             {...(statusBlock === undefined ? {} : { status: statusBlock })}
             {...(identity.icon === undefined ? {} : { icon: identity.icon })}
             title={identity.title}
@@ -530,6 +584,8 @@ export function Record({ identity, error = null, dirty, placement, children }: R
                           {...(s.count === undefined ? {} : { count: s.count })}
                           label={s.label}
                           layout={onTheRail && d === "comfortable" ? "inline" : "stacked"}
+                          /* The modern style's counters read as ways to another place. */
+                          look={look === "modern" ? "link" : "box"}
                           {...(s.onClick === undefined ? {} : { onClick: s.onClick })}
                         />
                       ))}
@@ -619,7 +675,13 @@ export function Record({ identity, error = null, dirty, placement, children }: R
                       }
                     : {})}
                 >
-                  {tabs.length === 0 ? (
+                  {sectioned ? (
+                    pageCards.map((page) => (
+                      <FormSection key={page.id} title={page.label}>
+                        {page.children}
+                      </FormSection>
+                    ))
+                  ) : tabs.length === 0 ? (
                     pageBody
                   ) : (
                     <TabsPanel
@@ -647,6 +709,7 @@ Record.Crumbs = Crumbs;
 Record.Pager = PagerSlot;
 Record.Smart = Smart;
 Record.Actions = Actions;
+Record.Dock = Dock;
 Record.Status = Status;
 Record.Paper = Paper;
 Record.Activity = ActivitySlot;

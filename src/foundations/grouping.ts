@@ -107,6 +107,15 @@ export type Pile<T> = {
   /** What the pile ADDS UP TO, already written — «Total Bs 1.204.933» — summed by whoever
    *  keeps the data over EVERY row in it, like the count. Drawn in the pile's header. */
   detail?: string;
+  /**
+   * What each COLUMN adds up to over every row in the pile, by column id (or the column's
+   * `field`) — what the server's grouped read summed: `{ amount_total: 1204933.5 }`. Drawn in
+   * the pile's row, UNDER its column, written like the column's footer.
+   *
+   * Absent, a table sums the rows the pile holds — only when it holds all of them: the sum of
+   * one page of a pile of thousands looks like its total and is not.
+   */
+  totals?: Readonly<Record<string, number>>;
   /** The rows, at the DEEPEST level. Empty in the ones above: a pile that
    *  has piles inside has no rows of its own. */
   items: readonly T[];

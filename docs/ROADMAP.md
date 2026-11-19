@@ -3,35 +3,46 @@
 Measured against what an Odoo screen (and a modern ERP) needs, grouped by the
 question it answers. Each row says whether it already exists, in which piece, and whose it is: **web-ui**
 (how it looks), **composer** (where it opens and how it moves), **web-framework** (where the
-data comes from). What is marked ✅ with a date was done in the round of 2026-10-31.
+data comes from). What is marked ✅ with a date was done in the round of 2026-10-31. What is marked
+🧭 is the **modern direction** (`ViewStyleProvider value="modern"`): done, and the way new screens
+are drawn — it keeps being applied to the rest of the system and refined.
 
 ## 1. One record
 
-| Need                                                                      | Status   | Piece / owner                                                                      |
-| ------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------- |
-| Identity, rail, breadcrumbs, pager, actions, stages                       | ✅       | `Record`, `Record.Rail`, `StatusBar`                                               |
-| Bar and sheet in a single column; full width                              | ✅ 10-31 | `Record.Paper width`                                                               |
-| Hierarchy: title › group › label › value                                  | ✅ 10-31 | `SheetGroup` (title with a rule), `HEADER_TEXT`                                    |
-| What the record IS (paid, archived, cancelled)                            | ✅ 10-31 | `Record.Ribbon`                                                                    |
-| Editing without `Record.Actions` does not lose focus                      | ✅ 11-03 | `RecordHeader`: `dirty` no longer decides the role                                 |
-| What changed, while editing: a mark per field and «2 cambios sin guardar» | ✅ 11-03 | `Field changed`, `DirtyState.changes`                                              |
-| Save without losing focus or saving twice                                 | ✅ 11-03 | `Button busy` (in `DirtyActions`); when done, focus returns to the name            |
-| Knowing it was saved, without the app writing it                          | ✅ 11-03 | «✓ Guardado» in the rail (`useJustSaved`, `status` region)                         |
-| Why it cannot be saved, in view and not in a `title`                      | ✅ 11-03 | `DirtyState.blocked`, the rail's only mark (11-17), and it describes the button    |
-| Focus is seen arriving and the label goes with it                         | ✅ 11-03 | `focus-in` (only with motion allowed), `Field` with `focus-within`                 |
-| A fast load does not flash a skeleton                                     | ✅ 11-03 | `animate-reveal-late` (appears at 200 ms) in `Skeleton` and `RecordSkeleton`       |
-| A long fact (an email) does not overlap the one beside it                 | ✅ 11-03 | `Sheet` (`wrap-anywhere`); density is given by `DensityProvider`                   |
-| Who created it and who touched it last                                    | ✅ 10-31 | `Record.Audit`                                                                     |
-| The authorship footer speaks like the form: person chip, DD/MM/YYYY       | ✅ 11-04 | `Record.Audit` (`by` optional or the chip's props; `at` as `Date`/ISO)             |
-| Notices, field notes, activity, history                                   | ✅       | `Record.Notice`, `note`, `Record.Activity`                                         |
-| Open a record from another (sub-context)                                  | ✅       | composer (modal, preview, on the side, page)                                       |
-| Priority (stars)                                                          | ✅ 10-31 | `Priority`                                                                         |
-| Editable kanban state (traffic light)                                     | ✅ 10-31 | `KanbanState`                                                                      |
-| Next activity on the card (clock by urgency)                              | ✅ 10-31 | `ActivityBadge`                                                                    |
-| Rich text field (html)                                                    | ✅ 11-04 | `RichTextInput` (Tiptap v3, loaded on edit), `RichTextValue` (DOMPurify)           |
-| Record attachments (list, preview, download)                              | ✅ 11-04 | `Attachments` (`components/attachments`): upload, open, download, remove with undo |
-| Editable image / avatar                                                   | ✅ 11-04 | `ImageInput` (choose/drop/paste, keyboard crop)                                    |
-| Signature                                                                 | ✅ 11-04 | `SignatureInput` (draw, or type the name)                                          |
+| Need                                                                                                                                           | Status   | Piece / owner                                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------- |
+| Identity, rail, breadcrumbs, pager, actions, stages                                                                                            | ✅       | `Record`, `Record.Rail`, `StatusBar`                                                                           |
+| Bar and sheet in a single column; full width                                                                                                   | ✅ 10-31 | `Record.Paper width`                                                                                           |
+| Hierarchy: title › group › label › value                                                                                                       | ✅ 10-31 | `SheetGroup` (title with a rule), `HEADER_TEXT`                                                                |
+| What the record IS (paid, archived, cancelled)                                                                                                 | ✅ 10-31 | `Record.Ribbon`                                                                                                |
+| Editing without `Record.Actions` does not lose focus                                                                                           | ✅ 11-03 | `RecordHeader`: `dirty` no longer decides the role                                                             |
+| What changed, while editing: a mark per field and «2 cambios sin guardar»                                                                      | ✅ 11-03 | `Field changed`, `DirtyState.changes`                                                                          |
+| Save without losing focus or saving twice                                                                                                      | ✅ 11-03 | `Button busy` (in `DirtyActions`); when done, focus returns to the name                                        |
+| Knowing it was saved, without the app writing it                                                                                               | ✅ 11-03 | «✓ Guardado» in the rail (`useJustSaved`, `status` region)                                                     |
+| Why it cannot be saved, in view and not in a `title`                                                                                           | ✅ 11-03 | `DirtyState.blocked`, the rail's only mark (11-17), and it describes the button                                |
+| Focus is seen arriving and the label goes with it                                                                                              | ✅ 11-03 | `focus-in` (only with motion allowed), `Field` with `focus-within`                                             |
+| A fast load does not flash a skeleton                                                                                                          | ✅ 11-03 | `animate-reveal-late` (appears at 200 ms) in `Skeleton` and `RecordSkeleton`                                   |
+| A long fact (an email) does not overlap the one beside it                                                                                      | ✅ 11-03 | `Sheet` (`wrap-anywhere`); density is given by `DensityProvider`                                               |
+| Who created it and who touched it last                                                                                                         | ✅ 10-31 | `Record.Audit`                                                                                                 |
+| The actions floating over the paper, «Más» with sub-actions, Save / Discard in the same pill                                                   | 🧭 11-18 | `Record.Dock` (`ActionDock`, `dockPlan`) — the modern style; rests in the rail, floats on scroll               |
+| One API, two styles: traditional rail or modern (trail as heading, pager pill, counters as links, the state on the ground, pill at the bottom) | 🧭 11-18 | `ViewStyleProvider`, `Record look`, `Pager look`, `SmartButton look`, `StatusBar look`, `Breadcrumb size="lg"` |
+| Keyboard shortcuts that RUN: actions, pager (Alt+P / Alt+N), Save (Mod+S); the last mounted answers                                            | ✅ 11-18 | `useShortcuts`, `useKeysHint`, `foundations/keys`, `DockAction.shortcut`, `Pager keys`                         |
+| The state: Odoo's track or the segmented pill; each stage with `icon`, `activeIcon`, `hint`, `count`; `display`, `renderStage`                 | ✅ 11-18 | `Stage`, `StatusBar look` / `display` / `renderStage`, `Record.Status look`                                    |
+| A list's actions float like a record's (one pill at the bottom; the chosen rows' while some are)                                               | 🧭 11-18 | `List.Dock placement`, `ViewStyleProvider`                                                                     |
+| A dense record in sections: each group and notebook page a card, an index at the left, the dense grid inside                                   | 🧭 11-19 | `FormStyleProvider value="sections"`, `FormIndex`                                                              |
+| The state on a phone says where it is: the current stage's name, the others' marks                                                             | 🧭 11-19 | `StatusBar display="auto"` (the default)                                                                       |
+| A table's title column keeps its width beside figures («Imp…» no more)                                                                         | ✅ 11-19 | `--size-cell-title` (`EditableTable`, `LineItems`)                                                             |
+| A grouped table says each group's aggregates under their columns; numbers with fixed decimals                                                  | ✅ 11-18 | `Pile.totals`, `DataColumn.decimals`, `SheetColumn.decimals`                                                   |
+| The authorship footer speaks like the form: person chip, DD/MM/YYYY                                                                            | ✅ 11-04 | `Record.Audit` (`by` optional or the chip's props; `at` as `Date`/ISO)                                         |
+| Notices, field notes, activity, history                                                                                                        | ✅       | `Record.Notice`, `note`, `Record.Activity`                                                                     |
+| Open a record from another (sub-context)                                                                                                       | ✅       | composer (modal, preview, on the side, page)                                                                   |
+| Priority (stars)                                                                                                                               | ✅ 10-31 | `Priority`                                                                                                     |
+| Editable kanban state (traffic light)                                                                                                          | ✅ 10-31 | `KanbanState`                                                                                                  |
+| Next activity on the card (clock by urgency)                                                                                                   | ✅ 10-31 | `ActivityBadge`                                                                                                |
+| Rich text field (html)                                                                                                                         | ✅ 11-04 | `RichTextInput` (Tiptap v3, loaded on edit), `RichTextValue` (DOMPurify)                                       |
+| Record attachments (list, preview, download)                                                                                                   | ✅ 11-04 | `Attachments` (`components/attachments`): upload, open, download, remove with undo                             |
+| Editable image / avatar                                                                                                                        | ✅ 11-04 | `ImageInput` (choose/drop/paste, keyboard crop)                                                                |
+| Signature                                                                                                                                      | ✅ 11-04 | `SignatureInput` (draw, or type the name)                                                                      |
 
 ## 2. A collection of records
 
@@ -55,15 +66,15 @@ data comes from). What is marked ✅ with a date was done in the round of 2026-1
 | Per-resource calendar, automatic scheduling, critical path                            | 💲       | license: FullCalendar scheduler / SVAR PRO                                  |
 | Export what is seen (xlsx)                                                            | ✅       | `foundations/xlsx`                                                          |
 | A presentation of your own (map, gallery, floor plan) with the same set               | ✅ 11-03 | `List.Present` (`ListSet`: order, piles, selection)                         |
-| An operation over N chosen records (Odoo's «wizard»)                                  | ✅ 11-03 | `5 · Plantillas/Operación`: `Record` in a modal + `api.pick`                |
-| An operation in SEVERAL steps in one sitting (import: upload › map › review)          | ✅ 11-04 | `StepFlow` (`components/flow`); `5 · Plantillas/Importar`                   |
+| An operation over N chosen records (Odoo's «wizard»)                                  | ✅ 11-03 | `5 · Plantillas/Procesos/Operación`: `Record` in a modal + `api.pick`       |
+| An operation in SEVERAL steps in one sitting (import: upload › map › review)          | ✅ 11-04 | `StepFlow` (`components/flow`); `5 · Plantillas/Procesos/Importar`          |
 | Thousands of rows in the table: draws only the ones in view (from 200)                | ✅ 11-03 | `DataTable` (`primitives/table/rowWindow`)                                  |
 | The table draws the piles the server counted, with «Ver N más»                        | ✅ 11-03 | `DataTable piles`, `Grouping.onMore` (rows, board, table, `ListSet.more`)   |
 | A pile's «Ver más» says what it brings («Ver 50 más de 49.950») and stops at the cap  | ✅ 11-03 | `Pile.more`, `pileFoot`, `PileFootLine` (rows, board, table, custom)        |
 | A card of your own on the board opens like the system's                               | ✅ 11-03 | `List.Board card(item, ways)` (`CardWays`, like `ListSet`)                  |
 | Ask again without the rows disappearing                                               | ✅ 11-03 | `List state.refreshing`: the rows stay, a discreet bar and `aria-busy`      |
 | A person's card draws their face                                                      | ✅ 11-03 | `RecordCard media.person`, like `RelationCard`                              |
-| Several sets at once (reconciliation), each with its own search                       | ✅ 11-03 | `Panes` / `Pane`; `5 · Plantillas/Conciliación`                             |
+| Several sets at once (reconciliation), each with its own search                       | ✅ 11-03 | `Panes` / `Pane`; `5 · Plantillas/Procesos/Conciliación`                    |
 
 ## 2b. Formatted values — show and edit (round of 2026-11-04)
 
@@ -89,7 +100,7 @@ reading (`mode="read"`) it draws it as a datum, in the copy's language.
 | A signed amount that reads well: negatives in red with their sign, accounting in parentheses | ✅ 11-04 | `Numeric signed`                                                         |
 | Color: label palette (Odoo's color index) and hex                                            | ✅ 11-04 | `ColorInput` (React Aria `ColorField` + `ColorSwatchPicker`)             |
 | A model's listing draws each type: email, web and phone as a link, duration, yes/no, date    | ✅ 11-04 | `columnsFromModel` (`modelCellKind`)                                     |
-| A real sheet with all these controls, in reading and editing                                 | ✅ 11-04 | `5 · Plantillas/Ficha de contacto`                                       |
+| A real sheet with all these controls, in reading and editing                                 | ✅ 11-04 | `5 · Plantillas/Registros/Ficha de contacto`                             |
 
 ## 3. Choose and search
 
@@ -116,6 +127,7 @@ reading (`mode="read"`) it draws it as a datum, in the copy's language.
 | An amount (`decimal`, `monetary`) is asked as a number                                                  | ✅ 10-31 | `kindOf` read it as text: «total <= 1000» could not be asked                            |
 | The bar with chips placed: the field and the panel button keep their name                               | ✅ 11-03 | `SearchBar`: «Buscar» and «Filtrar, agrupar y favoritos, N puestos»                     |
 | The bar's suggestions are options (ARIA combobox)                                                       | ✅ 11-03 | `SearchBar`: `listbox` / `option`, `aria-activedescendant`                              |
+| A list's actions as a pill, and the chosen rows' actions floating at the bottom (search stays)          | 🧭 11-18 | `List.Dock` (`ListDock`), `placement`                                                   |
 | A relation's row unfolds into its records (Odoo's «Search Contact for: …»), chosen by name, sent by key | ✅ 11-18 | `SearchBar searchRecords` (or `SearchProvider`), ▸ / →, `withValue` (one chip)          |
 | An enum asked by its words, not its raw values («Pagada», sent as `paid`)                               | ✅ 11-18 | `translations.choices`, `choiceLabel`; unfolds in the bar, select / tags in the builder |
 | The builder picks records: es / no es (one), está en (tags), está vacío; reads keys back as names       | ✅ 11-18 | `FilterBuilder` / `CriteriaBuilder searchRecords`, `liftRecords`, `useRecordNames`      |
@@ -136,7 +148,7 @@ reading (`mode="read"`) it draws it as a datum, in the copy's language.
 | The surfaces composer dresses (Peek, Dialog, Missing)  | ✅       | web-ui (`Peek onPromote`, `Dialog onExpand`)                    |
 | Modals INSIDE the panels                               | 🟡       | composer — being refactored (2026-10-31)                        |
 | Phone: everything is a page, preview as a bottom sheet | ❌       | composer                                                        |
-| Templates that show web-ui + composer together         | ✅ 10-31 | `5 · Plantillas/Espacio de trabajo`                             |
+| Templates that show web-ui + composer together         | ✅ 10-31 | `5 · Plantillas/Abrir y elegir/Espacio de trabajo`              |
 | The `api.pick` window with a requested size            | ❌       | composer (today it opens 480×360)                               |
 | Open a relational: modal by default + «Abrir en…»      | ✅ 10-31 | `RelationValue onOpenIn`, `Picker onOpen(id, to)`, `OpenTarget` |
 | A tag (many2many) opens its record in preview          | ✅ 10-31 | `TagsField onOpen`, `openTarget`                                |

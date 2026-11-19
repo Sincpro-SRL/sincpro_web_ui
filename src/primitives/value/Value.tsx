@@ -135,9 +135,13 @@ export function Cell({
   /** From how many characters it gets truncated. A 64 character identifier
    *  breaks the width of the whole table for a column nobody reads in full. */
   max = 48,
+  /** How many decimals a number is written with — the column's, so every number in it lines
+   *  up: «6.057,10» over «8.370,57». Absent, up to two, as the value has them. */
+  decimals,
 }: {
   value: string | number | null | undefined;
   max?: number;
+  decimals?: number;
 }) {
   const copy = useUiCopy();
   if (value === null || value === undefined) {
@@ -150,7 +154,18 @@ export function Cell({
     );
   }
 
-  if (typeof value === "number") return <Numeric value={value} format="decimal" />;
+  if (typeof value === "number") {
+    return (
+      <Numeric
+        value={value}
+        format={
+          decimals === undefined
+            ? "decimal"
+            : { minimumFractionDigits: decimals, maximumFractionDigits: decimals }
+        }
+      />
+    );
+  }
 
   if (value === "") {
     return (
