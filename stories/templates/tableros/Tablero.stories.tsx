@@ -468,3 +468,61 @@ export const CuatroEnUnaFila: Story = {
       );
   },
 };
+
+/**
+ * **Cifras anchas en una fila de cuatro** (#68): un monto de millones no se corta ni se sale de su
+ * tarjeta — baja de tamaño hasta caber (el ancho de la tarjeta sobre el largo de la cifra), y una
+ * cifra corta, «16», sigue grande. Sin medir nada: sólo CSS.
+ */
+export const CifrasAnchas: Story = {
+  name: "Cifras anchas",
+  render: () => (
+    <Board
+      title="Panel de control"
+      metrics={
+        <BoardStats>
+          <BoardStat
+            label="Cobrado este año"
+            icon={Banknote}
+            hero
+            value="Bs 1.234.567,89"
+            detail="1.204 comprobantes aprobados"
+            trend={[0, 200_000, 450_000, 900_000, 1_234_567]}
+          />
+          <BoardStat
+            label="Vendido en la tienda"
+            icon={ShoppingCart}
+            value="Bs 98.765.432,10"
+            detail="2 compras"
+          />
+          <BoardStat
+            label="Cuotas emitidas"
+            icon={Receipt}
+            value={1_234_567}
+            detail="este año"
+          />
+          <BoardStat label="Registrados" icon={Store} value="16" detail="0 observados" />
+        </BoardStats>
+      }
+    >
+      {null}
+    </Board>
+  ),
+  play: async ({ canvasElement }) => {
+    const figures = await waitFor(() => {
+      const found = canvasElement.querySelectorAll<HTMLElement>(
+        '[data-ui="board.stat.value"]',
+      );
+      expect(found.length).toBe(4);
+      return [...found];
+    });
+    // None is cut: each fits its tile.
+    for (const figure of figures)
+      await expect(figure.scrollWidth, figure.textContent ?? "").toBeLessThanOrEqual(
+        figure.clientWidth + 1,
+      );
+    // A short figure keeps its step; a long one stepped down to fit.
+    const size = (el: HTMLElement) => Number.parseFloat(getComputedStyle(el).fontSize);
+    await expect(size(figures[3]!)).toBeGreaterThan(size(figures[1]!));
+  },
+};

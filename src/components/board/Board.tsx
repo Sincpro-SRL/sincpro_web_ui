@@ -8,7 +8,7 @@ import { Hint } from "@sincpro/web-ui/primitives/hint/Hint";
 import { Failed } from "@sincpro/web-ui/primitives/notice/Notice";
 import { MetricChange, type MetricProps } from "@sincpro/web-ui/primitives/value/Metric";
 import type { LucideIcon } from "lucide-react";
-import { type ReactNode, useMemo } from "react";
+import { type CSSProperties, type ReactNode, useMemo } from "react";
 
 /**
  * A BOARD: the tiles of a dashboard — Odoo's «Tableros», a BI page — over one slice of data.
@@ -402,7 +402,19 @@ export function BoardStat({
             ) : (
               <span
                 data-ui="board.stat.value"
-                className={`min-w-0 truncate font-semibold text-ink ${hero ? "text-figure @xs:text-hero" : "text-figure"} ${missing ? "text-muted" : ""}`}
+                /* Sized to fit its tile (`figure-fit`): a long figure steps down instead of
+                   being cut. The title step is the floor — past it, «…» and the whole figure
+                   in the title, the last resort for a tile narrower than any number. */
+                title={typeof figure === "string" ? figure : undefined}
+                style={
+                  {
+                    ...(typeof figure === "string"
+                      ? { "--figure-length": figure.length }
+                      : {}),
+                    ...(hero ? { "--figure-step": "var(--text-hero)" } : {}),
+                  } as CSSProperties
+                }
+                className={`figure-fit min-w-0 truncate font-semibold text-ink ${missing ? "text-muted" : ""}`}
               >
                 {figure}
               </span>

@@ -1487,6 +1487,22 @@
  *  whose tap the system takes for a swipe home. It needs `viewport-fit=cover` in the
  *  page to measure anything; without it the inset is 0 and this is plain `pb-3`.
  * ------------------------------------------------------------------ */
+/* A board's figure FITS its tile (#68): never cut, never past the tile's edge. Its size is the
+   tile's width over the figure's length — between the title step and its own step (the
+   figure's, or the hero's for the lead one) —, so «15» stays big and «Bs 1.234.567,89» steps
+   down until it fits. CSS only, nothing measured: the length is the figure's characters
+   (`--figure-length`, written by the component), the width the tile's (`cqi` — the tile is its
+   own container), and a character of the figure's face is about 0.62 of its size wide. */
+@utility figure-fit {
+  font-size: clamp(
+    var(--text-title),
+    calc(100cqi / (var(--figure-length, 8) * 0.62)),
+    var(--figure-step, var(--text-figure))
+  );
+  line-height: var(--text-figure--line-height);
+  letter-spacing: var(--text-figure--letter-spacing);
+}
+
 @utility safe-bottom {
   padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
 }
