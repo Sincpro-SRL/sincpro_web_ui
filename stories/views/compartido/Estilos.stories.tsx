@@ -170,9 +170,9 @@ function Pedidos({
 }
 
 /**
- * **Una lista, moderna.** Las migas son el encabezado, con su «?» (de qué está hecha); el rango,
- * la píldora del paginador. La segunda fila es cómo se mira el conjunto: el buscador al centro,
- * ordenar, columnas y las caras. Los contadores, debajo, como mini estadísticas — el lugar de los
+ * **Una lista, moderna.** Las migas son el encabezado; el rango, la píldora del paginador. La
+ * segunda fila es cómo se mira el conjunto: de qué está hecha, el buscador al centro, ordenar,
+ * columnas y las caras. Los contadores, debajo, como mini estadísticas — el lugar de los
  * números de una lista, como el tablero de Odoo. Las acciones flotan abajo de la pantalla, al
  * centro, en la píldora que dice sobre qué actúan: «Pedidos │ Importar · Exportar · Nueva
  * cotización». Al pasar por una fila, sus entradas —👁, ↗, «Abrir en…»— en una píldora al final.

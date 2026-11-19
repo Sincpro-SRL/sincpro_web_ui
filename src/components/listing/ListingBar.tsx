@@ -47,21 +47,22 @@ import type { ReactNode } from "react";
  *  ── The modern style: the trail is the heading ──────────────────────
  *
  *      ┌──────────────────────────────────────────────────────────────────┐
- *      │ Ventas › Andina › Pedidos (?)                       ( 1–12 / 12 ‹ › ) │
- *      │                     🔍 search…                  [sort][cols] [▤▦] │
+ *      │ Ventas › Andina › Pedidos                            ( 1–12 / 12 ‹ › ) │
+ *      │ what it is made of  🔍 search…                  [sort][cols] [▤▦] │
  *      └──────────────────────────────────────────────────────────────────┘
  *              ( Pedidos │ Importar · Exportar ▾ · + Nueva cotización )   ← floats
  *
  *  As a record in the modern style, WHERE I AM is the page's heading: the trail at the
  *  title's size (`Breadcrumb size="lg"`), its last crumb the list's name — so the title is
- *  not said twice —, what the list is made of on demand (`Hint`), and the page range at the
- *  other end, as the record's pager pill. Its counters are not here: beside the trail they
- *  read as more crumbs; the list draws them as mini stats under the bar (`List.Metrics`). The second row is
- *  how I look at the set: the search centred, sort, columns and the faces. The list's actions
- *  float at the bottom of the screen in a pill named by the list (`List.Dock`), which turns
- *  into what is done to the chosen rows while some are chosen; given `placement="bar"`, or
- *  drawn by hand, they start the second row. Without crumbs the title is the heading.
- *  Compact keeps the one bar below.
+ *  not said twice —, and the page range at the other end, as the record's pager pill. Its
+ *  counters are not here: beside the trail they read as more crumbs; the list draws them as
+ *  mini stats under the bar (`List.Metrics`). The second row is how I look at the set: what
+ *  it is made of (the description), the search centred, sort, columns and the faces. The
+ *  list's actions float at the bottom of the screen in a pill named by the list
+ *  (`List.Dock`), which turns into what is done to the chosen rows while some are chosen;
+ *  given `placement="bar"`, or drawn by hand, they take the start of the second row and the
+ *  description goes on demand (`Hint`) beside the heading. Without crumbs the title is the
+ *  heading. Compact keeps the one bar below.
  *
  *  ── Inside a record it is ONE line (`inline`) ────────────────────────
  *
@@ -376,9 +377,11 @@ export function ListingBar({
                 {crumbs}
               </>
             )}
-            {/* What the list is made of, on demand: a sentence on the controls' row was a
-                line read once and then in the way. */}
-            {description === undefined ? null : <Hint>{description}</Hint>}
+            {/* What the list is made of goes on demand only when its actions hold the start
+                of the controls' row; else it IS that start (below). */}
+            {description === undefined || actions === undefined ? null : (
+              <Hint>{description}</Hint>
+            )}
           </div>
         }
         end={pagination}
@@ -388,8 +391,16 @@ export function ListingBar({
         centerAsks={center === null ? "auto" : "var(--container-search)"}
         gap={byDensity(d, "gap-x-4 gap-y-2", "gap-x-2 gap-y-1.5")}
         start={
-          actions === undefined ? null : (
+          actions !== undefined ? (
             <div className="flex shrink-0 items-center gap-1.5">{actions}</div>
+          ) : description === undefined ? null : (
+            /* What the list is made of, beside the search — the side the actions leave when
+               they float. Not the title: the trail's last crumb already says it. */
+            <p
+              className={`line-clamp-2 min-w-0 text-micro ${isChrome ? "text-chrome-muted" : "text-muted"}`}
+            >
+              {description}
+            </p>
           )
         }
         center={

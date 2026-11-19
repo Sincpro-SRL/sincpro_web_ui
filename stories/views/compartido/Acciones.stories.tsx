@@ -263,9 +263,9 @@ export const EnUnaListaTradicional: Story = {
 /**
  * **Una lista que cuelga de otra cosa, en el estilo moderno** (#68): las migas SON el encabezado,
  * como en un registro — «Ventas › Clientes › Distribuidora Andina S.R.L. › Pedidos» en una sola
- * línea, la última al tamaño del título y sin repetirlo debajo —, de qué está hecha a pedido (?),
- * y el rango como la píldora del paginador del registro. La segunda fila es cómo se mira el
- * conjunto: el buscador al centro, ordenar y las caras. Las acciones flotan abajo, en la píldora
+ * línea, la última al tamaño del título y sin repetirlo debajo —, y el rango como la píldora del
+ * paginador del registro. La segunda fila es cómo se mira el conjunto: de qué está hecha, el
+ * buscador al centro, ordenar y las caras. Las acciones flotan abajo, en la píldora
  * con el nombre de la lista.
  */
 export const MigasAnidadas: Story = {
@@ -295,20 +295,21 @@ export const MigasAnidadas: Story = {
     const root = within(trail).getByRole("link", { name: "Ventas" });
     const top = (el: Element) => el.getBoundingClientRect();
     await expect(Math.abs(top(root).bottom - top(here).bottom)).toBeLessThan(6);
-    // What the list is made of, on demand beside the heading — not a line of its own.
-    const about = canvas.getByRole("button", {
-      name: "cotizaciones, pedidos confirmados y lo que ya se facturó",
-    });
-    await expect(Math.abs(top(about).top - top(here).top)).toBeLessThan(24);
+    // What the list is made of, beside the search — the side the floating actions leave.
+    const about = canvas.getByText(
+      "cotizaciones, pedidos confirmados y lo que ya se facturó",
+    );
     // The page range is the record's pager's pill.
     await expect(
       canvasElement.querySelector('[data-ui="pagination"]')?.getAttribute("data-look"),
     ).toBe("pill");
-    // One row for how the set is looked at: the search, then sort.
+    // One row for how the set is looked at: what it is made of, the search, then sort.
     const search = canvas.getByRole("combobox", { name: "Buscar" });
     const sort = canvas.getByRole("button", { name: /Ordenar/ });
     const middle = (el: Element) => (top(el).top + top(el).bottom) / 2;
     await expect(Math.abs(middle(search) - middle(sort))).toBeLessThan(12);
+    await expect(Math.abs(middle(search) - middle(about))).toBeLessThan(16);
+    await expect(top(about).right).toBeLessThan(top(search).left);
     await expect(top(search).right).toBeLessThan(top(sort).left);
     // The actions float, named by the list.
     const pill = canvas.getByRole("toolbar", { name: "Acciones de los pedidos" });
