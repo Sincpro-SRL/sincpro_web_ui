@@ -165,7 +165,7 @@ export function RecordHeader({
    * I am, which of eighty, and the state.
    */
   dock?: RecordDockProps;
-  /** How the record is drawn — `classic` or `clean` (experimental). Absent, the
+  /** How the record is drawn — `traditional` or `modern` (experimental). Absent, the
    *  `RecordStyleProvider`'s. See `style.tsx`. */
   look?: RecordStyle;
   /** The record body. It sits IN the paper with the title, so groups, tabs
@@ -181,12 +181,12 @@ export function RecordHeader({
      keeps it for that moment, or the answer would leave with the question. */
   const saved = useJustSaved(dirty);
   /* THE STYLE decides where the dock's actions go when the dock does not say: the rail's
-     buttons in `classic`, the floating pill at the bottom in `clean`. The same `DockAction`s
+     buttons in `traditional`, the floating pill at the bottom in `modern`. The same `DockAction`s
      draw both. Floating, the pill holds the actions AND Save / Discard: the rail keeps the
      rest. */
-  const clean = useRecordStyle(look) === "clean";
+  const modern = useRecordStyle(look) === "modern";
   const dockWhere =
-    dock === undefined ? undefined : (dock.placement ?? (clean ? "bottom" : "rail"));
+    dock === undefined ? undefined : (dock.placement ?? (modern ? "bottom" : "rail"));
   const docked = dockWhere === "top" || dockWhere === "bottom";
   const railDirty = floating || docked ? undefined : dirty;
   const railActions_ = docked ? undefined : dock !== undefined ? (
@@ -425,8 +425,8 @@ export function RecordHeader({
           <div className="@container/record">
             <div
               className={
-                clean
-                  ? /* Clean: the rail is the page's heading on the ground, not a white strip. */
+                modern
+                  ? /* Modern: the rail is the page's heading on the ground, not a white strip. */
                     "bg-ground px-3 pt-4 pb-1"
                   : `px-3 py-2.5 ${
                       railSurface === "chrome"
@@ -436,9 +436,9 @@ export function RecordHeader({
               }
             >
               <div className={`flex flex-col gap-2 ${paper ? column : ""}`}>
-                {clean ? (
+                {modern ? (
                   <>
-                    {/* THE CLEAN RAIL — two lines, by weight. Row 1: WHERE I AM, the trail at the
+                    {/* THE MODERN RAIL — two lines, by weight. Row 1: WHERE I AM, the trail at the
                     title's size, and which of eighty. Row 2, a step down: what hangs off the
                     record and where it is at — the counters and the state as steps —, and the
                     pill when it rests here. The actions float (`Record.Dock`). */}

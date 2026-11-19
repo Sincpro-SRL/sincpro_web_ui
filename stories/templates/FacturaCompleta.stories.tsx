@@ -1325,7 +1325,7 @@ function Page({
   return docked === false ? (
     page
   ) : (
-    <RecordStyleProvider value="clean">{page}</RecordStyleProvider>
+    <RecordStyleProvider value="modern">{page}</RecordStyleProvider>
   );
 }
 
@@ -1373,14 +1373,14 @@ export const Borrador: Story = {
 };
 
 /**
- * **Estilo limpio** (experimental — `RecordStyleProvider value="clean"`): la MISMA factura, con
+ * **Estilo moderno** (experimental — `RecordStyleProvider value="modern"`): la MISMA factura, con
  * el mismo código. Las migas son el título de la página y el paginador va en su línea; un escalón
  * abajo, los contadores y el estado en pasos; y las acciones flotan en una píldora abajo, al
  * centro — «Registrar pago» dorada y última, «Enviar» e «Imprimir ▾» a la vista, en «Más ⋯» la
  * nota de crédito, duplicar y, aparte, lo que deshace.
  */
-export const EstiloLimpio: Story = {
-  name: "Estilo limpio (experimental)",
+export const EstiloModerno: Story = {
+  name: "Estilo moderno (experimental)",
   render: () => <Page docked="bottom" />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -1390,9 +1390,9 @@ export const EstiloLimpio: Story = {
   },
 };
 
-/** **Estilo limpio, las acciones arriba**: descansan en el riel, al centro, y flotan arriba
+/** **Estilo moderno, las acciones arriba**: descansan en el riel, al centro, y flotan arriba
  *  cuando el riel se va. */
-export const EstiloLimpioArriba: Story = {
-  name: "Estilo limpio, acciones arriba (experimental)",
+export const EstiloModernoArriba: Story = {
+  name: "Estilo moderno, acciones arriba (experimental)",
   render: () => <Page docked="top" />,
 };

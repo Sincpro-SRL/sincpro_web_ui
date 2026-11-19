@@ -152,7 +152,7 @@ export function StatusBar({
   /**
    * `track` (the default) is Odoo's statusbar: segments of one well, the current one filled.
    * `steps` is quieter: dots joined by a line, the current one ringed in its colour — the
-   * record's «clean» style, where the state sits on the ground beside the counters and a
+   * record's «modern» style, where the state sits on the ground beside the counters and a
    * filled well was one more box among them.
    */
   look?: "track" | "steps";

@@ -51,7 +51,7 @@ import type { CSSProperties, ReactNode } from "react";
 export type DockPlacement = "top" | "bottom" | "inline";
 
 /** The pill's band: the dark one (the settings bar's), a light card — or `bare`: no pill at
- *  all, the actions as the rail's buttons (the record's `classic` style draws them so). */
+ *  all, the actions as the rail's buttons (the record's `traditional` style draws them so). */
 export type DockLook = "chrome" | "canvas" | "bare";
 
 export interface ActionDockProps {
@@ -77,7 +77,7 @@ const PILL = { "--ui-button-radius": "var(--radius-pill)" } as CSSProperties;
 
 /** Where a record's actions go: as the rail's buttons, or floating — resting in the rail and
  *  detaching on scroll (`top`), or at the bottom of the screen (`bottom`). Absent, the record's
- *  style decides: `classic` → `rail`, `clean` → `bottom`. */
+ *  style decides: `traditional` → `rail`, `modern` → `bottom`. */
 export type RecordDockPlacement = "rail" | "top" | "bottom";
 
 /** What `Record.Dock` takes: the dock's, with the record's placements. */
@@ -86,7 +86,7 @@ export type RecordDockProps = Omit<ActionDockProps, "dirty" | "saved" | "placeme
 };
 
 /** The same actions with no pill: the rail's buttons — the primary first and gold, the
- *  secondary ones bordered, «⋯» with the rest. What the `classic` style draws. */
+ *  secondary ones bordered, «⋯» with the rest. What the `traditional` style draws. */
 function Bare({
   actions,
   visible,

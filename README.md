@@ -360,9 +360,9 @@ The record is written once — `Record.Dock` with its actions as data — and th
 style decides how it is drawn, the way it chooses its density:
 
 ```tsx
-<RecordStyleProvider value="clean">
+<RecordStyleProvider value="modern">
   {" "}
-  {/* or "classic", the default; a Record can say `look` */}
+  {/* or "traditional", the default; a Record can say `look` */}
   <App />
 </RecordStyleProvider>
 ```

@@ -85,7 +85,7 @@ export function Breadcrumb({
 }: {
   crumbs: readonly Crumb[];
   surface?: Surface;
-  /** `lg`: the trail is the page's heading — the record's «clean» style draws it so. */
+  /** `lg`: the trail is the page's heading — the record's «modern» style draws it so. */
   size?: "md" | "lg";
   /** From how many crumbs the middle folds. Below this every crumb is drawn:
    *  folding two crumbs hides half the trail to save one chevron. */

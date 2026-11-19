@@ -28,7 +28,7 @@ export { RecordRibbon } from "@sincpro/web-ui/components/record/RecordRibbon";
 export { RecordSkeleton } from "@sincpro/web-ui/components/record/RecordSkeleton";
 export { SmartButton, SmartButtons } from "@sincpro/web-ui/components/record/SmartButtons";
 export { type Stage, StatusBar } from "@sincpro/web-ui/components/record/StatusBar";
-/* How a whole application draws its records — `classic` or `clean` (experimental). */
+/* How a whole application draws its records — `traditional` or `modern` (experimental). */
 export {
   type RecordStyle,
   RecordStyleProvider,

@@ -339,7 +339,7 @@ export type RecordProps = {
    * whole tree under the paper the moment one of them appears or goes away.
    */
   placement?: "page" | "card";
-  /** How this record is drawn — `classic` or `clean` (experimental). Absent, the
+  /** How this record is drawn — `traditional` or `modern` (experimental). Absent, the
    *  `RecordStyleProvider`'s: an application chooses once. */
   look?: RecordStyle;
   children?: ReactNode;
@@ -407,8 +407,8 @@ export function Record({
             current={status.current ?? status.stages[0]?.id ?? ""}
             failed={status.failed ?? false}
             surface={surface}
-            /* The clean style's state is quieter: steps, not a filled well. */
-            {...(look === "clean" ? { look: "steps" as const } : {})}
+            /* The modern style's state is quieter: steps, not a filled well. */
+            {...(look === "modern" ? { look: "steps" as const } : {})}
             {...(status.onSelect === undefined ? {} : { onSelect: status.onSelect })}
           />
         )}

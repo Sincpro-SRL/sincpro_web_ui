@@ -45,24 +45,24 @@ test("las migas grandes ponen el lugar actual al tamaño del título", () => {
 });
 
 test("el estilo se elige una vez alrededor de la app, y un registro puede decir el suyo", () => {
-  function Says({ own }: { own?: "classic" | "clean" }) {
+  function Says({ own }: { own?: "traditional" | "modern" }) {
     return <>{useRecordStyle(own)}</>;
   }
-  assert.equal(renderToStaticMarkup(<Says />), "classic");
+  assert.equal(renderToStaticMarkup(<Says />), "traditional");
   assert.equal(
     renderToStaticMarkup(
-      <RecordStyleProvider value="clean">
+      <RecordStyleProvider value="modern">
         <Says />
       </RecordStyleProvider>,
     ),
-    "clean",
+    "modern",
   );
   assert.equal(
     renderToStaticMarkup(
-      <RecordStyleProvider value="clean">
-        <Says own="classic" />
+      <RecordStyleProvider value="modern">
+        <Says own="traditional" />
       </RecordStyleProvider>,
     ),
-    "classic",
+    "traditional",
   );
 });
