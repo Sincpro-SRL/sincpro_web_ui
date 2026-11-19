@@ -317,7 +317,8 @@ export type BoardStatProps = {
   change?: MetricProps["change"];
   /** The last periods, oldest first: drawn as a sparkline beside the figure. */
   trend?: readonly (number | null)[];
-  /** The ONE figure the board leads with: the hero step (≥ 48 px). At most one per board. */
+  /** The ONE figure the board leads with: the hero step (≥ 48 px) in a tile that holds it
+   *  (≥ 20 rem), the figure step in a narrower one. At most one per board. */
   hero?: boolean;
   /**
    * The STATE of the reading, never decoration: a share of clean mail under its floor is
@@ -378,7 +379,8 @@ export function BoardStat({
       {...(loading ? { "aria-busy": true } : {})}
       data-ui="board.stat"
       {...(tone === undefined ? {} : { "data-tone": tone })}
-      className={`flex min-w-0 flex-col gap-3 p-5 ${TILE} ${shade} ${span === 2 ? "@xl:col-span-2" : ""}`}
+      /* Its own container: the lead figure's step is the tile's width, not the window's. */
+      className={`@container flex min-w-0 flex-col gap-3 p-5 ${TILE} ${shade} ${span === 2 ? "@xl:col-span-2" : ""}`}
     >
       {/* An h2 like any tile: the stats come right under the board's h1, and a heading
           that skips a level loses a screen reader's outline. Its size is the label's. */}
@@ -386,17 +388,21 @@ export function BoardStat({
       {state.status === "failed" ? (
         <Failure heading={fillCopy(copy.board.tileFailed, { title: label })} state={state} />
       ) : (
-        <div className="flex min-w-0 items-end justify-between gap-4">
+        /* The figure first: when it and its trend do not fit side by side the trend goes under
+           it (wraps), and the lead figure (`hero`) takes its big step only in a tile that holds
+           it (≥ 20 rem) — the number the tile exists for is never the part that is cut. Only a
+           figure wider than its tile alone truncates. */
+        <div className="flex min-w-0 flex-wrap items-end justify-between gap-x-4 gap-y-2">
           <div className="flex min-w-0 flex-col gap-1">
             {loading ? (
               <span
                 aria-hidden
-                className={`inline-block w-24 animate-reveal-late rounded-control bg-ink/8 ${hero ? "h-(--text-hero)" : "h-(--text-figure)"}`}
+                className={`inline-block w-24 animate-reveal-late rounded-control bg-ink/8 ${hero ? "h-(--text-figure) @xs:h-(--text-hero)" : "h-(--text-figure)"}`}
               />
             ) : (
               <span
                 data-ui="board.stat.value"
-                className={`min-w-0 truncate font-semibold text-ink ${hero ? "text-hero" : "text-figure"} ${missing ? "text-muted" : ""}`}
+                className={`min-w-0 truncate font-semibold text-ink ${hero ? "text-figure @xs:text-hero" : "text-figure"} ${missing ? "text-muted" : ""}`}
               >
                 {figure}
               </span>
