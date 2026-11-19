@@ -424,8 +424,9 @@ data — and the application's style decides how they are drawn, the way it choo
   actions as the bar's buttons (the primary first and gold, «⋯» with the rest), in a record
   and in a list alike.
 - **modern**: the trail is the page's heading with the pager as a translucent primary pill on
-  its line (`Pager look="pill"`); a step down, the counters as links (`SmartButton
-look="link"`) and the state; the band is the ground; and the actions float in ONE pill at
+  its line (`Pager look="pill"`); a step down, the counters (boxes, as in the traditional
+  style — `SmartButton look="link"` stays for an application that asks for it) and the state;
+  the band is the ground; and the actions float in ONE pill at
   the bottom, centred — a record's, and a list's. `placement="top"` rests a record's pill in
   the rail and floats it at the top on scroll.
 
