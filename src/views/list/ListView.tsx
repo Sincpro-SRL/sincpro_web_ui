@@ -350,13 +350,17 @@ export function ListView<T extends object>({
      draws its primary as the others. Taking the record's place, it is the only pill there is. */
   const quiet = (actions: readonly DockAction[]): readonly DockAction[] =>
     actions.map((one) => (one.primary === true ? { ...one, primary: false } : one));
+  /* While rows are chosen, the gold is what is done to them: «Nuevo» is still there, quiet. */
+  const choosingGold = selectionDock?.some((one) => one.primary === true) === true;
   const take = host?.take;
   useEffect(() => (taking ? take?.() : undefined), [taking, take]);
   const listPill =
     dock?.actions === undefined ? undefined : (
       <ActionDock
         placement={dockAt === "bottom" ? "bottom" : "inline"}
-        actions={embedded && dockAt === "bar" ? quiet(dock.actions) : dock.actions}
+        actions={
+          (embedded || choosingGold) && dockAt === "bar" ? quiet(dock.actions) : dock.actions
+        }
         look={dock.look ?? (dockAt === "bottom" ? "chrome" : "bare")}
         {...(dock.visible === undefined ? {} : { visible: dock.visible })}
         {...(dock.label === undefined ? {} : { label: dock.label })}

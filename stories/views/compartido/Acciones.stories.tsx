@@ -141,7 +141,8 @@ function PedidosConAcciones({ crumbs = VENTAS }: { crumbs?: typeof VENTAS }) {
               },
             ]}
             selection={[
-              { id: "send", label: "Enviar", icon: Mail, onSelect: nada },
+              /* Gold while rows are chosen: «Nueva cotización» goes quiet meanwhile. */
+              { id: "send", label: "Enviar", icon: Mail, primary: true, onSelect: nada },
               {
                 id: "print",
                 label: "Imprimir",
