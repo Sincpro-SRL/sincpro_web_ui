@@ -10,7 +10,7 @@ import {
 import { formatDuration } from "@sincpro/web-ui/primitives/field/duration";
 import { DateValue } from "@sincpro/web-ui/primitives/value/DateValue";
 import { Numeric } from "@sincpro/web-ui/primitives/value/Value";
-import { Check } from "lucide-react";
+import { YesNo } from "@sincpro/web-ui/primitives/value/YesNo";
 
 /* ====================================================================== *
  *  A MODEL FIELD, DRAWN BY ITS TYPE.
@@ -76,19 +76,6 @@ function Link({
       {label ?? text}
       {external ? <span className="sr-only"> ({copy.field.newTab})</span> : null}
     </a>
-  );
-}
-
-/** A yes/no in words: a check alone is not read by everyone the same way, and «no» needs
- *  no icon — an empty mark next to every false row would only add noise to the column. */
-function YesNo({ value }: { value: boolean }) {
-  const copy = useUiCopy();
-  if (!value) return <span className="text-muted">{copy.table.no}</span>;
-  return (
-    <span className="inline-flex items-center gap-1 text-ink">
-      <Check aria-hidden className="size-(--size-icon-sm) text-good" strokeWidth={2.5} />
-      {copy.table.yes}
-    </span>
   );
 }
 

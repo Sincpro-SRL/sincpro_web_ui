@@ -13,6 +13,7 @@ import type { ChartKind, ChartOrder } from "@sincpro/web-ui/foundations/chart";
 import type { GroupableField } from "@sincpro/web-ui/foundations/grouping";
 import type { Grouping, GroupLevel, Pile } from "@sincpro/web-ui/foundations/grouping";
 import type { Pivot, PivotKey, PivotSpec } from "@sincpro/web-ui/foundations/pivot";
+import type { OpenTarget } from "@sincpro/web-ui/foundations/types";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
 import type { DataColumn, DataTableCreate } from "@sincpro/web-ui/primitives/table/DataTable";
 import type { ReportColumn, ReportRow } from "@sincpro/web-ui/primitives/table/ReportTable";
@@ -278,12 +279,16 @@ export type ListDock = {
   /** What is done to the CHOSEN rows — «Enviar», «Imprimir ▸», «Archivar». Give the list a
    *  `selection` too. */
   selection?: readonly DockAction[];
-  /** Where the actions go: the BAR's buttons, or ONE pill floating at the BOTTOM, centred — the
-   *  list's actions, and the chosen rows' while some are chosen. Absent, the view style decides
-   *  (`ViewStyleProvider`): `traditional` → `bar`, `modern` → `bottom`. */
+  /** Where the list's actions go: the BAR's buttons, or ONE pill floating at the BOTTOM of the
+   *  screen, centred, named by the list it acts on. Absent, the view style decides
+   *  (`ViewStyleProvider`): `traditional` → `bar`, `modern` → `bottom`; a collection
+   *  (`embedded`) keeps them on its line. In the modern bar, `bar` puts them at the start of the
+   *  controls' row. */
   placement?: "bar" | "bottom";
-  /** Where the chosen rows' actions go when it is not where `placement` puts them: the BAR in
-   *  place of the search, or floating at the BOTTOM while the search stays in the bar. */
+  /** Where the chosen rows' actions go: the BAR in place of the search, or floating at the
+   *  BOTTOM while the search stays in the bar. Absent, the view style decides
+   *  (`ViewStyleProvider`): `traditional` → `bar`, `modern` → `bottom`. In a collection
+   *  (`embedded`) the floating pill takes the record's place — a screen has one (`DockHost`). */
   selectionPlacement?: "bottom" | "bar";
   /** The pill's band — `chrome` (dark) or `canvas` (light) — or `bare`, the bar's buttons. By
    *  default `bare` in the bar and `chrome` floating. */
@@ -432,6 +437,11 @@ export type ListViewProps<T extends object> = {
   onOpen?: (item: T) => void;
   onPeek?: (item: T) => void;
   isPeeked?: (item: T) => boolean;
+  /** The OTHER places a row's record opens — beside, a window, a modal —, offered as «Abrir
+   *  en…» among the row's ways in (next to 👁 and ↗), so an application does not draw a second
+   *  set beside the name. The workspace says which it has; `onOpenIn` opens there. */
+  openTargets?: readonly OpenTarget[];
+  onOpenIn?: (item: T, to: OpenTarget) => void;
   /** What a press on the row's body does when both ways in exist. `peek` (the default) looks
    *  without leaving the list; `open` goes to the record — a workspace whose rule is «a row
    *  opens the page» (the composer's) says `open`, and 👁 stays for the look. */

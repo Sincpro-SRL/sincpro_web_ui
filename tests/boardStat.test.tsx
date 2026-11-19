@@ -35,16 +35,21 @@ test("la cifra va en su escalón, con su ícono, su ⓘ y su variación", () => 
     />,
   );
   assert.match(html, /data-ui="board\.stat"/);
-  assert.match(html, /class="[^"]*text-figure[^"]*"[^>]*>1\.240</);
+  /* Its step is a ceiling: it fits its tile (`figure-fit`), told its length (#68). */
+  assert.match(
+    html,
+    /style="--figure-length:5"[^>]*class="[^"]*figure-fit[^"]*"[^>]*>1\.240</,
+  );
   /* Proportional digits: tabular ones space a lone figure like a column. */
-  assert.doesNotMatch(html, /text-figure[^"]*tabular-nums/);
+  assert.doesNotMatch(html, /figure-fit[^"]*tabular-nums/);
   assert.match(html, /vs ayer/);
   assert.match(html, /aria-label="Mensajes recibidos"/);
 });
 
 test("sin valor dice «Sin datos», no un cero ni una raya", () => {
   const html = draw(<BoardStat label="Correo limpio" hero />);
-  assert.match(html, /text-hero[^"]*"[^>]*>Sin datos</);
+  /* The lead figure's ceiling is the hero step. */
+  assert.match(html, /--figure-step:var\(--text-hero\)[^>]*>Sin datos</);
 });
 
 test("leyendo, la cifra guarda su lugar y no se escribe", () => {
@@ -60,7 +65,7 @@ test("el tono es el estado de la lectura: tiñe el recuadro y se nombra en data-
   assert.match(html, /data-tone="bad"/);
   assert.match(html, /bg-bad\/6/);
   /* The figure stays ink: text never wears the state colour alone. */
-  assert.match(html, /text-figure[^"]*text-ink|text-ink[^"]*text-figure/);
+  assert.match(html, /figure-fit[^"]*text-ink|text-ink[^"]*figure-fit/);
 });
 
 test("la tendencia es una sparkline con nombre, y su último punto marcado", () => {

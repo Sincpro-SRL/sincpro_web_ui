@@ -66,3 +66,4 @@ export {
   KeyValue,
   Numeric,
 } from "@sincpro/web-ui/primitives/value/Value";
+export { YesNo, type YesNoLook } from "@sincpro/web-ui/primitives/value/YesNo";

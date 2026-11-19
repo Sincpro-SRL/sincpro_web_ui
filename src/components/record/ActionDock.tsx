@@ -19,12 +19,11 @@ import {
   useKeysHint,
   useShortcuts,
 } from "@sincpro/web-ui/foundations/shortcut";
-import { stickyTop } from "@sincpro/web-ui/foundations/sticky";
 import { SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
 import { Button, type ButtonRole } from "@sincpro/web-ui/primitives/button/Button";
 import { Menu } from "@sincpro/web-ui/primitives/menu/Menu";
 import { MoreHorizontal } from "lucide-react";
-import type { CSSProperties, ReactNode } from "react";
+import { createContext, type CSSProperties, type ReactNode, type Ref, use } from "react";
 
 /* ==================================================================== *
  *  THE ACTION DOCK — the record's actions, floating: the modern style's.
@@ -53,9 +52,10 @@ import type { CSSProperties, ReactNode } from "react";
  *  boxes beside the gold one are four things shouting.
  * ==================================================================== */
 
-/** Where the dock floats. `top` and `bottom` stick to that edge of what scrolls; `inline`
- *  draws only the pill — its host places it (`Record.Dock` does). */
-export type DockPlacement = "top" | "bottom" | "inline";
+/** Where the dock goes. `bottom` floats it, stuck to the bottom of what scrolls; `inline` draws
+ *  only the pill — its host places it (`Record.Dock` does). A pill resting in the rail and
+ *  floating at the TOP on scroll was tried and dropped: the actions float at the bottom. */
+export type DockPlacement = "bottom" | "inline";
 
 /** The pill's band: the dark one (the settings bar's), a light card — or `bare`: no pill at
  *  all, the actions as the rail's buttons (the record's `traditional` style draws them so). */
@@ -112,10 +112,9 @@ function DockButton({
   );
 }
 
-/** Where a record's actions go: as the rail's buttons, or floating — resting in the rail and
- *  detaching on scroll (`top`), or at the bottom of the screen (`bottom`). Absent, the record's
- *  style decides: `traditional` → `rail`, `modern` → `bottom`. */
-export type RecordDockPlacement = "rail" | "top" | "bottom";
+/** Where a record's actions go: as the rail's buttons, or floating at the bottom of the screen.
+ *  Absent, the record's style decides: `traditional` → `rail`, `modern` → `bottom`. */
+export type RecordDockPlacement = "rail" | "bottom";
 
 /** What `Record.Dock` takes: the dock's, with the record's placements. */
 export type RecordDockProps = Omit<ActionDockProps, "dirty" | "saved" | "placement"> & {
@@ -270,7 +269,7 @@ export function ActionDock({
   visible = 2,
   dirty,
   saved,
-  placement = "top",
+  placement = "bottom",
   align = "center",
   look = "chrome",
   label,
@@ -300,21 +299,66 @@ export function ActionDock({
       />
     );
   if (placement === "inline") return pill;
-  /* Sticky to the edge of what scrolls, as the settings bar: no padding to keep in sync with
-     its height, and at the end of the page it settles in its place in the flow. Only the pill
-     takes the pointer — the band around it lets the page be pressed through. */
+  return <DockBand align={align}>{pill}</DockBand>;
+}
+
+/**
+ * The band a floating pill sits in. Sticky to the edge of what scrolls, as the settings bar: no
+ * padding to keep in sync with its height, and at the end of the page it settles in its place in
+ * the flow. Only the pill takes the pointer — the band around it lets the page be pressed through.
+ * The dock draws its own; the record's place (`DockHost`) draws an empty one for a pill to come.
+ */
+export function DockBand({
+  align = "center",
+  ref,
+  children,
+}: {
+  align?: "center" | "end";
+  ref?: Ref<HTMLDivElement>;
+  children?: ReactNode;
+}) {
   return (
     <div
+      ref={ref}
       data-ui="dock"
-      data-placement={placement}
-      /* At the top it sticks UNDER whatever already sticks there (the application bar, a
-         list bar — `--sticky-top`), not under the window's edge. */
-      {...(placement === "top" ? { style: stickyTop } : {})}
-      className={`pointer-events-none sticky z-20 flex px-3 ${
-        placement === "top" ? "py-2" : "bottom-0 mt-auto pt-3 safe-bottom"
-      } ${align === "end" ? "justify-end" : "justify-center"}`}
+      data-placement="bottom"
+      className={`pointer-events-none sticky bottom-0 z-20 mt-auto flex px-3 pt-3 safe-bottom ${
+        align === "end" ? "justify-end" : "justify-center"
+      }`}
     >
-      {pill}
+      {children}
     </div>
   );
+}
+
+/* ==================================================================== *
+ *  ONE PILL PER SCREEN — the record's floating place.
+ *
+ *  Context: a record in the modern style floats its actions at the bottom, and a collection
+ *  inside it (an embedded `List`) floats what is done to its chosen rows at the bottom too:
+ *  two pills in the same spot, one over the other, two «Enviar» and no way to tell whose.
+ *  There is ONE place, and it is the record's: while rows of a collection are chosen their
+ *  pill TAKES it — «2 elegidos ✕ · Enviar · Imprimir» where «Enviar · ⋯ · Registrar pago» was —
+ *  and gives it back when the choice is cleared. With unsaved changes the record keeps it:
+ *  Save / Discard is the only thing to do then, and the chosen rows' actions go to the
+ *  collection's own bar.
+ *
+ *  The pill that takes the place is drawn by its owner, into the record's band (a portal):
+ *  the record does not need to know what a collection does with its rows.
+ * ==================================================================== */
+
+export type DockHost = {
+  /** The band the taking pill is drawn into; `null` until the record has drawn it. */
+  target: HTMLElement | null;
+  /** The record is saying Save / Discard: its place is not given away. */
+  dirty: boolean;
+  /** Takes the place; the returned function gives it back. */
+  take: () => () => void;
+};
+
+export const DockHostContext = createContext<DockHost | null>(null);
+
+/** The floating place of the record this is inside, if it has one. */
+export function useDockHost(): DockHost | null {
+  return use(DockHostContext);
 }

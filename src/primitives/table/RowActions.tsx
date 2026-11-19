@@ -1,6 +1,7 @@
 "use client";
 
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { useViewStyle } from "@sincpro/web-ui/foundations/viewStyle";
 import { IconButton } from "@sincpro/web-ui/primitives/button/Button";
 import { Menu } from "@sincpro/web-ui/primitives/menu/Menu";
 import { useRowWash } from "@sincpro/web-ui/primitives/table/Table";
@@ -41,6 +42,53 @@ export interface RowAction {
   tone?: "normal" | "action" | "danger";
   disabled?: boolean;
   onSelect: () => void;
+  /** A way INTO the record (look, open, open in…) and not something done to it: always one
+   *  press away, first, and in the modern style grouped in the navigation pill. */
+  way?: boolean;
+  /** Its choices: the action is a menu (`icon` its trigger) — «Abrir en…» with the places. */
+  menu?: readonly Pick<RowAction, "id" | "label" | "icon" | "onSelect">[];
+}
+
+/* ── The ways in, in the modern style ─────────────────────────────────
+ *
+ * Grey icons at the row's end read as decoration, and an application added its own beside the
+ * name — three sets, unaligned. In the modern style the ways in are ONE pill, the pager's
+ * translucent primary (navigation has that colour across the system: where I am, where I go),
+ * always at the same place at the row's end; what is done to the record follows, quiet. */
+function WayButton({ way, pill }: { way: RowAction; pill: boolean }) {
+  if (way.menu !== undefined) {
+    const byId = new Map(way.menu.map((m) => [m.id, m]));
+    return (
+      <Menu
+        label={way.label}
+        title={way.label}
+        icon={way.icon}
+        iconOnly
+        chevron={false}
+        variant="text"
+        size="sm"
+        align="end"
+        groups={[
+          { options: way.menu.map((m) => ({ id: m.id, label: m.label, icon: m.icon })) },
+        ]}
+        onSelect={(id) => byId.get(id)?.onSelect()}
+      />
+    );
+  }
+  return (
+    <IconButton
+      icon={way.icon}
+      label={way.label}
+      size="sm"
+      {...(pill
+        ? { tone: "action" as const }
+        : way.tone === undefined
+          ? {}
+          : { tone: way.tone })}
+      {...(way.disabled === undefined ? {} : { disabled: way.disabled })}
+      onClick={way.onSelect}
+    />
+  );
 }
 
 export function RowActions({
@@ -53,14 +101,16 @@ export function RowActions({
 }) {
   const copy = useUiCopy();
   const wash = useRowWash();
+  const pill = useViewStyle() === "modern";
   if (actions.length === 0) return <td className={`w-0 border-b border-line ${wash}`} />;
-
+  /* The ways in are never folded into ⋯: each is one press away. The rest share `inline`. */
+  const ways = actions.filter((a) => a.way === true);
+  const done = actions.filter((a) => a.way !== true);
   /* With only one left over there is no `⋯`: a menu with a single item is one
      extra click to reach the same button. */
-  const inlineActions = actions.length <= inline + 1 ? actions : actions.slice(0, inline);
-  const overflow = actions.slice(inlineActions.length);
+  const inlineActions = done.length <= inline + 1 ? done : done.slice(0, inline);
+  const overflow = done.slice(inlineActions.length);
   const byId = new Map(actions.map((a) => [a.id, a]));
-
   return (
     /* The row's hairline runs under its actions too: without it the separators stopped one
        column short and the actions read as outside the table. */
@@ -71,6 +121,19 @@ export function RowActions({
         onClick={(e) => e.stopPropagation()}
         className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity duration-(--duration-instant) group-hover/row:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100"
       >
+        {ways.length === 0 ? null : (
+          <span
+            data-ui="row.ways"
+            data-look={pill ? "pill" : "plain"}
+            className={`flex items-center gap-0.5 ${
+              pill ? "rounded-pill border border-primary/20 bg-primary/8 p-0.5" : ""
+            }`}
+          >
+            {ways.map((way) => (
+              <WayButton key={way.id} way={way} pill={pill} />
+            ))}
+          </span>
+        )}
         {inlineActions.map((a) => (
           <IconButton
             key={a.id}

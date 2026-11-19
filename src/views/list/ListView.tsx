@@ -29,8 +29,9 @@ import {
   type ViewOption,
   ViewSwitcher,
 } from "@sincpro/web-ui/components/listing/ViewSwitcher";
-import { ActionDock } from "@sincpro/web-ui/components/record/ActionDock";
+import { ActionDock, useDockHost } from "@sincpro/web-ui/components/record/ActionDock";
 import { Breadcrumb } from "@sincpro/web-ui/components/record/Breadcrumb";
+import type { DockAction } from "@sincpro/web-ui/components/record/dock";
 import { RecordTimeline } from "@sincpro/web-ui/components/timeline/RecordTimeline";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { useDensity } from "@sincpro/web-ui/foundations/density";
@@ -48,6 +49,7 @@ import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { Empty, Failed, Skeleton } from "@sincpro/web-ui/primitives/notice/Notice";
 import { PivotTable } from "@sincpro/web-ui/primitives/table/PivotTable";
 import { ReportTable } from "@sincpro/web-ui/primitives/table/ReportTable";
+import { Metric, Metrics } from "@sincpro/web-ui/primitives/value/Metric";
 import { ProgressBar } from "@sincpro/web-ui/primitives/value/ProgressBar";
 import { groupedColumnIds, WIDE_PRESENTS } from "@sincpro/web-ui/views/list/columns";
 import {
@@ -63,6 +65,7 @@ import {
 } from "@sincpro/web-ui/views/list/presentations";
 import type { CardWays, ListViewProps } from "@sincpro/web-ui/views/list/types";
 import { useNarrowList } from "@sincpro/web-ui/views/list/useNarrowList";
+import { useReachBottom } from "@sincpro/web-ui/views/list/useReachBottom";
 import type { LucideIcon } from "lucide-react";
 import {
   CalendarDays,
@@ -77,7 +80,16 @@ import {
   Table2,
   X,
 } from "lucide-react";
-import { Fragment, lazy, type ReactNode, Suspense, useCallback, useMemo } from "react";
+import {
+  Fragment,
+  lazy,
+  type ReactNode,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+} from "react";
+import { createPortal } from "react-dom";
 
 /* The calendar (FullCalendar) and the gantt (SVAR) are each about a third of a list's weight,
    and most lists never show either face. Each is its own chunk, fetched the first time its
@@ -184,6 +196,8 @@ export function ListView<T extends object>({
   selection,
   onOpen,
   onPeek,
+  openTargets,
+  onOpenIn,
   rowClick = "peek",
   onChoose,
   state,
@@ -311,27 +325,53 @@ export function ListView<T extends object>({
       </>
     );
 
-  /* THE DOCK: the list's actions and what is done to the chosen rows, from the
-     same data. Where they go is the view style's: `traditional` draws them as the bar's buttons
-     (the primary first and gold, «⋯» with the rest), and the chosen rows' in the bar in place of
-     the search; `modern` floats ONE pill at the bottom, centred, as a record does — the list's
-     actions, and while rows are chosen, what is done to them instead («3 elegidas ✕ · …»). */
-  const dockAt = dock?.placement ?? (viewStyle === "modern" ? "bottom" : "bar");
+  /* THE DOCK: the list's actions and what is done to the chosen rows, from the same data.
+     Where they go is the view style's: `traditional` draws them as the bar's buttons (the
+     primary first and gold, «⋯» with the rest), and the chosen rows' in the bar in place of the
+     search; `modern` floats ONE pill at the bottom of the screen, centred, as a record does —
+     named by the list it acts on («Pedidos │ Importar · Exportar ▾ · Nueva cotización»), so one
+     action is never a lone button in a ring —, and while rows are chosen, what is done to them
+     instead («3 elegidas ✕ │ …»). `placement="bar"` keeps a modern list's actions in its header.
+
+     A collection (`embedded`) is a field of the record, and the record owns the screen's ONE
+     floating place (`DockHost`): its own actions stay on its line, and what is done to its
+     chosen rows TAKES the record's place in the modern style — or goes to its line while the
+     record is saying Save / Discard, which keeps the place. Without a record that floats
+     (a dialog, the traditional style) it floats on its own, as a screen's list does. */
+  const host = useDockHost();
+  const modern = viewStyle === "modern";
+  const dockAt = dock?.placement ?? (modern && !embedded ? "bottom" : "bar");
+  const chosenAt = dock?.selectionPlacement ?? (modern ? "bottom" : "bar");
+  const intoHost = embedded && host !== null && chosenAt === "bottom";
   const chosen = selection?.count ?? 0;
   const selectionDock =
     dock?.selection === undefined || selection === undefined || chosen === 0
       ? undefined
       : dock.selection;
   const floatsChosen =
-    selectionDock !== undefined && (dock?.selectionPlacement ?? dockAt) === "bottom";
+    selectionDock !== undefined && chosenAt === "bottom" && !(intoHost && host.dirty);
+  const taking = floatsChosen && intoHost;
+  /* ONE gold per screen, and inside a record it is the record's: on its own line a collection
+     draws its primary as the others. Taking the record's place, it is the only pill there is. */
+  const quiet = (actions: readonly DockAction[]): readonly DockAction[] =>
+    actions.map((one) => (one.primary === true ? { ...one, primary: false } : one));
+  /* While rows are chosen, the gold is what is done to them: «Nuevo» is still there, quiet. */
+  const choosingGold = selectionDock?.some((one) => one.primary === true) === true;
+  const take = host?.take;
+  useEffect(() => (taking ? take?.() : undefined), [taking, take]);
   const listPill =
     dock?.actions === undefined ? undefined : (
       <ActionDock
         placement={dockAt === "bottom" ? "bottom" : "inline"}
-        actions={dock.actions}
+        actions={
+          (embedded || choosingGold) && dockAt === "bar" ? quiet(dock.actions) : dock.actions
+        }
         look={dock.look ?? (dockAt === "bottom" ? "chrome" : "bare")}
         {...(dock.visible === undefined ? {} : { visible: dock.visible })}
         {...(dock.label === undefined ? {} : { label: dock.label })}
+        {...(dockAt === "bottom" && identity?.title !== undefined
+          ? { lead: <DockName name={identity.title} /> }
+          : {})}
       />
     );
   const actions =
@@ -347,8 +387,9 @@ export function ListView<T extends object>({
   const chosenPill =
     selectionDock === undefined ? null : (
       <ActionDock
-        placement={floatsChosen ? "bottom" : "inline"}
-        actions={selectionDock}
+        /* Into the record's band it is only the pill: the band is the record's. */
+        placement={floatsChosen && !taking ? "bottom" : "inline"}
+        actions={embedded && !floatsChosen ? quiet(selectionDock) : selectionDock}
         /* Floating, the pill says how many and offers the rest; in the bar the bar does. */
         {...(floatsChosen ? { lead: chosenLead } : {})}
         look={dock?.look ?? (floatsChosen ? "chrome" : "bare")}
@@ -357,7 +398,21 @@ export function ListView<T extends object>({
       />
     );
   /* At the bottom there is ONE pill: the chosen rows' while some are chosen, else the list's. */
-  const floating = floatsChosen ? chosenPill : dockAt === "bottom" ? listPill : null;
+  /* Something floats on this list: it reaches the bottom of what scrolls it, so the pill has one
+     place — the bottom of the screen — however few the rows (`useReachBottom`). */
+  const reach = useReachBottom(
+    frame,
+    !embedded && (dockAt === "bottom" || chosenAt === "bottom"),
+  );
+  const floating = taking
+    ? host?.target == null || chosenPill === null
+      ? null
+      : createPortal(chosenPill, host.target)
+    : floatsChosen
+      ? chosenPill
+      : dockAt === "bottom"
+        ? listPill
+        : null;
 
   /* Embedded, the line is drawn only if it has something to OFFER: a count alone repeats
      what the rows (and the footer) already say. */
@@ -372,21 +427,52 @@ export function ListView<T extends object>({
   /* The chosen rows' pill floats: the bar keeps its search, and does not say the count. */
   const barSelection = floatsChosen ? undefined : selection;
 
+  /* THE COUNTERS, in the modern style, are mini stats under the bar — with the metrics, where a
+     list's numbers are read —, not words beside its trail, where they read as more crumbs. */
+  const statsBelow =
+    modern && !embedded && density === "comfortable" && identity?.counters !== undefined;
+  const counterStats =
+    !statsBelow || identity?.counters === undefined ? undefined : (
+      <Metrics>
+        {identity.counters.map((c) => (
+          <Metric key={c.label} value={c.value} label={c.label} />
+        ))}
+      </Metrics>
+    );
+  const stats =
+    counterStats === undefined ? (
+      metrics
+    ) : metrics === undefined ? (
+      counterStats
+    ) : (
+      <div className="flex flex-col gap-2">
+        {counterStats}
+        {metrics}
+      </div>
+    );
+
   const bar = !barHasControls ? undefined : (
     <ListingBar
       surface={surface}
+      look={viewStyle}
       {...(embedded ? { inline: true, count: items.length } : {})}
       {...(embedded || crumbs === undefined || crumbs.length === 0 || density === "compact"
         ? {}
         : {
             crumbs: (
-              <Breadcrumb crumbs={crumbs} {...(surface === undefined ? {} : { surface })} />
+              <Breadcrumb
+                crumbs={crumbs}
+                size={viewStyle === "modern" ? "lg" : "md"}
+                {...(surface === undefined ? {} : { surface })}
+              />
             ),
           })}
       {...(actions === undefined ? {} : { actions })}
       {...(identity?.title === undefined ? {} : { title: identity.title })}
       {...(identity?.description === undefined ? {} : { description: identity.description })}
-      {...(identity?.counters === undefined ? {} : { counters: identity.counters })}
+      {...(identity?.counters === undefined || statsBelow
+        ? {}
+        : { counters: identity.counters })}
       {...(barSelection === undefined
         ? {}
         : {
@@ -620,6 +706,9 @@ export function ListView<T extends object>({
         {...(create === undefined ? {} : { create })}
         {...(onPeek === undefined || choosing ? {} : { onPeek })}
         {...(onOpen === undefined || choosing ? {} : { onOpen })}
+        {...(openTargets === undefined || onOpenIn === undefined || choosing
+          ? {}
+          : { openTargets, onOpenIn })}
         {...(choosing ? { onChoose } : {})}
         rowClick={rowClick}
       />
@@ -795,6 +884,7 @@ export function ListView<T extends object>({
     <div
       ref={frame}
       aria-busy={refreshing || loading}
+      {...(reach === undefined ? {} : { style: { minHeight: reach } })}
       className="@container flex min-w-0 flex-1 flex-col bg-surface"
     >
       <Listing
@@ -807,10 +897,10 @@ export function ListView<T extends object>({
            for a collection of a dozen rows. */
         sticky={!embedded}
         {...(surface === undefined ? {} : { surface })}
-        {...(metrics === undefined
+        {...(stats === undefined
           ? {}
           : {
-              metrics: <div className="px-3.5">{metrics}</div>,
+              metrics: <div className="px-3.5">{stats}</div>,
             })}
       >
         {loading ? <Skeleton label={copy.failed.loading} /> : null}
@@ -857,6 +947,23 @@ export function ListView<T extends object>({
       {floating}
       {children}
     </div>
+  );
+}
+
+/** The list's name at the start of its floating pill: what its actions act on. The same chip as
+ *  the chosen rows' «3 elegidas ✕», so the pill reads the same way whichever it holds. */
+function DockName({ name }: { name: string }) {
+  const sup = useSurface();
+  return (
+    <span
+      className={`inline-flex h-(--size-control-md) max-w-(--container-crumb) items-center rounded-pill px-3 text-meta font-medium ${bySurface(
+        sup,
+        "bg-ink/8 text-ink",
+        "bg-chrome-ink/14 text-chrome-ink",
+      )}`}
+    >
+      <span className="truncate">{name}</span>
+    </span>
   );
 }
 

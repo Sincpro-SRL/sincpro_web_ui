@@ -11,19 +11,26 @@ y una prueba que la sostiene.
 
 ## Hacia dónde vamos · el estilo moderno
 
-El estilo **moderno** es la dirección del sistema: así se dibujan las pantallas nuevas, y se va a
-seguir aplicando al resto y mejorando. No es una prueba. El **tradicional** se queda —la misma
-API, los mismos datos— para las aplicaciones que ya lo usan; se elige una vez, alrededor de la
-aplicación, con `ViewStyleProvider`, como la densidad.
+El estilo **moderno** es el estilo de Sincpro y la dirección del sistema: así se dibujan las
+pantallas nuevas, y se sigue iterando —cosas chicas que ayudan, una ronda a la vez—. No es una
+prueba. El **tradicional** se queda, para siempre —la misma API, los mismos datos—: es como se
+hace el software de gestión (a la manera de Odoo), y las aplicaciones que ya lo usan lo
+mantienen. Se elige una vez, alrededor de la aplicación, con `ViewStyleProvider`, como la
+densidad.
 
 - **La página respira sobre el fondo.** Sin banda blanca arriba del papel: las migas SON el
-  título de la página, y los contadores y el estado van un escalón más abajo, más quietos.
-- **Una sola píldora flotante con las acciones**, abajo y al centro, al alcance del pulgar: la
-  misma en un registro, en una lista y en un formulario de ajustes. Con cambios pasa a ser
-  «N cambios · Descartar · Guardar»; con filas elegidas, lo que se les hace. Nunca dos a la vez.
+  título de la página, con el paginador al final; un escalón más abajo, lo que el registro
+  tiene (los contadores, cajas) y dónde está (el estado).
+- **Una sola píldora flotante con las acciones**, abajo de la PANTALLA y al centro, al alcance
+  del pulgar: la de un registro, la de un formulario de ajustes y la de una lista — que dice de
+  qué lista es («Pedidos │ Importar · Nueva cotización»), así una sola acción nunca queda como un
+  botón suelto, y está siempre en el mismo lugar aunque la lista tenga seis filas. Con cambios
+  pasa a ser «N cambios · Descartar · Guardar»; con filas elegidas, lo que se les hace. Una sola
+  por pantalla: las elegidas de una colección toman el lugar de la del registro.
 - **La píldora es la forma de la identidad**: la de las acciones, el paginador (azul
-  translúcido), el estado como píldora de píldoras `( Borrador | Publicada | Pagada )`, los
-  contadores como enlaces con su número en una pastilla.
+  translúcido) y el estado como píldora de píldoras `( Borrador | Publicada | Pagada )`. Los
+  contadores siguen siendo cajas, en los dos estilos: un número en una caja se lee como algo que
+  el registro TIENE; como enlace se leía como una miga más.
 - **El color dice algo**: el dorado es la acción que hace avanzar el registro; el azul
   translúcido, dónde estás; el rojo, lo que deshace.
 - **El teclado llega a todo**: cada acción puede llevar su atajo, escrito como lo escribe el

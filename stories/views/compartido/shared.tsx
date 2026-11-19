@@ -37,7 +37,7 @@ import { INVOICES, lineTotal, money, STAGES } from "../../support/erp";
 export type DockArgs = {
   style: "traditional" | "modern";
   /** `auto`: what the style says — the rail in classic, the bottom in clean. */
-  placement: "auto" | "rail" | "top" | "bottom";
+  placement: "auto" | "rail" | "bottom";
   align: "center" | "end";
   look: "chrome" | "canvas";
   visible: number;

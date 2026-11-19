@@ -584,8 +584,6 @@ export function Record({
                           {...(s.count === undefined ? {} : { count: s.count })}
                           label={s.label}
                           layout={onTheRail && d === "comfortable" ? "inline" : "stacked"}
-                          /* The modern style's counters read as ways to another place. */
-                          look={look === "modern" ? "link" : "box"}
                           {...(s.onClick === undefined ? {} : { onClick: s.onClick })}
                         />
                       ))}

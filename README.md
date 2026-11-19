@@ -268,12 +268,12 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card`, `board.tile`,
 `board.stat`, `board.stat.value`, `activity.changes`, `file-list`, `file-list.file`, `metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
 `search.panel`, `search.suggestions`, `search.suggestion`, `search.record`, `search.advanced`,
-`search.keys`, `search-entry`, `search-entry.keys`, `table`, `table.pile`,
-`table.head`, `topbar`, `topbar.brand`, `topbar.menus`, `topbar.actions`, `topbar.user`,
+`search.keys`, `search-entry`, `search-entry.keys`, `table`, `table.pile`, `yes-no`,
+`table.head`, `row.ways`, `topbar`, `topbar.brand`, `topbar.menus`, `topbar.actions`, `topbar.user`,
 `frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`, `sidebar.brand`,
 `sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
 `navigation.item`, `dirty.blocked`, `dirty.bar`, `field`, `field.label`, `form.section`,
-`form.index`, `dock`, `dock.pill`, `dock.bare`, `pager`, `smart`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
+`form.index`, `dock`, `dock.pill`, `dock.bare`, `pager`, `pagination`, `smart`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
 `guide.progress`, `guide.title`, `guide.body`, `guide.actions`. A part that is one of many
 carries `data-key` too (`navigation.item`). Put your rules in a cascade layer above web-ui's, or
 outside any layer.
@@ -385,25 +385,32 @@ under «8.370,57», not «6.057,1».
 
 #### The direction: the modern style (`ViewStyleProvider`)
 
-**Modern is where the system is going.** It is not a trial: it is how new screens are drawn,
-and it keeps being applied to the rest of the system and refined. `traditional` stays — same
-API, same data — for the applications already drawn in it. What the direction is:
+**Modern is Sincpro's own style, and where the system is going.** It is not a trial: it is how
+new screens are drawn, and it keeps being iterated — small things that help, one round at a
+time. `traditional` stays, for good — same API, same data —: it is how business software is
+done (Odoo's way), and the applications already drawn in it keep it. The API both styles read
+(settled in #68): `ViewStyleProvider` / `Record look`; `Record.Dock` (`rail` | `bottom`);
+`List.Dock` (`placement`, `selectionPlacement`, the pill named by the list); `List openTargets`
 
-- **The page breathes on the ground.** No white band on top of the paper: the trail IS the
-  page's heading (`Breadcrumb size="lg"`), and the counters and the state sit a step down,
-  quieter.
-- **One floating pill holds the actions** — at the bottom, centred, under the thumb —, the
-  same on a record, a list and a settings form. It turns into «N cambios · Descartar ·
-  Guardar» while there are changes, and into what is done to the chosen rows while some are
-  chosen. Never two pills at once.
-- **Pills are the shape of the identity**: the actions' pill, the pager (a translucent primary
-  pill), the state as a pill of pills (`StatusBar look="segmented"`), the counters as links
-  with their count in a pill.
-- **Colour means something**: the gold is the one action that moves the record forward; the
+- `onOpenIn`; `DataColumn.yesNo`; `Pagination look` / `Pager look`; `StatusBar look`. What the
+  direction is:
+
+* **The page breathes on the ground.** No white band on top of the paper: the trail IS the
+  page's heading (`Breadcrumb size="lg"`), and a step down, what the record has (the
+  counters, boxes) and where it is at (the state).
+* **One floating pill holds the actions** — at the bottom of the screen, centred, under the
+  thumb —: a record's, a settings form's, and a list's, named by the list it acts on
+  («Pedidos │ Importar · Nueva cotización») so one action is never a lone button. It turns into
+  «N cambios · Descartar · Guardar» while there are changes, and into what is done to the chosen
+  rows while some are chosen. One per screen: a collection's chosen rows take the record's
+  place.
+* **Pills are the shape of the identity**: the actions' pill, the pager (a translucent primary
+  pill), the state as a pill of pills (`StatusBar look="segmented"`), the row's ways in.
+* **Colour means something**: the gold is the one action that moves the record forward; the
   translucent primary, where you are; red, what undoes.
-- **The keyboard reaches everything**: every action can carry its shortcut, drawn for the
+* **The keyboard reaches everything**: every action can carry its shortcut, drawn for the
   person's keyboard (see below).
-- **A number reads the same everywhere**: its column's decimals and format in the cells, the
+* **A number reads the same everywhere**: its column's decimals and format in the cells, the
   groups, the footer and the report.
 
 Already in the direction: dense records in sections with an index (`FormStyleProvider
@@ -424,10 +431,11 @@ data — and the application's style decides how they are drawn, the way it choo
   actions as the bar's buttons (the primary first and gold, «⋯» with the rest), in a record
   and in a list alike.
 - **modern**: the trail is the page's heading with the pager as a translucent primary pill on
-  its line (`Pager look="pill"`); a step down, the counters as links (`SmartButton
-look="link"`) and the state; the band is the ground; and the actions float in ONE pill at
-  the bottom, centred — a record's, and a list's. `placement="top"` rests a record's pill in
-  the rail and floats it at the top on scroll.
+  its line (`Pager look="pill"`); a step down, the counters (boxes) and the state; the band is
+  the ground; and the actions float in ONE pill at the bottom of the screen, centred — a
+  record's, and a list's named by the list (`List.Dock placement="bar"` keeps a list's in its
+  header). Two things were tried and dropped: a pill resting in the rail and floating at the
+  TOP, and the counters as links.
 
 **The state.** `StatusBar look`: `track` (Odoo's — the traditional style's), `segmented` (a
 pill of pills, the actions' shape — the modern style's), `steps`, `progress` and `pill` (one chip that unfolds the stages). Each

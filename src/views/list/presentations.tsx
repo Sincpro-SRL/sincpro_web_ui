@@ -1,12 +1,30 @@
 "use client";
 
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import type { OpenTarget } from "@sincpro/web-ui/foundations/types";
 import { type DataColumn, DataTable } from "@sincpro/web-ui/primitives/table/DataTable";
 import type { RowAction } from "@sincpro/web-ui/primitives/table/RowActions";
 import { type SheetColumn, SheetTable } from "@sincpro/web-ui/primitives/table/SheetTable";
 import type { SheetEntry } from "@sincpro/web-ui/views/list/derive";
 import type { ListGroup, ListSheet, ListViewProps } from "@sincpro/web-ui/views/list/types";
-import { Eye, SquareArrowOutUpRight } from "lucide-react";
+import {
+  AppWindow,
+  Ellipsis,
+  Eye,
+  type LucideIcon,
+  PanelRight,
+  PictureInPicture2,
+  SquareArrowOutUpRight,
+} from "lucide-react";
+
+/** The icon of each place a record opens — the same as a many2one's (`Picker`). */
+const OPEN_ICON: Record<OpenTarget, LucideIcon> = {
+  modal: PictureInPicture2,
+  peek: Eye,
+  page: SquareArrowOutUpRight,
+  side: PanelRight,
+  window: AppWindow,
+};
 
 /**
  * Context: the two presentations whose body is an adapter between the list's vocabulary
@@ -25,7 +43,15 @@ type TableProps<T extends object> = {
   totals: boolean;
 } & Pick<
   ListViewProps<T>,
-  "sort" | "onSortChange" | "selection" | "rowActions" | "create" | "onPeek" | "onOpen"
+  | "sort"
+  | "onSortChange"
+  | "selection"
+  | "rowActions"
+  | "create"
+  | "onPeek"
+  | "onOpen"
+  | "openTargets"
+  | "onOpenIn"
 > & { rowClick?: "peek" | "open"; onChoose?: (item: T) => void };
 
 /** The table receives EVERYTHING that belongs to the set —sorting, selection, grouping,
@@ -45,6 +71,8 @@ export function TablePresentation<T extends object>({
   create,
   onPeek,
   onOpen,
+  openTargets,
+  onOpenIn,
   rowClick = "peek",
   onChoose,
 }: TableProps<T>) {
@@ -52,8 +80,17 @@ export function TablePresentation<T extends object>({
   const press = onChoose ?? (rowClick === "open" ? (onOpen ?? onPeek) : (onPeek ?? onOpen));
   /* The row's ways in go FIRST among its actions, so they are always the inline ones and
      always in the same place; the domain's actions follow (and fold into ⋯ past two). */
+  /* «Abrir en…»: the places not already a way of their own (👁 is the peek, ↗ the page). */
+  const elsewhere =
+    onOpenIn === undefined
+      ? []
+      : (openTargets ?? []).filter(
+          (to) =>
+            !(to === "peek" && onPeek !== undefined) &&
+            !(to === "page" && onOpen !== undefined),
+        );
   const withOpeners =
-    onPeek === undefined && onOpen === undefined
+    onPeek === undefined && onOpen === undefined && elsewhere.length === 0
       ? rowActions
       : (item: T): readonly RowAction[] => [
           ...(onPeek === undefined
@@ -63,6 +100,7 @@ export function TablePresentation<T extends object>({
                   id: "peek",
                   label: copy.list.peek,
                   icon: Eye,
+                  way: true,
                   onSelect: () => onPeek(item),
                 },
               ]),
@@ -73,7 +111,25 @@ export function TablePresentation<T extends object>({
                   id: "open",
                   label: copy.list.open,
                   icon: SquareArrowOutUpRight,
+                  way: true,
                   onSelect: () => onOpen(item),
+                },
+              ]),
+          ...(elsewhere.length === 0 || onOpenIn === undefined
+            ? []
+            : [
+                {
+                  id: "open-in",
+                  label: copy.picker.openMore,
+                  icon: Ellipsis,
+                  way: true,
+                  onSelect: () => {},
+                  menu: elsewhere.map((to) => ({
+                    id: to,
+                    label: copy.picker.openIn[to],
+                    icon: OPEN_ICON[to],
+                    onSelect: () => onOpenIn(item, to),
+                  })),
                 },
               ]),
           ...(rowActions?.(item) ?? []),

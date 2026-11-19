@@ -3,7 +3,7 @@
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
-import { ChevronRight, type LucideIcon } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { Children, createContext, type ReactNode, useContext } from "react";
 
 /* ---------------------------------------------------------------- *
@@ -31,7 +31,6 @@ export function SmartButton({
   disabled = false,
   surface,
   layout = "stacked",
-  look = "box",
 }: {
   icon: LucideIcon;
   count?: number;
@@ -51,51 +50,11 @@ export function SmartButton({
    * «something looks off».
    */
   layout?: "stacked" | "inline";
-  /**
-   * `box` (the default): a bordered box, the rail's. `link`: it reads as what it is — a way
-   * to ANOTHER place: the count in a primary pill, the label, and a «›» that says it leads
-   * somewhere; at zero it goes quiet and loses the «›». The record's modern style.
-   */
-  look?: "box" | "link";
 }) {
   const copy = useUiCopy();
   const activeSurface = useSurface(surface);
   const grouped = useContext(SmartGroup);
   const empty = count === 0;
-  if (look === "link") {
-    const off = disabled || onClick === undefined;
-    return (
-      <button
-        type="button"
-        onClick={onClick}
-        disabled={off}
-        data-ui="smart"
-        data-look="link"
-        className="group inline-flex h-(--size-control-sm) shrink-0 items-center gap-1.5 rounded-pill px-2 text-left text-meta transition-colors duration-(--duration-instant) not-disabled:hover:bg-primary/8 disabled:cursor-default focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
-      >
-        <Icon
-          className={`size-(--size-icon-sm) shrink-0 ${empty ? "text-muted/60" : "text-primary"}`}
-          strokeWidth={2}
-          aria-hidden
-        />
-        <span
-          className={`rounded-pill px-1.5 text-micro font-semibold tabular-nums ${
-            empty ? "bg-ink/6 text-muted" : "bg-primary/12 text-primary"
-          }`}
-        >
-          {count === undefined ? "—" : count.toLocaleString(copy.locale)}
-        </span>
-        <span className={empty ? "text-muted" : "text-ink"}>{label}</span>
-        {empty || off ? null : (
-          <ChevronRight
-            className="size-(--size-icon-sm) shrink-0 text-muted transition-colors duration-(--duration-instant) group-hover:text-primary"
-            strokeWidth={2}
-            aria-hidden
-          />
-        )}
-      </button>
-    );
-  }
   const isInline = layout === "inline";
   return (
     <button

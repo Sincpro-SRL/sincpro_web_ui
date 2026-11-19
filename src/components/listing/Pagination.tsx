@@ -5,6 +5,7 @@ import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
+import { useViewStyle } from "@sincpro/web-ui/foundations/viewStyle";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useId, useState } from "react";
 
@@ -45,6 +46,7 @@ export function Pagination({
   onPrev,
   onNext,
   surface,
+  look: ownLook,
 }: {
   from: number;
   to: number;
@@ -56,6 +58,9 @@ export function Pagination({
   onNext?: () => void;
   /** By default it inherits it from the surface that wraps it. */
   surface?: Surface;
+  /** `plain`: quiet, the range and two arrows. `pill`: the position stands out — the record's
+   *  pager's translucent primary pill. Absent, the view style's: `modern` → `pill`. */
+  look?: "plain" | "pill";
 }) {
   const d = useDensity();
   const copy = useUiCopy();
@@ -64,14 +69,30 @@ export function Pagination({
   const [draft, setDraft] = useState("");
   const listId = useId();
 
-  const faint = bySurface(activeSurface, "text-muted", "text-chrome-muted");
-  const strong = bySurface(activeSurface, "text-ink", "text-chrome-ink");
+  /* The modern style's position is the record's pager's: one translucent primary pill, so a
+     list and a record say «where I am in the set» the same way. */
+  const style = useViewStyle();
+  const pill = (ownLook ?? (style === "modern" ? "pill" : "plain")) === "pill";
+  const faint = pill
+    ? bySurface(activeSurface, "text-primary", "text-chrome-link")
+    : bySurface(activeSurface, "text-muted", "text-chrome-muted");
+  const strong = pill
+    ? bySurface(activeSurface, "text-primary", "text-chrome-link")
+    : bySurface(activeSurface, "text-ink", "text-chrome-ink");
 
-  const arrow = `inline-flex size-(--size-control-sm) items-center justify-center rounded-pill transition-colors duration-(--duration-instant) disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${bySurface(
-    activeSurface,
-    "text-muted not-disabled:hover:bg-ink/6 not-disabled:hover:text-ink",
-    "text-chrome-muted not-disabled:hover:bg-chrome-ink/12 not-disabled:hover:text-chrome-ink",
-  )}`;
+  const arrow = `inline-flex size-(--size-control-sm) items-center justify-center rounded-pill transition-colors duration-(--duration-instant) disabled:opacity-30 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+    pill
+      ? bySurface(
+          activeSurface,
+          "text-primary not-disabled:hover:bg-primary/15",
+          "text-chrome-link not-disabled:hover:bg-chrome-link/20",
+        )
+      : bySurface(
+          activeSurface,
+          "text-muted not-disabled:hover:bg-ink/6 not-disabled:hover:text-ink",
+          "text-chrome-muted not-disabled:hover:bg-chrome-ink/12 not-disabled:hover:text-chrome-ink",
+        )
+  }`;
 
   const canEdit =
     pageSize !== undefined && onPageSizeChange !== undefined && d === "comfortable";
@@ -91,7 +112,19 @@ export function Pagination({
   }
 
   return (
-    <div className={`flex shrink-0 items-center ${byDensity(d, "gap-1", "gap-0.5")}`}>
+    <div
+      data-ui="pagination"
+      data-look={pill ? "pill" : "plain"}
+      className={`flex shrink-0 items-center ${byDensity(d, "gap-1", "gap-0.5")} ${
+        pill
+          ? `rounded-pill border p-0.5 pl-2.5 ${bySurface(
+              activeSurface,
+              "border-primary/20 bg-primary/8",
+              "border-chrome-link/30 bg-chrome-link/12",
+            )}`
+          : ""
+      }`}
+    >
       {/* The range IS the control: you touch it and you choose how many fit.
           Presets (25 / 80 / 100) sit in the datalist; typing 1000 is valid and
           the custom size is kept on the next open. */}
@@ -127,7 +160,9 @@ export function Pagination({
           </datalist>
         </>
       ) : (
-        <span className={`text-micro tabular-nums whitespace-nowrap ${faint}`}>
+        <span
+          className={`tabular-nums whitespace-nowrap ${pill ? "text-meta font-semibold" : "text-micro"} ${faint}`}
+        >
           {canEdit ? (
             <button
               type="button"

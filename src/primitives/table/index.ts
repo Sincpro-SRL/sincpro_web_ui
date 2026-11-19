@@ -6,6 +6,7 @@ export {
   DataTable,
   type DataTableCreate,
   type GroupColumn,
+  type YesNoColumn,
 } from "@sincpro/web-ui/primitives/table/DataTable";
 export {
   EditableTable,
