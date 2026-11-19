@@ -12,6 +12,7 @@ import {
   slotOf,
 } from "@sincpro/web-ui/foundations/slots";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
+import type { OpenTarget } from "@sincpro/web-ui/foundations/types";
 import type { DataColumn, DataTableCreate } from "@sincpro/web-ui/primitives/table/DataTable";
 import type { RowAction } from "@sincpro/web-ui/primitives/table/RowActions";
 import type { SortState } from "@sincpro/web-ui/primitives/table/sorting";
@@ -391,6 +392,9 @@ export type ListProps<T extends object> = {
   onOpen?: (item: T) => void;
   onPeek?: (item: T) => void;
   isPeeked?: (item: T) => boolean;
+  /** «Abrir en…» in the row's ways: the other places its record opens (see `ListViewProps`). */
+  openTargets?: readonly OpenTarget[];
+  onOpenIn?: (item: T, to: OpenTarget) => void;
   /** What a press on the row's body does when both ways in exist. `peek` (the default) looks
    *  without leaving the list; `open` goes to the record — a workspace whose rule is «a row
    *  opens the page» (the composer's) says `open`, and 👁 stays for the look. */
@@ -436,6 +440,8 @@ export function List<T extends object>({
   onOpen: openWith,
   onPeek: peekWith,
   isPeeked,
+  openTargets,
+  onOpenIn,
   readOnly = false,
   rowClick,
   onChoose,
@@ -542,7 +548,13 @@ export function List<T extends object>({
       {...(timeline === undefined ? {} : { timeline })}
       {...(faces.length === 0 ? {} : { faces })}
       {...(presents.length === 0 ? {} : { presents })}
-      {...(present === undefined ? {} : { present })}
+      /* Without `present`, the first face written — as documented. Falling to the view's
+         default («rows») drew empty lines for a list that wrote only `List.Table`. */
+      {...(present === undefined
+        ? presents[0] === undefined
+          ? {}
+          : { present: presents[0] }
+        : { present })}
       {...(onPresentChange === undefined ? {} : { onPresentChange })}
       {...(group === undefined ? {} : { group })}
       {...(selection === undefined ? {} : { selection })}
@@ -552,6 +564,8 @@ export function List<T extends object>({
       {...(onOpen === undefined ? {} : { onOpen })}
       {...(onPeek === undefined ? {} : { onPeek })}
       {...(isPeeked === undefined ? {} : { isPeeked })}
+      {...(openTargets === undefined || readOnly ? {} : { openTargets })}
+      {...(onOpenIn === undefined || readOnly ? {} : { onOpenIn })}
       {...(rowClick === undefined ? {} : { rowClick })}
       {...(onChoose === undefined || readOnly ? {} : { onChoose })}
       {...(state === undefined ? {} : { state })}
