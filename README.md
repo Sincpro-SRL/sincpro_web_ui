@@ -385,26 +385,32 @@ under «8.370,57», not «6.057,1».
 
 #### The direction: the modern style (`ViewStyleProvider`)
 
-**Modern is where the system is going.** It is not a trial: it is how new screens are drawn,
-and it keeps being applied to the rest of the system and refined. `traditional` stays — same
-API, same data — for the applications already drawn in it. What the direction is:
+**Modern is Sincpro's own style, and where the system is going.** It is not a trial: it is how
+new screens are drawn, and it keeps being iterated — small things that help, one round at a
+time. `traditional` stays, for good — same API, same data —: it is how business software is
+done (Odoo's way), and the applications already drawn in it keep it. The API both styles read
+(settled in #68): `ViewStyleProvider` / `Record look`; `Record.Dock` (`rail` | `bottom`);
+`List.Dock` (`placement`, `selectionPlacement`, the pill named by the list); `List openTargets`
 
-- **The page breathes on the ground.** No white band on top of the paper: the trail IS the
+- `onOpenIn`; `DataColumn.yesNo`; `Pagination look` / `Pager look`; `StatusBar look`. What the
+  direction is:
+
+* **The page breathes on the ground.** No white band on top of the paper: the trail IS the
   page's heading (`Breadcrumb size="lg"`), and a step down, what the record has (the
   counters, boxes) and where it is at (the state).
-- **One floating pill holds the actions** — at the bottom of the screen, centred, under the
+* **One floating pill holds the actions** — at the bottom of the screen, centred, under the
   thumb —: a record's, a settings form's, and a list's, named by the list it acts on
   («Pedidos │ Importar · Nueva cotización») so one action is never a lone button. It turns into
   «N cambios · Descartar · Guardar» while there are changes, and into what is done to the chosen
   rows while some are chosen. One per screen: a collection's chosen rows take the record's
   place.
-- **Pills are the shape of the identity**: the actions' pill, the pager (a translucent primary
+* **Pills are the shape of the identity**: the actions' pill, the pager (a translucent primary
   pill), the state as a pill of pills (`StatusBar look="segmented"`), the row's ways in.
-- **Colour means something**: the gold is the one action that moves the record forward; the
+* **Colour means something**: the gold is the one action that moves the record forward; the
   translucent primary, where you are; red, what undoes.
-- **The keyboard reaches everything**: every action can carry its shortcut, drawn for the
+* **The keyboard reaches everything**: every action can carry its shortcut, drawn for the
   person's keyboard (see below).
-- **A number reads the same everywhere**: its column's decimals and format in the cells, the
+* **A number reads the same everywhere**: its column's decimals and format in the cells, the
   groups, the footer and the report.
 
 Already in the direction: dense records in sections with an index (`FormStyleProvider
