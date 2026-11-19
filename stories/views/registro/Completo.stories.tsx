@@ -13,7 +13,7 @@ import {
   Tr,
   writeANote,
 } from "@sincpro/web-ui";
-import { type Meta, type StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Receipt, RotateCcw, ShoppingCart, Truck } from "lucide-react";
 import { useState } from "react";
 

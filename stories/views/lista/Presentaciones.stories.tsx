@@ -5,7 +5,7 @@ import {
   Pagination,
   SearchBar,
 } from "@sincpro/web-ui";
-import { type Meta, type StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, userEvent, within } from "storybook/test";
 

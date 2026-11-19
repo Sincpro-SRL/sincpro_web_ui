@@ -12,7 +12,7 @@ import {
   type SearchCriteria,
   useGroupingControl,
 } from "@sincpro/web-ui";
-import { type Meta, type StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useMemo, useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
