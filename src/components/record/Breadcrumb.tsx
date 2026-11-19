@@ -167,7 +167,11 @@ export function Breadcrumb({
                       `Link` does not forward it, and the cut name has to be readable
                       somewhere. */}
                   <span
-                    className="block max-w-(--container-crumb) truncate"
+                    className={`block truncate ${
+                      last && size === "lg"
+                        ? "max-w-(--container-crumb-heading)"
+                        : "max-w-(--container-crumb)"
+                    }`}
                     title={crumb.label}
                   >
                     {crumb.label}

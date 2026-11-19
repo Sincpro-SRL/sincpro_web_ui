@@ -113,3 +113,14 @@ test("renderStage draws inside the system's segment, told where the stage is", (
   assert.match(html, /0:Borrador:done/);
   assert.match(html, /aria-current="step"[^>]*>1:Publicada:current/);
 });
+
+test("by default the names are seen where there is room, and on a phone only the current one's", () => {
+  const html = renderToStaticMarkup(
+    <StatusBar stages={STAGES} current="posted" layout="trail" />,
+  );
+  // Borrador and Pagada: said on a phone, seen on a desk; Publicada always seen.
+  assert.equal(html.match(/max-sm:sr-only[^"]*">(Borrador|Pagada)</g)?.length, 2);
+  assert.doesNotMatch(html, /max-sm:sr-only[^"]*">Publicada</);
+  // On a phone the others show their number instead.
+  assert.match(html, /sm:hidden[^"]*">3</);
+});

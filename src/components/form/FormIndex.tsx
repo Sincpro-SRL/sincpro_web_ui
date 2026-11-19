@@ -1,8 +1,10 @@
 "use client";
 
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { STICKY_TOP } from "@sincpro/web-ui/foundations/sticky";
 import {
   createContext,
+  type CSSProperties,
   type ReactNode,
   useContext,
   useEffect,
@@ -13,7 +15,7 @@ import {
 } from "react";
 
 /* ==================================================================== *
- *  THE INDEX OF A FORM — its sections, beside them («settings» style).
+ *  THE INDEX OF A FORM — its sections, beside them («settings» and «sections» styles).
  *
  *  A form of six cards is three screens long, and its sections are the answer to «where
  *  is…»: the index names them at the sheet's left, marks the one being read as the form
@@ -62,9 +64,26 @@ function createRegistry(): Registry {
 }
 
 const NONE: readonly Entry[] = [];
+
+/* A step below what sticks above it — the same step the cards keep from the bar. */
+const INDEX_TOP: CSSProperties = {
+  top: `calc(var(${STICKY_TOP}, 0px) + var(--spacing) * 3)`,
+};
 const IndexContext = createContext<Registry | null>(null);
 
-/** Where a form's sections register: the sheet of a «settings» form. */
+/** Whether what is drawn is already INSIDE a card — a section of the «sections» style: a
+ *  group in it stays a group (titled, hairline columns), not a card inside a card. */
+const InCard = createContext(false);
+
+export function InCardScope({ children }: { children: ReactNode }) {
+  return <InCard value={true}>{children}</InCard>;
+}
+
+export function useInCard(): boolean {
+  return useContext(InCard);
+}
+
+/** Where a form's sections register: the sheet of a «settings» or «sections» form. */
 export function FormIndexScope({ children }: { children: ReactNode }) {
   const [registry] = useState(createRegistry);
   return <IndexContext value={registry}>{children}</IndexContext>;
@@ -104,27 +123,65 @@ export function FormIndex() {
   const ordered = useMemo(() => inDocumentOrder(entries), [entries]);
   const [current, setCurrent] = useState<string | undefined>(undefined);
 
-  /* The section being read is the first one crossing the top two fifths of the screen:
-     the one whose title just went by is still the one being read until the next arrives. */
+  /* The section being read is the LAST one whose top went past the upper two fifths of what
+     scrolls — the one whose title just went by is still being read until the next arrives —,
+     and at the end of the scroll, the last section: a short last card never reaches that
+     line, and pressing it in the index must mark it. Measured on scroll (capture: a record in
+     a panel scrolls its own box), once a frame. */
   useEffect(() => {
-    if (ordered.length < 2 || typeof IntersectionObserver === "undefined") return;
-    const seen = new Set<string>();
-    const observer = new IntersectionObserver(
-      (changes) => {
-        for (const change of changes) {
-          if (change.isIntersecting) seen.add(change.target.id);
-          else seen.delete(change.target.id);
+    if (ordered.length < 2) return;
+    let frame = 0;
+    const measure = (scroller: Element | null) => {
+      const height = scroller === null ? window.innerHeight : scroller.clientHeight;
+      const top = scroller === null ? 0 : scroller.getBoundingClientRect().top;
+      const atEnd =
+        scroller === null
+          ? Math.ceil(window.innerHeight + window.scrollY) >=
+            document.documentElement.scrollHeight - 2
+          : Math.ceil(scroller.scrollTop + scroller.clientHeight) >=
+            scroller.scrollHeight - 2;
+      if (atEnd && (scroller !== null || window.scrollY > 0)) {
+        setCurrent(ordered.at(-1)?.id);
+        return;
+      }
+      const atStart = scroller === null ? window.scrollY <= 2 : scroller.scrollTop <= 2;
+      if (atStart) {
+        setCurrent(ordered[0]?.id);
+        return;
+      }
+      const line = top + height * 0.4;
+      /* Cards side by side share their top: the first of them is the one being read. */
+      let reading = ordered[0]?.id;
+      let readingTop = Number.NEGATIVE_INFINITY;
+      for (const entry of ordered) {
+        const element = document.getElementById(entry.id);
+        if (element === null) continue;
+        const at = element.getBoundingClientRect().top;
+        if (at <= line && at > readingTop + 1) {
+          reading = entry.id;
+          readingTop = at;
         }
-        const first = ordered.find((entry) => seen.has(entry.id));
-        if (first !== undefined) setCurrent(first.id);
-      },
-      { rootMargin: "0px 0px -60% 0px" },
-    );
-    for (const entry of ordered) {
-      const element = document.getElementById(entry.id);
-      if (element !== null) observer.observe(element);
-    }
-    return () => observer.disconnect();
+      }
+      setCurrent(reading);
+    };
+    const onScroll = (event: Event) => {
+      const target = event.target;
+      const scroller =
+        target instanceof Element && target !== document.documentElement ? target : null;
+      /* Only the scroll that moves the sections: a table scrolling sideways inside one is not. */
+      if (
+        scroller !== null &&
+        !ordered.some((one) => scroller.querySelector(`[id="${one.id}"]`))
+      )
+        return;
+      cancelAnimationFrame(frame);
+      frame = requestAnimationFrame(() => measure(scroller));
+    };
+    document.addEventListener("scroll", onScroll, { capture: true, passive: true });
+    return () => {
+      cancelAnimationFrame(frame);
+      document.removeEventListener("scroll", onScroll, { capture: true });
+    };
   }, [ordered]);
 
   if (ordered.length < 2) return null;
@@ -135,7 +192,8 @@ export function FormIndex() {
       data-ui="form.index"
       className="hidden w-(--container-form-index) shrink-0 @3xl/form:block"
     >
-      <ul className="sticky top-3 flex flex-col gap-0.5">
+      {/* Under whatever already sticks (the application bar), not under the window's edge. */}
+      <ul className="sticky flex flex-col gap-0.5" style={INDEX_TOP}>
         {ordered.map((entry) => (
           <li key={entry.id}>
             <a
@@ -146,7 +204,7 @@ export function FormIndex() {
                 document.getElementById(entry.id)?.scrollIntoView({ block: "start" });
                 setCurrent(entry.id);
               }}
-              className="block truncate rounded-ui-nav px-2.5 py-1.5 text-meta text-muted transition-colors duration-(--duration-instant) outline-0 hover:bg-ink/5 hover:text-ink focus-visible:outline-2 focus-visible:outline-primary aria-[current]:bg-ui-nav-current aria-[current]:font-medium aria-[current]:text-ink"
+              className="block truncate rounded-ui-nav px-2.5 py-1.5 text-meta first-letter:uppercase text-muted transition-colors duration-(--duration-instant) outline-0 hover:bg-ink/5 hover:text-ink focus-visible:outline-2 focus-visible:outline-primary aria-[current]:bg-ui-nav-current aria-[current]:font-medium aria-[current]:text-ink"
             >
               {entry.title}
             </a>

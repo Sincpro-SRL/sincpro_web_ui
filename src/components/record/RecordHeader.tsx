@@ -173,10 +173,10 @@ export function RecordHeader({
   children?: ReactNode;
 }) {
   const d = useDensity();
-  /* The «settings» form style (`FormStyleProvider`): Save and Discard float at the bottom
-     (`DirtyBar`) instead of taking the rail and the thumb bar, and the record has no white
-     sheet of its own — its sections are the cards, on the ground. */
-  const floating = useFormStyle() === "settings";
+  /* The «settings» and «sections» form styles (`FormStyleProvider`): Save and Discard float
+     at the bottom (`DirtyBar`) instead of taking the rail and the thumb bar, and the record has
+     no white sheet of its own — its sections are the cards, on the ground. */
+  const floating = useFormStyle() !== "dense";
   /* «Guardado» is said where Save was; a record whose rail exists only while it has changes
      keeps it for that moment, or the answer would leave with the question. */
   const saved = useJustSaved(dirty);

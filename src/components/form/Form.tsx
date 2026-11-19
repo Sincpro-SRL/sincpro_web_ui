@@ -1,6 +1,6 @@
 "use client";
 
-import { useFormIndexEntry } from "@sincpro/web-ui/components/form/FormIndex";
+import { InCardScope, useFormIndexEntry } from "@sincpro/web-ui/components/form/FormIndex";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { useFormStyle } from "@sincpro/web-ui/foundations/form";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
@@ -51,8 +51,10 @@ export function FormSection({
   children: ReactNode;
 }) {
   const d = useDensity();
-  const settings = useFormStyle() === "settings";
-  const indexed = useFormIndexEntry(settings ? title : undefined);
+  const style = useFormStyle();
+  const settings = style === "settings";
+  const sections = style === "sections";
+  const indexed = useFormIndexEntry(settings || sections ? title : undefined);
   const asGrid = columns > 1 && d === "comfortable";
   const grid = columns === 3 ? "grid-cols-3" : "grid-cols-2";
   const withHeader =
@@ -96,6 +98,45 @@ export function FormSection({
         <div className="flex min-w-0 flex-col divide-y divide-line *:py-3.5 *:first:pt-0 *:last:pb-0">
           {children}
         </div>
+      </section>
+    );
+  }
+  if (sections) {
+    /* «sections»: the settings' card, the dense sheet's body — label | value in its columns,
+       not rows that explain themselves. A group inside stays a group (`InCardScope`). */
+    return (
+      <section
+        {...(indexed === undefined ? {} : { id: indexed })}
+        data-ui="form.section"
+        className={`@container flex min-w-0 scroll-mt-3 flex-col rounded-ui-card border border-ui-card-border bg-ui-card ${byDensity(d, "gap-3 px-5 py-4", "gap-2 px-3 py-3")}`}
+      >
+        {withHeader ? (
+          <header className="flex min-w-0 flex-wrap items-center gap-x-2.5 gap-y-1">
+            {/* A title starts with a capital: a notebook page's label («pago») is written
+                lowercase for its tab, and as a card's heading it read like a typo. */}
+            {title === undefined ? null : (
+              <h2 className="min-w-0 text-title font-semibold text-ink first-letter:uppercase">
+                {title}
+              </h2>
+            )}
+            {hint === undefined ? null : <Hint>{hint}</Hint>}
+            {status === undefined ? null : <Tag tone={status.tone}>{status.label}</Tag>}
+            {actions === undefined ? null : (
+              <span className="ml-auto flex shrink-0 items-center gap-1.5">{actions}</span>
+            )}
+          </header>
+        ) : null}
+        <InCardScope>
+          <div
+            className={`min-w-0 ${
+              asGrid
+                ? `grid ${grid} gap-x-8 ${byDensity(d, "gap-y-3.5", "gap-y-2.5")}`
+                : `flex flex-col ${byDensity(d, "gap-3.5", "gap-2.5")}`
+            }`}
+          >
+            {children}
+          </div>
+        </InCardScope>
       </section>
     );
   }

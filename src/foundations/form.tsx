@@ -159,7 +159,16 @@ export function useFormMode(explicit?: FormMode): FormMode {
  *  layout is: nobody has to remember it on each field, section and record.
  * ==================================================================== */
 
-export type FormStyle = "dense" | "settings";
+/**
+ *     dense     the ERP's sheet: one white paper, groups side by side, a notebook of tabs.
+ *     settings  a back office's form: each section a card of rows that explain themselves —
+ *               the label, its help under it, the control beside —, an index at the left.
+ *     sections  the DENSE sheet in the settings' shape: each group and each notebook page a
+ *               card, on the ground, with the index at the left — and inside, the dense grid
+ *               (label | value, two or three columns). A long record found by its index
+ *               instead of hidden behind tabs, without losing a line of density.
+ */
+export type FormStyle = "dense" | "settings" | "sections";
 
 const StyleCtx = createContext<FormStyle>("dense");
 

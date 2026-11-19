@@ -1,6 +1,7 @@
 "use client";
 
 import { Activity, type ActivityProps } from "@sincpro/web-ui/components/activity/Activity";
+import { FormSection } from "@sincpro/web-ui/components/form/Form";
 import {
   Sheet,
   type SheetField,
@@ -28,6 +29,7 @@ import {
 } from "@sincpro/web-ui/components/record/StatusBar";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
+import { useFormStyle } from "@sincpro/web-ui/foundations/form";
 import {
   flatten,
   pick as pickSlot,
@@ -369,6 +371,7 @@ export function Record({
 }: RecordProps) {
   const look = useViewStyle(ownLook);
   const d = useDensity();
+  const formStyle = useFormStyle();
   const copy = useUiCopy();
 
   const top = flatten(children);
@@ -474,7 +477,16 @@ export function Record({
 
   const notebook = propsOf<PagesProps>(pick(inPaper, "pages"));
   const pages = flatten(notebook?.children).filter((node) => slotOf(node) === "page");
-  const tabs = pages
+  /* «sections» (`FormStyleProvider`): the notebook's pages are not tabs but CARDS, one under
+     the other, found by the index — the long record read top to bottom, nothing hidden
+     behind a tab. */
+  const sectioned = formStyle === "sections";
+  const pageCards = sectioned
+    ? pages
+        .map((node) => propsOf<PageProps>(node))
+        .filter((page): page is PageProps => page !== undefined)
+    : [];
+  const tabs = (sectioned ? [] : pages)
     .map((node) => propsOf<PageProps>(node))
     .filter((page): page is PageProps => page !== undefined)
     .map(({ id, label, icon, count, notice }) => ({
@@ -663,7 +675,13 @@ export function Record({
                       }
                     : {})}
                 >
-                  {tabs.length === 0 ? (
+                  {sectioned ? (
+                    pageCards.map((page) => (
+                      <FormSection key={page.id} title={page.label}>
+                        {page.children}
+                      </FormSection>
+                    ))
+                  ) : tabs.length === 0 ? (
                     pageBody
                   ) : (
                     <TabsPanel

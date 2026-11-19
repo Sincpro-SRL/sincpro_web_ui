@@ -297,6 +297,21 @@ written out under it on the left, the control on the right —, every `FormSecti
 the rail. The layout (`stacked` / `horizontal`) is still the screen's: stacked, the help and the
 control go under the label. Without the provider nothing changes.
 
+#### A dense record found by its index: the «sections» style
+
+`FormStyleProvider value="sections"` keeps the ERP's density and takes the settings' shape:
+every `SheetGroup` on the paper and every notebook page (`Record.Page`) is a card on the
+ground, listed in the index at the left (sticky under the application bar, marking the one
+being read), and inside each card the dense grid stays — label | value, two or three columns,
+a group inside a card stays a titled group. The notebook's pages are not tabs any more: a long
+record is read top to bottom and found by its index, nothing hidden behind a tab. Save and
+Discard float as in settings, and the activity stands apart. Pair it with the modern style:
+`5 · Plantillas/Registros/Ficha de contacto › En secciones`.
+
+A table's TITLE column (the card's title on a phone: `stack: "title"`, or the first column)
+keeps `--size-cell-title` (14 rem): a product name cut with «…» asks for no width of its own,
+and beside figures with a width it was squeezed to «Imp…».
+
 #### Searching the records of a relation — and extending the search
 
 Typing «andres» in the bar offers «Cliente con «andres» ▸», and the ▸ (or →) unfolds the
@@ -391,8 +406,9 @@ API, same data — for the applications already drawn in it. What the direction 
 - **A number reads the same everywhere**: its column's decimals and format in the cells, the
   groups, the footer and the report.
 
-Next in the direction: dense forms with the settings style's sections and index, and the
-phone (the pill and the state when room is short).
+Already in the direction: dense records in sections with an index (`FormStyleProvider
+value="sections"`, below) and the state on a phone (`display="auto"`). Next: the rest of the
+screens taking the floating pill, and the phone's pill when an action does not fit.
 
 A record and a list are written once — `Record.Dock` and `List.Dock` with their actions as
 data — and the application's style decides how they are drawn, the way it chooses its density:
@@ -417,7 +433,8 @@ look="link"`) and the state; the band is the ground; and the actions float in ON
 pill of pills, the actions' shape — the modern style's), `steps`, `progress` and `pill` (one chip that unfolds the stages). Each
 stage can carry an `icon`, an `activeIcon` (worn when it is the current or the chosen one:
 ○ → ◉), a `hint` (said when pointed at) and a `count` (how many are there, in a list grouped by
-stage). `display` says what a stage shows — `both`, `label`, `icon` (the name said to a screen
+stage). `display` says what a stage shows — `auto` (the default: every name where there is
+room, on a phone only the current one's), `both`, `label`, `icon` (the name said to a screen
 reader and on hover) or `current` (the icons, and the current stage's name) —, and
 `renderStage` draws a stage your way inside the system's segment, which keeps the order, the
 paint, the focus and the names. `Record.Status look` picks one; all side by side in

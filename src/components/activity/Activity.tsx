@@ -613,8 +613,9 @@ export function Activity({
   const alertsId = ownAlertsId ?? autoAlertsId;
   const auto = layout === "auto";
   /* Beside the sheet it is joined to it — the sheet's right edge is the line between the two.
-     In the «settings» form style there is no sheet, only cards on the ground: it stands apart. */
-  const joined = useFormStyle() !== "settings";
+     In the «settings» and «sections» form styles there is no sheet, only cards on the ground:
+     it stands apart. */
+  const joined = useFormStyle() === "dense";
   /* The notes of the fields and rows of the record around — `Record` keeps them. */
   const notes = useNoteEntries();
 

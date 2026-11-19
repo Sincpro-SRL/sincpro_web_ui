@@ -16,6 +16,7 @@ import {
   EmailInput,
   Field,
   FormModeProvider,
+  FormStyleProvider,
   NumberInput,
   PatternInput,
   PhoneInput,
@@ -24,6 +25,7 @@ import {
   SheetGroups,
   TopBar,
   UrlInput,
+  ViewStyleProvider,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
@@ -362,5 +364,44 @@ export const Ficha: Story = {
     await expect(await canvas.findByText("Visa •••• 4242")).toBeVisible();
     await expect(canvas.queryByText(/4242 4242/)).toBeNull();
     await expect(canvas.queryByText("123")).toBeNull();
+  },
+};
+
+/**
+ * **La misma ficha, en secciones** — la dirección moderna para un formulario denso
+ * (`FormStyleProvider value="sections"` dentro de `ViewStyleProvider value="modern"`): cada
+ * grupo y cada página del cuaderno es una tarjeta sobre el fondo, el índice a la izquierda lleva
+ * a cada una y marca la que se está leyendo, y adentro sigue la grilla densa — rótulo | valor,
+ * dos columnas. Nada escondido detrás de una pestaña; la tarjeta guardada se ve sin buscarla.
+ * El mismo código que «Ficha»: sólo cambian los dos estilos que lo envuelven.
+ */
+export const EnSecciones: Story = {
+  name: "En secciones",
+  render: () => (
+    <ViewStyleProvider value="modern">
+      <FormStyleProvider value="sections">
+        <Workspace views={VIEWS} start={partnerRef} menu={MENU} />
+      </FormStyleProvider>
+    </ViewStyleProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByRole("link", { name: "compras@sangabriel.bo" });
+    // No tabs: every page is a section, listed in the index.
+    await expect(canvas.queryByRole("tab", { name: /pago/ })).toBeNull();
+    const index = canvas.getByRole("navigation", { name: "Secciones del formulario" });
+    for (const name of ["Cómo contactarlo", "Identificación", "ventas", "horario", "pago"]) {
+      await expect(within(index).getByRole("link", { name })).toBeVisible();
+    }
+    // What was behind a tab is read without opening it.
+    await expect(canvas.getByText("Visa •••• 4242")).toBeVisible();
+    // The index brings a section into view.
+    await userEvent.click(within(index).getByRole("link", { name: "pago" }));
+    await waitFor(() =>
+      expect(within(index).getByRole("link", { name: "pago" })).toHaveAttribute(
+        "aria-current",
+        "location",
+      ),
+    );
   },
 };

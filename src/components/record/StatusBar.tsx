@@ -165,7 +165,10 @@ export type StatusLook = "track" | "segmented" | "steps" | "progress" | "pill";
 /**
  * What each stage shows:
  *
- *     both     its icon (when it has one) and its name. The default.
+ *     auto     `both` where there is room, `current` on a phone (side by side, below `sm`):
+ *              four names do not fit in a phone's width, four marks and one name do. The
+ *              default.
+ *     both     its icon (when it has one) and its name, always.
  *     label    the names only — no icon, no check.
  *     icon     the icons only; the name is said to a screen reader and on hover. A stage with
  *              no icon shows its number.
@@ -174,7 +177,7 @@ export type StatusLook = "track" | "segmented" | "steps" | "progress" | "pill";
  *
  * Whatever is shown, a failed stage keeps its alert: a failure is never only a colour.
  */
-export type StatusDisplay = "both" | "label" | "icon" | "current";
+export type StatusDisplay = "auto" | "both" | "label" | "icon" | "current";
 
 /** What `renderStage` is told about the stage it draws. */
 export interface StageState {
@@ -196,7 +199,7 @@ export function StatusBar({
   selected,
   layout,
   look = "track",
-  display = "both",
+  display = "auto",
   renderStage,
 }: {
   stages: readonly Stage[];
@@ -219,7 +222,8 @@ export function StatusBar({
    * `activeIcon`, `hint` and `count`.
    */
   look?: StatusLook;
-  /** What each stage shows: `both`, `label`, `icon` or `current` (`StatusDisplay`). */
+  /** What each stage shows: `auto` (the default), `both`, `label`, `icon` or `current`
+   *  (`StatusDisplay`). */
   display?: StatusDisplay;
   /**
    * Draws a stage your way, INSIDE the system's segment — which keeps the order, the paint of
@@ -251,9 +255,31 @@ export function StatusBar({
   /** Whether the stage's name is SEEN — otherwise it is said (visually hidden, and on hover). */
   function nameShown(step: "done" | "current" | "next", viewed: boolean) {
     return (
+      display === "auto" ||
       display === "both" ||
       display === "label" ||
       (display === "current" && (step === "current" || viewed))
+    );
+  }
+
+  /** `auto`, side by side, a stage that is not where the record is: its name is SAID on a
+   *  phone and seen where there is room. */
+  function namedWide(step: "done" | "current" | "next", viewed: boolean) {
+    return display === "auto" && !stacked && step !== "current" && !viewed;
+  }
+
+  /** The class of a stage's name: seen, said, or seen only where there is room. */
+  function nameClass(step: "done" | "current" | "next", viewed: boolean, seen: string) {
+    if (!nameShown(step, viewed)) return "sr-only";
+    return namedWide(step, viewed) ? `${seen} max-sm:sr-only` : seen;
+  }
+
+  /** On a phone, a stage whose name is only said and that has no icon shows its number. */
+  function numberOnPhone(i: number) {
+    return (
+      <span aria-hidden className="min-w-(--size-icon-sm) text-center tabular-nums sm:hidden">
+        {(i + 1).toLocaleString(copy.locale)}
+      </span>
     );
   }
 
@@ -274,6 +300,16 @@ export function StatusBar({
         <span aria-hidden className="min-w-(--size-icon-sm) text-center tabular-nums">
           {(i + 1).toLocaleString(copy.locale)}
         </span>
+      );
+    }
+    if (namedWide(step, viewed)) {
+      return (
+        <>
+          {step === "done" ? (
+            <Check className={`${icon} max-sm:hidden`} strokeWidth={2} aria-hidden />
+          ) : null}
+          {numberOnPhone(i)}
+        </>
       );
     }
     if (step === "done" && display !== "label") {
@@ -317,7 +353,7 @@ export function StatusBar({
           title={seen ? stage.hint : undefined}
           aria-current={step === "current" && selectable ? "step" : undefined}
           className={cn(
-            seen ? "min-w-0 truncate" : "sr-only",
+            nameClass(step, viewed, "min-w-0 truncate"),
             viewed &&
               "underline decoration-2 underline-offset-4 " +
                 (step === "current"
@@ -489,10 +525,7 @@ export function StatusBar({
                 <Check className="size-3 shrink-0" strokeWidth={2.5} aria-hidden />
               ) : null;
             })()}
-            <span
-              className={nameShown(where, viewed) ? "min-w-0 truncate" : "sr-only"}
-              title={stage.hint}
-            >
+            <span className={nameClass(where, viewed, "min-w-0 truncate")} title={stage.hint}>
               {stage.label}
             </span>
             {countOf(stage)}
@@ -614,9 +647,7 @@ export function StatusBar({
             title={stage.hint}
             aria-current={where === "current" && selectable ? "step" : undefined}
             className={cn(
-              nameShown(where, viewed)
-                ? "min-w-0 truncate text-meta whitespace-nowrap"
-                : "sr-only",
+              nameClass(where, viewed, "min-w-0 truncate text-meta whitespace-nowrap"),
               labelOf(where),
               viewed && "underline decoration-2 underline-offset-4",
             )}

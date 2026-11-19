@@ -390,7 +390,12 @@ export const EstadoSegmentado: Story = {
       { id: "signed", label: "Firmado", icon: Circle, activeIcon: CircleCheck },
     ];
     const DISPLAYS: { display: StatusDisplay; name: string; note: string }[] = [
-      { display: "both", name: "Ícono y nombre", note: 'display="both" — el de siempre' },
+      {
+        display: "auto",
+        name: "Automático",
+        note: 'display="auto" — en el teléfono, la actual',
+      },
+      { display: "both", name: "Ícono y nombre", note: 'display="both" — siempre' },
       { display: "label", name: "Sólo nombres", note: 'display="label"' },
       { display: "icon", name: "Sólo íconos", note: 'display="icon" — el nombre al pasar' },
       { display: "current", name: "El nombre de la actual", note: 'display="current"' },
@@ -441,16 +446,68 @@ export const EstadoSegmentado: Story = {
     const canvas = within(canvasElement);
     const lists = canvas.getAllByRole("list", { name: "Estado" });
     // Only icons: the names are still SAID, one per stage.
-    const icons = lists[2]!;
+    const icons = lists[3]!;
     await expect(within(icons).getByText("En revisión")).toHaveClass("sr-only");
     // The current one's name: seen on the current stage, said on the others.
-    const current = lists[3]!;
+    const current = lists[4]!;
     await expect(within(current).getByText("En revisión")).not.toHaveClass("sr-only");
     await expect(within(current).getByText("Borrador")).toHaveClass("sr-only");
     // Choosing keeps working in the pill.
     const chooser = canvas.getByRole("radiogroup", { name: "Estado" });
     await userEvent.click(within(chooser).getByRole("radio", { name: /Firmado/ }));
     await expect(within(chooser).getByRole("radio", { name: /Firmado/ })).toBeChecked();
+  },
+};
+
+/**
+ * **El estado en el teléfono** — `display="auto"`, el de siempre: donde hay lugar cada etapa
+ * dice su nombre; en el teléfono, sólo la actual, y las otras su ícono o su número. Los nombres
+ * se le siguen diciendo al lector de pantalla. Cuatro nombres no entran en el ancho de un
+ * teléfono; cuatro marcas y un nombre, sí.
+ */
+export const EstadoEnElTelefono: Story = {
+  name: "Estado · en el teléfono",
+  args: { stages: STAGES, current: "sale" },
+  globals: { viewport: { value: "telefono", isRotated: false } },
+  render: () => (
+    <div className="flex flex-col gap-4 bg-ground p-4">
+      <StatusBar
+        stages={[
+          { id: "draft", label: "Borrador" },
+          { id: "posted", label: "Publicada" },
+          { id: "sent", label: "Enviada al SIAT" },
+          { id: "paid", label: "Pagada" },
+        ]}
+        current="posted"
+        look="segmented"
+        layout="trail"
+      />
+      <StatusBar
+        stages={[
+          { id: "ready", label: "Preparado", icon: Package },
+          { id: "transit", label: "En camino", icon: Truck },
+          { id: "delivered", label: "Entregado", icon: PackageCheck },
+        ]}
+        current="transit"
+        layout="trail"
+      />
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(window.innerWidth).toBe(390);
+    const [numbers, icons] = canvas.getAllByRole("list", { name: "Estado" });
+    // The current stage says its name; the others are said, not seen.
+    await expect(within(numbers!).getByText("Publicada")).toBeVisible();
+    await expect(getComputedStyle(within(numbers!).getByText("Borrador")).position).toBe(
+      "absolute",
+    );
+    await expect(within(numbers!).getByText("4")).toBeVisible();
+    await expect(getComputedStyle(within(icons!).getByText("Entregado")).position).toBe(
+      "absolute",
+    );
+    // Everything fits the phone's width.
+    await expect(numbers!.getBoundingClientRect().right).toBeLessThanOrEqual(390);
   },
 };
 
