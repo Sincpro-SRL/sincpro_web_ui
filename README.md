@@ -385,8 +385,14 @@ pill holds «N cambios · Descartar · Guardar».
 </Record.Rail>
 ```
 
-`ActionDock` is the pill alone (`placement="inline"`, or sticky `top` / `bottom` anywhere) and
-`dockPlan` the rule, for a screen that is not a `Record`.
+At rest the pill sits in the rail, centred in its second row (the state and the pager at the
+end); it detaches and floats once the rail scrolls away. A list says the same with `List.Dock`:
+what it starts is a pill in its bar, and what is done to the chosen rows floats at the bottom
+while some are chosen — «2 elegidos ✕ · Enviar · Imprimir ▾ · ⋯» — and the search stays in the
+bar (`selectionPlacement="bar"` puts it in the bar instead, as a plain selection does).
+
+`ActionDock` is the pill alone (`placement="inline"`, or sticky `top` / `bottom` anywhere, with
+a `lead` before the actions) and `dockPlan` the rule, for a screen that is neither.
 
 #### A guided tour: the screen says what each thing is
 

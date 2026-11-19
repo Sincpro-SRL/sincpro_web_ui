@@ -17,7 +17,7 @@ import { SurfaceProvider } from "@sincpro/web-ui/foundations/surface";
 import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { Menu } from "@sincpro/web-ui/primitives/menu/Menu";
 import { MoreHorizontal } from "lucide-react";
-import type { CSSProperties } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 /* ==================================================================== *
  *  THE ACTION DOCK — the record's actions, floating. (experimental)
@@ -67,6 +67,9 @@ export interface ActionDockProps {
   look?: DockLook;
   /** The toolbar's accessible name: «Acciones de la factura». */
   label?: string;
+  /** What the pill says before its actions — «3 elegidas ✕» over a list's chosen rows. Drawn
+   *  on the pill's band: write it with `useSurface()` colours. */
+  lead?: ReactNode;
 }
 
 const PILL = { "--ui-button-radius": "var(--radius-pill)" } as CSSProperties;
@@ -79,8 +82,9 @@ function Pill({
   saved,
   look,
   label,
+  lead,
 }: Required<Pick<ActionDockProps, "actions" | "visible" | "look">> &
-  Pick<ActionDockProps, "dirty" | "saved" | "label">) {
+  Pick<ActionDockProps, "dirty" | "saved" | "label" | "lead">) {
   const copy = useUiCopy();
   const plan = dockPlan(actions, visible);
   const more = moreGroups(plan);
@@ -101,6 +105,7 @@ function Pill({
           <DirtyActions {...dirty} floating />
         ) : (
           <>
+            {lead}
             {plan.shown.map((action) =>
               action.items === undefined ? (
                 <Button
@@ -168,12 +173,14 @@ export function ActionDock({
   align = "center",
   look = "chrome",
   label,
+  lead,
 }: ActionDockProps) {
   const pill = (
     <Pill
       actions={actions}
       visible={visible}
       look={look}
+      {...(lead === undefined ? {} : { lead })}
       {...(dirty === undefined ? {} : { dirty })}
       {...(saved === undefined ? {} : { saved })}
       {...(label === undefined ? {} : { label })}

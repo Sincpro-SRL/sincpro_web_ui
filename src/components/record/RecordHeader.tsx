@@ -15,13 +15,13 @@ import {
 import { isPrimary, ThumbBar, thumbPlan } from "@sincpro/web-ui/components/record/ThumbBar";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { useFormStyle } from "@sincpro/web-ui/foundations/form";
-import { useStickyLayer } from "@sincpro/web-ui/foundations/sticky";
+import { stickyTop, useStickyLayer } from "@sincpro/web-ui/foundations/sticky";
 import { SurfaceProvider } from "@sincpro/web-ui/foundations/surface";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
 import { Line } from "@sincpro/web-ui/primitives/block/Line";
 import { Tag } from "@sincpro/web-ui/primitives/tag/Tag";
 import type { LucideIcon } from "lucide-react";
-import { type ReactNode, useEffect, useRef } from "react";
+import { type ReactNode, useEffect, useRef, useState } from "react";
 
 /* ==================================================================== *
  *  THE SHAPE OF A RECORD — the rail and the sheet.
@@ -255,30 +255,72 @@ export function RecordHeader({
         ? "mx-auto w-full max-w-(--container-record)"
         : "mx-auto w-full max-w-(--container-sheet)";
 
-  /* THE DOCK AT THE TOP: first on the ground, over the paper, at the paper's column; sticky,
-     so it stays in view —under whatever already sticks— as the record scrolls. */
-  /* It is one more layer of the sticky stack: a table header that sticks goes UNDER it, not
-     behind it. Its band is a veil of the ground fading out, so what scrolls passes under the
-     pill instead of peeking between it and the header. */
+  /* THE DOCK AT THE TOP. At rest it is the RAIL's: in its second row, where the actions were,
+     with the state at the other end — a band of its own between the rail and the paper was a
+     fourth band before the record, and read as empty space. When the rail scrolls away, the pill
+     FLOATS: it detaches and stays at the top of the page, under whatever already sticks.
+     Floating it is one more layer of the sticky stack —a table header sticks under it, not
+     behind it— over a veil of the ground, so what scrolls passes under the pill instead of
+     peeking between it and the header. Without a rail (a dialog, compact) it floats from the
+     start, in the flow. */
+  const dockTop = dock !== undefined && dock.placement !== "bottom";
+  const inRail = dockTop && withRail;
+  const anchor = useRef<HTMLDivElement>(null);
+  const [detached, setDetached] = useState(false);
+  useEffect(() => {
+    const node = anchor.current;
+    if (!inRail || node === null || typeof IntersectionObserver === "undefined") {
+      setDetached(false);
+      return;
+    }
+    /* Detached once the rail's pill is wholly ABOVE the view — not below it, at the bottom of a
+       short window, where it is about to be scrolled to. */
+    const observer = new IntersectionObserver(([entry]) => {
+      if (entry === undefined) return;
+      const top = entry.rootBounds?.top ?? 0;
+      setDetached(!entry.isIntersecting && entry.boundingClientRect.bottom <= top);
+    });
+    observer.observe(node);
+    return () => observer.disconnect();
+  }, [inRail]);
+  const floats = dockTop && (!inRail || detached);
   const dockLayer = useStickyLayer<HTMLDivElement>();
-  const dockedTop = dock !== undefined && dock.placement !== "bottom";
-  const topDock =
-    dock === undefined || dock.placement === "bottom" ? null : (
+  const justify = dock?.align === "end" ? "justify-end" : "justify-center";
+  const dockPill =
+    dock === undefined ? null : (
+      <ActionDock
+        {...dock}
+        {...(dirty === undefined ? {} : { dirty })}
+        saved={saved}
+        placement="inline"
+      />
+    );
+  const topDock = !dockTop ? null : inRail ? (
+    /* Takes no room: it only holds the pill while the rail's is out of sight. */
+    <div
+      style={stickyTop}
+      className={`pointer-events-none sticky z-20 h-0 ${paper ? column : ""}`}
+    >
       <div
         ref={dockLayer.ref}
-        style={dockLayer.self}
-        className={`pointer-events-none sticky z-20 -mt-1 flex bg-linear-to-b from-ground from-75% to-transparent pb-3 ${paper ? column : ""} ${
-          dock.align === "end" ? "justify-end" : "justify-center"
+        className={`absolute inset-x-0 top-0 flex ${justify} pt-2 pb-3 ${
+          detached
+            ? "bg-linear-to-b from-ground from-75% to-transparent transition-[opacity,translate] duration-(--duration-quick) ease-(--ease-out) starting:-translate-y-1 starting:opacity-0"
+            : ""
         }`}
       >
-        <ActionDock
-          {...dock}
-          {...(dirty === undefined ? {} : { dirty })}
-          saved={saved}
-          placement="inline"
-        />
+        {detached ? dockPill : null}
       </div>
-    );
+    </div>
+  ) : (
+    <div
+      ref={dockLayer.ref}
+      style={dockLayer.self}
+      className={`pointer-events-none sticky z-20 -mt-1 flex bg-linear-to-b from-ground from-75% to-transparent pb-3 ${paper ? column : ""} ${justify}`}
+    >
+      {dockPill}
+    </div>
+  );
 
   const identity = (
     <div
@@ -397,10 +439,14 @@ export function RecordHeader({
                       </div>
                     )
                   }
-                  end={pager}
+                  /* With the dock in the rail the pager goes down to its second row, beside
+                     the state: row 2 has room on the right, and row 1 —crumbs and seven
+                     counters— pushed it to a line of its own. */
+                  end={inRail ? undefined : pager}
                 />
 
-                {railActions_ === undefined &&
+                {!inRail &&
+                railActions_ === undefined &&
                 status === undefined &&
                 railDirty === undefined &&
                 (!saved || floating || docked) ? null : (
@@ -408,11 +454,29 @@ export function RecordHeader({
                left edge, the history and the state stuck to the right one. No
                `flex-wrap`: wrapping split the row in two and the state ended up
                below the actions, which is another hierarchy. */
-                  <div className="flex min-w-0 items-start gap-x-4">
+                  <div
+                    className={`flex min-w-0 gap-x-4 ${inRail ? "items-center" : "items-start"}`}
+                  >
+                    {/* The dock sits in the MIDDLE of the row, over the record it acts on —
+                        the place it read best in —, the state at the end: a spacer as wide as
+                        the state's half keeps the pill centred against the row. */}
+                    {inRail && dock?.align !== "end" ? (
+                      <div aria-hidden className="min-w-0 flex-1 basis-0" />
+                    ) : null}
                     {/* The actions are NEVER clipped: they are the only thing in this
                   row that produces something, and a button cut in half is a
                   button that does not get pressed. What gives way is the state. */}
-                    {railDirty !== undefined ? (
+                    {inRail ? (
+                      /* The dock at rest. While it floats this copy is out of sight, and out
+                         of reach too — one toolbar at a time for a keyboard and a reader. */
+                      <div
+                        ref={anchor}
+                        className={`flex shrink-0 items-center ${dock?.align === "end" ? "ml-auto" : ""}`}
+                        {...(detached ? { inert: true, "aria-hidden": true } : {})}
+                      >
+                        {dockPill}
+                      </div>
+                    ) : railDirty !== undefined ? (
                       <div className="flex shrink-0 items-center gap-1.5 @max-handheld/record:hidden">
                         <DirtyActions {...railDirty} />
                       </div>
@@ -442,9 +506,22 @@ export function RecordHeader({
                         {floating ? null : <SavedMark saved={saved} />}
                       </div>
                     )}
-                    {status === undefined ? null : (
-                      <div className="ml-auto flex min-w-0 flex-col items-end gap-1.5">
-                        {status}
+                    {status === undefined && !(inRail && pager !== undefined) ? (
+                      inRail && dock?.align !== "end" ? (
+                        <div aria-hidden className="min-w-0 flex-1 basis-0" />
+                      ) : null
+                    ) : (
+                      <div
+                        className={`flex min-w-0 items-center justify-end gap-x-3 ${
+                          inRail && dock?.align !== "end" ? "flex-1 basis-0" : "ml-auto"
+                        }`}
+                      >
+                        {status === undefined ? null : (
+                          <div className="flex min-w-0 flex-col items-end gap-1.5">
+                            {status}
+                          </div>
+                        )}
+                        {inRail ? pager : null}
                       </div>
                     )}
                   </div>
@@ -484,7 +561,7 @@ export function RecordHeader({
          * ==================================================================== */
         <div className="bg-ground px-3 pt-3 pb-3">
           {topDock}
-          <div className="@container/page" {...(dockedTop ? { style: dockLayer.below } : {})}>
+          <div className="@container/page" {...(floats ? { style: dockLayer.below } : {})}>
             <div
               className={`flex min-w-0 flex-col gap-3 ${column} ${
                 beside

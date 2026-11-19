@@ -21,6 +21,7 @@ import {
   type ListCalendar,
   type ListChart,
   type ListCrumb,
+  type ListDock,
   type ListEmpty,
   type ListFace,
   type ListGantt,
@@ -131,6 +132,7 @@ type SlotName =
   | "identity"
   | "search"
   | "actions"
+  | "dock"
   | "pagination"
   | "views"
   | "metrics"
@@ -170,6 +172,9 @@ const Search = slot("search", (_props: NodeProps): ReactNode => null);
 
 /** What STARTS something new. It stays visible when there is a selection. */
 const Actions = slot("actions", (_props: NodeProps): ReactNode => null);
+/** The list's actions FLOATING, as data (experimental): what it starts, as a pill in the bar;
+ *  what is done to the chosen rows, as a pill floating at the bottom. See `ListDock`. */
+const Dock = slot("dock", (_props: ListDock): ReactNode => null);
 
 const Pagination = slot("pagination", (_props: NodeProps): ReactNode => null);
 
@@ -449,6 +454,7 @@ export function List<T extends object>({
   const identity = propsOf<ListIdentity>(pick(bar, "identity"));
   const search = propsOf<NodeProps>(pick(bar, "search"))?.children;
   const actions = propsOf<NodeProps>(pick(bar, "actions"))?.children;
+  const dock = propsOf<ListDock>(pick(bar, "dock"));
   const pagination = propsOf<NodeProps>(pick(bar, "pagination"))?.children;
   const views = propsOf<NodeProps>(pick(bar, "views"))?.children;
   const metrics = propsOf<NodeProps>(pick(top, "metrics"))?.children;
@@ -500,6 +506,7 @@ export function List<T extends object>({
       {...(surface === undefined ? {} : { surface })}
       {...(search === undefined ? {} : { search })}
       {...(actions === undefined ? {} : { actions })}
+      {...(dock === undefined || readOnly ? {} : { dock })}
       {...(pagination === undefined ? {} : { pagination })}
       {...(views === undefined ? {} : { views })}
       {...(metrics === undefined ? {} : { metrics })}
@@ -561,6 +568,7 @@ List.Crumbs = Crumbs;
 List.Identity = Identity;
 List.Search = Search;
 List.Actions = Actions;
+List.Dock = Dock;
 List.Pagination = Pagination;
 List.Views = Views;
 List.Metrics = Metrics;

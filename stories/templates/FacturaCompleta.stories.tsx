@@ -578,7 +578,7 @@ type Invoice = {
 };
 const InvoiceContext = createContext<Invoice | null>(null);
 /** The invoice's actions FLOATING (`Record.Dock`, experimental) instead of on the rail. */
-const DockedContext = createContext(false);
+const DockedContext = createContext<false | "top" | "bottom">(false);
 
 function useInvoice(): Invoice {
   const invoice = useContext(InvoiceContext);
@@ -790,7 +790,11 @@ function FullInvoice({ api }: ViewProps) {
         />
         {docked ? (
           /* The same actions as DATA: the dock decides what is seen and what waits in «Más». */
-          <Record.Dock label="Acciones de la factura" actions={dockActions} />
+          <Record.Dock
+            label="Acciones de la factura"
+            actions={dockActions}
+            placement={docked === "bottom" ? "bottom" : "top"}
+          />
         ) : (
           <>
             <Record.Actions>
@@ -1301,7 +1305,13 @@ const VIEWS: readonly ViewSpec[] = [
   },
 ];
 
-function Page({ draft = false, docked = false }: { draft?: boolean; docked?: boolean }) {
+function Page({
+  draft = false,
+  docked = false,
+}: {
+  draft?: boolean;
+  docked?: false | "top" | "bottom";
+}) {
   return (
     <DockedContext value={docked}>
       <InvoiceProvider draft={draft}>
@@ -1363,11 +1373,26 @@ export const Borrador: Story = {
  */
 export const ConAccionesFlotantes: Story = {
   name: "Con acciones flotantes (experimental)",
-  render: () => <Page docked />,
+  render: () => <Page docked="top" />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const dock = await canvas.findByRole("toolbar", { name: "Acciones de la factura" });
     await expect(within(dock).getByRole("button", { name: "Registrar pago" })).toBeVisible();
     await expect(within(dock).getByRole("button", { name: "Más acciones" })).toBeVisible();
+  },
+};
+
+/**
+ * **Con las acciones abajo** (experimental): la misma píldora en el lugar del estilo «settings» y
+ * del pulgar — flotando al pie de la pantalla mientras se lee la factura de arriba abajo. El riel
+ * queda con su lugar, sus contadores y el estado.
+ */
+export const ConAccionesAbajo: Story = {
+  name: "Con acciones abajo (experimental)",
+  render: () => <Page docked="bottom" />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const dock = await canvas.findByRole("toolbar", { name: "Acciones de la factura" });
+    await expect(within(dock).getByRole("button", { name: "Registrar pago" })).toBeVisible();
   },
 };

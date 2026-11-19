@@ -6,6 +6,8 @@ import type { ListIdentity } from "@sincpro/web-ui/components/listing/ListingBar
 import type { ListPresent } from "@sincpro/web-ui/components/listing/set";
 import type { SortField } from "@sincpro/web-ui/components/listing/SortMenu";
 import type { ViewIcon } from "@sincpro/web-ui/components/listing/ViewSwitcher";
+import type { DockLook } from "@sincpro/web-ui/components/record/ActionDock";
+import type { DockAction } from "@sincpro/web-ui/components/record/dock";
 import type { RecordTimelineProps } from "@sincpro/web-ui/components/timeline/RecordTimeline";
 import type { ChartKind, ChartOrder } from "@sincpro/web-ui/foundations/chart";
 import type { GroupableField } from "@sincpro/web-ui/foundations/grouping";
@@ -263,6 +265,31 @@ export type ListChart<T> = {
   fileName?: string;
 };
 
+/**
+ * A list's actions FLOATING (experimental — `List.Dock`, the record's `ActionDock`): what the
+ * list starts, as a pill in its bar, and what is done to the chosen rows, as a pill floating at
+ * the bottom while some are chosen («3 elegidas ✕ · Enviar · Imprimir ▾ · ⋯») — the search
+ * stays in the bar.
+ */
+export type ListDock = {
+  /** What the list starts or does to the whole set — «Nuevo» (the primary), «Importar»,
+   *  «Exportar ▸» —, in the bar, in place of `List.Actions`. */
+  actions?: readonly DockAction[];
+  /** What is done to the CHOSEN rows — «Enviar», «Imprimir ▸», «Archivar». Give the list a
+   *  `selection` too. */
+  selection?: readonly DockAction[];
+  /** Where the chosen rows' pill goes: floating at the BOTTOM of the list (the default — the
+   *  search stays in the bar, under the thumb on a phone), or in the BAR in place of the search,
+   *  as a plain selection does. */
+  selectionPlacement?: "bottom" | "bar";
+  look?: DockLook;
+  /** How many secondary actions each pill shows before «Más». */
+  visible?: number;
+  /** The toolbars' names: «Acciones de las facturas», «Acciones de las elegidas». */
+  label?: string;
+  selectionLabel?: string;
+};
+
 export type ListViewProps<T extends object> = {
   items: readonly T[];
   keyOf: (item: T) => string;
@@ -290,6 +317,8 @@ export type ListViewProps<T extends object> = {
   /** Escape hatch: a custom switcher. Prefer `presents` so the archetype draws it. */
   views?: ReactNode;
   actions?: ReactNode;
+  /** The actions floating (experimental): see `ListDock`. */
+  dock?: ListDock;
 
   row: (item: T) => RowOf;
   /**

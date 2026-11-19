@@ -29,9 +29,10 @@ import {
   type ViewOption,
   ViewSwitcher,
 } from "@sincpro/web-ui/components/listing/ViewSwitcher";
+import { ActionDock } from "@sincpro/web-ui/components/record/ActionDock";
 import { Breadcrumb } from "@sincpro/web-ui/components/record/Breadcrumb";
 import { RecordTimeline } from "@sincpro/web-ui/components/timeline/RecordTimeline";
-import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { useDensity } from "@sincpro/web-ui/foundations/density";
 import {
   pathKey,
@@ -41,6 +42,7 @@ import {
   pilesOf,
 } from "@sincpro/web-ui/foundations/grouping";
 import { type Pivot, pivotFrom, pivotIsEmpty } from "@sincpro/web-ui/foundations/pivot";
+import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { Empty, Failed, Skeleton } from "@sincpro/web-ui/primitives/notice/Notice";
 import { PivotTable } from "@sincpro/web-ui/primitives/table/PivotTable";
@@ -72,6 +74,7 @@ import {
   Sheet,
   Sigma,
   Table2,
+  X,
 } from "lucide-react";
 import { Fragment, lazy, type ReactNode, Suspense, useCallback, useMemo } from "react";
 
@@ -150,7 +153,8 @@ export function ListView<T extends object>({
   search,
   pagination,
   views,
-  actions,
+  actions: written,
+  dock,
   row,
   rowHeader,
   columns,
@@ -305,6 +309,47 @@ export function ListView<T extends object>({
       </>
     );
 
+  /* THE DOCK (experimental): what the list starts, as a pill in the bar; what is done to the
+     chosen rows, as a pill floating at the bottom while some are chosen — the search stays in
+     the bar —, or in the bar in place of the search. */
+  const actions =
+    dock?.actions === undefined ? (
+      written
+    ) : (
+      <ActionDock
+        placement="inline"
+        actions={dock.actions}
+        {...(dock.look === undefined ? {} : { look: dock.look })}
+        {...(dock.visible === undefined ? {} : { visible: dock.visible })}
+        {...(dock.label === undefined ? {} : { label: dock.label })}
+      />
+    );
+  const chosen = selection?.count ?? 0;
+  const selectionDock =
+    dock?.selection === undefined || selection === undefined || chosen === 0
+      ? undefined
+      : dock.selection;
+  const floatsChosen = selectionDock !== undefined && dock?.selectionPlacement !== "bar";
+  const chosenLead =
+    selection === undefined ? null : (
+      <DockCount
+        count={chosen}
+        onClear={selection.clear}
+        {...(selection.matching === undefined ? {} : { matching: selection.matching })}
+      />
+    );
+  const chosenPill =
+    selectionDock === undefined ? null : (
+      <ActionDock
+        placement={floatsChosen ? "bottom" : "inline"}
+        actions={selectionDock}
+        lead={chosenLead}
+        {...(dock?.look === undefined ? {} : { look: dock.look })}
+        {...(dock?.visible === undefined ? {} : { visible: dock.visible })}
+        label={dock?.selectionLabel ?? copy.selection.more}
+      />
+    );
+
   /* Embedded, the line is drawn only if it has something to OFFER: a count alone repeats
      what the rows (and the footer) already say. */
   const barHasControls =
@@ -315,6 +360,8 @@ export function ListView<T extends object>({
     actions !== undefined ||
     pagination !== undefined ||
     (selection?.count ?? 0) > 0;
+  /* The chosen rows' pill floats: the bar keeps its search, and does not say the count. */
+  const barSelection = floatsChosen ? undefined : selection;
 
   const bar = !barHasControls ? undefined : (
     <ListingBar
@@ -331,16 +378,23 @@ export function ListView<T extends object>({
       {...(identity?.title === undefined ? {} : { title: identity.title })}
       {...(identity?.description === undefined ? {} : { description: identity.description })}
       {...(identity?.counters === undefined ? {} : { counters: identity.counters })}
-      {...(selection === undefined
+      {...(barSelection === undefined
         ? {}
-        : {
-            selection: {
-              count: selection.count,
-              onClear: selection.clear,
-              ...(selection.actions === undefined ? {} : { actions: selection.actions }),
-              ...(selection.matching === undefined ? {} : { matching: selection.matching }),
-            },
-          })}
+        : selectionDock !== undefined
+          ? /* In the bar: the pill IS the count and the actions. */
+            { selection: { count: barSelection.count, actions: chosenPill } }
+          : {
+              selection: {
+                count: barSelection.count,
+                onClear: barSelection.clear,
+                ...(barSelection.actions === undefined
+                  ? {}
+                  : { actions: barSelection.actions }),
+                ...(barSelection.matching === undefined
+                  ? {}
+                  : { matching: barSelection.matching }),
+              },
+            })}
       {...(search === undefined ? {} : { search })}
       {...(pagination === undefined ? {} : { pagination })}
       {...(viewsSlot === undefined ? {} : { views: viewsSlot })}
@@ -787,8 +841,66 @@ export function ListView<T extends object>({
         </div>
       )}
 
+      {floatsChosen ? chosenPill : null}
       {children}
     </div>
+  );
+}
+
+/** «3 elegidas ✕» at the start of the chosen rows' pill, on the pill's band — and «Elegir los
+ *  187 que coinciden» while only the page is chosen. */
+function DockCount({
+  count,
+  onClear,
+  matching,
+}: {
+  count: number;
+  onClear: () => void;
+  matching?: { total: number; onSelect: () => void };
+}) {
+  const copy = useUiCopy();
+  const sup = useSurface();
+  return (
+    <>
+      <span
+        className={`inline-flex h-(--size-control-md) items-center gap-1.5 rounded-pill pr-1 pl-3 text-meta font-medium ${bySurface(
+          sup,
+          "bg-ink/8 text-ink",
+          "bg-chrome-ink/14 text-chrome-ink",
+        )}`}
+      >
+        <span className="tabular-nums">{count.toLocaleString(copy.locale)}</span>
+        {copy.selection.chosen}
+        <button
+          type="button"
+          onClick={onClear}
+          aria-label={copy.selection.clear}
+          title={copy.selection.clear}
+          className={`inline-flex size-6 items-center justify-center rounded-pill transition-colors duration-(--duration-instant) ${bySurface(
+            sup,
+            "hover:bg-ink/10",
+            "hover:bg-chrome-ink/20",
+          )}`}
+        >
+          <X className="size-3.5" strokeWidth={2.5} aria-hidden />
+        </button>
+      </span>
+      {matching === undefined || matching.total <= count ? null : (
+        <button
+          type="button"
+          onClick={matching.onSelect}
+          className={`rounded-pill px-2 text-meta font-medium underline-offset-4 hover:underline ${bySurface(
+            sup,
+            "text-primary",
+            "text-chrome-link",
+          )}`}
+        >
+          {fillCopy(copy.selection.allMatching, {
+            count: matching.total.toLocaleString(copy.locale),
+          })}
+        </button>
+      )}
+    </>
   );
 }
 
