@@ -13,6 +13,7 @@ import type { ChartKind, ChartOrder } from "@sincpro/web-ui/foundations/chart";
 import type { GroupableField } from "@sincpro/web-ui/foundations/grouping";
 import type { Grouping, GroupLevel, Pile } from "@sincpro/web-ui/foundations/grouping";
 import type { Pivot, PivotKey, PivotSpec } from "@sincpro/web-ui/foundations/pivot";
+import type { OpenTarget } from "@sincpro/web-ui/foundations/types";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
 import type { DataColumn, DataTableCreate } from "@sincpro/web-ui/primitives/table/DataTable";
 import type { ReportColumn, ReportRow } from "@sincpro/web-ui/primitives/table/ReportTable";
@@ -433,6 +434,11 @@ export type ListViewProps<T extends object> = {
   onOpen?: (item: T) => void;
   onPeek?: (item: T) => void;
   isPeeked?: (item: T) => boolean;
+  /** The OTHER places a row's record opens — beside, a window, a modal —, offered as «Abrir
+   *  en…» among the row's ways in (next to 👁 and ↗), so an application does not draw a second
+   *  set beside the name. The workspace says which it has; `onOpenIn` opens there. */
+  openTargets?: readonly OpenTarget[];
+  onOpenIn?: (item: T, to: OpenTarget) => void;
   /** What a press on the row's body does when both ways in exist. `peek` (the default) looks
    *  without leaving the list; `open` goes to the record — a workspace whose rule is «a row
    *  opens the page» (the composer's) says `open`, and 👁 stays for the look. */

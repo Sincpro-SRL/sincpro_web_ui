@@ -194,6 +194,8 @@ export function ListView<T extends object>({
   selection,
   onOpen,
   onPeek,
+  openTargets,
+  onOpenIn,
   rowClick = "peek",
   onChoose,
   state,
@@ -666,6 +668,9 @@ export function ListView<T extends object>({
         {...(create === undefined ? {} : { create })}
         {...(onPeek === undefined || choosing ? {} : { onPeek })}
         {...(onOpen === undefined || choosing ? {} : { onOpen })}
+        {...(openTargets === undefined || onOpenIn === undefined || choosing
+          ? {}
+          : { openTargets, onOpenIn })}
         {...(choosing ? { onChoose } : {})}
         rowClick={rowClick}
       />
