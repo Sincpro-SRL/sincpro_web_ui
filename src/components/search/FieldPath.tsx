@@ -327,7 +327,7 @@ function Levels({
     relationName !== undefined &&
     canChoose(relationField, relationName, at.slice(0, -1));
 
-  const rows =
+  const listed =
     level.status !== "ready"
       ? []
       : Object.entries(level.model.fields)
@@ -338,12 +338,23 @@ function Levels({
             choose: canChoose(field, name, at),
             follow: canFollow(field, name, at),
           }))
-          .filter((row) => row.choose || row.follow)
-          .filter((row) => {
-            const q = fold(query.trim());
-            return q === "" || fold(row.label).includes(q) || fold(row.name).includes(q);
-          })
-          .sort((a, b) => a.label.localeCompare(b.label, copy.locale));
+          .filter((row) => row.choose || row.follow);
+  /* The column that identifies a to-one relation —its foreign key, «País» next to «País ›»—
+     is the same question with two rows, and the bare one asks for a key nobody knows. While
+     the relation itself is listed, its column is not. */
+  const naming = new Set(
+    listed
+      .filter((row) => isRelation(row.field) && row.field.many !== true)
+      .map((row) => row.field.identifiedBy)
+      .filter((one): one is string => one !== null && one !== undefined),
+  );
+  const rows = listed
+    .filter((row) => !naming.has(row.name))
+    .filter((row) => {
+      const q = fold(query.trim());
+      return q === "" || fold(row.label).includes(q) || fold(row.name).includes(q);
+    })
+    .sort((a, b) => a.label.localeCompare(b.label, copy.locale));
 
   return (
     <div onKeyDown={onKeyDown} className="flex min-w-0 flex-col gap-2">

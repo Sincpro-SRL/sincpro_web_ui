@@ -36,6 +36,7 @@ import {
 } from "@sincpro/web-ui/components/search/paths";
 import { opLabel, sayCondition } from "@sincpro/web-ui/components/search/query";
 import {
+  type BrowseRecords,
   recordsFilter,
   recordsOf,
   type RecordTarget,
@@ -493,11 +494,23 @@ function unnamed(keys: readonly RecordKey[]): RecordOption[] {
  * Only on the record's own fields: a relation of a related record needs its model, and a row
  * that stays a plain condition still filters the same.
  */
-export function liftRecords(node: TreeNode, model: ModelDefinition): TreeNode {
+export function liftRecords(
+  node: TreeNode,
+  model: ModelDefinition,
+  /** The model at the end of a path of relations, when it already arrived: with it, a rule
+   *  about records past a relation —«Cliente > País es Bolivia»— is recognised too. */
+  modelAt?: (path: readonly string[]) => ModelDefinition | undefined,
+): TreeNode {
   if (node.kind === "group") {
-    return { ...node, children: node.children.map((child) => liftRecords(child, model)) };
+    return {
+      ...node,
+      children: node.children.map((child) => liftRecords(child, model, modelAt)),
+    };
   }
+  if (node.target !== undefined) return node;
   const hops = node.through ?? [];
+  const at = (path: readonly TreeHop[]) =>
+    path.length === 0 ? model : modelAt?.(path.map((hop) => hop.field));
   const keys = (): RecordKey[] =>
     node.values !== undefined
       ? node.values.map((one) => one.id)
@@ -505,13 +518,16 @@ export function liftRecords(node: TreeNode, model: ModelDefinition): TreeNode {
         ? [node.raw]
         : [];
 
-  if (hops.length === 0) {
-    for (const name of Object.keys(model.fields)) {
-      const target = recordTarget(model, name);
+  /* A to-one relation compared by its column, in the model the rule's field lives in. */
+  const here = at(hops);
+  if (here !== undefined) {
+    for (const name of Object.keys(here.fields)) {
+      const target = recordTarget(here, name);
       if (target === undefined || target.many || target.column !== node.field) continue;
       if (!recordOps(target).includes(node.operator)) return node;
       return {
         kind: "condition",
+        ...(hops.length === 0 ? {} : { through: hops }),
         field: name,
         operator: node.operator,
         value: "",
@@ -519,18 +535,21 @@ export function liftRecords(node: TreeNode, model: ModelDefinition): TreeNode {
         ...(WITHOUT_VALUE.has(node.operator) ? {} : { values: unnamed(keys()) }),
       };
     }
-    return node;
   }
 
-  const [hop] = hops;
-  if (hops.length !== 1 || hop === undefined || hop.match === "all") return node;
-  const target = recordTarget(model, hop.field);
+  /* A to-many relation crossed to its key: the LAST hop is the relation. */
+  const last = hops.at(-1);
+  if (last === undefined || last.match === "all") return node;
+  const before = hops.slice(0, -1);
+  const owner = at(before);
+  const target = owner === undefined ? undefined : recordTarget(owner, last.field);
   if (target === undefined || !target.many || node.field !== target.key) return node;
   if (node.operator !== "in" && node.operator !== "=") return node;
   return {
     kind: "condition",
-    field: hop.field,
-    operator: hop.match === "none" ? "not in" : "in",
+    ...(before.length === 0 ? {} : { through: before }),
+    field: last.field,
+    operator: last.match === "none" ? "not in" : "in",
     value: "",
     target,
     values: unnamed(keys()),
@@ -579,13 +598,17 @@ export function useRecordNames(
   searchRecords: SearchRecords | undefined,
   apply: (named: (tree: TreeNode) => TreeNode) => void,
 ) {
-  const missing = new Map<string, { target: RecordTarget; keys: RecordKey[] }>();
+  const missing = new Map<
+    string,
+    { target: RecordTarget; path: string[]; keys: RecordKey[] }
+  >();
   const walk = (node: TreeNode) => {
     if (node.kind === "group") return node.children.forEach(walk);
     if (node.target === undefined) return;
+    const path = [...(node.through ?? []).map((hop) => hop.field), node.target.name];
     for (const one of node.values ?? []) {
       if (one.name !== "") continue;
-      const asked = missing.get(node.target.name) ?? { target: node.target, keys: [] };
+      const asked = missing.get(node.target.name) ?? { target: node.target, path, keys: [] };
       asked.keys.push(one.id);
       missing.set(node.target.name, asked);
     }
@@ -599,10 +622,10 @@ export function useRecordNames(
     if (searchRecords === undefined || missing.size === 0) return;
     const controller = new AbortController();
     void Promise.all(
-      [...missing.values()].map(({ target, keys }) =>
+      [...missing.values()].map(({ target, path, keys }) =>
         searchRecords({
           relation: target.relation,
-          path: [target.name],
+          path,
           text: "",
           keys,
           signal: controller.signal,
@@ -620,6 +643,23 @@ export function useRecordNames(
     // Asked once per set of keys without a name.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [key]);
+}
+
+/** The paths whose models a tree needs to recognise its rules about records past a relation:
+ *  every prefix of the hops of a rule that is not one yet. */
+function pathsToLift(node: TreeNode): string[][] {
+  const out = new Map<string, string[]>();
+  const walk = (one: TreeNode) => {
+    if (one.kind === "group") return one.children.forEach(walk);
+    if (one.target !== undefined) return;
+    const fields = (one.through ?? []).map((hop) => hop.field);
+    for (let end = 1; end <= fields.length; end++) {
+      const path = fields.slice(0, end);
+      out.set(path.join("."), path);
+    }
+  };
+  walk(node);
+  return [...out.values()];
 }
 
 function stringifyFilter(filter: BuiltFilter | undefined): string {
@@ -857,6 +897,7 @@ export function SelectionTree({
   loadModel,
   models: shared,
   searchRecords: ownSearchRecords,
+  browseRecords: ownBrowseRecords,
   valueEditor: ownValueEditor,
 }: {
   model: ModelDefinition;
@@ -866,6 +907,9 @@ export function SelectionTree({
   /** Searches the records of a relation: with it a rule can be about a relation ITSELF,
    *  its records picked by name (see `records.ts`). Absent, the `SearchProvider`'s. */
   searchRecords?: SearchRecords;
+  /** «Buscar más…» under a relation's records: the application's chooser. Absent, the
+   *  provider's. */
+  browseRecords?: BrowseRecords;
   /** The application's own value controls (see `ValueEditor`). Absent, the provider's. */
   valueEditor?: ValueEditor;
   /**
@@ -897,14 +941,11 @@ export function SelectionTree({
   const copy = useUiCopy();
   const surface = useSurface();
   const models = useModelCache(model, loadModel, shared);
-  const { searchRecords, valueEditor } = useSearchSettings({
+  const extend = useSearchSettings({
     ...(ownSearchRecords === undefined ? {} : { searchRecords: ownSearchRecords }),
+    ...(ownBrowseRecords === undefined ? {} : { browseRecords: ownBrowseRecords }),
     ...(ownValueEditor === undefined ? {} : { valueEditor: ownValueEditor }),
   });
-  const extend = {
-    ...(searchRecords === undefined ? {} : { searchRecords }),
-    ...(valueEditor === undefined ? {} : { valueEditor }),
-  };
   const box =
     surface === "chrome"
       ? "border-chrome-ink/20 bg-chrome text-chrome-ink"
@@ -1052,6 +1093,7 @@ function ConditionRow({
   onChange,
   actions,
   searchRecords,
+  browseRecords,
   valueEditor,
 }: {
   model: ModelDefinition;
@@ -1062,6 +1104,7 @@ function ConditionRow({
   onChange: (next: TreeCondition) => void;
   actions: ReactNode;
   searchRecords?: SearchRecords;
+  browseRecords?: BrowseRecords;
   valueEditor?: ValueEditor;
 }) {
   const copy = useUiCopy();
@@ -1242,6 +1285,8 @@ function ConditionRow({
             props={editor}
             {...(target === undefined ? {} : { target })}
             {...(searchRecords === undefined ? {} : { searchRecords })}
+            {...(browseRecords === undefined ? {} : { browseRecords })}
+            relationLabel={steps?.at(-1)?.label ?? child.field}
             box={box}
             inputType={inputType(type)}
           />
@@ -1261,6 +1306,7 @@ export function FilterBuilder({
   loadModel,
   models: shared,
   searchRecords: ownSearchRecords,
+  browseRecords: ownBrowseRecords,
   valueEditor: ownValueEditor,
 }: {
   model: ModelDefinition;
@@ -1280,6 +1326,9 @@ export function FilterBuilder({
   onCancel?: () => void;
   /** Searches the records of a relation (see `records.ts`). Absent, the `SearchProvider`'s. */
   searchRecords?: SearchRecords;
+  /** «Buscar más…» under a relation's records: the application's chooser. Absent, the
+   *  provider's. */
+  browseRecords?: BrowseRecords;
   /** The application's own value controls (see `ValueEditor`). Absent, the provider's. */
   valueEditor?: ValueEditor;
 }) {
@@ -1287,6 +1336,7 @@ export function FilterBuilder({
   const models = useModelCache(model, loadModel, shared);
   const settings = useSearchSettings({
     ...(ownSearchRecords === undefined ? {} : { searchRecords: ownSearchRecords }),
+    ...(ownBrowseRecords === undefined ? {} : { browseRecords: ownBrowseRecords }),
     ...(ownValueEditor === undefined ? {} : { valueEditor: ownValueEditor }),
   });
   /* A filter read back carries keys; with records searchable, the rules about records are
@@ -1317,6 +1367,25 @@ export function FilterBuilder({
   useRecordNames(tree, settings.searchRecords, (named) =>
     setTree((current) => named(current) as TreeGroup),
   );
+  /* A rule past a relation —«Cliente > País es Bolivia»— is recognised once the models along
+     its path arrive: they are asked here, and the tree read again with them. */
+  const hopPaths = pathsToLift(tree);
+  useEffect(() => {
+    if (settings.searchRecords === undefined || !models.canLoad || hopPaths.length === 0)
+      return;
+    let alive = true;
+    void Promise.all(hopPaths.map((path) => models.get(path).catch(() => undefined))).then(
+      () => {
+        if (alive)
+          setTree((current) => liftRecords(current, model, models.peek) as TreeGroup);
+      },
+    );
+    return () => {
+      alive = false;
+    };
+    // Asked again only when the paths to look at change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hopPaths.map((path) => path.join(".")).join("|")]);
 
   /* Touching the tree rewrites the JSON so it shows exactly what the tree now says,
      and drops any read-only view that may have been left. */

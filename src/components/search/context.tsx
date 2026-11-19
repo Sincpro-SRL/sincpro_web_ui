@@ -4,7 +4,11 @@ import type {
   FieldDefinition,
   ModelDefinition,
 } from "@sincpro/web-ui/components/search/model";
-import type { RecordOption, SearchRecords } from "@sincpro/web-ui/components/search/records";
+import type {
+  BrowseRecords,
+  RecordOption,
+  SearchRecords,
+} from "@sincpro/web-ui/components/search/records";
 import { createContext, type ReactNode, useContext, useMemo } from "react";
 
 /* ==================================================================== *
@@ -16,7 +20,7 @@ import { createContext, type ReactNode, useContext, useMemo } from "react";
  *  around the app, and a piece that is handed its own prop uses that one instead: the
  *  context is the default, the prop is the exception.
  *
- *      <SearchProvider searchRecords={…} valueEditor={…}>
+ *      <SearchProvider searchRecords={…} browseRecords={…} valueEditor={…}>
  *        …every SearchBar / FilterBuilder / CriteriaBuilder below
  *      </SearchProvider>
  * ==================================================================== */
@@ -57,6 +61,10 @@ export type ValueEditor = (props: ValueEditorProps) => ReactNode | undefined;
 export interface SearchSettings {
   /** The application's search over the records of a relation (see `records.ts`). */
   searchRecords?: SearchRecords;
+  /** The application's «Buscar más…»: the whole list of a relation's records, in its chooser
+   *  —another context, with its own search bar—. Offered under the records found, in the bar
+   *  and in the builder. */
+  browseRecords?: BrowseRecords;
   /** The application's own value controls in the builder. */
   valueEditor?: ValueEditor;
 }
@@ -65,6 +73,7 @@ const SearchContext = createContext<SearchSettings>({});
 
 export function SearchProvider({
   searchRecords,
+  browseRecords,
   valueEditor,
   children,
 }: SearchSettings & { children: ReactNode }) {
@@ -75,9 +84,10 @@ export function SearchProvider({
     () => ({
       ...outer,
       ...(searchRecords === undefined ? {} : { searchRecords }),
+      ...(browseRecords === undefined ? {} : { browseRecords }),
       ...(valueEditor === undefined ? {} : { valueEditor }),
     }),
-    [outer, searchRecords, valueEditor],
+    [outer, searchRecords, browseRecords, valueEditor],
   );
   return <SearchContext.Provider value={value}>{children}</SearchContext.Provider>;
 }
@@ -86,9 +96,11 @@ export function SearchProvider({
 export function useSearchSettings(own: SearchSettings = {}): SearchSettings {
   const inherited = useContext(SearchContext);
   const searchRecords = own.searchRecords ?? inherited.searchRecords;
+  const browseRecords = own.browseRecords ?? inherited.browseRecords;
   const valueEditor = own.valueEditor ?? inherited.valueEditor;
   return {
     ...(searchRecords === undefined ? {} : { searchRecords }),
+    ...(browseRecords === undefined ? {} : { browseRecords }),
     ...(valueEditor === undefined ? {} : { valueEditor }),
   };
 }

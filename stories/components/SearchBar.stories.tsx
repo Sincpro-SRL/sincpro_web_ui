@@ -13,6 +13,7 @@ import {
   hasNamed,
   type ModelDefinition,
   queryField,
+  type RecordBrowse,
   SearchBar,
   type SearchCriteria,
   SearchProvider,
@@ -26,6 +27,7 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useEffect, useRef, useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
+import { RecordChooser } from "../support/erp-chooser";
 import { INVOICE_SEARCH_MODEL, searchInvoiceRecords } from "../support/erp-search";
 
 const FACETAS = [
@@ -837,6 +839,8 @@ export const EnUnDialogo: Story = {
  * - «Estado» es un enum: se despliega en sus palabras («Pagada»), y `pagada` escrita entera se
  *   ofrece directo.
  * - `#cliente` va derecho a los registros del cliente.
+ * - «Buscar más…» al pie de los registros abre la lista entera en otro contexto —con SU barra,
+ *   que también despliega relaciones (los clientes, por «País»)— y lo que se tilda cae en la ficha.
  * - Abajo de todo, «Búsqueda avanzada…» abre el constructor, que elige registros igual.
  *
  * El modelo es el que publica sincpro_framework: un many2one se identifica por su clave
@@ -848,6 +852,7 @@ export const RegistrosDeUnaRelacion: Story = {
   render: function Render() {
     const [criteria, setCriteria] = useState<SearchCriteria[]>([]);
     const [building, setBuilding] = useState(false);
+    const [browsing, setBrowsing] = useState<RecordBrowse | null>(null);
     const travels = selectionOf(criteria);
     return (
       <SearchProvider searchRecords={searchInvoiceRecords}>
@@ -858,8 +863,29 @@ export const RegistrosDeUnaRelacion: Story = {
             criteria={criteria}
             onCriteriaChange={setCriteria}
             onOpenBuilder={() => setBuilding(true)}
+            browseRecords={setBrowsing}
             placeholder="buscá un cliente, un vendedor, una etiqueta…"
           />
+          {browsing === null ? null : (
+            <Dialog
+              open
+              width="lg"
+              title={browsing.label}
+              subtitle="Tildá los que quieras agregar."
+              onClose={() => setBrowsing(null)}
+            >
+              <RecordChooser
+                relation={browsing.relation}
+                text={browsing.text}
+                many={browsing.many}
+                chosen={browsing.chosen}
+                onChoose={(records) => {
+                  browsing.choose(records);
+                  setBrowsing(null);
+                }}
+              />
+            </Dialog>
+          )}
           <p className="mt-3 font-mono text-micro text-muted" aria-label="lo que viaja">
             {JSON.stringify(travels ?? null)}
           </p>

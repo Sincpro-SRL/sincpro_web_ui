@@ -143,6 +143,8 @@ export {
   type ValueEditorProps,
 } from "@sincpro/web-ui/components/search/context";
 export {
+  type BrowseRecords,
+  type RecordBrowse,
   type RecordSearch,
   recordsFilter,
   recordsOf,

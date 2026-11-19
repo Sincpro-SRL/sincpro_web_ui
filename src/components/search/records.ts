@@ -51,6 +51,31 @@ export interface RecordSearch {
  *  not a page; the rest are reached by typing more. */
 export type SearchRecords = (search: RecordSearch) => Promise<readonly RecordOption[]>;
 
+/**
+ * What «Buscar más…» is asked: the whole list of a relation's records, to choose from where the
+ * dropdown's few are not enough. The application opens its chooser —a `List onChoose` with its
+ * OWN search bar, in a modal or beside—, and answers with `choose`.
+ */
+export interface RecordBrowse {
+  /** The aggregate on the other side — WHICH records: «Country». */
+  relation: string;
+  /** The relational field, from the root record: `["customer", "country"]`. */
+  path: readonly string[];
+  /** How the relation reads: «País». The chooser's title. */
+  label: string;
+  /** What was typed: the chooser opens on the same search. */
+  text: string;
+  /** The place takes several (a chip, «está en») or one («es»): a chooser of many ticks. */
+  many: boolean;
+  /** What is already chosen there: a chooser of many leaves it out. */
+  chosen: readonly RecordOption[];
+  /** The answer: the records chosen. */
+  choose: (records: readonly RecordOption[]) => void;
+}
+
+/** The application's «Buscar más…» over a relation. */
+export type BrowseRecords = (browse: RecordBrowse) => void;
+
 /** How a relation is compared once records of it are chosen. */
 export interface RecordTarget {
   /** The relational field: «customer_id», «tags». */
