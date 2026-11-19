@@ -8,6 +8,7 @@ import {
   DataTable,
   pileAggregate,
 } from "@sincpro/web-ui/primitives/table/DataTable";
+import { reportRowsOf } from "@sincpro/web-ui/views/list/derive";
 import { Truck } from "lucide-react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { test } from "vitest";
@@ -111,4 +112,48 @@ test("a stage draws its icon, its hint and its count", () => {
   assert.match(html, /lucide-truck/);
   assert.match(html, /title="Salió del almacén"/);
   assert.match(html, />3</);
+});
+
+test("a report built from the piles says each pile's totals, and closes with what all add up to", () => {
+  const LINES: DataColumn<Order> = {
+    id: "lines",
+    header: "líneas",
+    value: (o) => (o.id === "a" ? 4 : 5),
+    numeric: true,
+    aggregate: "max",
+  };
+  const other = pile({
+    path: ["cotización"],
+    key: "cotización",
+    label: "cotización",
+    count: 1,
+    items: [{ id: "c", stage: "cotización", total: 350 }],
+  });
+  const rows = reportRowsOf(
+    [pile(), other],
+    [STAGE, TOTAL, LINES],
+    () => ({ name: "x" }),
+    "Total",
+  );
+  // Every pile is a group WITH its amounts — a section draws none.
+  assert.equal(rows[0]?.kind, "group");
+  assert.deepEqual(rows[0]?.values, [170480.5, 5]);
+  assert.deepEqual(rows.at(-1), {
+    id: "\u0000total",
+    label: "Total",
+    kind: "total",
+    level: 0,
+    values: [170830.5, 5],
+  });
+  // A pile that holds one page of its rows says nothing, and neither does the total.
+  const partial = reportRowsOf(
+    [pile({ count: 900 })],
+    [TOTAL],
+    () => ({ name: "x" }),
+    "Total",
+  );
+  assert.deepEqual(
+    partial.map((one) => one.values),
+    [[null], [null]],
+  );
 });

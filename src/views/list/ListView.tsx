@@ -551,7 +551,10 @@ export function ListView<T extends object>({
     });
   }
 
-  const reportRows = useMemo(() => reportRowsOf(piles, columns, row), [piles, columns, row]);
+  const reportRows = useMemo(
+    () => reportRowsOf(piles, columns, row, copy.report.total),
+    [piles, columns, row, copy.report.total],
+  );
 
   function wrapGroups(nodes: (inside: readonly T[]) => ReactNode) {
     if (piles === null) return nodes(ordered);

@@ -554,4 +554,15 @@ export const InformeAgrupado: Story = {
       </div>
     );
   },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    // Each group says what it adds up to — the total and the most lines —, like the table.
+    const pedido = canvas.getByRole("rowheader", { name: /estado · pedido/ }).closest("tr")!;
+    await expect(pedido.textContent).toContain("185.200,50");
+    await expect(within(pedido).getByText("5")).toBeInTheDocument();
+    // And the report closes with what all of them add up to.
+    const total = canvas.getByRole("rowheader", { name: "Total" }).closest("tr")!;
+    await expect(total.textContent).toContain("496.900,50");
+    await expect(within(total).getByText("6")).toBeInTheDocument();
+  },
 };

@@ -622,6 +622,8 @@ export type UiCopy = {
     /** The header of the first column, which is read aloud and not
      *  drawn: without it, a screen reader announces a column with no name. */
     concept: string;
+    /** The line that closes a report built from the piles: what all of them add up to. */
+    total: string;
   };
   /**
    * THE BUILDER of criteria: the words of its sections and its controls.
@@ -1494,6 +1496,7 @@ export const ENGLISH_COPY: UiCopy = {
     open: "Open {name}",
     close: "Close {name}",
     concept: "Item",
+    total: "Total",
   },
   builder: {
     filter: "Filter",

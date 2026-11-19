@@ -361,7 +361,8 @@ and under every column that declared an `aggregate` what the pile adds up to —
 the footer («185.200,50», «máx 5»). Whoever counts the piles (the server's grouped read) sends
 the sums in `Pile.totals`, by column id; without them the table sums the rows when the pile
 holds all of them — the sum of one page of a pile of thousands looks like its total and is
-not. The sheet's bands say the same numbers.
+not. The sheet's bands and the report built from the piles say the same numbers: in the report
+every pile is a group with its amounts, and a «Total» line closes it.
 
 A column's numbers are written ONE way, in its cells, its piles and its footer: its `format`,
 else its `decimals` (`DataColumn.decimals`, `SheetColumn.decimals`): `2` writes «6.057,10»

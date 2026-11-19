@@ -218,6 +218,7 @@ export const Catalogo: Story = {
                   id: "lines",
                   header: "líneas",
                   value: (d: Item) => d.lines,
+                  decimals: 0,
                   numeric: true,
                   aggregate: "max",
                   optional: true,

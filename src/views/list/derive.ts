@@ -3,6 +3,7 @@ import {
   levelKey,
   pathKey,
   type Pile,
+  pileCount,
   pileItems,
   pileLabel,
 } from "@sincpro/web-ui/foundations/grouping";
@@ -202,6 +203,7 @@ export function reportRowsOf<T extends object>(
   piles: readonly Pile<T>[] | null,
   columns: readonly DataColumn<T>[] | undefined,
   row: (item: T) => RowOf,
+  totalLabel?: string,
 ): readonly ReportRow[] {
   if (piles === null || columns === undefined) return [];
   const numeric = columns.filter((column) => column.aggregate !== undefined);
@@ -212,8 +214,11 @@ export function reportRowsOf<T extends object>(
   const fieldName = (field: string) =>
     columns.find((column) => column.id === field || column.field === field)?.header ?? field;
 
+  /* Every pile is a GROUP — it opens and closes, and it says what it adds up to under each
+     column, the number the table's pile row says (`pileAggregate`). A `section` was tried for
+     the first level and it drew no amounts: a section is a title over what comes below
+     («Activos»), and a pile IS a sum. */
   const line = (pile: Pile<T>): ReportRow => {
-    const inside = pile.piles.length === 0 ? pile.items : pileItems(pile.piles);
     const children =
       pile.piles.length > 0
         ? pile.piles.map(line)
@@ -230,14 +235,44 @@ export function reportRowsOf<T extends object>(
     return {
       id: pathKey(pile.path),
       label: `${fieldName(pile.field)} · ${pile.label}`,
-      kind: pile.depth === 0 ? "section" : "group",
+      kind: "group",
       level: pile.depth,
-      values: numeric.map((column) => aggregateOf(column, inside)),
+      values: numeric.map((column) => pileAggregate(column, pile)),
       children,
     };
   };
 
-  return piles.map(line);
+  const lines = piles.map(line);
+  if (totalLabel === undefined || lines.length === 0) return lines;
+  /* The line that closes the report: what every pile adds up to, combined from the piles'
+     own numbers — so it holds when the piles were counted by the server. */
+  const total: ReportRow = {
+    id: "\u0000total",
+    label: totalLabel,
+    kind: "total",
+    level: 0,
+    values: numeric.map((column, at) => {
+      const each = lines.map((one) => one.values[at] ?? null);
+      if (each.some((value) => value === null)) return null;
+      const known = each as number[];
+      switch (column.aggregate) {
+        case "sum":
+        case "count":
+          return known.reduce((a, b) => a + b, 0);
+        case "max":
+          return Math.max(...known);
+        case "min":
+          return Math.min(...known);
+        default: {
+          /* A mean of means is not the mean, nor a count of distinct values a sum: over the
+             rows, when the piles hold them all. */
+          const items = pileItems(piles);
+          return items.length < pileCount(piles) ? null : aggregateOf(column, items);
+        }
+      }
+    }),
+  };
+  return [...lines, total];
 }
 
 /**
