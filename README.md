@@ -266,7 +266,7 @@ of classes that change with the next refactor:
 
 The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`,
 `menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card`, `board.tile`,
-`board.stat`, `board.stat.value`, `activity.changes`, `file-list`, `file-list.file`, `metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
+`board.stat`, `board.stat.value`, `activity.changes`, `file-list`, `file-list.file`, `file-value`, `metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
 `search.panel`, `search.suggestions`, `search.suggestion`, `search.record`, `search.advanced`,
 `search.keys`, `search-entry`, `search-entry.keys`, `table`, `table.pile`, `yes-no`,
 `table.head`, `row.ways`, `topbar`, `topbar.brand`, `topbar.menus`, `topbar.actions`, `topbar.user`,
