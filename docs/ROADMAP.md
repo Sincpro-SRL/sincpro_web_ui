@@ -59,15 +59,15 @@ data comes from). What is marked ✅ with a date was done in the round of 2026-1
 | Per-resource calendar, automatic scheduling, critical path                            | 💲       | license: FullCalendar scheduler / SVAR PRO                                  |
 | Export what is seen (xlsx)                                                            | ✅       | `foundations/xlsx`                                                          |
 | A presentation of your own (map, gallery, floor plan) with the same set               | ✅ 11-03 | `List.Present` (`ListSet`: order, piles, selection)                         |
-| An operation over N chosen records (Odoo's «wizard»)                                  | ✅ 11-03 | `5 · Plantillas/Operación`: `Record` in a modal + `api.pick`                |
-| An operation in SEVERAL steps in one sitting (import: upload › map › review)          | ✅ 11-04 | `StepFlow` (`components/flow`); `5 · Plantillas/Importar`                   |
+| An operation over N chosen records (Odoo's «wizard»)                                  | ✅ 11-03 | `5 · Plantillas/Procesos/Operación`: `Record` in a modal + `api.pick`       |
+| An operation in SEVERAL steps in one sitting (import: upload › map › review)          | ✅ 11-04 | `StepFlow` (`components/flow`); `5 · Plantillas/Procesos/Importar`          |
 | Thousands of rows in the table: draws only the ones in view (from 200)                | ✅ 11-03 | `DataTable` (`primitives/table/rowWindow`)                                  |
 | The table draws the piles the server counted, with «Ver N más»                        | ✅ 11-03 | `DataTable piles`, `Grouping.onMore` (rows, board, table, `ListSet.more`)   |
 | A pile's «Ver más» says what it brings («Ver 50 más de 49.950») and stops at the cap  | ✅ 11-03 | `Pile.more`, `pileFoot`, `PileFootLine` (rows, board, table, custom)        |
 | A card of your own on the board opens like the system's                               | ✅ 11-03 | `List.Board card(item, ways)` (`CardWays`, like `ListSet`)                  |
 | Ask again without the rows disappearing                                               | ✅ 11-03 | `List state.refreshing`: the rows stay, a discreet bar and `aria-busy`      |
 | A person's card draws their face                                                      | ✅ 11-03 | `RecordCard media.person`, like `RelationCard`                              |
-| Several sets at once (reconciliation), each with its own search                       | ✅ 11-03 | `Panes` / `Pane`; `5 · Plantillas/Conciliación`                             |
+| Several sets at once (reconciliation), each with its own search                       | ✅ 11-03 | `Panes` / `Pane`; `5 · Plantillas/Procesos/Conciliación`                    |
 
 ## 2b. Formatted values — show and edit (round of 2026-11-04)
 
@@ -93,7 +93,7 @@ reading (`mode="read"`) it draws it as a datum, in the copy's language.
 | A signed amount that reads well: negatives in red with their sign, accounting in parentheses | ✅ 11-04 | `Numeric signed`                                                         |
 | Color: label palette (Odoo's color index) and hex                                            | ✅ 11-04 | `ColorInput` (React Aria `ColorField` + `ColorSwatchPicker`)             |
 | A model's listing draws each type: email, web and phone as a link, duration, yes/no, date    | ✅ 11-04 | `columnsFromModel` (`modelCellKind`)                                     |
-| A real sheet with all these controls, in reading and editing                                 | ✅ 11-04 | `5 · Plantillas/Ficha de contacto`                                       |
+| A real sheet with all these controls, in reading and editing                                 | ✅ 11-04 | `5 · Plantillas/Registros/Ficha de contacto`                             |
 
 ## 3. Choose and search
 
@@ -141,7 +141,7 @@ reading (`mode="read"`) it draws it as a datum, in the copy's language.
 | The surfaces composer dresses (Peek, Dialog, Missing)  | ✅       | web-ui (`Peek onPromote`, `Dialog onExpand`)                    |
 | Modals INSIDE the panels                               | 🟡       | composer — being refactored (2026-10-31)                        |
 | Phone: everything is a page, preview as a bottom sheet | ❌       | composer                                                        |
-| Templates that show web-ui + composer together         | ✅ 10-31 | `5 · Plantillas/Espacio de trabajo`                             |
+| Templates that show web-ui + composer together         | ✅ 10-31 | `5 · Plantillas/Abrir y elegir/Espacio de trabajo`              |
 | The `api.pick` window with a requested size            | ❌       | composer (today it opens 480×360)                               |
 | Open a relational: modal by default + «Abrir en…»      | ✅ 10-31 | `RelationValue onOpenIn`, `Picker onOpen(id, to)`, `OpenTarget` |
 | A tag (many2many) opens its record in preview          | ✅ 10-31 | `TagsField onOpen`, `openTarget`                                |

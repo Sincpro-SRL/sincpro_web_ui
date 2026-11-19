@@ -15,10 +15,11 @@ import { test } from "vitest";
  * package — and keep the template as composition.
  */
 
+/* Recursive: the templates live in folders by use case (Módulos, Tableros, Procesos…). */
 const TEMPLATES = join(import.meta.dirname, "..", "stories", "templates");
 
 test("templates compose the public API without styling of their own", () => {
-  const styled = readdirSync(TEMPLATES)
+  const styled = readdirSync(TEMPLATES, { recursive: true, encoding: "utf8" })
     .filter((name) => name.endsWith(".tsx"))
     .flatMap((name) =>
       readFileSync(join(TEMPLATES, name), "utf8")
@@ -31,7 +32,7 @@ test("templates compose the public API without styling of their own", () => {
 });
 
 test("templates import only from the package, never from its internals", () => {
-  const deep = readdirSync(TEMPLATES)
+  const deep = readdirSync(TEMPLATES, { recursive: true, encoding: "utf8" })
     .filter((name) => name.endsWith(".tsx"))
     .flatMap((name) =>
       readFileSync(join(TEMPLATES, name), "utf8")

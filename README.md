@@ -377,7 +377,7 @@ style decides how it is drawn, the way it chooses its density:
   on scroll.
 
 `StatusBar look` has four widgets — `track` (Odoo's), `progress`, `steps` and `pill` (one chip
-that unfolds the stages) —, side by side in `4 · Vistas/Registro/Riel`, with the two pagers and
+that unfolds the stages) —, side by side in `3 · Componentes/Registro/Riel, estado y contadores`, with the two pagers and
 the two kinds of counter.
 
 #### Keyboard shortcuts that run

@@ -31,7 +31,7 @@ import { test } from "vitest";
 /**
  * Context: the two media controls — an image chosen and cropped, a signature drawn or typed.
  * The pointer, the canvas and the file dialog live in a browser and are driven by the stories
- * (`2 · Primitivas/Imagen y firma`); what is checked here is the arithmetic of the crop and
+ * (`2 · Primitivas/Campos/Imagen y firma`); what is checked here is the arithmetic of the crop and
  * the strokes, and what each control DRAWS: its names, its way in for the keyboard, and its
  * read mode.
  */

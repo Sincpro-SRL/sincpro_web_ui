@@ -17,40 +17,42 @@ import { test } from "vitest";
  */
 const SHOWN_THROUGH: Readonly<Record<string, string>> = {
   SortMenu: "the list bar — 4 · Vistas/Lista",
-  CriteriaChips: "SearchBar — 3 · Componentes/Búsqueda",
+  CriteriaChips: "SearchBar — 3 · Componentes/Búsqueda/Barra, filtros y agrupador",
   CheckMark:
-    "the cuts panel and GroupingLevels — 3 · Componentes/Búsqueda · barra, filtros y agrupador",
+    "the cuts panel and GroupingLevels — 3 · Componentes/Búsqueda/Barra, filtros y agrupador",
   JsonEditor: "CriteriaBuilder and FilterBuilder",
   SelectionTree:
-    "the rules of FilterBuilder and CriteriaBuilder — 3 · Componentes/Búsqueda · filtro a medida",
+    "the rules of FilterBuilder and CriteriaBuilder — 3 · Componentes/Búsqueda/Filtro a medida",
   RuleValue:
-    "the value of each rule — 3 · Componentes/Búsqueda · filtro a medida · Elegir registros",
+    "the value of each rule — 3 · Componentes/Búsqueda/Filtro a medida · Elegir registros",
   RowActions: "DataTable rows — 3 · Componentes/Datos/Tabla",
   RecordLink: "the rows of Listing — 4 · Vistas/Lista",
-  PivotExplorer: "List.Pivot fields — 4 · Vistas/Lista · Pivote explorado",
+  PivotExplorer: "List.Pivot fields — 4 · Vistas/Lista/Análisis · Pivote explorado",
   ChartExplorer:
-    "List.Chart — 4 · Vistas/Lista · Gráfico, and FrameView — 3 · Componentes/Datos/Marco · Gráfico",
-  AxisLevels: "the axes of PivotExplorer and ChartExplorer — 4 · Vistas/Lista · Gráfico",
-  TimelineToolbar: "RecordTimeline and RecordGantt — 3 · Componentes/Línea de tiempo, Gantt",
-  BoardColumns: "List.Board stages — 4 · Vistas/Lista · Tablero por etapas",
-  RecordRibbon: "Record.Ribbon — 4 · Vistas/Registro · Archivado",
+    "List.Chart — 4 · Vistas/Lista/Análisis · Gráfico, and FrameView — 3 · Componentes/Datos/Marco · Gráfico",
+  AxisLevels:
+    "the axes of PivotExplorer and ChartExplorer — 4 · Vistas/Lista/Análisis · Gráfico",
+  TimelineToolbar: "RecordTimeline and RecordGantt — 3 · Componentes/Tiempo",
+  BoardColumns: "List.Board stages — 4 · Vistas/Lista/Presentaciones · Tablero por etapas",
+  RecordRibbon: "Record.Ribbon — 4 · Vistas/Registro/Completo · Archivado",
   RecordAudit:
-    "Record.Audit — 4 · Vistas/Registro · Archivado, 5 · Plantillas · Factura completa",
+    "Record.Audit — 4 · Vistas/Registro/Completo · Archivado, 5 · Plantillas/Registros/Factura completa",
   FieldLayoutProvider: "Sheet — the two layouts of a form",
   FieldBoundary:
-    "draws nothing: EditableTable, DataTable and LineItems wrap themselves — 3 · Componentes/Tabla editable",
+    "draws nothing: EditableTable, DataTable and LineItems wrap themselves — 3 · Componentes/Datos/Tabla editable",
   ReadValue: "the read mode of every control — Fechas · Lectura, Elecciones · Lectura",
   Popover: "DatePicker, ComboBox and PopoverTrigger",
-  RangeCalendar: "DateRangePicker — 2 · Primitivas/Fechas",
-  RecordSkeleton: "Record.Skeleton — 4 · Vistas/Registro · Cargando",
+  RangeCalendar: "DateRangePicker — 2 · Primitivas/Campos/Fechas",
+  RecordSkeleton: "Record.Skeleton — 4 · Vistas/Compartido/Estados · Cargando",
   DirtyActions: "Record's `dirty` — 5 · Plantillas · Factura (edit a field)",
-  AssistLabel: "AssistSuggestion, AssistPending and ChangeReview — 3 · Componentes/Asistente",
+  AssistLabel:
+    "AssistSuggestion, AssistPending and ChangeReview — 3 · Componentes/Ayuda/Asistente",
   AssistSourceLink:
-    "AssistSuggestion, ChangeReview and AssistMark — 3 · Componentes/Asistente",
+    "AssistSuggestion, ChangeReview and AssistMark — 3 · Componentes/Ayuda/Asistente",
   SearchEntry:
-    "Sidebar's and TopBar's `search` — 3 · Componentes/Shell · la barra lateral · Como cromo, En el teléfono",
+    "Sidebar's and TopBar's `search` — 3 · Componentes/Shell/Barra lateral · Como cromo, En el teléfono",
   SidebarToggle:
-    "TopBar draws it first inside a frame with a sidebar — 3 · Componentes/Shell · la barra lateral · En el teléfono",
+    "TopBar draws it first inside a frame with a sidebar — 3 · Componentes/Shell/Barra lateral · En el teléfono",
 };
 
 const ROOT = join(import.meta.dirname, "..");

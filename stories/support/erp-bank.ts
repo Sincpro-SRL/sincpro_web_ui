@@ -1,6 +1,6 @@
 /**
  * Context: a bank account to reconcile — the lines the bank sent (the statement) and the
- * open journal items they may pay. Example domain for `5 · Plantillas/Conciliación`; the
+ * open journal items they may pay. Example domain for `5 · Plantillas/Procesos/Conciliación`; the
  * package knows none of this.
  */
 

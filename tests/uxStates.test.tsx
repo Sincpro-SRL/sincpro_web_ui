@@ -6,7 +6,7 @@ import { test } from "vitest";
 
 /**
  * Context: what a person sees of «what is going on» while working, now drawn by the pieces
- * themselves. The browser story (`4 · Vistas/Registro › Editar sin acciones`) drives it end to
+ * themselves. The browser story (`4 · Vistas/Registro/Edición › Editar sin acciones`) drives it end to
  * end — the focus kept on a busy Save, «Guardado» after it —; the markup pins the contracts.
  */
 

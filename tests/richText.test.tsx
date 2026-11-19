@@ -16,7 +16,7 @@ import { test } from "vitest";
 /**
  * Context: on the server (and here, in Node) there is no DOM for DOMPurify to clean with, so
  * the rich text must come out as TEXT — never as the HTML it arrived with. The cleaning itself
- * and the editor are driven in a real browser by `2 · Primitivas/Texto enriquecido`.
+ * and the editor are driven in a real browser by `2 · Primitivas/Campos/Texto enriquecido`.
  */
 
 const html = (children: ReactNode) =>

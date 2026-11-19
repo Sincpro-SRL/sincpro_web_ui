@@ -98,7 +98,7 @@ function FilaEscala({ e }: { e: (typeof ESCALA)[number] }) {
 }
 
 const meta: Meta = {
-  title: "1 · Fundamentos/Tipografia",
+  title: "1 · Fundamentos/Tipografía",
   parameters: { layout: "fullscreen" },
 };
 

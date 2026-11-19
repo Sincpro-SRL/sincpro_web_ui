@@ -7,7 +7,7 @@ import { test } from "vitest";
 
 /**
  * Context: `StepFlow` — one operation in several steps, done in one sitting. Moving, the focus
- * and the keyboard are driven in a browser by its story («3 · Componentes/Pasos de una
+ * and the keyboard are driven in a browser by its story («3 · Componentes/Registro/Pasos de una
  * sentada») and the «Importar» template; what is checked here is what each state DRAWS: which
  * step is on, what is left, the one primary and what it says, and a blocked step that says why.
  */

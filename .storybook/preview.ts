@@ -31,6 +31,82 @@ installCopy(SPANISH_COPY);
 const preview: Preview = {
   parameters: {
     layout: "padded",
+    /* The catalog's map, declared once. Inside each LEVEL the folders are USE CASES, with the
+       same words in every level — «Archivos» is a field to drop files in among the primitives
+       and the record's attachments among the components —, ordered the way a screen is read:
+       the frame, how a set is cut, the data, one record, time, what happened, the files, help.
+       What is not named here follows, in the order the files are found. */
+    options: {
+      storySort: {
+        order: [
+          "Introducción",
+          "Nuestro estilo",
+          "1 · Fundamentos",
+          [
+            "Color",
+            "Tipografía",
+            "Escalas",
+            "Superficies · la misma vista en cinco",
+            "Tema",
+            "Cromo",
+            "Movimiento",
+            "Idioma",
+          ],
+          "2 · Primitivas",
+          [
+            "Acciones",
+            "Campos",
+            ["Controles de formulario"],
+            "Relacional a uno",
+            ["Leer · el nombre y sus destinos", "Editar · Picker"],
+            "Valores",
+            ["Valores, métricas y progreso"],
+            "Avisos",
+            "Capas",
+            "Estructura",
+          ],
+          "3 · Componentes",
+          [
+            "Shell",
+            ["Marco · arriba, al costado o los dos", "Barra de arriba · módulos y menús"],
+            "Búsqueda",
+            ["Barra, filtros y agrupador"],
+            "Datos",
+            ["Tabla", "Planilla · los datos crudos", "Pivote · dos ejes a la vez"],
+            "Registro",
+            ["Riel, estado y contadores", "Formulario · los tipos"],
+            "Tiempo",
+            "Actividad",
+            ["Avisos, conversación e historial", "Historial · lo que le pasó a un registro"],
+            "Archivos",
+            ["Adjuntos · los archivos del registro"],
+            "Ayuda",
+            ["Guía · un recorrido por la pantalla"],
+          ],
+          "4 · Vistas",
+          [
+            "Compartido",
+            ["Estilos · tradicional y moderno", "Acciones · la píldora"],
+            "Lista",
+            ["Completa", "Presentaciones", "Análisis"],
+            "Registro",
+            ["Completo"],
+          ],
+          "5 · Plantillas",
+          [
+            "Módulos",
+            ["Facturas · un módulo de ERP"],
+            "Registros",
+            ["Factura completa · un registro con todo"],
+            "Tableros",
+            "Procesos",
+            "Abrir y elegir",
+          ],
+          "6 · Extender",
+          ["Cómo extender", "Recetas"],
+        ],
+      },
+    },
     backgrounds: {
       options: {
         /* Tokens and not hex: a fixed colour here would stay light behind a dark story. */
