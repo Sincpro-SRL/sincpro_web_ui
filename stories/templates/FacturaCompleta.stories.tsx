@@ -14,6 +14,7 @@ import {
   DataField,
   DatePicker,
   DateValue,
+  type DockAction,
   Field,
   FormActions,
   FormSection,
@@ -46,6 +47,7 @@ import {
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
+  Ban,
   Bell,
   BookOpen,
   Boxes,
@@ -57,8 +59,11 @@ import {
   ListTree,
   MoreHorizontal,
   Package,
+  Printer,
   Receipt,
+  RotateCcw,
   ScrollText,
+  Send,
   ShoppingCart,
   Truck,
   Undo2,
@@ -572,6 +577,9 @@ type Invoice = {
   balance: number;
 };
 const InvoiceContext = createContext<Invoice | null>(null);
+/** The invoice's actions FLOATING (`Record.Dock`, experimental) instead of on the rail. */
+const DockedContext = createContext(false);
+
 function useInvoice(): Invoice {
   const invoice = useContext(InvoiceContext);
   if (invoice === null) throw new Error("useInvoice outside InvoiceProvider");
@@ -626,6 +634,58 @@ function FullInvoice({ api }: ViewProps) {
   const openLine = (id: string) => api.open(lineRef(id), opened("modal"));
   const openPayment = () =>
     api.open(paymentRef, { to: Destination.Modal, size: { w: 640, h: 460 } });
+  const docked = useContext(DockedContext);
+  const run = (what: string) => () => toast.show({ message: `Acción: ${what}` });
+  const dockActions: DockAction[] = [
+    {
+      id: "main",
+      label: draft ? "Publicar" : "Registrar pago",
+      icon: draft ? Send : CreditCard,
+      primary: true,
+      onSelect: draft ? say("Se publicaría y enviaría al SIAT") : openPayment,
+    },
+    {
+      id: "send",
+      label: draft ? "Vista previa" : "Enviar",
+      icon: Send,
+      onSelect: say(draft ? "Vista previa" : "Enviar e imprimir"),
+    },
+    {
+      id: "print",
+      label: "Imprimir",
+      icon: Printer,
+      items: [
+        {
+          id: "print-invoice",
+          label: "Factura",
+          shortcut: "Ctrl+P",
+          onSelect: run("Imprimir factura"),
+        },
+        {
+          id: "print-payments",
+          label: "Factura con pagos",
+          onSelect: run("Imprimir con pagos"),
+        },
+        { id: "print-note", label: "Remito", onSelect: run("Imprimir remito") },
+      ],
+    },
+    { id: "credit", label: "Nota de crédito", icon: Undo2, onSelect: run("Nota de crédito") },
+    { id: "copy", label: "Duplicar", icon: Copy, onSelect: run("Duplicar") },
+    {
+      id: "draft",
+      label: "Restablecer a borrador",
+      icon: RotateCcw,
+      danger: true,
+      onSelect: run("Restablecer a borrador"),
+    },
+    {
+      id: "void",
+      label: "Anular en el SIAT",
+      icon: Ban,
+      danger: true,
+      onSelect: run("Anular en el SIAT"),
+    },
+  ];
   const payments = PAYMENTS.filter((p) => applied.includes(p.id));
   /* What the money summary says: the taxes and the total; once posted, each payment
      deducted with its detail, what is still due, and the credit note that could pay part. */
@@ -728,57 +788,64 @@ function FullInvoice({ api }: ViewProps) {
             { icon: Landmark, count: draft ? 0 : 1, label: "SIAT" },
           ]}
         />
-        <Record.Actions>
-          {/* Each action its own child, not a fragment: the rail reads the children to move
-              the primary one to the thumb bar on a phone, and a fragment hides it. */}
-          <Button
-            role="primary"
-            size="sm"
-            onClick={draft ? say("Se publicaría y enviaría al SIAT") : openPayment}
-          >
-            {draft ? "Publicar" : "Registrar pago"}
-          </Button>
-          <Button
-            role="secondary"
-            size="sm"
-            onClick={say(draft ? "Vista previa" : "Enviar e imprimir")}
-          >
-            {draft ? "Vista previa" : "Enviar e imprimir"}
-          </Button>
-          {/* Three visible at most: the rest in the actions ⋯, grouped by what they do. */}
-          <Menu
-            label="Más acciones"
-            icon={MoreHorizontal}
-            iconOnly
-            chevron={false}
-            size="sm"
-            onSelect={(id) => toast.show({ message: `Acción: ${id}` })}
-            groups={[
-              {
-                options: [
-                  { id: "Nota de crédito", label: "Nota de crédito", icon: Undo2 },
-                  { id: "Duplicar", label: "Duplicar", icon: Copy },
+        {docked ? (
+          /* The same actions as DATA: the dock decides what is seen and what waits in «Más». */
+          <Record.Dock label="Acciones de la factura" actions={dockActions} />
+        ) : (
+          <>
+            <Record.Actions>
+              {/* Each action its own child, not a fragment: the rail reads the children to move
+                the primary one to the thumb bar on a phone, and a fragment hides it. */}
+              <Button
+                role="primary"
+                size="sm"
+                onClick={draft ? say("Se publicaría y enviaría al SIAT") : openPayment}
+              >
+                {draft ? "Publicar" : "Registrar pago"}
+              </Button>
+              <Button
+                role="secondary"
+                size="sm"
+                onClick={say(draft ? "Vista previa" : "Enviar e imprimir")}
+              >
+                {draft ? "Vista previa" : "Enviar e imprimir"}
+              </Button>
+              {/* Three visible at most: the rest in the actions ⋯, grouped by what they do. */}
+              <Menu
+                label="Más acciones"
+                icon={MoreHorizontal}
+                iconOnly
+                chevron={false}
+                size="sm"
+                onSelect={(id) => toast.show({ message: `Acción: ${id}` })}
+                groups={[
                   {
-                    id: "imprimir",
-                    label: "Imprimir",
-                    icon: ScrollText,
-                    items: [
-                      { id: "Imprimir factura", label: "Factura" },
-                      { id: "Imprimir con pagos", label: "Factura con pagos" },
-                      { id: "Imprimir remito", label: "Remito" },
+                    options: [
+                      { id: "Nota de crédito", label: "Nota de crédito", icon: Undo2 },
+                      { id: "Duplicar", label: "Duplicar", icon: Copy },
+                      {
+                        id: "imprimir",
+                        label: "Imprimir",
+                        icon: ScrollText,
+                        items: [
+                          { id: "Imprimir factura", label: "Factura" },
+                          { id: "Imprimir con pagos", label: "Factura con pagos" },
+                          { id: "Imprimir remito", label: "Remito" },
+                        ],
+                      },
                     ],
                   },
-                ],
-              },
-              {
-                options: [
-                  { id: "Restablecer a borrador", label: "Restablecer a borrador" },
-                  { id: "Anular en el SIAT", label: "Anular en el SIAT" },
-                ],
-              },
-            ]}
-          />
-        </Record.Actions>
+                  {
+                    options: [
+                      { id: "Restablecer a borrador", label: "Restablecer a borrador" },
+                      { id: "Anular en el SIAT", label: "Anular en el SIAT" },
+                    ],
+                  },
+                ]}
+              />
+            </Record.Actions>
+          </>
+        )}
         <Record.Status stages={STAGES} current={draft ? "draft" : "posted"} />
       </Record.Rail>
 
@@ -1234,11 +1301,13 @@ const VIEWS: readonly ViewSpec[] = [
   },
 ];
 
-function Page({ draft = false }: { draft?: boolean }) {
+function Page({ draft = false, docked = false }: { draft?: boolean; docked?: boolean }) {
   return (
-    <InvoiceProvider draft={draft}>
-      <Workspace views={VIEWS} start={invoiceRef(draft)} menu={MENU} />
-    </InvoiceProvider>
+    <DockedContext value={docked}>
+      <InvoiceProvider draft={draft}>
+        <Workspace views={VIEWS} start={invoiceRef(draft)} menu={MENU} />
+      </InvoiceProvider>
+    </DockedContext>
   );
 }
 
@@ -1282,5 +1351,23 @@ export const Borrador: Story = {
     await userEvent.click(edit!);
     const dialog = await page.findByRole("dialog", { name: first.product });
     await expect(await within(dialog).findByText("Precio unitario")).toBeVisible();
+  },
+};
+
+/**
+ * **Con las acciones flotando** (experimental, `Record.Dock`): la misma factura publicada, con
+ * sus acciones en una píldora sobre el papel en vez del riel — «Registrar pago» dorada y última,
+ * «Enviar» e «Imprimir ▾» a la vista, y en «Más ⋯» la nota de crédito, duplicar y, aparte, lo que
+ * deshace. Bajá por las catorce líneas: la píldora se queda; el encabezado de la grilla se pega
+ * debajo de ella.
+ */
+export const ConAccionesFlotantes: Story = {
+  name: "Con acciones flotantes (experimental)",
+  render: () => <Page docked />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const dock = await canvas.findByRole("toolbar", { name: "Acciones de la factura" });
+    await expect(within(dock).getByRole("button", { name: "Registrar pago" })).toBeVisible();
+    await expect(within(dock).getByRole("button", { name: "Más acciones" })).toBeVisible();
   },
 };

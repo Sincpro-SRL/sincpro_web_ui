@@ -273,7 +273,7 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`, `sidebar.brand`,
 `sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
 `navigation.item`, `dirty.blocked`, `dirty.bar`, `field`, `field.label`, `form.section`,
-`form.index`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
+`form.index`, `dock`, `dock.pill`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
 `guide.progress`, `guide.title`, `guide.body`, `guide.actions`. A part that is one of many
 carries `data-key` too (`navigation.item`). Put your rules in a cascade layer above web-ui's, or
 outside any layer.
@@ -353,6 +353,40 @@ What can be extended, and how:
 | The filter said with names, for your own chip    | `describeFilter(selection, model, modelAt, names)`, `FilterBuilder onApply(selection, said)` |
 | Your own builder                                 | `SelectionTree`, `RuleValue`, `liftRecords`, `recordsFilter`, `recordOps`                    |
 | The words of an operator («no está establecido») | the copy table: `ops`                                                                        |
+
+#### Experimental: the record's actions floating (`Record.Dock`)
+
+The «settings» style floats Save and Discard in a dark pill; `Record.Dock` tries that pill for
+ALL of a record's actions. In place of `Record.Actions`, the actions are written as data, and the
+pill decides what is seen: the primary, gold and last; `visible` secondary ones (one with
+sub-actions is a menu button, «Imprimir ▾»); the rest in «Más ⋯», sub-actions as submenus, what
+undoes apart and last. At the top it sits over the paper and stays in view as the record scrolls
+(a layer of the sticky stack: a table header sticks under it); while there are changes the same
+pill holds «N cambios · Descartar · Guardar».
+
+```tsx
+<Record.Rail>
+  <Record.Crumbs crumbs={…} />
+  <Record.Dock
+    label="Acciones de la factura"
+    actions={[
+      { id: "pay", label: "Registrar pago", icon: CreditCard, primary: true, onSelect: pay },
+      { id: "send", label: "Enviar", icon: Send, onSelect: send },
+      { id: "print", label: "Imprimir", icon: Printer, items: [
+        { id: "print-invoice", label: "Factura", shortcut: "Ctrl+P", onSelect: printInvoice },
+        { id: "print-note", label: "Remito", onSelect: printNote },
+      ] },
+      { id: "copy", label: "Duplicar", icon: Copy, onSelect: duplicate },
+      { id: "void", label: "Anular en el SIAT", icon: Ban, danger: true, onSelect: voidIt },
+    ]}
+    // placement="top" | "bottom", align="center" | "end", look="chrome" | "canvas", visible={2}
+  />
+  <Record.Status stages={…} current="posted" />
+</Record.Rail>
+```
+
+`ActionDock` is the pill alone (`placement="inline"`, or sticky `top` / `bottom` anywhere) and
+`dockPlan` the rule, for a screen that is not a `Record`.
 
 #### A guided tour: the screen says what each thing is
 

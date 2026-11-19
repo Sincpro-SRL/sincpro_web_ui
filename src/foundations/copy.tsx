@@ -66,6 +66,13 @@ export type UiCopy = {
     prev: string;
     next: string;
   };
+  /** The floating action dock (`ActionDock`, experimental). */
+  dock: {
+    /** The toolbar's name, when the screen does not give one. */
+    label: string;
+    /** «Más»: the actions that did not fit. */
+    more: string;
+  };
   record: {
     prev: string;
     next: string;
@@ -1122,6 +1129,10 @@ export const ENGLISH_COPY: UiCopy = {
     sizeHint: "{size} per page — click to change",
     prev: "Previous page",
     next: "Next page",
+  },
+  dock: {
+    label: "Actions",
+    more: "More actions",
   },
   record: {
     prev: "Previous record",

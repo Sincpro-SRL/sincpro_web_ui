@@ -1,5 +1,9 @@
 "use client";
 
+import {
+  ActionDock,
+  type ActionDockProps,
+} from "@sincpro/web-ui/components/record/ActionDock";
 import { Breadcrumb, type Crumb } from "@sincpro/web-ui/components/record/Breadcrumb";
 import {
   DirtyActions,
@@ -11,6 +15,7 @@ import {
 import { isPrimary, ThumbBar, thumbPlan } from "@sincpro/web-ui/components/record/ThumbBar";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { useFormStyle } from "@sincpro/web-ui/foundations/form";
+import { useStickyLayer } from "@sincpro/web-ui/foundations/sticky";
 import { SurfaceProvider } from "@sincpro/web-ui/foundations/surface";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
 import { Line } from "@sincpro/web-ui/primitives/block/Line";
@@ -80,6 +85,7 @@ export function RecordHeader({
   blocking,
   indicator,
   paper: onPaper,
+  dock,
   children,
 }: {
   crumbs?: readonly Crumb[];
@@ -150,6 +156,13 @@ export function RecordHeader({
    *  `placement`). Only in comfortable: compact (the peek) is always one surface. Omitted, it
    *  is guessed from the rail: crumbs, pager or actions mean a page. */
   paper?: boolean;
+  /**
+   * The record's actions FLOATING (experimental — `ActionDock`): in place of `actions` and of
+   * Save / Discard on the rail, one pill that, at the top, sits over the paper and stays in
+   * view as the record scrolls; at the bottom, the settings bar's place. The rail keeps where
+   * I am, which of eighty, and the state.
+   */
+  dock?: Omit<ActionDockProps, "dirty" | "saved">;
   /** The record body. It sits IN the paper with the title, so groups, tabs
    *  and the page are one white sheet on the ground — Odoo's `<sheet>`. */
   children?: ReactNode;
@@ -162,7 +175,10 @@ export function RecordHeader({
   /* «Guardado» is said where Save was; a record whose rail exists only while it has changes
      keeps it for that moment, or the answer would leave with the question. */
   const saved = useJustSaved(dirty);
-  const railDirty = floating ? undefined : dirty;
+  /* With a dock, the actions and Save / Discard are the dock's: the rail keeps the rest. */
+  const docked = dock !== undefined;
+  const railDirty = floating || docked ? undefined : dirty;
+  const railActions_ = docked ? undefined : actions;
   /* Save is gone the moment it has saved, and the focus that was on it fell to the page —
      a keyboard was left at the top of the document. It comes back to the record's name:
      where reading the record starts, and announced together with «Guardado». */
@@ -173,10 +189,10 @@ export function RecordHeader({
     if (lost) nameRef.current?.focus({ preventScroll: true });
   }, [saved]);
   const hasRail =
-    (saved && !floating) ||
+    (saved && !floating && !docked) ||
     crumbs !== undefined ||
     pager !== undefined ||
-    actions !== undefined ||
+    railActions_ !== undefined ||
     status !== undefined ||
     railDirty !== undefined;
 
@@ -197,7 +213,7 @@ export function RecordHeader({
     rail: railActions,
     primaries,
     mode: thumb,
-  } = thumbPlan({ withRail, actions, dirty: railDirty });
+  } = thumbPlan({ withRail, actions: railActions_, dirty: railDirty });
 
   /* In compact the TITLE is not drawn either, for the same reason as in
      `Listing`: the surface header already says it. Drawing it here showed it
@@ -225,7 +241,8 @@ export function RecordHeader({
      answer — the rail's contents no longer decide it. */
   const paper =
     onPaper === undefined
-      ? withRail && (crumbs !== undefined || pager !== undefined || actions !== undefined)
+      ? withRail &&
+        (crumbs !== undefined || pager !== undefined || actions !== undefined || docked)
       : onPaper && d === "comfortable";
 
   /* ONE column for the rail and the page: the rail used to span the screen while the sheet
@@ -237,6 +254,31 @@ export function RecordHeader({
       : beside
         ? "mx-auto w-full max-w-(--container-record)"
         : "mx-auto w-full max-w-(--container-sheet)";
+
+  /* THE DOCK AT THE TOP: first on the ground, over the paper, at the paper's column; sticky,
+     so it stays in view —under whatever already sticks— as the record scrolls. */
+  /* It is one more layer of the sticky stack: a table header that sticks goes UNDER it, not
+     behind it. Its band is a veil of the ground fading out, so what scrolls passes under the
+     pill instead of peeking between it and the header. */
+  const dockLayer = useStickyLayer<HTMLDivElement>();
+  const dockedTop = dock !== undefined && dock.placement !== "bottom";
+  const topDock =
+    dock === undefined || dock.placement === "bottom" ? null : (
+      <div
+        ref={dockLayer.ref}
+        style={dockLayer.self}
+        className={`pointer-events-none sticky z-20 -mt-1 flex bg-linear-to-b from-ground from-75% to-transparent pb-3 ${paper ? column : ""} ${
+          dock.align === "end" ? "justify-end" : "justify-center"
+        }`}
+      >
+        <ActionDock
+          {...dock}
+          {...(dirty === undefined ? {} : { dirty })}
+          saved={saved}
+          placement="inline"
+        />
+      </div>
+    );
 
   const identity = (
     <div
@@ -358,10 +400,10 @@ export function RecordHeader({
                   end={pager}
                 />
 
-                {actions === undefined &&
+                {railActions_ === undefined &&
                 status === undefined &&
                 railDirty === undefined &&
-                (!saved || floating) ? null : (
+                (!saved || floating || docked) ? null : (
                   /* Row 2 — WHAT I CAN DO and WHERE IT IS AT: actions stuck to the
                left edge, the history and the state stuck to the right one. No
                `flex-wrap`: wrapping split the row in two and the state ended up
@@ -374,14 +416,14 @@ export function RecordHeader({
                       <div className="flex shrink-0 items-center gap-1.5 @max-handheld/record:hidden">
                         <DirtyActions {...railDirty} />
                       </div>
-                    ) : actions === undefined ? (
-                      floating ? null : (
+                    ) : railActions_ === undefined ? (
+                      floating || docked ? null : (
                         <SavedMark saved={saved} />
                       )
                     ) : (
                       <div className="flex shrink-0 items-center gap-1.5">
                         {primaries.length === 0
-                          ? actions
+                          ? railActions_
                           : railActions.map((node) =>
                               isPrimary(node) ? (
                                 <span
@@ -441,7 +483,8 @@ export function RecordHeader({
          *  the application bar.
          * ==================================================================== */
         <div className="bg-ground px-3 pt-3 pb-3">
-          <div className="@container/page">
+          {topDock}
+          <div className="@container/page" {...(dockedTop ? { style: dockLayer.below } : {})}>
             <div
               className={`flex min-w-0 flex-col gap-3 ${column} ${
                 beside
@@ -486,6 +529,7 @@ export function RecordHeader({
         /* No paper (a modal, a drawer): one surface, no ground beside
            it — the band first, the record, and the activity below. */
         <div className="relative flex min-w-0 flex-1 flex-col overflow-clip bg-surface">
+          {topDock}
           {ribbon}
           {blocking === undefined ? null : (
             <div className={byDensity(d, "px-4 pt-3.5", "pb-2")}>{blocking}</div>
@@ -501,7 +545,15 @@ export function RecordHeader({
       {thumb === null ? null : (
         <ThumbBar mode={thumb} dirty={railDirty} primaries={primaries} />
       )}
-      {floating ? <DirtyBar dirty={dirty} saved={saved} /> : null}
+      {floating && !docked ? <DirtyBar dirty={dirty} saved={saved} /> : null}
+      {dock === undefined || dock.placement !== "bottom" ? null : (
+        <ActionDock
+          {...dock}
+          {...(dirty === undefined ? {} : { dirty })}
+          saved={saved}
+          placement="bottom"
+        />
+      )}
     </>
   );
 }

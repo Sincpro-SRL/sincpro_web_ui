@@ -68,6 +68,10 @@ export const SPANISH_COPY: UiCopyOverride = {
     prev: "Página anterior",
     next: "Página siguiente",
   },
+  dock: {
+    label: "Acciones",
+    more: "Más acciones",
+  },
   record: {
     prev: "Anterior",
     next: "Siguiente",

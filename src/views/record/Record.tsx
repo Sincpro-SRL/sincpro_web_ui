@@ -6,6 +6,7 @@ import {
   type SheetField,
   type SheetLayout,
 } from "@sincpro/web-ui/components/form/Sheet";
+import type { ActionDockProps } from "@sincpro/web-ui/components/record/ActionDock";
 import type { Crumb } from "@sincpro/web-ui/components/record/Breadcrumb";
 import type { DirtyState } from "@sincpro/web-ui/components/record/DirtyActions";
 import { Pager as PagerControl } from "@sincpro/web-ui/components/record/Pager";
@@ -99,6 +100,7 @@ type SlotName =
   | "pager"
   | "smart"
   | "actions"
+  | "dock"
   | "status"
   | "paper"
   | "activity"
@@ -196,6 +198,12 @@ const Smart = slot("smart", (_props: SmartProps): ReactNode => null);
  *  where the thumb is — and with `dirty`, Save and Discard take that bar instead. The
  *  rest stay here. Nothing to declare: see THE THUMB BAR in `RecordHeader`. */
 const Actions = slot("actions", (_props: ActionsProps): ReactNode => null);
+
+/** The actions FLOATING, as data (experimental — `ActionDock`): in place of `Record.Actions`,
+ *  one pill over the paper that stays in view as the record scrolls, «Más» with the rest and
+ *  their sub-actions, and Save / Discard in the same pill while there are changes. */
+type DockProps = Omit<ActionDockProps, "dirty" | "saved">;
+const Dock = slot("dock", (_props: DockProps): ReactNode => null);
 
 /** The status, as DATA and not as a node: the bar lives in the rail and
  *  whoever passed it already built had to remember the rail's surface. Forgetting it
@@ -358,6 +366,7 @@ export function Record({ identity, error = null, dirty, placement, children }: R
   const pager = propsOf<RecordPager>(pick(rail, "pager"));
   const smart = propsOf<SmartProps>(pick(rail, "smart"))?.links;
   const actions = propsOf<ActionsProps>(pick(rail, "actions"))?.children;
+  const dock = propsOf<DockProps>(pick(rail, "dock"));
   const status = propsOf<StatusProps>(pick(rail, "status"));
 
   /* The status's two questions, with the surface already resolved: «¿dónde
@@ -512,6 +521,7 @@ export function Record({ identity, error = null, dirty, placement, children }: R
                   ),
                 })}
             {...(actions === undefined ? {} : { actions })}
+            {...(dock === undefined ? {} : { dock })}
             {...(statusBlock === undefined ? {} : { status: statusBlock })}
             {...(identity.icon === undefined ? {} : { icon: identity.icon })}
             title={identity.title}
@@ -647,6 +657,7 @@ Record.Crumbs = Crumbs;
 Record.Pager = PagerSlot;
 Record.Smart = Smart;
 Record.Actions = Actions;
+Record.Dock = Dock;
 Record.Status = Status;
 Record.Paper = Paper;
 Record.Activity = ActivitySlot;

@@ -7,31 +7,32 @@ data comes from). What is marked ✅ with a date was done in the round of 2026-1
 
 ## 1. One record
 
-| Need                                                                      | Status   | Piece / owner                                                                      |
-| ------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------- |
-| Identity, rail, breadcrumbs, pager, actions, stages                       | ✅       | `Record`, `Record.Rail`, `StatusBar`                                               |
-| Bar and sheet in a single column; full width                              | ✅ 10-31 | `Record.Paper width`                                                               |
-| Hierarchy: title › group › label › value                                  | ✅ 10-31 | `SheetGroup` (title with a rule), `HEADER_TEXT`                                    |
-| What the record IS (paid, archived, cancelled)                            | ✅ 10-31 | `Record.Ribbon`                                                                    |
-| Editing without `Record.Actions` does not lose focus                      | ✅ 11-03 | `RecordHeader`: `dirty` no longer decides the role                                 |
-| What changed, while editing: a mark per field and «2 cambios sin guardar» | ✅ 11-03 | `Field changed`, `DirtyState.changes`                                              |
-| Save without losing focus or saving twice                                 | ✅ 11-03 | `Button busy` (in `DirtyActions`); when done, focus returns to the name            |
-| Knowing it was saved, without the app writing it                          | ✅ 11-03 | «✓ Guardado» in the rail (`useJustSaved`, `status` region)                         |
-| Why it cannot be saved, in view and not in a `title`                      | ✅ 11-03 | `DirtyState.blocked`, the rail's only mark (11-17), and it describes the button    |
-| Focus is seen arriving and the label goes with it                         | ✅ 11-03 | `focus-in` (only with motion allowed), `Field` with `focus-within`                 |
-| A fast load does not flash a skeleton                                     | ✅ 11-03 | `animate-reveal-late` (appears at 200 ms) in `Skeleton` and `RecordSkeleton`       |
-| A long fact (an email) does not overlap the one beside it                 | ✅ 11-03 | `Sheet` (`wrap-anywhere`); density is given by `DensityProvider`                   |
-| Who created it and who touched it last                                    | ✅ 10-31 | `Record.Audit`                                                                     |
-| The authorship footer speaks like the form: person chip, DD/MM/YYYY       | ✅ 11-04 | `Record.Audit` (`by` optional or the chip's props; `at` as `Date`/ISO)             |
-| Notices, field notes, activity, history                                   | ✅       | `Record.Notice`, `note`, `Record.Activity`                                         |
-| Open a record from another (sub-context)                                  | ✅       | composer (modal, preview, on the side, page)                                       |
-| Priority (stars)                                                          | ✅ 10-31 | `Priority`                                                                         |
-| Editable kanban state (traffic light)                                     | ✅ 10-31 | `KanbanState`                                                                      |
-| Next activity on the card (clock by urgency)                              | ✅ 10-31 | `ActivityBadge`                                                                    |
-| Rich text field (html)                                                    | ✅ 11-04 | `RichTextInput` (Tiptap v3, loaded on edit), `RichTextValue` (DOMPurify)           |
-| Record attachments (list, preview, download)                              | ✅ 11-04 | `Attachments` (`components/attachments`): upload, open, download, remove with undo |
-| Editable image / avatar                                                   | ✅ 11-04 | `ImageInput` (choose/drop/paste, keyboard crop)                                    |
-| Signature                                                                 | ✅ 11-04 | `SignatureInput` (draw, or type the name)                                          |
+| Need                                                                                         | Status   | Piece / owner                                                                      |
+| -------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------------------- |
+| Identity, rail, breadcrumbs, pager, actions, stages                                          | ✅       | `Record`, `Record.Rail`, `StatusBar`                                               |
+| Bar and sheet in a single column; full width                                                 | ✅ 10-31 | `Record.Paper width`                                                               |
+| Hierarchy: title › group › label › value                                                     | ✅ 10-31 | `SheetGroup` (title with a rule), `HEADER_TEXT`                                    |
+| What the record IS (paid, archived, cancelled)                                               | ✅ 10-31 | `Record.Ribbon`                                                                    |
+| Editing without `Record.Actions` does not lose focus                                         | ✅ 11-03 | `RecordHeader`: `dirty` no longer decides the role                                 |
+| What changed, while editing: a mark per field and «2 cambios sin guardar»                    | ✅ 11-03 | `Field changed`, `DirtyState.changes`                                              |
+| Save without losing focus or saving twice                                                    | ✅ 11-03 | `Button busy` (in `DirtyActions`); when done, focus returns to the name            |
+| Knowing it was saved, without the app writing it                                             | ✅ 11-03 | «✓ Guardado» in the rail (`useJustSaved`, `status` region)                         |
+| Why it cannot be saved, in view and not in a `title`                                         | ✅ 11-03 | `DirtyState.blocked`, the rail's only mark (11-17), and it describes the button    |
+| Focus is seen arriving and the label goes with it                                            | ✅ 11-03 | `focus-in` (only with motion allowed), `Field` with `focus-within`                 |
+| A fast load does not flash a skeleton                                                        | ✅ 11-03 | `animate-reveal-late` (appears at 200 ms) in `Skeleton` and `RecordSkeleton`       |
+| A long fact (an email) does not overlap the one beside it                                    | ✅ 11-03 | `Sheet` (`wrap-anywhere`); density is given by `DensityProvider`                   |
+| Who created it and who touched it last                                                       | ✅ 10-31 | `Record.Audit`                                                                     |
+| The actions floating over the paper, «Más» with sub-actions, Save / Discard in the same pill | 🧪 11-18 | `Record.Dock` (`ActionDock`, `dockPlan`) — experimental                            |
+| The authorship footer speaks like the form: person chip, DD/MM/YYYY                          | ✅ 11-04 | `Record.Audit` (`by` optional or the chip's props; `at` as `Date`/ISO)             |
+| Notices, field notes, activity, history                                                      | ✅       | `Record.Notice`, `note`, `Record.Activity`                                         |
+| Open a record from another (sub-context)                                                     | ✅       | composer (modal, preview, on the side, page)                                       |
+| Priority (stars)                                                                             | ✅ 10-31 | `Priority`                                                                         |
+| Editable kanban state (traffic light)                                                        | ✅ 10-31 | `KanbanState`                                                                      |
+| Next activity on the card (clock by urgency)                                                 | ✅ 10-31 | `ActivityBadge`                                                                    |
+| Rich text field (html)                                                                       | ✅ 11-04 | `RichTextInput` (Tiptap v3, loaded on edit), `RichTextValue` (DOMPurify)           |
+| Record attachments (list, preview, download)                                                 | ✅ 11-04 | `Attachments` (`components/attachments`): upload, open, download, remove with undo |
+| Editable image / avatar                                                                      | ✅ 11-04 | `ImageInput` (choose/drop/paste, keyboard crop)                                    |
+| Signature                                                                                    | ✅ 11-04 | `SignatureInput` (draw, or type the name)                                          |
 
 ## 2. A collection of records
 
