@@ -47,19 +47,20 @@ import type { ReactNode } from "react";
  *  ── The modern style: the trail is the heading ──────────────────────
  *
  *      ┌──────────────────────────────────────────────────────────────────┐
- *      │ Pagos › María Fernanda › Pagos (?)                  ( 1–2 / 2 ‹ › ) │
- *      │ [+ Nuevo] [⋯]           🔍 search…          [sort][cols] [▤▦] │
+ *      │ Ventas › Andina › Pedidos (?) 64 · 112 · 11        ( 1–12 / 12 ‹ › ) │
+ *      │                     🔍 search…                  [sort][cols] [▤▦] │
  *      └──────────────────────────────────────────────────────────────────┘
- *                  ( 2 elegidos ✕ · Aprobar )   ← only while rows are chosen
+ *              ( Pedidos │ Importar · Exportar ▾ · + Nueva cotización )   ← floats
  *
  *  As a record in the modern style, WHERE I AM is the page's heading: the trail at the
  *  title's size (`Breadcrumb size="lg"`), its last crumb the list's name — so the title is
  *  not said twice —, what the list is made of on demand (`Hint`) and its counters beside
  *  it, and the page range at the other end, as the record's pager pill. The second row is
- *  what I do with the set: its actions at the start, the search centred, sort, columns and
- *  the faces at the end. What is done to the chosen rows floats at the bottom while they are
- *  chosen (`List.Dock`). Without crumbs the title is the heading. Compact keeps the one bar
- *  below.
+ *  how I look at the set: the search centred, sort, columns and the faces. The list's actions
+ *  float at the bottom of the screen in a pill named by the list (`List.Dock`), which turns
+ *  into what is done to the chosen rows while some are chosen; given `placement="bar"`, or
+ *  drawn by hand, they start the second row. Without crumbs the title is the heading.
+ *  Compact keeps the one bar below.
  *
  *  ── Inside a record it is ONE line (`inline`) ────────────────────────
  *

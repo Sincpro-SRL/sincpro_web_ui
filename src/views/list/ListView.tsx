@@ -64,6 +64,7 @@ import {
 } from "@sincpro/web-ui/views/list/presentations";
 import type { CardWays, ListViewProps } from "@sincpro/web-ui/views/list/types";
 import { useNarrowList } from "@sincpro/web-ui/views/list/useNarrowList";
+import { useReachBottom } from "@sincpro/web-ui/views/list/useReachBottom";
 import type { LucideIcon } from "lucide-react";
 import {
   CalendarDays,
@@ -324,20 +325,21 @@ export function ListView<T extends object>({
     );
 
   /* THE DOCK: the list's actions and what is done to the chosen rows, from the same data.
-     The list's actions are the bar's buttons in both styles (the primary first and gold, «⋯»
-     with the rest) — in the modern bar, at the start of the controls' row. What is done to
-     the chosen rows is the view style's: `traditional` puts it in the bar in place of the
-     search; `modern` floats it at the bottom, centred, while rows are chosen («3 elegidas ✕ ·
-     …») — the one thing that floats on a list, as a record floats its own actions.
+     Where they go is the view style's: `traditional` draws them as the bar's buttons (the
+     primary first and gold, «⋯» with the rest), and the chosen rows' in the bar in place of the
+     search; `modern` floats ONE pill at the bottom of the screen, centred, as a record does —
+     named by the list it acts on («Pedidos │ Importar · Exportar ▾ · Nueva cotización»), so one
+     action is never a lone button in a ring —, and while rows are chosen, what is done to them
+     instead («3 elegidas ✕ │ …»). `placement="bar"` keeps a modern list's actions in its header.
 
      A collection (`embedded`) is a field of the record, and the record owns the screen's ONE
-     floating place (`DockHost`): what is done to its chosen rows TAKES the record's place in
-     the modern style — or goes to its line while the record is saying Save / Discard, which
-     keeps the place. Without a record that floats (a dialog, the traditional style) it floats
-     on its own, as a screen's list does. */
+     floating place (`DockHost`): its own actions stay on its line, and what is done to its
+     chosen rows TAKES the record's place in the modern style — or goes to its line while the
+     record is saying Save / Discard, which keeps the place. Without a record that floats
+     (a dialog, the traditional style) it floats on its own, as a screen's list does. */
   const host = useDockHost();
   const modern = viewStyle === "modern";
-  const dockAt = dock?.placement ?? "bar";
+  const dockAt = dock?.placement ?? (modern && !embedded ? "bottom" : "bar");
   const chosenAt = dock?.selectionPlacement ?? (modern ? "bottom" : "bar");
   const intoHost = embedded && host !== null && chosenAt === "bottom";
   const chosen = selection?.count ?? 0;
@@ -366,6 +368,9 @@ export function ListView<T extends object>({
         look={dock.look ?? (dockAt === "bottom" ? "chrome" : "bare")}
         {...(dock.visible === undefined ? {} : { visible: dock.visible })}
         {...(dock.label === undefined ? {} : { label: dock.label })}
+        {...(dockAt === "bottom" && identity?.title !== undefined
+          ? { lead: <DockName name={identity.title} /> }
+          : {})}
       />
     );
   const actions =
@@ -392,6 +397,12 @@ export function ListView<T extends object>({
       />
     );
   /* At the bottom there is ONE pill: the chosen rows' while some are chosen, else the list's. */
+  /* Something floats on this list: it reaches the bottom of what scrolls it, so the pill has one
+     place — the bottom of the screen — however few the rows (`useReachBottom`). */
+  const reach = useReachBottom(
+    frame,
+    !embedded && (dockAt === "bottom" || chosenAt === "bottom"),
+  );
   const floating = taking
     ? host?.target == null || chosenPill === null
       ? null
@@ -846,6 +857,7 @@ export function ListView<T extends object>({
     <div
       ref={frame}
       aria-busy={refreshing || loading}
+      {...(reach === undefined ? {} : { style: { minHeight: reach } })}
       className="@container flex min-w-0 flex-1 flex-col bg-surface"
     >
       <Listing
@@ -908,6 +920,23 @@ export function ListView<T extends object>({
       {floating}
       {children}
     </div>
+  );
+}
+
+/** The list's name at the start of its floating pill: what its actions act on. The same chip as
+ *  the chosen rows' «3 elegidas ✕», so the pill reads the same way whichever it holds. */
+function DockName({ name }: { name: string }) {
+  const sup = useSurface();
+  return (
+    <span
+      className={`inline-flex h-(--size-control-md) max-w-(--container-crumb) items-center rounded-pill px-3 text-meta font-medium ${bySurface(
+        sup,
+        "bg-ink/8 text-ink",
+        "bg-chrome-ink/14 text-chrome-ink",
+      )}`}
+    >
+      <span className="truncate">{name}</span>
+    </span>
   );
 }
 

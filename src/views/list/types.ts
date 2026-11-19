@@ -279,8 +279,11 @@ export type ListDock = {
   /** What is done to the CHOSEN rows — «Enviar», «Imprimir ▸», «Archivar». Give the list a
    *  `selection` too. */
   selection?: readonly DockAction[];
-  /** Where the list's actions go: the BAR's buttons (the default, in both styles — in the
-   *  modern bar at the start of the controls' row), or a pill floating at the BOTTOM, centred. */
+  /** Where the list's actions go: the BAR's buttons, or ONE pill floating at the BOTTOM of the
+   *  screen, centred, named by the list it acts on. Absent, the view style decides
+   *  (`ViewStyleProvider`): `traditional` → `bar`, `modern` → `bottom`; a collection
+   *  (`embedded`) keeps them on its line. In the modern bar, `bar` puts them at the start of the
+   *  controls' row. */
   placement?: "bar" | "bottom";
   /** Where the chosen rows' actions go: the BAR in place of the search, or floating at the
    *  BOTTOM while the search stays in the bar. Absent, the view style decides

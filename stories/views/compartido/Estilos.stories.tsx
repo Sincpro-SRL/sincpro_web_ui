@@ -8,7 +8,7 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Archive, Download, Mail, Plus, Printer, Upload } from "lucide-react";
 import { useState } from "react";
-import { expect, within } from "storybook/test";
+import { expect, waitFor, within } from "storybook/test";
 
 import { ORDER_COUNTERS } from "../../support/erp-lists";
 import type { Item } from "../lista/shared";
@@ -76,7 +76,14 @@ export const Explorar: Story = {
  *  A LIST, in each style — the same tree, the style around it decides.
  * ------------------------------------------------------------------ */
 
-function Pedidos({ chosen: initial = [] }: { chosen?: readonly string[] }) {
+function Pedidos({
+  chosen: initial = [],
+  few = false,
+}: {
+  chosen?: readonly string[];
+  /** Six rows and one action: the list that used to float its lone button under its rows. */
+  few?: boolean;
+}) {
   const [criteria, setCriteria] = useState<SearchCriteria[]>([]);
   const [chosen, setChosen] = useState<readonly string[]>(initial);
   const [present, setPresent] = useState<"table" | "rows">("table");
@@ -84,7 +91,7 @@ function Pedidos({ chosen: initial = [] }: { chosen?: readonly string[] }) {
   return (
     <div className="min-h-dvh bg-ground">
       <List<Item>
-        items={ITEMS}
+        items={few ? ITEMS.slice(0, 6) : ITEMS}
         keyOf={(d) => d.id}
         sortable={ORDENABLES}
         sort={[]}
@@ -135,8 +142,12 @@ function Pedidos({ chosen: initial = [] }: { chosen?: readonly string[] }) {
                 primary: true,
                 onSelect: nada,
               },
-              { id: "import", label: "Importar", icon: Upload, onSelect: nada },
-              { id: "export", label: "Exportar", icon: Download, onSelect: nada },
+              ...(few
+                ? []
+                : [
+                    { id: "import", label: "Importar", icon: Upload, onSelect: nada },
+                    { id: "export", label: "Exportar", icon: Download, onSelect: nada },
+                  ]),
             ]}
             selection={[
               { id: "send", label: "Enviar", icon: Mail, primary: true, onSelect: nada },
@@ -160,10 +171,10 @@ function Pedidos({ chosen: initial = [] }: { chosen?: readonly string[] }) {
 
 /**
  * **Una lista, moderna.** Las migas son el encabezado, con su «?» (de qué está hecha) y sus
- * contadores; el rango, la píldora del paginador. La segunda fila es lo que hago con el conjunto:
- * «Nueva cotización» y las otras acciones, el buscador al centro, ordenar, columnas y las caras.
- * Al pasar por una fila, sus entradas —👁, ↗, «Abrir en…»— en una píldora al final. Nada flota
- * hasta elegir filas.
+ * contadores; el rango, la píldora del paginador. La segunda fila es cómo se mira el conjunto: el
+ * buscador al centro, ordenar, columnas y las caras. Las acciones flotan abajo de la pantalla, al
+ * centro, en la píldora que dice sobre qué actúan: «Pedidos │ Importar · Exportar · Nueva
+ * cotización». Al pasar por una fila, sus entradas —👁, ↗, «Abrir en…»— en una píldora al final.
  */
 export const ListaModerna: Story = {
   name: "Lista · moderno",
@@ -174,15 +185,41 @@ export const ListaModerna: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await canvas.findByRole("button", { name: /Nueva cotización/ });
-    await expect(canvasElement.querySelector('[data-ui="dock"]')).toBeNull();
+    const pill = await canvas.findByRole("toolbar", { name: "Acciones de los pedidos" });
+    await expect(within(pill).getByText("Pedidos")).toBeVisible();
+    await expect(
+      within(pill).getByRole("button", { name: /Nueva cotización/ }),
+    ).toBeVisible();
   },
 };
 
 /**
- * **La misma lista, con filas elegidas**: lo que se les hace flota abajo, al centro —«2 elegidos
- * ✕ · Imprimir · ⋯ · Enviar»—, dorado; «Nueva cotización» sigue en la cabecera, sin dorado: hay
- * un solo dorado por pantalla, y mientras hay elegidas es lo que se les hace.
+ * **Una lista corta con una sola acción** — la que antes dejaba un botón dorado solo, dentro de un
+ * anillo, pegado debajo de la sexta fila. La píldora está abajo de la PANTALLA, siempre en el
+ * mismo lugar, y dice de qué lista es: «Pedidos │ + Nueva cotización».
+ */
+export const ListaModernaUnaAccion: Story = {
+  name: "Lista · moderno, corta y con una acción",
+  render: () => (
+    <ViewStyleProvider value="modern">
+      <Pedidos few />
+    </ViewStyleProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const pill = await canvas.findByRole("toolbar", { name: "Acciones de los pedidos" });
+    await expect(within(pill).getByText("Pedidos")).toBeVisible();
+    // At the bottom of the screen, not under the last row.
+    await waitFor(() =>
+      expect(window.innerHeight - pill.getBoundingClientRect().bottom).toBeLessThan(40),
+    );
+  },
+};
+
+/**
+ * **La misma lista, con filas elegidas**: la píldora pasa a ser lo que se les hace —«2 elegidos ✕
+ * │ Imprimir · ⋯ · Enviar»—, en el mismo lugar; al deshacer la selección vuelve a ser la de la
+ * lista.
  */
 export const ListaModernaElegidas: Story = {
   name: "Lista · moderno, con filas elegidas",

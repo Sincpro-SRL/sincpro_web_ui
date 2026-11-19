@@ -396,28 +396,23 @@ export function RecordHeader({
               <div className={`flex flex-col gap-2 ${paper ? column : ""}`}>
                 {modern ? (
                   <>
-                    {/* THE MODERN RAIL — two lines, by weight. Row 1: WHERE I AM, the trail at the
-                    title's size; what hangs off the record (the counters, boxes as in the
-                    traditional rail — under the trail, quiet, they read as one more crumb —)
-                    in the centre; and which of eighty. Row 2, a step down: the state. The
-                    actions float (`Record.Dock`). */}
+                    {/* THE MODERN RAIL — two lines, by weight. Row 1: WHERE I AM — the trail at
+                    the title's size — and which of eighty. Row 2, a step down, what the record
+                    HAS and where it is at: the counters (boxes) at the start, the state at the
+                    end. Under the trail on its own line the counters read as one more crumb;
+                    beside the state they read as the record's. The actions float
+                    (`Record.Dock`). */}
                     <Line
                       start={
                         crumbs === undefined || crumbs.length === 0 ? null : (
                           <Breadcrumb crumbs={crumbs} surface={railSurface} size="lg" />
                         )
                       }
-                      center={
-                        smart === undefined && indicator === undefined ? undefined : (
-                          <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
-                            {smart}
-                            {indicator}
-                          </div>
-                        )
-                      }
                       end={pager}
                     />
-                    {status === undefined &&
+                    {smart === undefined &&
+                    indicator === undefined &&
+                    status === undefined &&
                     railActions_ === undefined &&
                     railDirty === undefined ? null : (
                       <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
@@ -429,6 +424,12 @@ export function RecordHeader({
                           <div className="flex shrink-0 items-center gap-1.5">
                             {railActions_}
                             <SavedMark saved={saved} />
+                          </div>
+                        )}
+                        {smart === undefined && indicator === undefined ? null : (
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            {smart}
+                            {indicator}
                           </div>
                         )}
                         {status === undefined ? null : (

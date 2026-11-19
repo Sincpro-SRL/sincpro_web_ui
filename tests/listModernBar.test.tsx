@@ -59,16 +59,27 @@ test("modern: the trail is the heading, at the title's size, and the title is no
   assert.equal(html.match(/<h2 class="text-title/g), null);
 });
 
-test("modern: the controls' row reads actions · search · switcher; the description is on demand", () => {
+test("modern: the controls' row reads search · switcher; the description is on demand", () => {
   const html = modern();
-  const start = html.indexOf("Nuevo pago");
   const search = html.indexOf("data-search");
   const switcher = html.indexOf('role="group"');
-  assert.ok(start > -1 && search > -1 && switcher > -1, "all three are drawn");
-  assert.ok(start < search && search < switcher, "in the order of the row");
+  assert.ok(
+    search > -1 && switcher > -1 && search < switcher,
+    "search, then how it is looked at",
+  );
   // The sentence is the heading's hint, not a line on the controls' row.
   assert.match(html, /aria-label="los comprobantes enviados"/);
   assert.doesNotMatch(html, /text-micro[^"]*">los comprobantes enviados</);
+});
+
+test("modern: the list's actions float at the bottom, in a pill named by the list", () => {
+  const html = modern();
+  assert.match(html, /data-ui="dock" data-placement="bottom"/);
+  const pill = html.slice(html.indexOf('data-ui="dock.pill"'));
+  // The list's name leads the pill — what its actions act on —, then the actions.
+  assert.ok(
+    pill.indexOf(">Pagos<") > -1 && pill.indexOf(">Pagos<") < pill.indexOf("Nuevo pago"),
+  );
 });
 
 test("traditional is unchanged: small crumbs, the title as the visible heading", () => {

@@ -390,12 +390,14 @@ and it keeps being applied to the rest of the system and refined. `traditional` 
 API, same data — for the applications already drawn in it. What the direction is:
 
 - **The page breathes on the ground.** No white band on top of the paper: the trail IS the
-  page's heading (`Breadcrumb size="lg"`), the counters in its line as in the traditional
-  rail, and the state a step down.
-- **What is done to THIS floats** — at the bottom, centred, under the thumb —: a record's
-  actions (and a settings form's), and what is done to a list's chosen rows. It turns into
-  «N cambios · Descartar · Guardar» while there are changes. One per screen: a collection's
-  chosen rows take the record's place. A list's own actions are its header's buttons.
+  page's heading (`Breadcrumb size="lg"`), and a step down, what the record has (the
+  counters, boxes) and where it is at (the state).
+- **One floating pill holds the actions** — at the bottom of the screen, centred, under the
+  thumb —: a record's, a settings form's, and a list's, named by the list it acts on
+  («Pedidos │ Importar · Nueva cotización») so one action is never a lone button. It turns into
+  «N cambios · Descartar · Guardar» while there are changes, and into what is done to the chosen
+  rows while some are chosen. One per screen: a collection's chosen rows take the record's
+  place.
 - **Pills are the shape of the identity**: the actions' pill, the pager (a translucent primary
   pill), the state as a pill of pills (`StatusBar look="segmented"`), the row's ways in.
 - **Colour means something**: the gold is the one action that moves the record forward; the
@@ -422,13 +424,12 @@ data — and the application's style decides how they are drawn, the way it choo
 - **traditional**: the ERP rail — a band with the trail, the counters and the pager; the
   actions as the bar's buttons (the primary first and gold, «⋯» with the rest), in a record
   and in a list alike.
-- **modern**: the trail is the page's heading with the counters (boxes, as in the
-  traditional rail) and the pager as a translucent primary pill on its line
-  (`Pager look="pill"`); a step down, the state; the band is the ground; and the actions float
-  in ONE pill at the bottom, centred — a record's, and what is done to a list's chosen rows (a
-  list's own actions are its bar's buttons, at the start of the controls' row). Two things
-  were tried and dropped: a pill resting in the rail and floating at the TOP, and the counters
-  as links.
+- **modern**: the trail is the page's heading with the pager as a translucent primary pill on
+  its line (`Pager look="pill"`); a step down, the counters (boxes) and the state; the band is
+  the ground; and the actions float in ONE pill at the bottom of the screen, centred — a
+  record's, and a list's named by the list (`List.Dock placement="bar"` keeps a list's in its
+  header). Two things were tried and dropped: a pill resting in the rail and floating at the
+  TOP, and the counters as links.
 
 **The state.** `StatusBar look`: `track` (Odoo's — the traditional style's), `segmented` (a
 pill of pills, the actions' shape — the modern style's), `steps`, `progress` and `pill` (one chip that unfolds the stages). Each

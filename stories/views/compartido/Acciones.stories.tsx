@@ -173,11 +173,10 @@ function PedidosConAcciones({ crumbs = VENTAS }: { crumbs?: typeof VENTAS }) {
 }
 
 /**
- * **Las acciones de una lista, en el estilo moderno** (`List.Dock`): «Nueva cotización»,
- * «Importar», «Exportar ▾» son los botones de la cabecera, al principio de la fila del buscador.
- * Lo que flota es lo que se hace con las filas ELEGIDAS, mientras lo están: «2 elegidos ✕ ·
- * Imprimir ▾ · ⋯ · Enviar», abajo y al centro, al alcance del pulgar — y su «Enviar» es el único
- * dorado mientras tanto.
+ * **Las acciones de una lista, en el estilo moderno** (`List.Dock`): UNA píldora flotando abajo
+ * de la pantalla, al centro, como en el registro, con el nombre de la lista adelante — «Pedidos │
+ * Importar · Exportar ▾ · Nueva cotización», la dorada última. Al elegir filas, la misma píldora
+ * pasa a ser lo que se les hace: «2 elegidos ✕ │ Imprimir ▾ · ⋯ · Enviar».
  */
 export const EnUnaLista: Story = {
   name: "En una lista · moderno",
@@ -188,11 +187,15 @@ export const EnUnaLista: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const bar = await canvas.findByRole("toolbar", { name: "Acciones de los pedidos" });
-    await expect(within(bar).getByRole("button", { name: "Nueva cotización" })).toBeVisible();
-    // The list's actions are the bar's: nothing floats until rows are chosen.
-    await expect(bar.getAttribute("data-ui")).toBe("dock.bare");
-    await expect(canvasElement.querySelector('[data-ui="dock"]')).toBeNull();
+    const pill = await canvas.findByRole("toolbar", { name: "Acciones de los pedidos" });
+    await expect(
+      within(pill).getByRole("button", { name: "Nueva cotización" }),
+    ).toBeVisible();
+    // It floats at the bottom, named by the list it acts on.
+    await expect(pill.closest('[data-ui="dock"]')?.getAttribute("data-placement")).toBe(
+      "bottom",
+    );
+    await expect(within(pill).getByText("Pedidos")).toBeVisible();
     await expect(
       canvas.queryByRole("toolbar", { name: "Acciones de los elegidos" }),
     ).toBeNull();
@@ -202,14 +205,13 @@ export const EnUnaLista: Story = {
     await userEvent.click(boxes[1]!);
     const chosen = await canvas.findByRole("toolbar", { name: "Acciones de los elegidos" });
     await expect(within(chosen).getByText("elegidos")).toBeVisible();
-    // What is done to them floats at the bottom; «Nueva cotización» stays in the bar —
-    // choosing is not entering a mode.
+    // ONE pill at the bottom: the chosen rows' takes the list's place.
     await expect(chosen.closest('[data-ui="dock"]')?.getAttribute("data-placement")).toBe(
       "bottom",
     );
     await expect(
-      canvas.getByRole("toolbar", { name: "Acciones de los pedidos" }),
-    ).toBeVisible();
+      canvas.queryByRole("toolbar", { name: "Acciones de los pedidos" }),
+    ).toBeNull();
     await expect(within(chosen).getByRole("button", { name: "Enviar" })).toBeVisible();
     await expect(
       within(chosen).getByRole("button", { name: /Elegir los 187 que coinciden/ }),
@@ -262,9 +264,9 @@ export const EnUnaListaTradicional: Story = {
  * **Una lista que cuelga de otra cosa, en el estilo moderno** (#68): las migas SON el encabezado,
  * como en un registro — «Ventas › Clientes › Distribuidora Andina S.R.L. › Pedidos» en una sola
  * línea, la última al tamaño del título y sin repetirlo debajo —, de qué está hecha a pedido (?),
- * y el rango como la píldora del paginador del registro. La segunda fila es lo que hago con el
- * conjunto: sus acciones, el buscador al centro, ordenar y las caras. Flota sólo lo que se hace
- * con las filas elegidas.
+ * y el rango como la píldora del paginador del registro. La segunda fila es cómo se mira el
+ * conjunto: el buscador al centro, ordenar y las caras. Las acciones flotan abajo, en la píldora
+ * con el nombre de la lista.
  */
 export const MigasAnidadas: Story = {
   name: "Migas anidadas · moderno",
@@ -302,15 +304,15 @@ export const MigasAnidadas: Story = {
     await expect(
       canvasElement.querySelector('[data-ui="pagination"]')?.getAttribute("data-look"),
     ).toBe("pill");
-    // One row for what I do with the set: its actions, the search, sort — in that order.
-    const start = canvas.getByRole("button", { name: /Nueva cotización/ });
+    // One row for how the set is looked at: the search, then sort.
     const search = canvas.getByRole("combobox", { name: "Buscar" });
     const sort = canvas.getByRole("button", { name: /Ordenar/ });
     const middle = (el: Element) => (top(el).top + top(el).bottom) / 2;
     await expect(Math.abs(middle(search) - middle(sort))).toBeLessThan(12);
-    await expect(Math.abs(middle(search) - middle(start))).toBeLessThan(12);
-    await expect(top(start).right).toBeLessThan(top(search).left);
     await expect(top(search).right).toBeLessThan(top(sort).left);
+    // The actions float, named by the list.
+    const pill = canvas.getByRole("toolbar", { name: "Acciones de los pedidos" });
+    await expect(within(pill).getByText("Pedidos")).toBeVisible();
     await expect(top(search).top).toBeGreaterThan(top(here).bottom);
   },
 };
