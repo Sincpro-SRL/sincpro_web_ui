@@ -72,9 +72,17 @@ doctor:
 # One runner, three projects (vitest.config.ts): `model` in Node, `storybook` and
 # `storybook-dark` in a real Chrome — the stories ARE the tests, and Storybook's «Run tests»
 # runs these same ones. The same scheme as web-composer and web-framework.
+#
+# ONE PROJECT AT A TIME, so one Chrome at a time. Run together, the two story projects open two
+# Chromes beside the Node one, and on the CI runner (4 cores) one Chrome was killed mid-run —
+# «Browser connection was closed», a different story each time, with every test green (#57).
+VITEST := VITE_CONFIG_NATIVE_IGNORE_WARNING=true npx vitest run
+
 test:
 	@echo "🧪 Running tests..."
-	@VITE_CONFIG_NATIVE_IGNORE_WARNING=true npx vitest run
+	@$(VITEST) --project model
+	@$(VITEST) --project storybook
+	@$(VITEST) --project storybook-dark
 
 verify-format: format lint doctor
 	@if ! git diff --quiet; then \
@@ -103,7 +111,8 @@ storybook:
 # Only the stories: each one in Chrome with its `play`, its a11y check and the screen rules
 # (drew something, one primary); the screens again in dark.
 smoke:
-	@VITE_CONFIG_NATIVE_IGNORE_WARNING=true npx vitest run --project storybook --project storybook-dark
+	@$(VITEST) --project storybook
+	@$(VITEST) --project storybook-dark
 
 # `--package-lock=false`: npm (unlike yarn, which manages this repo's installs) doesn't read
 # yarn.lock, so without it `npm version` rebuilds a dependency tree against the real registry
