@@ -412,3 +412,60 @@ export const SinSusNumeros: Story = {
     await expect(canvas.getByRole("region", { name: "Por sucursal" })).toBeVisible();
   },
 };
+
+/**
+ * **Cuatro números en una fila, enteros.** Un tablero de verdad — 1440 px con su menú — deja
+ * unos 270 px a cada número: la cifra principal (`hero`) y su tendencia no caben lado a lado,
+ * y la tendencia pasa abajo. El número por el que existe el recuadro nunca es lo que se corta.
+ */
+export const CuatroEnUnaFila: Story = {
+  name: "Cuatro en una fila",
+  render: () => (
+    <div className="bg-ground" style={{ width: 1200 }}>
+      <Board
+        title="Panel de control"
+        metrics={
+          <BoardStats>
+            <BoardStat
+              label="Cobrado este mes"
+              icon={Banknote}
+              hero
+              value="Bs 1.650,00"
+              detail="9 comprobantes aprobados"
+              trend={[0, 0, 200, 450, 900, 1650]}
+            />
+            <BoardStat
+              label="Vendido en la tienda"
+              icon={ShoppingCart}
+              value="Bs 210,00"
+              detail="2 compras"
+              trend={[0, 0, 0, 0, 0, 210]}
+            />
+            <BoardStat
+              label="Con deuda"
+              icon={Receipt}
+              value="15"
+              detail="56 cuotas sin pagar"
+            />
+            <BoardStat label="Registrados" icon={Store} value="16" detail="0 observados" />
+          </BoardStats>
+        }
+      >
+        {null}
+      </Board>
+    </div>
+  ),
+  play: async ({ canvasElement }) => {
+    const figures = await waitFor(() => {
+      const found = canvasElement.querySelectorAll<HTMLElement>(
+        '[data-ui="board.stat.value"]',
+      );
+      expect(found.length).toBe(4);
+      return [...found];
+    });
+    for (const figure of figures)
+      await expect(figure.scrollWidth, figure.textContent ?? "").toBeLessThanOrEqual(
+        figure.clientWidth + 1,
+      );
+  },
+};
