@@ -16,11 +16,9 @@ import {
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
-  BookOpen,
   Circle,
   CircleCheck,
   CircleDot,
-  CreditCard,
   FileText,
   History,
   Info,
@@ -149,11 +147,11 @@ const INVOICE_STAGES: Stage[] = [
 ];
 
 const LOOKS: { look: StatusLook; name: string; note: string }[] = [
-  { look: "track", name: "Pista", note: "la de Odoo — la de los dos estilos" },
+  { look: "track", name: "Pista", note: "la de Odoo — la del estilo tradicional" },
   {
     look: "segmented",
     name: "Segmentada",
-    note: "una píldora de píldoras, como las acciones",
+    note: "la del estilo moderno: una píldora de píldoras",
   },
   { look: "progress", name: "Progreso", note: "cuánto falta, de un vistazo" },
   { look: "steps", name: "Pasos", note: "puntos unidos por una línea" },
@@ -625,48 +623,6 @@ export const Contadores: Story = {
       </Box>
     </div>
   ),
-};
-
-/**
- * **Los contadores**: cajas (el tradicional) o enlaces (el moderno) — el número en una pastilla,
- * el nombre y una «›» que dice que lleva a otro lugar. En cero se apagan y pierden la «›».
- */
-export const ContadoresEnDosFormas: Story = {
-  name: "Contadores · cajas o enlaces",
-  args: { stages: STAGES, current: "sale" },
-  render: () => {
-    const links = [
-      { icon: CreditCard, count: 2, label: "pagos" },
-      { icon: BookOpen, count: 1, label: "asiento" },
-      { icon: Truck, count: 2, label: "entregas" },
-      { icon: RotateCcw, count: 0, label: "devoluciones" },
-    ];
-    return (
-      <div className="max-w-4xl bg-ground p-8">
-        {(["box", "link"] as const).map((look) => (
-          <Row
-            key={look}
-            name={look === "box" ? "Cajas" : "Enlaces"}
-            note={look === "box" ? "el tradicional" : "el moderno"}
-          >
-            <SmartButtons>
-              {links.map((one) => (
-                <SmartButton
-                  key={one.label}
-                  icon={one.icon}
-                  count={one.count}
-                  label={one.label}
-                  layout="inline"
-                  look={look}
-                  {...(one.count === 0 ? {} : { onClick: () => {} })}
-                />
-              ))}
-            </SmartButtons>
-          </Row>
-        ))}
-      </div>
-    );
-  },
 };
 
 /** Dónde estoy y en cuál de ochenta voy. El paginador NO es una paginación: dice

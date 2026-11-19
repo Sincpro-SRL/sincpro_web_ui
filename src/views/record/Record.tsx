@@ -584,11 +584,6 @@ export function Record({
                           {...(s.count === undefined ? {} : { count: s.count })}
                           label={s.label}
                           layout={onTheRail && d === "comfortable" ? "inline" : "stacked"}
-                          /* Boxes in both styles: a count in a box reads as a thing the record
-                             HAS, and the eye finds it among the rail's pills. The quiet `link`
-                             look, tried for the modern style, read as one more breadcrumb — it
-                             stays for an application that asks for it (`SmartButton look`). */
-                          look="box"
                           {...(s.onClick === undefined ? {} : { onClick: s.onClick })}
                         />
                       ))}

@@ -173,11 +173,11 @@ function PedidosConAcciones({ crumbs = VENTAS }: { crumbs?: typeof VENTAS }) {
 }
 
 /**
- * **Las acciones de una lista, en el estilo moderno** (`List.Dock`): UNA píldora
- * flotando abajo, centrada, como en el registro — «Importar · Exportar ▾ · Nueva cotización»,
- * la dorada última. Al elegir filas, la MISMA píldora pasa a ser lo que se les hace: «2 elegidos
- * ✕ · Enviar · Imprimir ▾ · ⋯». La barra se queda con las migas, el título y el buscador, y la
- * píldora queda al alcance del pulgar en un teléfono.
+ * **Las acciones de una lista, en el estilo moderno** (`List.Dock`): «Nueva cotización»,
+ * «Importar», «Exportar ▾» son los botones de la cabecera, al principio de la fila del buscador.
+ * Lo que flota es lo que se hace con las filas ELEGIDAS, mientras lo están: «2 elegidos ✕ ·
+ * Imprimir ▾ · ⋯ · Enviar», abajo y al centro, al alcance del pulgar — y su «Enviar» es el único
+ * dorado mientras tanto.
  */
 export const EnUnaLista: Story = {
   name: "En una lista · moderno",
