@@ -75,7 +75,8 @@ function PedidosConAcciones() {
         onSortChange={l.setSort}
         present={l.present}
         onPresentChange={l.setPresent}
-        selection={l.selection}
+        // Past the page: «Elegir los 187 que coinciden», in the bar or on the floating pill.
+        selection={{ ...l.selection, matching: { total: 187, onSelect: nada } }}
         onOpen={nada}
         empty={{ sentence: "Todavía no hay pedidos." }}
       >
@@ -191,6 +192,9 @@ export const EnUnaLista: Story = {
       canvas.queryByRole("toolbar", { name: "Acciones de los pedidos" }),
     ).toBeNull();
     await expect(within(chosen).getByRole("button", { name: "Enviar" })).toBeVisible();
+    await expect(
+      within(chosen).getByRole("button", { name: /Elegir los 187 que coinciden/ }),
+    ).toBeVisible();
     // The search stays in the bar while rows are chosen.
     await expect(canvas.getByRole("combobox", { name: "Buscar" })).toBeVisible();
 
@@ -224,5 +228,13 @@ export const EnUnaListaTradicional: Story = {
     const chosen = await canvas.findByRole("toolbar", { name: "Acciones de los elegidos" });
     await expect(within(chosen).getByRole("button", { name: "Enviar" })).toBeVisible();
     await expect(canvasElement.querySelector('[data-ui="dock"]')).toBeNull();
+    // The bar keeps saying how many, the way out and the rest that match (#65).
+    await expect(
+      canvas.getByRole("button", { name: /Elegir los 187 que coinciden/ }),
+    ).toBeVisible();
+    await userEvent.click(canvas.getByRole("button", { name: "Deshacer la selección" }));
+    await waitFor(() =>
+      expect(canvas.queryByRole("toolbar", { name: "Acciones de los elegidos" })).toBeNull(),
+    );
   },
 };

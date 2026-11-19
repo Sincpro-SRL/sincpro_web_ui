@@ -349,7 +349,8 @@ export function ListView<T extends object>({
       <ActionDock
         placement={floatsChosen ? "bottom" : "inline"}
         actions={selectionDock}
-        lead={chosenLead}
+        /* Floating, the pill says how many and offers the rest; in the bar the bar does. */
+        {...(floatsChosen ? { lead: chosenLead } : {})}
         look={dock?.look ?? (floatsChosen ? "chrome" : "bare")}
         {...(dock?.visible === undefined ? {} : { visible: dock.visible })}
         label={dock?.selectionLabel ?? copy.selection.more}
@@ -388,21 +389,22 @@ export function ListView<T extends object>({
       {...(identity?.counters === undefined ? {} : { counters: identity.counters })}
       {...(barSelection === undefined
         ? {}
-        : selectionDock !== undefined
-          ? /* In the bar: the pill IS the count and the actions. */
-            { selection: { count: barSelection.count, actions: chosenPill } }
-          : {
-              selection: {
-                count: barSelection.count,
-                onClear: barSelection.clear,
-                ...(barSelection.actions === undefined
+        : {
+            /* In the bar the chosen rows are the bar's own — the count, ✕ and «Elegir los 187
+               que coinciden» —, with the dock's buttons as their actions when there is one. */
+            selection: {
+              count: barSelection.count,
+              onClear: barSelection.clear,
+              ...(chosenPill !== null
+                ? { actions: chosenPill }
+                : barSelection.actions === undefined
                   ? {}
                   : { actions: barSelection.actions }),
-                ...(barSelection.matching === undefined
-                  ? {}
-                  : { matching: barSelection.matching }),
-              },
-            })}
+              ...(barSelection.matching === undefined
+                ? {}
+                : { matching: barSelection.matching }),
+            },
+          })}
       {...(search === undefined ? {} : { search })}
       {...(pagination === undefined ? {} : { pagination })}
       {...(viewsSlot === undefined ? {} : { views: viewsSlot })}
