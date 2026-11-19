@@ -1,5 +1,5 @@
 import { Button, filterCriteria, List, Record, SearchBar } from "@sincpro/web-ui";
-import { type Meta, type StoryObj } from "@storybook/react-vite";
+import type { Meta, StoryObj } from "@storybook/react-vite";
 
 import { ORDER_COUNTERS as COUNTERS, orderName } from "../../support/erp-lists";
 import type { Item } from "../lista/shared";

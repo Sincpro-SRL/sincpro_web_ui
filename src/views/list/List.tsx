@@ -16,23 +16,23 @@ import type { DataColumn, DataTableCreate } from "@sincpro/web-ui/primitives/tab
 import type { RowAction } from "@sincpro/web-ui/primitives/table/RowActions";
 import type { SortState } from "@sincpro/web-ui/primitives/table/sorting";
 import { ListView } from "@sincpro/web-ui/views/list/ListView";
-import {
-  type CardWays,
-  type ListCalendar,
-  type ListChart,
-  type ListCrumb,
-  type ListDock,
-  type ListEmpty,
-  type ListFace,
-  type ListGantt,
-  type ListGroup,
-  type ListPivot,
-  type ListPresent,
-  type ListReport,
-  type ListSet,
-  type ListSheet,
-  type ListTimeline,
-  type RowOf,
+import type {
+  CardWays,
+  ListCalendar,
+  ListChart,
+  ListCrumb,
+  ListDock,
+  ListEmpty,
+  ListFace,
+  ListGantt,
+  ListGroup,
+  ListPivot,
+  ListPresent,
+  ListReport,
+  ListSet,
+  ListSheet,
+  ListTimeline,
+  RowOf,
 } from "@sincpro/web-ui/views/list/types";
 import type { ReactNode } from "react";
 
