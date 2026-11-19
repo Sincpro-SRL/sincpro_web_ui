@@ -58,6 +58,22 @@ export type BuiltFilter =
   | { negate: BuiltFilter }
   | BuiltThrough;
 
+/** The key of a record: what the relation's identifying column holds for it. */
+export type RecordKey = string | number;
+
+/** A record of a relation —or a value of an enum— as a search answers it: what travels and
+ *  what is read. See `records.ts`. */
+export interface RecordOption {
+  /** What travels: for a many2one, what its identifying column holds (its foreign key); for a
+   *  to-many relation, the key of the record on the other side (`relationKey`, `id`); for an
+   *  enum, the value. */
+  id: RecordKey;
+  /** What is read: the record's display name, the enum's word. */
+  name: string;
+  /** What tells two of the same name apart, already written: a NIT, an email. */
+  meta?: string;
+}
+
 /** How many of the records reached through a to-many relation have to match: «alguno»,
  *  «ninguno», «todos». It is the TREE's word, not a key that travels: criteria's
  *  `{through, selection}` says «some», and the other two are written with `negate` around it
@@ -128,6 +144,12 @@ export type SearchCriteria =
        * of anything: it was drawn in the menu and ticking it did nothing.
        */
       selection?: BuiltCondition | BuiltFilter;
+      /**
+       * The values it asks for, when it asks for values of ONE field — records of a relation,
+       * values of an enum —, with the names it reads by. A second value of the same field
+       * lands here (`withValue`), and the chip says «Cliente: Andrés Pérez o Andrés Gutiérrez».
+       */
+      values?: readonly RecordOption[];
     }
   | {
       id: string;

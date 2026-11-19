@@ -17,6 +17,11 @@ export {
   blankGroup,
   describeFilter,
   FilterBuilder,
+  liftRecords,
+  namesOf,
+  type RecordNames,
+  recordOps,
+  SelectionTree,
   type TreeCondition,
   treeFromFilter,
   type TreeGroup,
@@ -69,6 +74,8 @@ export {
   hasNamed,
   levelsOf,
   nextJoin,
+  type RecordKey,
+  type RecordOption,
   removeAt,
   replaceAt,
   type SearchCriteria,
@@ -85,6 +92,7 @@ export {
    filter builder, the criteria builder and the search bar speak it, so
    it lives apart from the three. */
 export {
+  choiceLabel,
   type FieldDefinition,
   fieldLabel,
   filterableNames,
@@ -98,22 +106,52 @@ export {
    Three steps —field, operator, value— that can be written as one. */
 export {
   answers,
+  choiceValues,
+  conditionCriteria,
   defaultOp,
   describeCondition,
+  fieldKey,
   globToLike,
   opLabel,
   type QueryDraft,
   type QueryField,
+  queryField,
   queryFields,
   type QueryKind,
   type QuerySuggestion,
   readTyped,
+  sayValues,
   suggest,
   type TypedValue,
   valueFor,
+  valueLabel,
+  valuesCriteria,
   type ValueShape,
+  valuesSelection,
   withoutValue,
+  withValue,
 } from "@sincpro/web-ui/components/search/query";
+
+/* THE RECORDS OF A RELATION: chosen by name, sent by key. The application gives ONE search
+   (`searchRecords`) — by prop, or once for every bar and builder with `SearchProvider` — and
+   its own value controls (`valueEditor`) for the fields it draws its way. */
+export {
+  SearchProvider,
+  type SearchSettings,
+  useSearchSettings,
+  type ValueEditor,
+  type ValueEditorProps,
+} from "@sincpro/web-ui/components/search/context";
+export {
+  type RecordSearch,
+  recordsFilter,
+  recordsOf,
+  type RecordTarget,
+  recordTarget,
+  sameKey,
+  type SearchRecords,
+} from "@sincpro/web-ui/components/search/records";
+export { RuleValue, takesMany } from "@sincpro/web-ui/components/search/RuleValue";
 
 /* The date cut, the way Odoo does it: months, quarters and years that
    combine. The INTENT is saved and resolved on read. */

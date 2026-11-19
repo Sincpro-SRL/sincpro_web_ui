@@ -12,14 +12,18 @@ import {
   assistEvent,
   AssistPending,
   AssistSuggestion,
+  type BuiltFilter,
   Button,
   Calendar,
   ChangeReview,
   dateKey,
   DatePicker,
   Field,
+  FilterBuilder,
+  filterCriteria,
   FormActions,
   FormSection,
+  hasNamed,
   LineItems,
   List,
   type ListPresent,
@@ -36,7 +40,9 @@ import {
   RelationValue,
   SearchBar,
   type SearchCriteria,
+  SearchProvider,
   Select,
+  selectionOf,
   SheetGroup,
   SheetGroups,
   type SortState,
@@ -45,6 +51,7 @@ import {
   TagsField,
   TextArea,
   TextInput,
+  toggleNamed,
   TopBar,
   type TopMenu,
   UserChip,
@@ -64,6 +71,7 @@ import {
   Receipt,
   Settings,
   ShoppingCart,
+  SlidersHorizontal,
   Truck,
   UserCog,
   Users,
@@ -112,7 +120,14 @@ import {
   restoreAt,
 } from "../support/erp-lines";
 import { customerCard, salesperson } from "../support/erp-people";
+import {
+  INVOICE_SEARCH_MODEL,
+  literalInvoices,
+  readInvoice,
+  searchInvoiceRecords,
+} from "../support/erp-search";
 import { INVOICE_LABELS } from "../support/erp-tags";
+import { keepMatching } from "../support/local-criteria";
 
 /**
  * Context: **a module, the way it is used.** The views show one record and N records each on
@@ -282,6 +297,35 @@ const lineRef = (owner: string, about: string, id: string): ResourceRef => ({
   params: { invoice: owner, about },
 });
 
+/** The advanced search, as a modal that answers: it opens on what the bar has set (as JSON in
+ *  its params — a reference carries words) and answers the filter applied and how it reads. */
+const builderRef = (selection: BuiltFilter | undefined): ResourceRef => ({
+  domain: "ventas",
+  kind: "busqueda-avanzada",
+  ...(selection === undefined ? {} : { params: { selection: JSON.stringify(selection) } }),
+});
+const BUILDER_MODAL = { to: Destination.Modal, size: { w: 880, h: 560 } };
+type Applied = { selection: BuiltFilter | undefined; said: string | undefined };
+
+/** The cuts somebody already thought of, by name: one click in the bar's panel. */
+const NAMED_CUTS = [
+  {
+    id: "draft",
+    label: "borradores",
+    selection: { field: "state", operator: "=", value: "draft" },
+  },
+  {
+    id: "posted",
+    label: "por cobrar",
+    selection: { field: "state", operator: "=", value: "posted" },
+  },
+  {
+    id: "overdue",
+    label: "vencidas",
+    selection: { field: "state", operator: "=", value: "overdue" },
+  },
+] as const;
+
 /** Where a relation opens: a modal at a size that holds a record, or what «Abrir en…» chose. */
 const opened = (to: OpenTarget) =>
   to === "modal"
@@ -414,8 +458,10 @@ function InvoiceList({ api }: ViewProps) {
   const [page, setPage] = useState(0);
   const onNew = () => api.open(newInvoiceRef);
 
+  /* What the bar has set is answered here, in memory — in an application, by the server. */
+  const searched = keepMatching(INVOICES, criteria, readInvoice);
   /* Due dates changed from the list itself, without opening the invoice. */
-  const filtered = (quick === "all" ? INVOICES : INVOICES.filter(QUICK[quick])).map((i) => {
+  const filtered = (quick === "all" ? searched : searched.filter(QUICK[quick])).map((i) => {
     const due = dueOf(i);
     return due === i.due ? i : { ...i, due };
   });
@@ -470,14 +516,43 @@ function InvoiceList({ api }: ViewProps) {
           ]}
         />
         <List.Search>
+          {/* The whole bar: the model's questions, the set's literal search, the records of a
+              relation (its `searchRecords` comes from the workspace's `SearchProvider`), the
+              cuts by name and the advanced search — a modal of the workspace that answers. */}
           <SearchBar
-            facets={[
-              { id: "number", label: "en el número" },
-              { id: "customer", label: "en el cliente" },
-            ]}
+            facets={[]}
+            model={INVOICE_SEARCH_MODEL}
             criteria={criteria}
-            onCriteriaChange={setCriteria}
-            placeholder="buscar una factura…"
+            onCriteriaChange={(next) => {
+              setCriteria(next);
+              setPage(0);
+            }}
+            literal={literalInvoices}
+            filters={[
+              {
+                label: "mostrar sólo",
+                options: NAMED_CUTS.map((cut) => ({
+                  id: cut.id,
+                  label: cut.label,
+                  checked: hasNamed(criteria, cut.id),
+                })),
+              },
+            ]}
+            onFilterSelect={(id) => {
+              const cut = NAMED_CUTS.find((one) => one.id === id);
+              if (cut !== undefined) setCriteria(toggleNamed(criteria, cut));
+            }}
+            onOpenBuilder={() =>
+              api.pick<Applied>(
+                builderRef(selectionOf(criteria)),
+                ({ selection, said }) =>
+                  setCriteria(
+                    selection === undefined ? [] : [filterCriteria(selection, said ?? "")],
+                  ),
+                BUILDER_MODAL,
+              )
+            }
+            placeholder="buscar una factura, un cliente, un vendedor…"
           />
         </List.Search>
         <List.Actions>
@@ -1326,6 +1401,20 @@ function AssistedInvoice({ api }: ViewProps) {
 const matching = (query: string) => (i: Invoice) =>
   `${i.number} ${i.customer}`.toLocaleLowerCase("es").includes(query.toLocaleLowerCase("es"));
 
+/** The advanced search, as a modal of the workspace: the same filter the bar holds, built
+ *  rule by rule — a relation's records picked by name —, answered back to the list. */
+function AdvancedSearch({ api, resource }: ViewProps) {
+  const opened = resource.params?.["selection"];
+  return (
+    <FilterBuilder
+      model={INVOICE_SEARCH_MODEL}
+      {...(opened === undefined ? {} : { initial: JSON.parse(opened) as BuiltFilter })}
+      onApply={(selection, said) => api.answer({ selection, said } satisfies Applied)}
+      onCancel={() => api.close()}
+    />
+  );
+}
+
 const VIEWS: readonly ViewSpec[] = [
   {
     domain: "ventas",
@@ -1388,6 +1477,13 @@ const VIEWS: readonly ViewSpec[] = [
     icon: Package,
     load: async () => Line,
   },
+  {
+    domain: "ventas",
+    kind: "busqueda-avanzada",
+    title: () => "Búsqueda avanzada",
+    icon: SlidersHorizontal,
+    load: async () => AdvancedSearch,
+  },
 ];
 
 function Sales({
@@ -1399,15 +1495,19 @@ function Sales({
   menu?: ReactNode;
   sidebar?: ReactNode;
 }) {
+  /* What web-framework does once for an application: how the records of a relation are
+     searched, for every bar and builder inside. */
   return (
-    <SalesProvider>
-      <Workspace
-        views={VIEWS}
-        start={start}
-        menu={menu}
-        {...(sidebar === undefined ? {} : { sidebar })}
-      />
-    </SalesProvider>
+    <SearchProvider searchRecords={searchInvoiceRecords}>
+      <SalesProvider>
+        <Workspace
+          views={VIEWS}
+          start={start}
+          menu={menu}
+          {...(sidebar === undefined ? {} : { sidebar })}
+        />
+      </SalesProvider>
+    </SearchProvider>
   );
 }
 

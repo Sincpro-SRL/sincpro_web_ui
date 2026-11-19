@@ -1,10 +1,17 @@
 "use client";
 
+import {
+  useSearchSettings,
+  type ValueEditor,
+  type ValueEditorProps,
+} from "@sincpro/web-ui/components/search/context";
 import type {
   BuiltCondition,
   BuiltFilter,
   BuiltThrough,
   CriteriaJoin,
+  RecordKey,
+  RecordOption,
   ThroughMatch,
 } from "@sincpro/web-ui/components/search/criteria";
 import {
@@ -22,16 +29,25 @@ import {
   type ModelDefinition,
 } from "@sincpro/web-ui/components/search/model";
 import {
+  isRelation,
   isToMany,
   type LoadModel,
   type ModelCache,
 } from "@sincpro/web-ui/components/search/paths";
 import { opLabel, sayCondition } from "@sincpro/web-ui/components/search/query";
+import {
+  recordsFilter,
+  recordsOf,
+  type RecordTarget,
+  recordTarget,
+  type SearchRecords,
+} from "@sincpro/web-ui/components/search/records";
+import { RuleValue } from "@sincpro/web-ui/components/search/RuleValue";
 import { currentCopy, fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { useSurface } from "@sincpro/web-ui/foundations/surface";
 import { Button } from "@sincpro/web-ui/primitives/button/index";
 import { FolderTree, Plus, Trash2 } from "lucide-react";
-import { type ReactNode, useState } from "react";
+import { type ReactNode, useEffect, useState } from "react";
 
 /* ====================================================================== *
  *  A FILTER SOMEBODY BUILDS, FROM WHAT THE MODEL SAYS IT ACCEPTS.
@@ -67,7 +83,7 @@ import { type ReactNode, useState } from "react";
    on the same screen. */
 
 /** Which operators take no value: asking whether something is empty needs nothing written. */
-const WITHOUT_VALUE = new Set(["is null"]);
+const WITHOUT_VALUE = new Set(["is null", "is not null"]);
 
 /** Which operators compare against TWO values. «Entre el 1 y el 31» is the question everybody
  *  asks about dates, and writing it as two loose rules is the way to
@@ -193,6 +209,16 @@ export interface TreeCondition {
   /** The other end, for the operators that compare against two —today `between`—. Empty in
    *  all the others, where it means nothing. */
   upper?: string;
+  /** The value as it travels when it is not the text: `true`, `7`, a list read back — kept so
+   *  a rule read from a filter goes back out the same, not as the string it is drawn with.
+   *  Writing in the box drops it: what is written is then the value. */
+  raw?: unknown;
+  /** The values CHOSEN, with the names they are read by — records of a relation, words of an
+   *  enum, «está en» a list. What travels is their `id`. */
+  values?: RecordOption[];
+  /** The rule asks about RECORDS of a relation: `field` is the relation itself, chosen by
+   *  name and compared by key (`recordsFilter`). */
+  target?: RecordTarget;
 }
 
 export interface TreeGroup {
@@ -253,29 +279,57 @@ function wrapThrough(hops: readonly TreeHop[], leaf: BuiltFilter): BuiltFilter {
 }
 
 function conditionToFilter(node: TreeCondition): BuiltFilter | undefined {
-  {
-    if (node.field === "") return undefined;
+  if (node.field === "") return undefined;
 
+  /* A rule about records: by key, the way the relation is compared — directly by its column
+     (a many2one) or crossing it (a to-many). «Está vacío» asks the column. */
+  if (node.target !== undefined) {
     if (WITHOUT_VALUE.has(node.operator)) {
-      return { field: node.field, operator: node.operator, value: true };
+      return node.target.column === undefined
+        ? undefined
+        : { field: node.target.column, operator: node.operator, value: true };
     }
-
-    if (WITH_RANGE.has(node.operator)) {
-      /* A half-written range is not half a range: while one end is missing, the rule does not
-         travel. */
-      if (node.value === "" || (node.upper ?? "") === "") return undefined;
-      return { field: node.field, operator: node.operator, value: [node.value, node.upper] };
-    }
-
-    /* **A rule with no value does not filter.** It used to travel with `value: ""`, and that is not «not
-       written anything yet»: against an `=` it is «the field is the empty string», which empties the list
-       while somebody is still typing, and against a `like` it is «contains nothing», which leaves it
-       the same. To ask for what is empty there is the «está vacío» operator, which the
-       model publishes on the fields that admit it — explicit, and not by omission. */
-    if (node.value === "") return undefined;
-
-    return { field: node.field, operator: node.operator, value: node.value };
+    const keys = (node.values ?? []).map((one) => one.id);
+    if (keys.length === 0) return undefined;
+    return recordsFilter(
+      node.target,
+      keys,
+      node.operator === "!=" || node.operator === "not in",
+    );
   }
+
+  if (WITHOUT_VALUE.has(node.operator)) {
+    return { field: node.field, operator: node.operator, value: true };
+  }
+
+  if (WITH_RANGE.has(node.operator)) {
+    /* A half-written range is not half a range: while one end is missing, the rule does not
+       travel. */
+    if (node.value === "" || (node.upper ?? "") === "") return undefined;
+    return { field: node.field, operator: node.operator, value: [node.value, node.upper] };
+  }
+
+  /* Chosen values travel as what they are —a list for «está en», the one for «es»—, by key. */
+  if (node.values !== undefined && node.values.length > 0) {
+    const keys = node.values.map((one) => one.id);
+    return {
+      field: node.field,
+      operator: node.operator,
+      value: node.operator === "in" || node.operator === "not in" ? keys : keys[0],
+    };
+  }
+  if (node.raw !== undefined) {
+    return { field: node.field, operator: node.operator, value: node.raw };
+  }
+
+  /* **A rule with no value does not filter.** It used to travel with `value: ""`, and that is not «not
+     written anything yet»: against an `=` it is «the field is the empty string», which empties the list
+     while somebody is still typing, and against a `like` it is «contains nothing», which leaves it
+     the same. To ask for what is empty there is the «está vacío» operator, which the
+     model publishes on the fields that admit it — explicit, and not by omission. */
+  if (node.value === "") return undefined;
+
+  return { field: node.field, operator: node.operator, value: node.value };
 }
 
 function groupToFilter(node: TreeGroup): BuiltFilter | undefined {
@@ -294,8 +348,9 @@ function groupToFilter(node: TreeGroup): BuiltFilter | undefined {
   return node.join === "any" ? { any: kept } : { all: kept };
 }
 
-/** A condition back to an editable row: the value goes back to text, which is the only thing
- *  an `<input>` knows how to show. A list —an `in`'s value— is written separated by commas. */
+/** A condition back to an editable row: the value goes back to text, which is what an
+ *  `<input>` shows — and stays as it came (`raw`), so the rule goes back out the same. A list
+ *  —an `in`'s value— is written separated by commas, and kept as chosen values. */
 function conditionToTree(condition: BuiltCondition): TreeCondition {
   if (WITH_RANGE.has(condition.operator) && Array.isArray(condition.value)) {
     const [from, to] = condition.value;
@@ -308,15 +363,26 @@ function conditionToTree(condition: BuiltCondition): TreeCondition {
     };
   }
 
+  if (WITHOUT_VALUE.has(condition.operator)) {
+    return {
+      kind: "condition",
+      field: condition.field,
+      operator: condition.operator,
+      value: "",
+    };
+  }
+
+  const value = condition.value;
   return {
     kind: "condition",
     field: condition.field,
     operator: condition.operator,
-    value: WITHOUT_VALUE.has(condition.operator)
-      ? ""
-      : Array.isArray(condition.value)
-        ? condition.value.join(",")
-        : String(condition.value ?? ""),
+    value: Array.isArray(value) ? value.join(",") : String(value ?? ""),
+    ...(Array.isArray(value)
+      ? { values: value.map((id) => ({ id: id as RecordKey, name: "" })) }
+      : value === undefined
+        ? {}
+        : { raw: value }),
   };
 }
 
@@ -395,6 +461,167 @@ function readChildren(raws: readonly unknown[]): TreeNode[] | null {
   return children;
 }
 
+/** The operators a rule about records offers: one record or several, in or out — and, through
+ *  a column that admits it, «está vacío». A to-many relation is asked by some of its records
+ *  or none of them. */
+export function recordOps(target: RecordTarget): string[] {
+  if (target.many) return ["in", "not in"];
+  const empty = ["is null", "is not null"].filter(
+    (op) => target.column !== undefined && target.ops.includes(op),
+  );
+  return ["=", "!=", "in", "not in", ...empty];
+}
+
+/** The keys of a list read back, as chosen values not named yet. */
+function unnamed(keys: readonly RecordKey[]): RecordOption[] {
+  return keys.map((id) => ({ id, name: "" }));
+}
+
+/**
+ * The rules about RECORDS of a relation, recognised again in a tree read back.
+ *
+ * A filter carries keys, never which relation they were chosen from: `customer_id in [7, 9]`
+ * is, for the tree, a column compared to two numbers. The model says that `customer_id` is
+ * how «Cliente» is compared, so the row is drawn as «Cliente es alguno de [Andrés Pérez,
+ * Andrés Gutiérrez]» — the names asked of `searchRecords` by key. The same for a to-many
+ * crossed to its key: `{through: "tags", selection: {field: "id", operator: "in", …}}` is
+ * «Etiquetas es alguno de …».
+ *
+ *      in   {field: "customer_id", operator: "in", value: [7, 9]}  (customer_id names Cliente)
+ *      out  {field: "customer", target: Cliente, operator: "in", values: [#7, #9]}
+ *
+ * Only on the record's own fields: a relation of a related record needs its model, and a row
+ * that stays a plain condition still filters the same.
+ */
+export function liftRecords(node: TreeNode, model: ModelDefinition): TreeNode {
+  if (node.kind === "group") {
+    return { ...node, children: node.children.map((child) => liftRecords(child, model)) };
+  }
+  const hops = node.through ?? [];
+  const keys = (): RecordKey[] =>
+    node.values !== undefined
+      ? node.values.map((one) => one.id)
+      : typeof node.raw === "string" || typeof node.raw === "number"
+        ? [node.raw]
+        : [];
+
+  if (hops.length === 0) {
+    for (const name of Object.keys(model.fields)) {
+      const target = recordTarget(model, name);
+      if (target === undefined || target.many || target.column !== node.field) continue;
+      if (!recordOps(target).includes(node.operator)) return node;
+      return {
+        kind: "condition",
+        field: name,
+        operator: node.operator,
+        value: "",
+        target,
+        ...(WITHOUT_VALUE.has(node.operator) ? {} : { values: unnamed(keys()) }),
+      };
+    }
+    return node;
+  }
+
+  const [hop] = hops;
+  if (hops.length !== 1 || hop === undefined || hop.match === "all") return node;
+  const target = recordTarget(model, hop.field);
+  if (target === undefined || !target.many || node.field !== target.key) return node;
+  if (node.operator !== "in" && node.operator !== "=") return node;
+  return {
+    kind: "condition",
+    field: hop.field,
+    operator: hop.match === "none" ? "not in" : "in",
+    value: "",
+    target,
+    values: unnamed(keys()),
+  };
+}
+
+/** The names of the records a tree has chosen, by relation and key: what says them in a
+ *  sentence (`describeFilter`) once the tree is applied. */
+export function namesOf(node: TreeNode): RecordNames {
+  const known = new Map<string, string>();
+  const walk = (one: TreeNode) => {
+    if (one.kind === "group") return one.children.forEach(walk);
+    if (one.target === undefined) return;
+    for (const value of one.values ?? []) {
+      if (value.name !== "") known.set(`${one.target.name}\u0000${value.id}`, value.name);
+    }
+  };
+  walk(node);
+  return (relation, key) => known.get(`${relation}\u0000${key}`);
+}
+
+/** The tree with the names that were missing, where they are known. */
+function withNames(node: TreeNode, names: ReadonlyMap<string, string>): TreeNode {
+  if (node.kind === "group") {
+    return { ...node, children: node.children.map((child) => withNames(child, names)) };
+  }
+  if (node.target === undefined || node.values === undefined) return node;
+  const target = node.target;
+  return {
+    ...node,
+    values: node.values.map((one) =>
+      one.name !== ""
+        ? one
+        : { ...one, name: names.get(`${target.name}\u0000${one.id}`) ?? `#${one.id}` },
+    ),
+  };
+}
+
+/**
+ * Names the records a tree read back carries only by key — ONE question per relation, for the
+ * whole tree. Per row, five rows answered at five moments and each wrote its answer over a tree
+ * that no longer had the others'. Until it answers, a record reads «#7».
+ */
+export function useRecordNames(
+  tree: TreeNode,
+  searchRecords: SearchRecords | undefined,
+  apply: (named: (tree: TreeNode) => TreeNode) => void,
+) {
+  const missing = new Map<string, { target: RecordTarget; keys: RecordKey[] }>();
+  const walk = (node: TreeNode) => {
+    if (node.kind === "group") return node.children.forEach(walk);
+    if (node.target === undefined) return;
+    for (const one of node.values ?? []) {
+      if (one.name !== "") continue;
+      const asked = missing.get(node.target.name) ?? { target: node.target, keys: [] };
+      asked.keys.push(one.id);
+      missing.set(node.target.name, asked);
+    }
+  };
+  walk(tree);
+  const key = [...missing.values()]
+    .map((one) => `${one.target.name}:${one.keys.join(",")}`)
+    .join("|");
+
+  useEffect(() => {
+    if (searchRecords === undefined || missing.size === 0) return;
+    const controller = new AbortController();
+    void Promise.all(
+      [...missing.values()].map(({ target, keys }) =>
+        searchRecords({
+          relation: target.relation,
+          path: [target.name],
+          text: "",
+          keys,
+          signal: controller.signal,
+        }).then(
+          (found) => found.map((one) => [`${target.name}\u0000${one.id}`, one.name] as const),
+          () => [],
+        ),
+      ),
+    ).then((answers) => {
+      if (controller.signal.aborted) return;
+      const names = new Map(answers.flat());
+      apply((current) => withNames(current, names));
+    });
+    return () => controller.abort();
+    // Asked once per set of keys without a name.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [key]);
+}
+
 function stringifyFilter(filter: BuiltFilter | undefined): string {
   return filter === undefined ? "" : JSON.stringify(filter, null, 2);
 }
@@ -442,8 +669,35 @@ export function describeFilter(
   /** The model at the end of a path of relations, when it already arrived: it names the
    *  fields of a `through`. Without it they keep their raw names. */
   modelAt?: (path: readonly string[]) => ModelDefinition | undefined,
+  /** The names of the records a filter asks for, by relation and key: «Cliente es Andrés
+   *  Pérez» instead of «customer_id es 7». The builder hands its own (`namesOf`). */
+  names?: RecordNames,
 ): string {
-  return say(node, model, 0, [], modelAt);
+  return say(node, model, 0, [], modelAt, names);
+}
+
+/** A record's name by the relation it was chosen from and its key, when it is known. */
+export type RecordNames = (relation: string, key: RecordKey) => string | undefined;
+
+/** A filter that asks for RECORDS of one of the model's relations, said as such: «Cliente es
+ *  alguno de Andrés Pérez, Andrés Gutiérrez». `null` when it is not one. */
+function sayRecords(
+  node: BuiltFilter,
+  model: ModelDefinition | undefined,
+  names: RecordNames | undefined,
+): string | null {
+  if (model === undefined) return null;
+  for (const name of Object.keys(model.fields)) {
+    const target = recordTarget(model, name);
+    if (target === undefined) continue;
+    const asked = recordsOf(target, node);
+    if (asked === null) continue;
+    const one = asked.keys.length === 1 && !target.many;
+    const op = asked.negate ? (one ? "!=" : "not in") : one ? "=" : "in";
+    const said = asked.keys.map((key) => names?.(name, key) ?? String(key)).join(", ");
+    return sayCondition(fieldLabel(model, name, currentCopy().locale), op, said);
+  }
+  return null;
 }
 
 function say(
@@ -452,8 +706,11 @@ function say(
   depth: number,
   at: readonly string[],
   modelAt: ((path: readonly string[]) => ModelDefinition | undefined) | undefined,
+  names?: RecordNames,
 ): string {
   const copy = currentCopy();
+  const records = sayRecords(node, model, names);
+  if (records !== null) return records;
   const crossed = crossedOf(node);
   if (crossed !== null) {
     /* «alguno de Líneas con alguno de Impuestos con Monto mayor que 10». The quantifier
@@ -462,7 +719,7 @@ function say(
     const relation =
       model === undefined ? crossed.through : fieldLabel(model, crossed.through, copy.locale);
     const next = [...at, crossed.through];
-    const inner = say(crossed.selection, modelAt?.(next), depth + 1, next, modelAt);
+    const inner = say(crossed.selection, modelAt?.(next), depth + 1, next, modelAt, names);
     const template = reachesOne(model, crossed)
       ? copy.fieldPath.say.one
       : copy.fieldPath.say[crossed.match];
@@ -471,7 +728,9 @@ function say(
   if ("all" in node || "any" in node) {
     const items = "all" in node ? node.all : node.any;
     const glue = "all" in node ? copy.search.and : copy.search.or;
-    const said = items.slice(0, 3).map((child) => say(child, model, depth + 1, at, modelAt));
+    const said = items
+      .slice(0, 3)
+      .map((child) => say(child, model, depth + 1, at, modelAt, names));
     if (items.length > 3) {
       said.push(fillCopy(copy.search.andMore, { count: items.length - 3 }));
     }
@@ -480,7 +739,7 @@ function say(
   }
 
   if ("negate" in node) {
-    return `${copy.search.notWord} ${say(node.negate, model, depth + 1, at, modelAt)}`;
+    return `${copy.search.notWord} ${say(node.negate, model, depth + 1, at, modelAt, names)}`;
   }
 
   /* Every `through` was said above; anything still not a condition is not a shape of the
@@ -597,11 +856,18 @@ export function SelectionTree({
   focus,
   loadModel,
   models: shared,
+  searchRecords: ownSearchRecords,
+  valueEditor: ownValueEditor,
 }: {
   model: ModelDefinition;
   group: TreeGroup;
   onChange: (next: TreeGroup) => void;
   depth?: number;
+  /** Searches the records of a relation: with it a rule can be about a relation ITSELF,
+   *  its records picked by name (see `records.ts`). Absent, the `SearchProvider`'s. */
+  searchRecords?: SearchRecords;
+  /** The application's own value controls (see `ValueEditor`). Absent, the provider's. */
+  valueEditor?: ValueEditor;
   /**
    * The condition's field to show FIRST: the one somebody touched in
    * the bar.
@@ -631,6 +897,14 @@ export function SelectionTree({
   const copy = useUiCopy();
   const surface = useSurface();
   const models = useModelCache(model, loadModel, shared);
+  const { searchRecords, valueEditor } = useSearchSettings({
+    ...(ownSearchRecords === undefined ? {} : { searchRecords: ownSearchRecords }),
+    ...(ownValueEditor === undefined ? {} : { valueEditor: ownValueEditor }),
+  });
+  const extend = {
+    ...(searchRecords === undefined ? {} : { searchRecords }),
+    ...(valueEditor === undefined ? {} : { valueEditor }),
+  };
   const box =
     surface === "chrome"
       ? "border-chrome-ink/20 bg-chrome text-chrome-ink"
@@ -689,6 +963,7 @@ export function SelectionTree({
                 onChange={(next) => setChild(index, next)}
                 depth={depth + 1}
                 models={models}
+                {...extend}
                 {...(focus === undefined ? {} : { focus })}
               />
             </div>
@@ -711,6 +986,7 @@ export function SelectionTree({
             box={box}
             focused={focus !== undefined && child.field === focus}
             onChange={(next) => setChild(index, next)}
+            {...extend}
             actions={
               <span className="ml-auto flex shrink-0 items-center gap-2">
                 <button
@@ -753,6 +1029,20 @@ export function SelectionTree({
  *  A RULE — the path to the field, how many of each relation, the operator and the value.
  * ---------------------------------------------------------------------- */
 
+/** The rule without what was chosen or read for its value: what is left when the field or
+ *  the way of comparing changes, or something is written in the box. */
+function bare(child: TreeCondition): TreeCondition {
+  return {
+    kind: "condition",
+    field: child.field,
+    operator: child.operator,
+    value: child.value,
+    ...(child.through === undefined ? {} : { through: child.through }),
+    ...(child.upper === undefined ? {} : { upper: child.upper }),
+    ...(child.target === undefined ? {} : { target: child.target }),
+  };
+}
+
 function ConditionRow({
   model,
   models,
@@ -761,6 +1051,8 @@ function ConditionRow({
   focused,
   onChange,
   actions,
+  searchRecords,
+  valueEditor,
 }: {
   model: ModelDefinition;
   models: ModelCache;
@@ -769,6 +1061,8 @@ function ConditionRow({
   focused: boolean;
   onChange: (next: TreeCondition) => void;
   actions: ReactNode;
+  searchRecords?: SearchRecords;
+  valueEditor?: ValueEditor;
 }) {
   const copy = useUiCopy();
   const hops = child.through ?? [];
@@ -779,7 +1073,11 @@ function ConditionRow({
      root rule knows it without waiting for anybody. */
   const leaf =
     steps?.at(-1)?.field ?? (hops.length === 0 ? model.fields[child.field] : undefined);
-  const ops = leaf?.ops ?? [];
+  const leafModel = models.peek(hops.map((hop) => hop.field));
+  const target = child.target;
+  /* A rule about records offers the comparisons that pick them —one, several, in or out—;
+     any other, the ones the model publishes for the field. */
+  const ops = target !== undefined ? recordOps(target) : (leaf?.ops ?? []);
   const type = leaf?.type ?? "text";
 
   function choosePath(
@@ -793,14 +1091,31 @@ function ConditionRow({
       /* Changing the final field does not reset the chip of a relation that remains in the path. */
       match: hops[at]?.field === step.name ? hops[at]!.match : ("any" as ThroughMatch),
     }));
+    const name = next[next.length - 1] ?? "";
+    /* The relation ITSELF was chosen —«Cliente», not «Cliente > Nombre»—: the rule asks
+       about its records, picked by name. Only when they can be searched. */
+    const parent = models.peek(next.slice(0, -1));
+    const nextTarget =
+      searchRecords !== undefined && isRelation(last.field) && parent !== undefined
+        ? recordTarget(parent, name)
+        : undefined;
+    const nextOps = nextTarget !== undefined ? recordOps(nextTarget) : last.field.ops;
     onChange({
-      ...child,
-      through: nextHops.length === 0 ? undefined : nextHops,
-      field: next[next.length - 1] ?? "",
-      operator: last.field.ops.includes(child.operator)
-        ? child.operator
-        : (last.field.ops[0] ?? "="),
+      kind: "condition",
+      ...(nextHops.length === 0 ? {} : { through: nextHops }),
+      field: name,
+      operator: nextOps.includes(child.operator) ? child.operator : (nextOps[0] ?? "="),
+      value: nextTarget === undefined && child.target === undefined ? child.value : "",
+      ...(nextTarget === undefined ? {} : { target: nextTarget }),
     });
+  }
+
+  function setOperator(operator: string) {
+    /* From several to one keeps the first: a picker of one cannot show three. */
+    const many = operator === "in" || operator === "not in";
+    const values =
+      child.values === undefined ? undefined : many ? child.values : child.values.slice(0, 1);
+    onChange({ ...child, operator, ...(values === undefined ? {} : { values }) });
   }
 
   function setMatch(at: number, match: ThroughMatch) {
@@ -809,6 +1124,27 @@ function ConditionRow({
       through: hops.map((hop, i) => (i === at ? { ...hop, match } : hop)),
     });
   }
+
+  const editor: ValueEditorProps = {
+    name: child.field,
+    field: leaf ?? { type, nullable: true, sortable: false, ops },
+    path,
+    ...(leafModel === undefined ? {} : { model: leafModel }),
+    operator: child.operator,
+    value: child.value,
+    /* What is written IS the value: what was read or chosen before is dropped. */
+    onValue: (value) => onChange({ ...bare(child), value }),
+    values: child.values ?? [],
+    onValues: (values) => onChange({ ...bare(child), values }),
+    raw: child.raw,
+    onRaw: (raw) =>
+      onChange(
+        raw === undefined
+          ? { ...bare(child), value: "" }
+          : { ...bare(child), raw, value: String(raw) },
+      ),
+    label: copy.builder.ruleValue,
+  };
 
   return (
     <div
@@ -824,7 +1160,11 @@ function ConditionRow({
         models={models}
         value={path}
         label={copy.builder.ruleField}
-        filter={(field) => isFilterable(field)}
+        /* A relation can be chosen itself —«Cliente es …»— when its records can be searched;
+           otherwise only what compares on its own. */
+        filter={(field) =>
+          isFilterable(field) || (searchRecords !== undefined && isRelation(field))
+        }
         onChange={choosePath}
       />
 
@@ -863,7 +1203,7 @@ function ConditionRow({
       <select
         aria-label={copy.builder.ruleOperator}
         value={child.operator}
-        onChange={(event) => onChange({ ...child, operator: event.target.value })}
+        onChange={(event) => setOperator(event.target.value)}
         className={`min-w-0 flex-1 basis-36 rounded-control border px-2 py-1 text-meta ${box}`}
       >
         {ops.map((operator) => (
@@ -875,32 +1215,37 @@ function ConditionRow({
 
       {WITHOUT_VALUE.has(child.operator) ? (
         <span className="flex-1 text-meta text-muted">{copy.builder.noValue}</span>
-      ) : WITH_RANGE.has(child.operator) ? (
-        <span className="flex min-w-0 flex-1 basis-40 items-center gap-1">
-          <input
-            type={inputType(type)}
-            value={child.value}
-            onChange={(event) => onChange({ ...child, value: event.target.value })}
-            placeholder={copy.builder.from}
-            className={`min-w-0 flex-1 rounded-control border px-2 py-1 text-meta ${box}`}
-          />
-          <span className="shrink-0 text-micro text-muted">{copy.search.and}</span>
-          <input
-            type={inputType(type)}
-            value={child.upper ?? ""}
-            onChange={(event) => onChange({ ...child, upper: event.target.value })}
-            placeholder={copy.builder.to}
-            className={`min-w-0 flex-1 rounded-control border px-2 py-1 text-meta ${box}`}
-          />
-        </span>
       ) : (
-        <input
-          type={inputType(type)}
-          value={child.value}
-          onChange={(event) => onChange({ ...child, value: event.target.value })}
-          placeholder={copy.builder.value}
-          className={`min-w-0 flex-1 basis-40 rounded-control border px-2 py-1 text-meta ${box}`}
-        />
+        /* The application's control first, for the fields it draws its own way; the builder's
+           for the rest. */
+        (valueEditor?.(editor) ??
+        (WITH_RANGE.has(child.operator) ? (
+          <span className="flex min-w-0 flex-1 basis-40 items-center gap-1">
+            <input
+              type={inputType(type)}
+              value={child.value}
+              onChange={(event) => onChange({ ...bare(child), value: event.target.value })}
+              placeholder={copy.builder.from}
+              className={`min-w-0 flex-1 rounded-control border px-2 py-1 text-meta ${box}`}
+            />
+            <span className="shrink-0 text-micro text-muted">{copy.search.and}</span>
+            <input
+              type={inputType(type)}
+              value={child.upper ?? ""}
+              onChange={(event) => onChange({ ...bare(child), upper: event.target.value })}
+              placeholder={copy.builder.to}
+              className={`min-w-0 flex-1 rounded-control border px-2 py-1 text-meta ${box}`}
+            />
+          </span>
+        ) : (
+          <RuleValue
+            props={editor}
+            {...(target === undefined ? {} : { target })}
+            {...(searchRecords === undefined ? {} : { searchRecords })}
+            box={box}
+            inputType={inputType(type)}
+          />
+        )))
       )}
 
       {actions}
@@ -915,6 +1260,8 @@ export function FilterBuilder({
   onCancel,
   loadModel,
   models: shared,
+  searchRecords: ownSearchRecords,
+  valueEditor: ownValueEditor,
 }: {
   model: ModelDefinition;
   /** The model at the end of a path of relations. With this, a rule can ask about
@@ -927,14 +1274,32 @@ export function FilterBuilder({
   /** The filter that was already set, if there was one. Reopening the builder with this inside
    *  has to continue where it was left, not start blank. */
   initial?: BuiltFilter;
-  onApply: (selection: BuiltFilter | undefined) => void;
+  /** The filter applied, and how it reads —with the names of the records chosen, «Cliente es
+   *  Andrés Pérez»— for the chip that shows it. */
+  onApply: (selection: BuiltFilter | undefined, said?: string) => void;
   onCancel?: () => void;
+  /** Searches the records of a relation (see `records.ts`). Absent, the `SearchProvider`'s. */
+  searchRecords?: SearchRecords;
+  /** The application's own value controls (see `ValueEditor`). Absent, the provider's. */
+  valueEditor?: ValueEditor;
 }) {
   const names = filterableNames(model);
   const models = useModelCache(model, loadModel, shared);
+  const settings = useSearchSettings({
+    ...(ownSearchRecords === undefined ? {} : { searchRecords: ownSearchRecords }),
+    ...(ownValueEditor === undefined ? {} : { valueEditor: ownValueEditor }),
+  });
+  /* A filter read back carries keys; with records searchable, the rules about records are
+     drawn as such again — by name. */
+  const read = (filter: unknown): TreeNode | null => {
+    const node = treeFromFilter(filter);
+    return node === null || settings.searchRecords === undefined
+      ? node
+      : liftRecords(node, model);
+  };
 
   const copy = useUiCopy();
-  const decomposed = initial === undefined ? null : treeFromFilter(initial);
+  const decomposed = initial === undefined ? null : read(initial);
   const [tree, setTree] = useState<TreeGroup>(() =>
     decomposed !== null && decomposed.kind === "group"
       ? decomposed
@@ -949,6 +1314,9 @@ export function FilterBuilder({
     stringifyFilter(initial ?? treeToFilter(tree)),
   );
   const [rawError, setRawError] = useState<string | null>(null);
+  useRecordNames(tree, settings.searchRecords, (named) =>
+    setTree((current) => named(current) as TreeGroup),
+  );
 
   /* Touching the tree rewrites the JSON so it shows exactly what the tree now says,
      and drops any read-only view that may have been left. */
@@ -986,7 +1354,7 @@ export function FilterBuilder({
     }
     setRawError(null);
 
-    const node = treeFromFilter(parsed);
+    const node = read(parsed);
     if (node !== null) {
       setTree(
         node.kind === "group" ? node : { kind: "group", join: "all", children: [node] },
@@ -1008,7 +1376,13 @@ export function FilterBuilder({
             <ExpressionView node={lockedView} model={model} modelAt={models.peek} />
           </>
         ) : (
-          <SelectionTree model={model} group={tree} onChange={updateTree} models={models} />
+          <SelectionTree
+            model={model}
+            group={tree}
+            onChange={updateTree}
+            models={models}
+            {...settings}
+          />
         )}
       </div>
 
@@ -1026,7 +1400,16 @@ export function FilterBuilder({
         <Button
           role="primary"
           disabled={rawError !== null}
-          onClick={() => onApply(rawText.trim() === "" ? undefined : JSON.parse(rawText))}
+          onClick={() => {
+            const selection: BuiltFilter | undefined =
+              rawText.trim() === "" ? undefined : JSON.parse(rawText);
+            onApply(
+              selection,
+              selection === undefined
+                ? undefined
+                : describeFilter(selection, model, models.peek, namesOf(tree)),
+            );
+          }}
         >
           {copy.builder.add}
         </Button>
