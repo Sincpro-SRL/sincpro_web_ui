@@ -61,8 +61,10 @@ export const LaReglaDeQueSeVe: Story = {
   ),
 };
 
+const VENTAS = [{ label: "Ventas", onClick: () => {} }, { label: "Pedidos" }];
+
 /* The same orders list with its actions as data — drawn by the view style it is put in. */
-function PedidosConAcciones() {
+function PedidosConAcciones({ crumbs = VENTAS }: { crumbs?: typeof VENTAS }) {
   const l = useLista();
   const nada = () => {};
   return (
@@ -81,7 +83,7 @@ function PedidosConAcciones() {
         empty={{ sentence: "Todavía no hay pedidos." }}
       >
         <List.Bar>
-          <List.Crumbs crumbs={[{ label: "Ventas", onClick: nada }, { label: "Pedidos" }]} />
+          <List.Crumbs crumbs={crumbs} />
           <List.Identity
             title="Pedidos"
             description="cotizaciones, pedidos confirmados y lo que ya se facturó"
@@ -236,5 +238,52 @@ export const EnUnaListaTradicional: Story = {
     await waitFor(() =>
       expect(canvas.queryByRole("toolbar", { name: "Acciones de los elegidos" })).toBeNull(),
     );
+  },
+};
+
+/**
+ * **Una lista que cuelga de otra cosa, en el estilo moderno** (#68): las migas SON el encabezado,
+ * como en un registro — «Ventas › Clientes › Distribuidora Andina S.R.L. › Pedidos» en una sola
+ * línea, la última al tamaño del título y sin repetirlo debajo —, y la segunda fila es cómo se
+ * mira el conjunto: de qué está hecho, el buscador al centro, ordenar y las caras. Las acciones,
+ * en la píldora.
+ */
+export const MigasAnidadas: Story = {
+  name: "Migas anidadas · moderno",
+  render: () => (
+    <ViewStyleProvider value="modern">
+      <PedidosConAcciones
+        crumbs={[
+          { label: "Ventas", onClick: () => {} },
+          { label: "Clientes", onClick: () => {} },
+          { label: "Distribuidora Andina S.R.L.", onClick: () => {} },
+          { label: "Pedidos" },
+        ]}
+      />
+    </ViewStyleProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const trail = await canvas.findByRole("navigation", { name: /Pedidos/ });
+    const here = within(trail).getByRole("link", { current: "page" });
+    // Where I am, at the title's size — and the title is not said a second time.
+    await expect(here.className).toMatch(/text-title/);
+    await expect(canvas.getByRole("heading", { name: "Pedidos", level: 2 }).className).toBe(
+      "sr-only",
+    );
+    // The whole trail on one line: the root and «here» share it.
+    const root = within(trail).getByRole("link", { name: "Ventas" });
+    const top = (el: Element) => el.getBoundingClientRect();
+    await expect(Math.abs(top(root).bottom - top(here).bottom)).toBeLessThan(6);
+    // One row for how the set is looked at: what it is made of, the search, sort.
+    const search = canvas.getByRole("combobox", { name: "Buscar" });
+    const sort = canvas.getByRole("button", { name: /Ordenar/ });
+    const about = canvas.getByText(
+      "cotizaciones, pedidos confirmados y lo que ya se facturó",
+    );
+    const middle = (el: Element) => (top(el).top + top(el).bottom) / 2;
+    await expect(Math.abs(middle(search) - middle(sort))).toBeLessThan(12);
+    await expect(Math.abs(middle(search) - middle(about))).toBeLessThan(24);
+    await expect(top(search).top).toBeGreaterThan(top(here).bottom);
   },
 };

@@ -375,12 +375,17 @@ export function ListView<T extends object>({
   const bar = !barHasControls ? undefined : (
     <ListingBar
       surface={surface}
+      look={viewStyle}
       {...(embedded ? { inline: true, count: items.length } : {})}
       {...(embedded || crumbs === undefined || crumbs.length === 0 || density === "compact"
         ? {}
         : {
             crumbs: (
-              <Breadcrumb crumbs={crumbs} {...(surface === undefined ? {} : { surface })} />
+              <Breadcrumb
+                crumbs={crumbs}
+                size={viewStyle === "modern" ? "lg" : "md"}
+                {...(surface === undefined ? {} : { surface })}
+              />
             ),
           })}
       {...(actions === undefined ? {} : { actions })}

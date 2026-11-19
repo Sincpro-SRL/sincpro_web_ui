@@ -4,6 +4,7 @@ import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
+import type { ViewStyle } from "@sincpro/web-ui/foundations/viewStyle";
 import { Line } from "@sincpro/web-ui/primitives/block/Line";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
@@ -41,6 +42,21 @@ import type { ReactNode } from "react";
  *
  *  The actions on the left do NOT go away: «Nuevo» stays available with three
  *  rows selected, because selecting is not entering a mode.
+ *
+ *  ── The modern style: the trail is the heading ──────────────────────
+ *
+ *      ┌──────────────────────────────────────────────────────────────────┐
+ *      │ Pagos › María Fernanda › Pagos                     1–2 / 2 ‹ › │
+ *      │ what it is made of       🔍 search…        [sort][cols] [▤▦] │
+ *      └──────────────────────────────────────────────────────────────────┘
+ *                      ( Exportar · + Nuevo )   ← the list's actions float
+ *
+ *  As a record in the modern style, WHERE I AM is the page's heading: the trail at the
+ *  title's size (`Breadcrumb size="lg"`), its last crumb the list's name — so the title is
+ *  not said twice —, the page range at the other end. The second row is how I look at the
+ *  set: what it is made of, the search centred, sort, columns and the faces. The list's
+ *  actions are the floating pill (`List.Dock`); drawn by hand they close the second row.
+ *  Without crumbs the title is the heading. Compact keeps the one bar below.
  *
  *  ── Inside a record it is ONE line (`inline`) ────────────────────────
  *
@@ -86,7 +102,11 @@ export function ListingBar({
   surface,
   inline = false,
   count,
+  look = "traditional",
 }: {
+  /** How the bar is drawn: `modern` makes the trail the heading and puts the search on the
+   *  row of the controls (see the header). The list passes its view style. */
+  look?: ViewStyle;
   /** What starts something new. It stays visible even when there is a selection. */
   actions?: ReactNode;
   title?: string;
@@ -269,6 +289,46 @@ export function ListingBar({
     />
   );
 
+  /* The list's name. No `truncate`: it may wrap onto two lines — a list that cannot be
+     named in full is indistinguishable from the one next to it. `title` and semibold: it is
+     the entry point of the screen; at `lead` it was smaller than the metrics under it, so the
+     largest thing on a list page was a number (measured 1.46:1 over the body, below the ~1.5
+     an eye needs to find where to start). */
+  const heading =
+    title === undefined ? null : (
+      <h2
+        className={`text-title leading-tight font-semibold ${isChrome ? "text-chrome-ink" : "text-ink"}`}
+      >
+        {title}
+      </h2>
+    );
+  /* What the list is made of: its counters and its sentence. Under the title in the
+     traditional bar; at the start of the controls' row in the modern one. */
+  const about =
+    description === undefined && counters === undefined ? null : (
+      <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
+        {counters?.map((c) => (
+          <span key={c.label} className="flex items-baseline gap-1">
+            <span
+              className={`text-meta font-medium tabular-nums ${isChrome ? "text-chrome-ink" : "text-ink"}`}
+            >
+              {typeof c.value === "number" ? c.value.toLocaleString(copy.locale) : c.value}
+            </span>
+            <span className={`text-micro ${isChrome ? "text-chrome-muted" : "text-muted"}`}>
+              {c.label}
+            </span>
+          </span>
+        ))}
+        {description === undefined ? null : (
+          <span
+            className={`min-w-0 text-micro ${isChrome ? "text-chrome-muted" : "text-muted"}`}
+          >
+            {description}
+          </span>
+        )}
+      </div>
+    );
+
   const bottomRow =
     actions === undefined && !withIdentity && views === undefined ? null : (
       /* On a narrow list (a phone, a drawer) the name and its counters take the whole first
@@ -283,47 +343,8 @@ export function ListingBar({
 
         {!withIdentity ? null : (
           <div className="flex min-w-0 flex-1 flex-col @max-2xl:order-first @max-2xl:basis-full">
-            {title === undefined ? null : (
-              /* No `truncate`: the title may wrap onto two lines. A list that
-                 cannot be named in full is indistinguishable from the one next
-                 to it. */
-              /* `title` and semibold: the name of the list is the entry point of the
-                 screen. At `lead` it was smaller than the metrics under it, so the
-                 largest thing on a list page was a number (measured: 1.46:1 over the
-                 body, below the ~1.5 an eye needs to find where to start). */
-              <h2
-                className={`text-title leading-tight font-semibold ${isChrome ? "text-chrome-ink" : "text-ink"}`}
-              >
-                {title}
-              </h2>
-            )}
-            {description === undefined && counters === undefined ? null : (
-              <div className="mt-0.5 flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
-                {counters?.map((c) => (
-                  <span key={c.label} className="flex items-baseline gap-1">
-                    <span
-                      className={`text-meta font-medium tabular-nums ${isChrome ? "text-chrome-ink" : "text-ink"}`}
-                    >
-                      {typeof c.value === "number"
-                        ? c.value.toLocaleString(copy.locale)
-                        : c.value}
-                    </span>
-                    <span
-                      className={`text-micro ${isChrome ? "text-chrome-muted" : "text-muted"}`}
-                    >
-                      {c.label}
-                    </span>
-                  </span>
-                ))}
-                {description === undefined ? null : (
-                  <span
-                    className={`min-w-0 text-micro ${isChrome ? "text-chrome-muted" : "text-muted"}`}
-                  >
-                    {description}
-                  </span>
-                )}
-              </div>
-            )}
+            {heading}
+            {about === null ? null : <div className="mt-0.5">{about}</div>}
           </div>
         )}
 
@@ -333,7 +354,53 @@ export function ListingBar({
       </div>
     );
 
-  const bar = (
+  /* THE MODERN BAR — see «The modern style» above. Only with room for an identity:
+     compact (a drawer, a phone) keeps the one bar. */
+  const modern = look === "modern" && withIdentity;
+  const modernBar = !modern ? null : (
+    <div className={`flex min-w-0 flex-col ${byDensity(d, "gap-2", "gap-1.5")}`}>
+      <Line
+        start={
+          crumbs === undefined ? (
+            heading
+          ) : (
+            <>
+              {/* The trail says the name; the outline still has the list's heading. */}
+              {title === undefined ? null : <h2 className="sr-only">{title}</h2>}
+              {crumbs}
+            </>
+          )
+        }
+        end={pagination}
+      />
+      <Line
+        asks="var(--container-crumb)"
+        centerAsks={center === null ? "auto" : "var(--container-search)"}
+        gap={byDensity(d, "gap-x-4 gap-y-2", "gap-x-2 gap-y-1.5")}
+        start={about}
+        center={
+          center === null ? null : (
+            /* `overflow-x-clip`: the same reason as the traditional top row's. */
+            <div className="flex w-full min-w-0 items-center overflow-x-clip overflow-y-visible">
+              {center}
+            </div>
+          )
+        }
+        end={
+          views === undefined && actions === undefined ? null : (
+            <div className="ml-auto flex shrink-0 items-center gap-2">
+              {views}
+              {actions === undefined ? null : (
+                <div className="flex shrink-0 items-center gap-1.5">{actions}</div>
+              )}
+            </div>
+          )
+        }
+      />
+    </div>
+  );
+
+  const bar = modernBar ?? (
     <div className={`flex min-w-0 flex-col ${byDensity(d, "gap-2", "gap-1.5")}`}>
       {/* On the light bar the two rows are two questions — where I am / what I can do — and a
           hairline between them says so; without it the crumbs, the search and the actions
