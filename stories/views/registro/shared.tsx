@@ -1,7 +1,7 @@
 /* The data and the pieces the stories of this folder share. Not a story file. */
 import { type ActivityEvent, Button, type Message, Record } from "@sincpro/web-ui";
 
-import { type InvoiceLine } from "../../support/erp";
+import type { InvoiceLine } from "../../support/erp";
 import { ORDER_EVENTS, ORDER_MESSAGES } from "../../support/erp-lists";
 
 /** The four lines of S00142. They add up to the total the rail and the list show. */

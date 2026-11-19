@@ -15,6 +15,11 @@ export default tseslint.config(
       "simple-import-sort/imports": "error",
       "simple-import-sort/exports": "error",
       "@typescript-eslint/consistent-type-imports": "error",
+      // `import { type Meta } from "x"` with `verbatimModuleSyntax` is emitted as
+      // `import {} from "x"`: the module LOADS at runtime for nothing. A story that did it
+      // pulled `@storybook/react-vite` into the browser, Vite optimized it mid-run on CI,
+      // reloaded, and every story running at that moment failed with two Reacts.
+      "@typescript-eslint/no-import-type-side-effects": "error",
       // The same rule tsc applies with noUnusedParameters: a leading `_` says "unused on
       // purpose" — a slot marker component that only declares its props, a key dropped
       // from a rest spread.
