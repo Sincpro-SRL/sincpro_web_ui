@@ -66,7 +66,7 @@ export type UiCopy = {
     prev: string;
     next: string;
   };
-  /** The floating action dock (`ActionDock`, experimental). */
+  /** The floating action dock (`ActionDock`). */
   dock: {
     /** The toolbar's name, when the screen does not give one. */
     label: string;

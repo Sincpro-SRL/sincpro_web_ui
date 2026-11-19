@@ -1,6 +1,6 @@
 /* RECORD PARTS — the header, status bar, pager and skeleton of one record. The `Record` view
    composes them. */
-/* The actions FLOATING, as data (experimental): what is seen and what waits in «Más» is
+/* The actions FLOATING, as data: what is seen and what waits in «Más» is
    decided by `dockPlan`. */
 export {
   ActionDock,
@@ -29,6 +29,8 @@ export { RecordSkeleton } from "@sincpro/web-ui/components/record/RecordSkeleton
 export { SmartButton, SmartButtons } from "@sincpro/web-ui/components/record/SmartButtons";
 export {
   type Stage,
+  type StageState,
   StatusBar,
+  type StatusDisplay,
   type StatusLook,
 } from "@sincpro/web-ui/components/record/StatusBar";

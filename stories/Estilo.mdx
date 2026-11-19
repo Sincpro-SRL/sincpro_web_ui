@@ -9,6 +9,33 @@ toca una fila, el nombre de un cliente, «Registrar pago» o «Buscar más…».
 mitad, escrita. Cada regla tiene una plantilla en `5 · Plantillas` que la muestra funcionando,
 y una prueba que la sostiene.
 
+## Hacia dónde vamos · el estilo moderno
+
+El estilo **moderno** es la dirección del sistema: así se dibujan las pantallas nuevas, y se va a
+seguir aplicando al resto y mejorando. No es una prueba. El **tradicional** se queda —la misma
+API, los mismos datos— para las aplicaciones que ya lo usan; se elige una vez, alrededor de la
+aplicación, con `ViewStyleProvider`, como la densidad.
+
+- **La página respira sobre el fondo.** Sin banda blanca arriba del papel: las migas SON el
+  título de la página, y los contadores y el estado van un escalón más abajo, más quietos.
+- **Una sola píldora flotante con las acciones**, abajo y al centro, al alcance del pulgar: la
+  misma en un registro, en una lista y en un formulario de ajustes. Con cambios pasa a ser
+  «N cambios · Descartar · Guardar»; con filas elegidas, lo que se les hace. Nunca dos a la vez.
+- **La píldora es la forma de la identidad**: la de las acciones, el paginador (azul
+  translúcido), el estado como píldora de píldoras `( Borrador | Publicada | Pagada )`, los
+  contadores como enlaces con su número en una pastilla.
+- **El color dice algo**: el dorado es la acción que hace avanzar el registro; el azul
+  translúcido, dónde estás; el rojo, lo que deshace.
+- **El teclado llega a todo**: cada acción puede llevar su atajo, escrito como lo escribe el
+  teclado de la persona.
+- **Un número se lee igual en todos lados**: con los decimales y el formato de su columna en
+  las celdas, los grupos, el pie y el informe.
+
+Lo que sigue en esta dirección: formularios densos con las secciones y el índice del estilo de
+ajustes, y el teléfono (la píldora y el estado cuando no hay lugar). Para verlo:
+`4 · Vistas/Compartido/Estilos · tradicional y moderno` y
+`5 · Plantillas/Registros/Factura completa › Estilo moderno`.
+
 ## Quién decide qué
 
 Tres paquetes, una sola dirección:

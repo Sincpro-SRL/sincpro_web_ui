@@ -368,7 +368,31 @@ A column's numbers are written ONE way, in its cells, its piles and its footer: 
 else its `decimals` (`DataColumn.decimals`, `SheetColumn.decimals`): `2` writes «6.057,10»
 under «8.370,57», not «6.057,1».
 
-#### Experimental: one API, two styles (`ViewStyleProvider`)
+#### The direction: the modern style (`ViewStyleProvider`)
+
+**Modern is where the system is going.** It is not a trial: it is how new screens are drawn,
+and it keeps being applied to the rest of the system and refined. `traditional` stays — same
+API, same data — for the applications already drawn in it. What the direction is:
+
+- **The page breathes on the ground.** No white band on top of the paper: the trail IS the
+  page's heading (`Breadcrumb size="lg"`), and the counters and the state sit a step down,
+  quieter.
+- **One floating pill holds the actions** — at the bottom, centred, under the thumb —, the
+  same on a record, a list and a settings form. It turns into «N cambios · Descartar ·
+  Guardar» while there are changes, and into what is done to the chosen rows while some are
+  chosen. Never two pills at once.
+- **Pills are the shape of the identity**: the actions' pill, the pager (a translucent primary
+  pill), the state as a pill of pills (`StatusBar look="segmented"`), the counters as links
+  with their count in a pill.
+- **Colour means something**: the gold is the one action that moves the record forward; the
+  translucent primary, where you are; red, what undoes.
+- **The keyboard reaches everything**: every action can carry its shortcut, drawn for the
+  person's keyboard (see below).
+- **A number reads the same everywhere**: its column's decimals and format in the cells, the
+  groups, the footer and the report.
+
+Next in the direction: dense forms with the settings style's sections and index, and the
+phone (the pill and the state when room is short).
 
 A record and a list are written once — `Record.Dock` and `List.Dock` with their actions as
 data — and the application's style decides how they are drawn, the way it chooses its density:
@@ -383,18 +407,21 @@ data — and the application's style decides how they are drawn, the way it choo
 - **traditional**: the ERP rail — a band with the trail, the counters and the pager; the
   actions as the bar's buttons (the primary first and gold, «⋯» with the rest), in a record
   and in a list alike.
-- **modern**: the trail is the page's heading (`Breadcrumb size="lg"`) with the pager as a
-  translucent primary pill on its line (`Pager look="pill"`); a step down, the counters as
-  links (`SmartButton look="link"`) and the state; the band is the ground; and the actions
-  float in ONE pill at the bottom, centred — a record's, and a list's (which turns into what is
-  done to the chosen rows while some are chosen). `placement="top"` rests a record's pill in
+- **modern**: the trail is the page's heading with the pager as a translucent primary pill on
+  its line (`Pager look="pill"`); a step down, the counters as links (`SmartButton
+look="link"`) and the state; the band is the ground; and the actions float in ONE pill at
+  the bottom, centred — a record's, and a list's. `placement="top"` rests a record's pill in
   the rail and floats it at the top on scroll.
 
-The state is Odoo's track in both styles. Each stage can carry an `icon`, a `hint` (said when
-pointed at) and a `count` (how many are there, in a list grouped by stage); `StatusBar look`
-has the other widgets — `progress`, `steps` and `pill` (one chip that unfolds the stages) —,
-side by side in `3 · Componentes/Registro/Riel, estado y contadores` with the two pagers and
-the two kinds of counter. `Record.Status look` picks one.
+**The state.** `StatusBar look`: `track` (Odoo's — the traditional style's), `segmented` (a
+pill of pills, the actions' shape — the modern style's), `steps`, `progress` and `pill` (one chip that unfolds the stages). Each
+stage can carry an `icon`, an `activeIcon` (worn when it is the current or the chosen one:
+○ → ◉), a `hint` (said when pointed at) and a `count` (how many are there, in a list grouped by
+stage). `display` says what a stage shows — `both`, `label`, `icon` (the name said to a screen
+reader and on hover) or `current` (the icons, and the current stage's name) —, and
+`renderStage` draws a stage your way inside the system's segment, which keeps the order, the
+paint, the focus and the names. `Record.Status look` picks one; all side by side in
+`3 · Componentes/Registro/Riel, estado y contadores`.
 
 #### Keyboard shortcuts that run
 
@@ -411,7 +438,7 @@ stack: the record in a peek over the page answers, not the page under it.
 
 A combination with a modifier works while a field is being typed in; a bare key does not.
 
-#### Experimental: the record's actions floating (`Record.Dock`)
+#### The record's actions floating (`Record.Dock`)
 
 The «settings» style floats Save and Discard in a dark pill; `Record.Dock` tries that pill for
 ALL of a record's actions. In place of `Record.Actions`, the actions are written as data, and the

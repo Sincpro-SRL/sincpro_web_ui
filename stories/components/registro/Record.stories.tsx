@@ -7,6 +7,7 @@ import {
   SmartButtons,
   type Stage,
   StatusBar,
+  type StatusDisplay,
   type StatusLook,
   SurfaceProvider,
   Tabs,
@@ -16,6 +17,9 @@ import {
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   BookOpen,
+  Circle,
+  CircleCheck,
+  CircleDot,
   CreditCard,
   FileText,
   History,
@@ -146,6 +150,11 @@ const INVOICE_STAGES: Stage[] = [
 
 const LOOKS: { look: StatusLook; name: string; note: string }[] = [
   { look: "track", name: "Pista", note: "la de Odoo — la de los dos estilos" },
+  {
+    look: "segmented",
+    name: "Segmentada",
+    note: "una píldora de píldoras, como las acciones",
+  },
   { look: "progress", name: "Progreso", note: "cuánto falta, de un vistazo" },
   { look: "steps", name: "Pasos", note: "puntos unidos por una línea" },
   { look: "pill", name: "Ficha", note: "una sola, para donde no hay lugar" },
@@ -315,7 +324,7 @@ export const EstadoElegible: Story = {
  * elige de qué etapa se habla.
  */
 export const EstadoEnCuatroFormas: Story = {
-  name: "Estado · cuatro formas",
+  name: "Estado · las formas",
   args: { stages: STAGES, current: "sale" },
   render: function Render() {
     const [viewed, setViewed] = useState("posted");
@@ -360,6 +369,90 @@ export const EstadoEnCuatroFormas: Story = {
    se lee en la actividad, a la derecha o debajo (`3 · Componentes/Actividad`). Tenerla
    también acá arriba eran dos lugares para una cosa, y el de arriba obligaba a
    desplegar algo ENCIMA del registro para leerlo. */
+
+/**
+ * **La forma segmentada y lo que muestra cada etapa** — `( Borrador | Publicada | Pagada )`, la
+ * forma de la píldora de acciones. Con `display` cada etapa muestra su ícono y su nombre
+ * (`both`), sólo el nombre (`label`), sólo el ícono (`icon` — el nombre se dice al lector de
+ * pantalla y al pasar el mouse) o los íconos y el nombre de la actual (`current`). `activeIcon`
+ * es el ícono de la etapa cuando es la actual o la elegida (○ → ◉), y `renderStage` dibuja una
+ * etapa a tu manera dentro del segmento del sistema, que sigue poniendo el orden, el color, el
+ * foco y los nombres.
+ */
+export const EstadoSegmentado: Story = {
+  name: "Estado · segmentado, íconos y lo que muestra",
+  args: { stages: STAGES, current: "sale" },
+  render: function Render() {
+    const [viewed, setViewed] = useState("review");
+    const flow: Stage[] = [
+      { id: "draft", label: "Borrador", icon: Circle, activeIcon: CircleDot },
+      { id: "review", label: "En revisión", icon: Circle, activeIcon: CircleDot },
+      { id: "signed", label: "Firmado", icon: Circle, activeIcon: CircleCheck },
+    ];
+    const DISPLAYS: { display: StatusDisplay; name: string; note: string }[] = [
+      { display: "both", name: "Ícono y nombre", note: 'display="both" — el de siempre' },
+      { display: "label", name: "Sólo nombres", note: 'display="label"' },
+      { display: "icon", name: "Sólo íconos", note: 'display="icon" — el nombre al pasar' },
+      { display: "current", name: "El nombre de la actual", note: 'display="current"' },
+    ];
+    return (
+      <div className="max-w-4xl bg-ground p-8">
+        {DISPLAYS.map(({ display, name, note }) => (
+          <Row key={display} name={name} note={note}>
+            <StatusBar
+              stages={flow}
+              current="review"
+              look="segmented"
+              display={display}
+              layout="trail"
+            />
+          </Row>
+        ))}
+        <Row name="Elegible" note="la elegida también usa su activeIcon">
+          <StatusBar
+            stages={flow}
+            current="review"
+            look="segmented"
+            layout="trail"
+            selected={viewed}
+            onSelect={setViewed}
+          />
+        </Row>
+        <Row name="A tu manera" note="renderStage: cuánto lleva en cada etapa">
+          <StatusBar
+            stages={flow}
+            current="review"
+            look="segmented"
+            layout="trail"
+            renderStage={(stage, { step }) => (
+              <>
+                <span>{stage.label}</span>
+                {step === "current" ? (
+                  <span className="rounded-pill bg-surface/20 px-1.5 text-micro">3 días</span>
+                ) : null}
+              </>
+            )}
+          />
+        </Row>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const lists = canvas.getAllByRole("list", { name: "Estado" });
+    // Only icons: the names are still SAID, one per stage.
+    const icons = lists[2]!;
+    await expect(within(icons).getByText("En revisión")).toHaveClass("sr-only");
+    // The current one's name: seen on the current stage, said on the others.
+    const current = lists[3]!;
+    await expect(within(current).getByText("En revisión")).not.toHaveClass("sr-only");
+    await expect(within(current).getByText("Borrador")).toHaveClass("sr-only");
+    // Choosing keeps working in the pill.
+    const chooser = canvas.getByRole("radiogroup", { name: "Estado" });
+    await userEvent.click(within(chooser).getByRole("radio", { name: /Firmado/ }));
+    await expect(within(chooser).getByRole("radio", { name: /Firmado/ })).toBeChecked();
+  },
+};
 
 /**
  * **Cada etapa con su ícono, su explicación y su cantidad** — la pista de Odoo, con lo que una

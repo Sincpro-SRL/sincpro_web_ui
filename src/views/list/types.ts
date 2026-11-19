@@ -266,7 +266,7 @@ export type ListChart<T> = {
 };
 
 /**
- * A list's actions FLOATING (experimental — `List.Dock`, the record's `ActionDock`): what the
+ * A list's actions FLOATING (`List.Dock`, the record's `ActionDock`): what the
  * list starts, as a pill in its bar, and what is done to the chosen rows, as a pill floating at
  * the bottom while some are chosen («3 elegidas ✕ · Enviar · Imprimir ▾ · ⋯») — the search
  * stays in the bar.
@@ -322,7 +322,7 @@ export type ListViewProps<T extends object> = {
   /** Escape hatch: a custom switcher. Prefer `presents` so the archetype draws it. */
   views?: ReactNode;
   actions?: ReactNode;
-  /** The actions floating (experimental): see `ListDock`. */
+  /** The actions floating: see `ListDock`. */
   dock?: ListDock;
 
   row: (item: T) => RowOf;

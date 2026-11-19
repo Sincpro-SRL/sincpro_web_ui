@@ -159,13 +159,13 @@ export function RecordHeader({
    *  is guessed from the rail: crumbs, pager or actions mean a page. */
   paper?: boolean;
   /**
-   * The record's actions FLOATING (experimental — `ActionDock`): in place of `actions` and of
+   * The record's actions FLOATING (`ActionDock`): in place of `actions` and of
    * Save / Discard on the rail, one pill that, at the top, sits over the paper and stays in
    * view as the record scrolls; at the bottom, the settings bar's place. The rail keeps where
    * I am, which of eighty, and the state.
    */
   dock?: RecordDockProps;
-  /** How the record is drawn — `traditional` or `modern` (experimental). Absent, the
+  /** How the record is drawn — `traditional` or `modern`. Absent, the
    *  `ViewStyleProvider`'s. See `style.tsx`. */
   look?: ViewStyle;
   /** The record body. It sits IN the paper with the title, so groups, tabs

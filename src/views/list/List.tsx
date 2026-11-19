@@ -172,7 +172,7 @@ const Search = slot("search", (_props: NodeProps): ReactNode => null);
 
 /** What STARTS something new. It stays visible when there is a selection. */
 const Actions = slot("actions", (_props: NodeProps): ReactNode => null);
-/** The list's actions FLOATING, as data (experimental): what it starts, as a pill in the bar;
+/** The list's actions FLOATING, as data: what it starts, as a pill in the bar;
  *  what is done to the chosen rows, as a pill floating at the bottom. See `ListDock`. */
 const Dock = slot("dock", (_props: ListDock): ReactNode => null);
 

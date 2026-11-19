@@ -3,7 +3,10 @@
 import { createContext, type ReactNode, useContext } from "react";
 
 /* ==================================================================== *
- *  THE VIEW STYLE — how a whole application draws its views. Set once. (experimental)
+ *  THE VIEW STYLE — how a whole application draws its views. Set once.
+ *
+ *  `modern` is the DIRECTION the system is taking — what new screens are drawn in and what
+ *  keeps being applied and refined —; `traditional` stays for the applications drawn in it.
  *
  *  traditional  the rail as an ERP has it: a band on top with the trail, the counters and the
  *               pager; the actions on its second row with the state. The default.

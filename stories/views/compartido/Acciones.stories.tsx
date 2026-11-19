@@ -154,7 +154,7 @@ function PedidosConAcciones() {
 }
 
 /**
- * **Las acciones de una lista, en el estilo moderno** (experimental, `List.Dock`): UNA píldora
+ * **Las acciones de una lista, en el estilo moderno** (`List.Dock`): UNA píldora
  * flotando abajo, centrada, como en el registro — «Importar · Exportar ▾ · Nueva cotización»,
  * la dorada última. Al elegir filas, la MISMA píldora pasa a ser lo que se les hace: «2 elegidos
  * ✕ · Enviar · Imprimir ▾ · ⋯». La barra se queda con las migas, el título y el buscador, y la

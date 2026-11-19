@@ -578,7 +578,7 @@ type Invoice = {
   balance: number;
 };
 const InvoiceContext = createContext<Invoice | null>(null);
-/** The invoice's actions FLOATING (`Record.Dock`, experimental) instead of on the rail. */
+/** The invoice's actions FLOATING (`Record.Dock`) instead of on the rail. */
 const DockedContext = createContext<false | "top" | "bottom">(false);
 
 function useInvoice(): Invoice {
@@ -1373,14 +1373,14 @@ export const Borrador: Story = {
 };
 
 /**
- * **Estilo moderno** (experimental — `ViewStyleProvider value="modern"`): la MISMA factura, con
+ * **Estilo moderno** (la dirección — `ViewStyleProvider value="modern"`): la MISMA factura, con
  * el mismo código. Las migas son el título de la página y el paginador va en su línea; un escalón
  * abajo, los contadores y el estado en pasos; y las acciones flotan en una píldora abajo, al
  * centro — «Registrar pago» dorada y última, «Enviar» e «Imprimir ▾» a la vista, en «Más ⋯» la
  * nota de crédito, duplicar y, aparte, lo que deshace.
  */
 export const EstiloModerno: Story = {
-  name: "Estilo moderno (experimental)",
+  name: "Estilo moderno",
   render: () => <Page docked="bottom" />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
@@ -1393,6 +1393,6 @@ export const EstiloModerno: Story = {
 /** **Estilo moderno, las acciones arriba**: descansan en el riel, al centro, y flotan arriba
  *  cuando el riel se va. */
 export const EstiloModernoArriba: Story = {
-  name: "Estilo moderno, acciones arriba (experimental)",
+  name: "Estilo moderno, acciones arriba",
   render: () => <Page docked="top" />,
 };

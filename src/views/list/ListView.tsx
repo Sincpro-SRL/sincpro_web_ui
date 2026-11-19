@@ -311,7 +311,7 @@ export function ListView<T extends object>({
       </>
     );
 
-  /* THE DOCK (experimental): the list's actions and what is done to the chosen rows, from the
+  /* THE DOCK: the list's actions and what is done to the chosen rows, from the
      same data. Where they go is the view style's: `traditional` draws them as the bar's buttons
      (the primary first and gold, «⋯» with the rest), and the chosen rows' in the bar in place of
      the search; `modern` floats ONE pill at the bottom, centred, as a record does — the list's

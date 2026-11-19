@@ -3,6 +3,7 @@ import assert from "node:assert/strict";
 import { Breadcrumb } from "@sincpro/web-ui/components/record/Breadcrumb";
 import { StatusBar } from "@sincpro/web-ui/components/record/StatusBar";
 import { useViewStyle, ViewStyleProvider } from "@sincpro/web-ui/foundations/viewStyle";
+import { Circle, CircleDot } from "lucide-react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { test } from "vitest";
 
@@ -65,4 +66,50 @@ test("el estilo se elige una vez alrededor de la app, y un registro puede decir 
     ),
     "traditional",
   );
+});
+
+test("the segmented state is a pill of pills, the current one filled", () => {
+  const html = renderToStaticMarkup(
+    <StatusBar stages={STAGES} current="posted" look="segmented" layout="trail" />,
+  );
+  assert.match(html, /^<ol[^>]*rounded-pill/);
+  assert.equal(html.match(/<li[^>]*rounded-pill/g)?.length, 3);
+  assert.match(html, /aria-current="step"[^>]*class="[^"]*bg-primary/);
+});
+
+test("what a stage shows: only icons says the names; a stage with no icon shows its number", () => {
+  const html = renderToStaticMarkup(
+    <StatusBar stages={STAGES} current="posted" display="icon" layout="trail" />,
+  );
+  assert.equal(html.match(/class="sr-only[^"]*">(Borrador|Publicada|Pagada)</g)?.length, 3);
+  assert.match(html, /title="Borrador"/);
+  assert.match(html, />1<\/span>/);
+});
+
+test("only the current stage's name is seen; its active icon is worn", () => {
+  const html = renderToStaticMarkup(
+    <StatusBar
+      stages={STAGES.map((one) => ({ ...one, icon: Circle, activeIcon: CircleDot }))}
+      current="posted"
+      display="current"
+      layout="trail"
+    />,
+  );
+  assert.equal(html.match(/class="sr-only[^"]*">/g)?.length, 2);
+  assert.doesNotMatch(html, /class="sr-only[^"]*">Publicada/);
+  assert.equal(html.match(/lucide-circle-dot/g)?.length, 1);
+});
+
+test("renderStage draws inside the system's segment, told where the stage is", () => {
+  const html = renderToStaticMarkup(
+    <StatusBar
+      stages={STAGES}
+      current="posted"
+      look="segmented"
+      layout="trail"
+      renderStage={(stage, { step, index }) => `${index}:${stage.label}:${step}`}
+    />,
+  );
+  assert.match(html, /0:Borrador:done/);
+  assert.match(html, /aria-current="step"[^>]*>1:Publicada:current/);
 });

@@ -182,7 +182,8 @@ type StatusProps = {
   failed?: boolean;
   /** The stages can be chosen: pressing one moves the record there (a CRM's pipeline). */
   onSelect?: (id: string) => void;
-  /** Which widget draws it — `track`, Odoo's, by default in both styles (`StatusLook`). */
+  /** Which widget draws it (`StatusLook`). Absent: `segmented` in the modern style, `track`
+   *  (Odoo's) in the traditional one. */
   look?: StatusLook;
   /** The status escape hatch, for whatever is neither of the two. */
   children?: ReactNode;
@@ -208,7 +209,7 @@ const Smart = slot("smart", (_props: SmartProps): ReactNode => null);
  *  rest stay here. Nothing to declare: see THE THUMB BAR in `RecordHeader`. */
 const Actions = slot("actions", (_props: ActionsProps): ReactNode => null);
 
-/** The actions FLOATING, as data (experimental — `ActionDock`): in place of `Record.Actions`,
+/** The actions FLOATING, as data (`ActionDock`): in place of `Record.Actions`,
  *  one pill over the paper that stays in view as the record scrolls, «Más» with the rest and
  *  their sub-actions, and Save / Discard in the same pill while there are changes. */
 type DockProps = RecordDockProps;
@@ -347,7 +348,7 @@ export type RecordProps = {
    * whole tree under the paper the moment one of them appears or goes away.
    */
   placement?: "page" | "card";
-  /** How this record is drawn — `traditional` or `modern` (experimental). Absent, the
+  /** How this record is drawn — `traditional` or `modern`. Absent, the
    *  `ViewStyleProvider`'s: an application chooses once. */
   look?: ViewStyle;
   children?: ReactNode;
@@ -415,7 +416,13 @@ export function Record({
             current={status.current ?? status.stages[0]?.id ?? ""}
             failed={status.failed ?? false}
             surface={surface}
-            {...(status.look === undefined ? {} : { look: status.look })}
+            /* The modern style's state is a pill of pills — the actions' shape; the
+               traditional one, Odoo's track. `Record.Status look` says its own. */
+            {...(status.look !== undefined
+              ? { look: status.look }
+              : look === "modern"
+                ? { look: "segmented" as const }
+                : {})}
             {...(status.onSelect === undefined ? {} : { onSelect: status.onSelect })}
           />
         )}

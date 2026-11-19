@@ -27,7 +27,7 @@ import { MoreHorizontal } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
 
 /* ==================================================================== *
- *  THE ACTION DOCK — the record's actions, floating. (experimental)
+ *  THE ACTION DOCK — the record's actions, floating: the modern style's.
  *
  *  Context: the «settings» form style floats Save and Discard in a dark pill at the bottom,
  *  and it read as an identity of its own. This tries the same pill for ALL of a record's

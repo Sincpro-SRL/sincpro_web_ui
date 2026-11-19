@@ -24,7 +24,7 @@ export {
   DensityProvider,
   useDensity,
 } from "@sincpro/web-ui/foundations/density";
-/* How a whole application draws its views — `traditional` or `modern` (experimental): the
+/* How a whole application draws its views — `traditional` or `modern` (the direction): the
    record's rail and the actions of a record and of a list. Set once, like the density. */
 export {
   useViewStyle,
