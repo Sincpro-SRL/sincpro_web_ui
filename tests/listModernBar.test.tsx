@@ -87,3 +87,30 @@ test("traditional is unchanged: small crumbs, the title as the visible heading",
   assert.match(html, /<h2 class="text-title[^"]*">Pagos<\/h2>/);
   assert.doesNotMatch(html, INSIDE_THE_TRAIL_AT_TITLE_SIZE);
 });
+
+test("modern: the counters are mini stats under the bar, not words beside the trail", () => {
+  const html = renderToStaticMarkup(
+    <ViewStyleProvider value="modern">
+      <List<Payment> items={PAYMENTS} keyOf={(p) => p.id}>
+        <List.Bar>
+          <List.Crumbs crumbs={CRUMBS} />
+          <List.Identity
+            title="Pagos"
+            counters={[
+              { label: "en revisión", value: 1 },
+              { label: "aprobados", value: 1 },
+            ]}
+          />
+        </List.Bar>
+        <List.Table<Payment>
+          columns={[{ id: "detail", header: "Detalle", value: (p) => p.detail }]}
+        />
+      </List>
+    </ViewStyleProvider>,
+  );
+  const trail = html.slice(html.indexOf("<nav"), html.indexOf("</nav>"));
+  assert.doesNotMatch(trail, /en revisión/);
+  // Each counter is a metric of its own, after the bar and before the rows.
+  assert.equal(html.match(/data-ui="metric"/g)?.length, 2);
+  assert.ok(html.indexOf('data-ui="metric"') < html.indexOf("<table"));
+});

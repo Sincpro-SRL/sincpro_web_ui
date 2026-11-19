@@ -49,6 +49,7 @@ import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { Empty, Failed, Skeleton } from "@sincpro/web-ui/primitives/notice/Notice";
 import { PivotTable } from "@sincpro/web-ui/primitives/table/PivotTable";
 import { ReportTable } from "@sincpro/web-ui/primitives/table/ReportTable";
+import { Metric, Metrics } from "@sincpro/web-ui/primitives/value/Metric";
 import { ProgressBar } from "@sincpro/web-ui/primitives/value/ProgressBar";
 import { groupedColumnIds, WIDE_PRESENTS } from "@sincpro/web-ui/views/list/columns";
 import {
@@ -426,6 +427,30 @@ export function ListView<T extends object>({
   /* The chosen rows' pill floats: the bar keeps its search, and does not say the count. */
   const barSelection = floatsChosen ? undefined : selection;
 
+  /* THE COUNTERS, in the modern style, are mini stats under the bar — with the metrics, where a
+     list's numbers are read —, not words beside its trail, where they read as more crumbs. */
+  const statsBelow =
+    modern && !embedded && density === "comfortable" && identity?.counters !== undefined;
+  const counterStats =
+    !statsBelow || identity?.counters === undefined ? undefined : (
+      <Metrics>
+        {identity.counters.map((c) => (
+          <Metric key={c.label} value={c.value} label={c.label} />
+        ))}
+      </Metrics>
+    );
+  const stats =
+    counterStats === undefined ? (
+      metrics
+    ) : metrics === undefined ? (
+      counterStats
+    ) : (
+      <div className="flex flex-col gap-2">
+        {counterStats}
+        {metrics}
+      </div>
+    );
+
   const bar = !barHasControls ? undefined : (
     <ListingBar
       surface={surface}
@@ -445,7 +470,9 @@ export function ListView<T extends object>({
       {...(actions === undefined ? {} : { actions })}
       {...(identity?.title === undefined ? {} : { title: identity.title })}
       {...(identity?.description === undefined ? {} : { description: identity.description })}
-      {...(identity?.counters === undefined ? {} : { counters: identity.counters })}
+      {...(identity?.counters === undefined || statsBelow
+        ? {}
+        : { counters: identity.counters })}
       {...(barSelection === undefined
         ? {}
         : {
@@ -870,10 +897,10 @@ export function ListView<T extends object>({
            for a collection of a dozen rows. */
         sticky={!embedded}
         {...(surface === undefined ? {} : { surface })}
-        {...(metrics === undefined
+        {...(stats === undefined
           ? {}
           : {
-              metrics: <div className="px-3.5">{metrics}</div>,
+              metrics: <div className="px-3.5">{stats}</div>,
             })}
       >
         {loading ? <Skeleton label={copy.failed.loading} /> : null}

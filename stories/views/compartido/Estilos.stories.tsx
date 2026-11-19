@@ -27,9 +27,9 @@ export default meta;
 type Story = StoryObj<DockArgs>;
 
 /**
- * **Un registro, moderno.** Las migas son el título («Ventas › Facturas › FAC/2026/0119»), con los
- * contadores en su línea —cajas, como en el tradicional— y el paginador en su píldora; un escalón
- * abajo, el estado. Las acciones flotan en una píldora ABAJO, al centro: «Enviar», «Imprimir ▾»,
+ * **Un registro, moderno.** Las migas son el título («Ventas › Facturas › FAC/2026/0119») y el
+ * paginador va en su píldora; un escalón abajo, lo que el registro tiene —los contadores, cajas— y
+ * dónde está —el estado—. Las acciones flotan en una píldora ABAJO, al centro: «Enviar», «Imprimir ▾»,
  * «⋯» y «Registrar pago» dorada y última. Escribí en «Referencia del cliente»: la misma píldora
  * pasa a «1 cambio · Descartar · Guardar», y dice «Guardado».
  */
@@ -170,9 +170,10 @@ function Pedidos({
 }
 
 /**
- * **Una lista, moderna.** Las migas son el encabezado, con su «?» (de qué está hecha) y sus
- * contadores; el rango, la píldora del paginador. La segunda fila es cómo se mira el conjunto: el
- * buscador al centro, ordenar, columnas y las caras. Las acciones flotan abajo de la pantalla, al
+ * **Una lista, moderna.** Las migas son el encabezado, con su «?» (de qué está hecha); el rango,
+ * la píldora del paginador. La segunda fila es cómo se mira el conjunto: el buscador al centro,
+ * ordenar, columnas y las caras. Los contadores, debajo, como mini estadísticas — el lugar de los
+ * números de una lista, como el tablero de Odoo. Las acciones flotan abajo de la pantalla, al
  * centro, en la píldora que dice sobre qué actúan: «Pedidos │ Importar · Exportar · Nueva
  * cotización». Al pasar por una fila, sus entradas —👁, ↗, «Abrir en…»— en una píldora al final.
  */

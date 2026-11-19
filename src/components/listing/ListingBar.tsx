@@ -47,15 +47,16 @@ import type { ReactNode } from "react";
  *  ── The modern style: the trail is the heading ──────────────────────
  *
  *      ┌──────────────────────────────────────────────────────────────────┐
- *      │ Ventas › Andina › Pedidos (?) 64 · 112 · 11        ( 1–12 / 12 ‹ › ) │
+ *      │ Ventas › Andina › Pedidos (?)                       ( 1–12 / 12 ‹ › ) │
  *      │                     🔍 search…                  [sort][cols] [▤▦] │
  *      └──────────────────────────────────────────────────────────────────┘
  *              ( Pedidos │ Importar · Exportar ▾ · + Nueva cotización )   ← floats
  *
  *  As a record in the modern style, WHERE I AM is the page's heading: the trail at the
  *  title's size (`Breadcrumb size="lg"`), its last crumb the list's name — so the title is
- *  not said twice —, what the list is made of on demand (`Hint`) and its counters beside
- *  it, and the page range at the other end, as the record's pager pill. The second row is
+ *  not said twice —, what the list is made of on demand (`Hint`), and the page range at the
+ *  other end, as the record's pager pill. Its counters are not here: beside the trail they
+ *  read as more crumbs; the list draws them as mini stats under the bar (`List.Metrics`). The second row is
  *  how I look at the set: the search centred, sort, columns and the faces. The list's actions
  *  float at the bottom of the screen in a pill named by the list (`List.Dock`), which turns
  *  into what is done to the chosen rows while some are chosen; given `placement="bar"`, or
@@ -361,24 +362,6 @@ export function ListingBar({
   /* THE MODERN BAR — see «The modern style» above. Only with room for an identity:
      compact (a drawer, a phone) keeps the one bar. */
   const modern = look === "modern" && withIdentity;
-  /* Its counters, in the modern heading's line: how much there is of each kind, small. */
-  const counted =
-    counters === undefined ? null : (
-      <span className="flex min-w-0 flex-wrap items-baseline gap-x-3">
-        {counters.map((c) => (
-          <span key={c.label} className="flex items-baseline gap-1">
-            <span
-              className={`text-meta font-medium tabular-nums ${isChrome ? "text-chrome-ink" : "text-ink"}`}
-            >
-              {typeof c.value === "number" ? c.value.toLocaleString(copy.locale) : c.value}
-            </span>
-            <span className={`text-micro ${isChrome ? "text-chrome-muted" : "text-muted"}`}>
-              {c.label}
-            </span>
-          </span>
-        ))}
-      </span>
-    );
   const modernBar = !modern ? null : (
     <div className={`flex min-w-0 flex-col ${byDensity(d, "gap-2", "gap-1.5")}`}>
       <Line
@@ -396,7 +379,6 @@ export function ListingBar({
             {/* What the list is made of, on demand: a sentence on the controls' row was a
                 line read once and then in the way. */}
             {description === undefined ? null : <Hint>{description}</Hint>}
-            {counted}
           </div>
         }
         end={pagination}
