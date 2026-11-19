@@ -5,8 +5,10 @@ import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
 import { cn, focusRing, tv } from "@sincpro/web-ui/foundations/variants";
-import { Check, CircleAlert } from "lucide-react";
-import { Radio, RadioGroup } from "react-aria-components";
+import { MenuList } from "@sincpro/web-ui/primitives/menu/Menu";
+import { Popover } from "@sincpro/web-ui/primitives/overlay/Popover";
+import { Check, ChevronDown, CircleAlert } from "lucide-react";
+import { Button as AriaButton, MenuTrigger, Radio, RadioGroup } from "react-aria-components";
 
 /* ---------------------------------------------------------------- *
  *  THE STATE · 1 · the stage bar
@@ -126,6 +128,18 @@ const stageStyles = tv({
  *  and the stage being VIEWED (`selected`, the underline, the checked radio) are two
  *  different things and are painted differently. Without `onSelect` it is a plain
  *  ordered list and the current stage is `aria-current="step"`. */
+/**
+ * How the state is drawn — the same stages, four widgets:
+ *
+ *     track     Odoo's statusbar: segments of one well, the current one filled. The default.
+ *     steps     dots joined by a line, the current one ringed.
+ *     progress  a segmented bar with each stage's name under its segment: how far it is, at a
+ *               glance, and where — the record's modern style.
+ *     pill      ONE chip, «● Publicada · 2/3», that unfolds the stages when they can be chosen:
+ *               the state where room is short.
+ */
+export type StatusLook = "track" | "steps" | "progress" | "pill";
+
 export function StatusBar({
   stages,
   current,
@@ -155,7 +169,7 @@ export function StatusBar({
    * record's «modern» style, where the state sits on the ground beside the counters and a
    * filled well was one more box among them.
    */
-  look?: "track" | "steps";
+  look?: StatusLook;
 }) {
   const d = useDensity();
   const surface = useSurface(surfaceProp);
@@ -206,6 +220,187 @@ export function StatusBar({
   }
 
   const track = trackStyles({ surface, layout: shape });
+
+  if (look === "pill") {
+    const chrome = surface === "chrome";
+    const now = stages[at];
+    const dot = failed
+      ? chrome
+        ? "bg-chrome-bad"
+        : "bg-danger"
+      : chrome
+        ? "bg-chrome-link"
+        : "bg-primary";
+    /* Its name is what it shows, said first what it is: «Estado: Publicada 2/3». As a button
+       the name comes from its content (voice control matches what is SEEN); a status takes no
+       name from content, so it says it in a label. */
+    const said = `${copy.record.status}: ${now?.label ?? current} ${at + 1}/${stages.length}`;
+    const chip = (
+      <>
+        <span aria-hidden className={`size-2 shrink-0 rounded-pill ${dot}`} />
+        <span className="font-semibold">{now?.label ?? current}</span>
+        <span className={`tabular-nums ${chrome ? "text-chrome-muted" : "text-muted"}`}>
+          {`${at + 1}/${stages.length}`}
+        </span>
+      </>
+    );
+    const frame = `inline-flex h-(--size-control-sm) shrink-0 items-center gap-1.5 rounded-pill border px-2.5 text-meta ${
+      chrome
+        ? "border-chrome-ink/20 bg-chrome-ink/8 text-chrome-ink"
+        : "border-line-strong bg-surface text-ink"
+    }`;
+    if (!selectable) {
+      return (
+        <span
+          role="status"
+          aria-label={said}
+          data-failed={failed ? true : undefined}
+          className={frame}
+        >
+          {chip}
+        </span>
+      );
+    }
+    /* The chip IS the trigger: the same face, a chevron added — the stages open below it. */
+    return (
+      <MenuTrigger>
+        <AriaButton
+          className={({ isFocusVisible }) =>
+            cn(
+              frame,
+              "cursor-pointer transition-colors duration-(--duration-instant)",
+              chrome
+                ? "hover:bg-chrome-ink/14"
+                : "hover:border-primary/45 hover:bg-primary/5",
+              isFocusVisible && "outline-2 outline-offset-2 outline-primary",
+            )
+          }
+        >
+          <span className="sr-only">{`${copy.record.status}: `}</span>
+          {chip}
+          <ChevronDown
+            className={`size-(--size-icon-sm) ${chrome ? "text-chrome-muted" : "text-muted"}`}
+            strokeWidth={2}
+            aria-hidden
+          />
+        </AriaButton>
+        <Popover placement="bottom end" className="min-w-44">
+          <MenuList
+            label={copy.record.status}
+            closeOnSelect
+            emptyText=""
+            width="sm"
+            groups={[
+              {
+                options: stages.map((stage) => ({
+                  id: stage.id,
+                  label: stage.label,
+                  checked: stage.id === (selected ?? current),
+                })),
+              },
+            ]}
+            onAction={(id) => onSelect?.(String(id))}
+          />
+        </Popover>
+      </MenuTrigger>
+    );
+  }
+
+  if (look === "progress" && !stacked) {
+    const chrome = surface === "chrome";
+    const barOf = (step: "done" | "current" | "next") =>
+      step === "current"
+        ? failed
+          ? chrome
+            ? "bg-chrome-bad"
+            : "bg-danger"
+          : chrome
+            ? "bg-chrome-link"
+            : "bg-primary"
+        : step === "done"
+          ? chrome
+            ? "bg-chrome-link/45"
+            : "bg-primary/40"
+          : chrome
+            ? "bg-chrome-ink/15"
+            : "bg-ink/10";
+    const labelOf = (step: "done" | "current" | "next") =>
+      step === "current"
+        ? `font-semibold ${chrome ? "text-chrome-ink" : "text-ink"}`
+        : step === "done"
+          ? chrome
+            ? "text-chrome-ink"
+            : "text-ink"
+          : chrome
+            ? "text-chrome-muted"
+            : "text-muted";
+    const segment = (stage: Stage, i: number, viewed: boolean) => {
+      const where = stepOf(i);
+      return (
+        <>
+          <span aria-hidden className={`block h-1.5 w-full rounded-pill ${barOf(where)}`} />
+          <span
+            aria-current={where === "current" && selectable ? "step" : undefined}
+            className={cn(
+              "mt-1 flex min-w-0 items-center gap-1 text-micro whitespace-nowrap",
+              labelOf(where),
+              viewed && "underline decoration-2 underline-offset-4",
+            )}
+          >
+            {where === "done" ? (
+              <Check className="size-3 shrink-0" strokeWidth={2.5} aria-hidden />
+            ) : where === "current" && failed ? (
+              <CircleAlert className="size-3 shrink-0" strokeWidth={2.5} aria-hidden />
+            ) : null}
+            <span className="min-w-0 truncate">{stage.label}</span>
+          </span>
+        </>
+      );
+    };
+    /* Each stage asks for room for its name: squeezed, «Borrador Publicada» read as one. */
+    const row = "grid shrink-0 auto-cols-fr grid-flow-col gap-1.5";
+    if (!selectable) {
+      return (
+        <ol aria-label={copy.record.status} data-look="progress" className={row}>
+          {stages.map((stage, i) => (
+            <li
+              key={stage.id}
+              aria-current={stepOf(i) === "current" ? "step" : undefined}
+              data-failed={stepOf(i) === "current" && failed ? true : undefined}
+              className="flex w-24 min-w-0 flex-col"
+            >
+              {segment(stage, i, false)}
+            </li>
+          ))}
+        </ol>
+      );
+    }
+    return (
+      <RadioGroup
+        aria-label={copy.record.status}
+        orientation="horizontal"
+        {...(selected === undefined ? {} : { value: selected })}
+        onChange={onSelect}
+        data-look="progress"
+        className={row}
+      >
+        {stages.map((stage, i) => (
+          <Radio
+            key={stage.id}
+            value={stage.id}
+            className={({ isFocusVisible }) =>
+              cn(
+                "flex w-24 min-w-0 cursor-pointer flex-col rounded-mark",
+                isFocusVisible && "outline-2 outline-offset-2 outline-primary",
+              )
+            }
+          >
+            {({ isSelected }) => segment(stage, i, isSelected)}
+          </Radio>
+        ))}
+      </RadioGroup>
+    );
+  }
 
   if (look === "steps" && !stacked) {
     const chrome = surface === "chrome";

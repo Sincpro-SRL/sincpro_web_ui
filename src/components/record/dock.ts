@@ -73,24 +73,54 @@ export function dockPlan(actions: readonly DockAction[], visible = 2): DockPlan 
   return { primary, shown, more, danger };
 }
 
-/** An action as a menu row — its sub-actions as a submenu. */
-export function dockOption(action: DockAction): MenuOption {
+/** How a combination is drawn — the platform's way («⌥D», «Alt+D»); as written without one. */
+export type KeysLabel = (keys: string) => string;
+
+/** An action as a menu row — its sub-actions as a submenu, its shortcut drawn for this
+ *  keyboard. */
+export function dockOption(
+  action: DockAction,
+  label: KeysLabel = (keys) => keys,
+): MenuOption {
   return {
     id: action.id,
     label: action.label,
     ...(action.icon === undefined ? {} : { icon: action.icon }),
     ...(action.hint === undefined ? {} : { hint: action.hint }),
-    ...(action.shortcut === undefined ? {} : { shortcut: action.shortcut }),
+    ...(action.shortcut === undefined ? {} : { shortcut: label(action.shortcut) }),
     ...(action.disabled === undefined ? {} : { disabled: action.disabled }),
+    ...(action.danger === true ? { danger: true } : {}),
     ...(action.onSelect === undefined ? {} : { onSelect: action.onSelect }),
-    ...(action.items === undefined ? {} : { items: action.items.map(dockOption) }),
+    ...(action.items === undefined
+      ? {}
+      : { items: action.items.map((one) => dockOption(one, label)) }),
   };
 }
 
 /** «Más» as menu groups: the rest, then the destructive ones apart. */
-export function moreGroups(plan: DockPlan): MenuGroup[] {
+export function moreGroups(plan: DockPlan, label?: KeysLabel): MenuGroup[] {
+  const option = (one: DockAction) => dockOption(one, label);
   return [
-    ...(plan.more.length === 0 ? [] : [{ options: plan.more.map(dockOption) }]),
-    ...(plan.danger.length === 0 ? [] : [{ options: plan.danger.map(dockOption) }]),
+    ...(plan.more.length === 0 ? [] : [{ options: plan.more.map(option) }]),
+    ...(plan.danger.length === 0 ? [] : [{ options: plan.danger.map(option) }]),
   ];
+}
+
+/**
+ * The combinations a dock answers: every action with a `shortcut` — sub-actions and what waits
+ * in «Más» included, a shortcut is how one reaches what is not in sight. None while there are
+ * changes: the actions are not there, and Save answers Mod+S itself (`DirtyActions`).
+ */
+export function dockShortcuts(
+  actions: readonly DockAction[],
+  dirty = false,
+): { keys: string; run: () => void; enabled: boolean }[] {
+  if (dirty) return [];
+  const all = (list: readonly DockAction[]): DockAction[] =>
+    list.flatMap((one) => [one, ...(one.items === undefined ? [] : all(one.items))]);
+  return all(actions).flatMap((one) =>
+    one.shortcut === undefined || one.onSelect === undefined
+      ? []
+      : [{ keys: one.shortcut, run: one.onSelect, enabled: one.disabled !== true }],
+  );
 }

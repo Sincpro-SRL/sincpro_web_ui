@@ -9,12 +9,19 @@ import {
   type DockAction,
   dockOption,
   dockPlan,
+  dockShortcuts,
   moreGroups,
 } from "@sincpro/web-ui/components/record/dock";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { keysLabel } from "@sincpro/web-ui/foundations/keys";
+import {
+  useKeyboardPlatform,
+  useKeysHint,
+  useShortcuts,
+} from "@sincpro/web-ui/foundations/shortcut";
 import { stickyTop } from "@sincpro/web-ui/foundations/sticky";
 import { SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
-import { Button } from "@sincpro/web-ui/primitives/button/Button";
+import { Button, type ButtonRole } from "@sincpro/web-ui/primitives/button/Button";
 import { Menu } from "@sincpro/web-ui/primitives/menu/Menu";
 import { MoreHorizontal } from "lucide-react";
 import type { CSSProperties, ReactNode } from "react";
@@ -75,6 +82,36 @@ export interface ActionDockProps {
 
 const PILL = { "--ui-button-radius": "var(--radius-pill)" } as CSSProperties;
 
+/** One action as a button, its shortcut in its title and in `aria-keyshortcuts`. */
+function DockButton({
+  action,
+  role,
+  size,
+  surface,
+}: {
+  action: DockAction;
+  role: ButtonRole;
+  size?: "sm";
+  surface: "canvas" | "chrome";
+}) {
+  const hint = useKeysHint(action.shortcut);
+  return (
+    <Button
+      role={role}
+      {...(size === undefined ? {} : { size })}
+      surface={surface}
+      {...(action.icon === undefined ? {} : { icon: action.icon })}
+      {...(action.disabled === undefined ? {} : { disabled: action.disabled })}
+      {...(action.onSelect === undefined ? {} : { onClick: action.onSelect })}
+      {...(hint === undefined
+        ? {}
+        : { title: `${action.label} (${hint.label})`, "aria-keyshortcuts": hint.aria })}
+    >
+      {action.label}
+    </Button>
+  );
+}
+
 /** Where a record's actions go: as the rail's buttons, or floating — resting in the rail and
  *  detaching on scroll (`top`), or at the bottom of the screen (`bottom`). Absent, the record's
  *  style decides: `traditional` → `rail`, `modern` → `bottom`. */
@@ -97,8 +134,11 @@ function Bare({
   Pick<ActionDockProps, "dirty" | "saved" | "label">) {
   const copy = useUiCopy();
   const surface = useSurface();
+  const platform = useKeyboardPlatform();
+  const label_ = (keys: string) => keysLabel(keys, platform);
   const plan = dockPlan(actions, visible);
-  const more = moreGroups(plan);
+  const more = moreGroups(plan, label_);
+  const tone = surface === "chrome" ? "chrome" : "canvas";
   if (dirty !== undefined) {
     return (
       <div className="flex shrink-0 items-center gap-1.5">
@@ -114,32 +154,17 @@ function Bare({
       className="flex shrink-0 items-center gap-1.5"
     >
       {plan.primary === undefined ? null : (
-        <Button
-          role="primary"
-          size="sm"
-          surface={surface}
-          {...(plan.primary.icon === undefined ? {} : { icon: plan.primary.icon })}
-          {...(plan.primary.disabled === undefined
-            ? {}
-            : { disabled: plan.primary.disabled })}
-          {...(plan.primary.onSelect === undefined ? {} : { onClick: plan.primary.onSelect })}
-        >
-          {plan.primary.label}
-        </Button>
+        <DockButton action={plan.primary} role="primary" size="sm" surface={tone} />
       )}
       {plan.shown.map((action) =>
         action.items === undefined ? (
-          <Button
+          <DockButton
             key={action.id}
+            action={action}
             role="secondary"
             size="sm"
-            surface={surface}
-            {...(action.icon === undefined ? {} : { icon: action.icon })}
-            {...(action.disabled === undefined ? {} : { disabled: action.disabled })}
-            {...(action.onSelect === undefined ? {} : { onClick: action.onSelect })}
-          >
-            {action.label}
-          </Button>
+            surface={tone}
+          />
         ) : (
           <Menu
             key={action.id}
@@ -148,7 +173,7 @@ function Bare({
             surface={surface === "chrome" ? "chrome" : "canvas"}
             label={action.label}
             {...(action.icon === undefined ? {} : { icon: action.icon })}
-            groups={[{ options: action.items.map(dockOption) }]}
+            groups={[{ options: action.items.map((one) => dockOption(one, label_)) }]}
           />
         ),
       )}
@@ -181,8 +206,10 @@ function Pill({
   look: "chrome" | "canvas";
 } & Pick<ActionDockProps, "dirty" | "saved" | "label" | "lead">) {
   const copy = useUiCopy();
+  const platform = useKeyboardPlatform();
+  const label_ = (keys: string) => keysLabel(keys, platform);
   const plan = dockPlan(actions, visible);
-  const more = moreGroups(plan);
+  const more = moreGroups(plan, label_);
   return (
     <SurfaceProvider value={look}>
       <div
@@ -203,16 +230,7 @@ function Pill({
             {lead}
             {plan.shown.map((action) =>
               action.items === undefined ? (
-                <Button
-                  key={action.id}
-                  role="ghost"
-                  surface={look}
-                  {...(action.icon === undefined ? {} : { icon: action.icon })}
-                  {...(action.disabled === undefined ? {} : { disabled: action.disabled })}
-                  {...(action.onSelect === undefined ? {} : { onClick: action.onSelect })}
-                >
-                  {action.label}
-                </Button>
+                <DockButton key={action.id} action={action} role="ghost" surface={look} />
               ) : (
                 <Menu
                   key={action.id}
@@ -220,7 +238,7 @@ function Pill({
                   surface={look}
                   label={action.label}
                   {...(action.icon === undefined ? {} : { icon: action.icon })}
-                  groups={[{ options: action.items.map(dockOption) }]}
+                  groups={[{ options: action.items.map((one) => dockOption(one, label_)) }]}
                 />
               ),
             )}
@@ -237,19 +255,7 @@ function Pill({
               />
             )}
             {plan.primary === undefined ? null : (
-              <Button
-                role="primary"
-                surface={look}
-                {...(plan.primary.icon === undefined ? {} : { icon: plan.primary.icon })}
-                {...(plan.primary.disabled === undefined
-                  ? {}
-                  : { disabled: plan.primary.disabled })}
-                {...(plan.primary.onSelect === undefined
-                  ? {}
-                  : { onClick: plan.primary.onSelect })}
-              >
-                {plan.primary.label}
-              </Button>
+              <DockButton action={plan.primary} role="primary" surface={look} />
             )}
             <SavedMark saved={saved === true} />
           </>
@@ -270,6 +276,9 @@ export function ActionDock({
   label,
   lead,
 }: ActionDockProps) {
+  /* The combinations run while the dock is on screen; while there are changes Save answers
+     Mod+S itself. */
+  useShortcuts(dockShortcuts(actions, dirty !== undefined));
   const pill =
     look === "bare" ? (
       <Bare

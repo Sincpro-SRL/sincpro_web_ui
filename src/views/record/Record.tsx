@@ -147,6 +147,8 @@ export type RecordPager = {
   total: number;
   onPrev?: () => void;
   onNext?: () => void;
+  /** The combinations that move — Alt+P and Alt+N by default, `false` for none. */
+  keys?: { prev: string; next: string } | false;
 };
 
 export type { SheetField };
@@ -407,8 +409,8 @@ export function Record({
             current={status.current ?? status.stages[0]?.id ?? ""}
             failed={status.failed ?? false}
             surface={surface}
-            /* The modern style's state is quieter: steps, not a filled well. */
-            {...(look === "modern" ? { look: "steps" as const } : {})}
+            /* The modern style's state: how far, at a glance — a segmented bar, not a filled well. */
+            {...(look === "modern" ? { look: "progress" as const } : {})}
             {...(status.onSelect === undefined ? {} : { onSelect: status.onSelect })}
           />
         )}
@@ -531,6 +533,9 @@ export function Record({
                       surface={surface}
                       {...(pager.onPrev === undefined ? {} : { onPrev: pager.onPrev })}
                       {...(pager.onNext === undefined ? {} : { onNext: pager.onNext })}
+                      {...(pager.keys === undefined ? {} : { keys: pager.keys })}
+                      /* The modern style's position stands out: a translucent pill. */
+                      look={look === "modern" ? "pill" : "plain"}
                     />
                   ),
                 })}
@@ -555,6 +560,8 @@ export function Record({
                           {...(s.count === undefined ? {} : { count: s.count })}
                           label={s.label}
                           layout={onTheRail && d === "comfortable" ? "inline" : "stacked"}
+                          /* The modern style's counters read as ways to another place. */
+                          look={look === "modern" ? "link" : "box"}
                           {...(s.onClick === undefined ? {} : { onClick: s.onClick })}
                         />
                       ))}

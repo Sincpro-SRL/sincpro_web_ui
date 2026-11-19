@@ -66,7 +66,7 @@ export function invoiceActions(did: (what: string) => void): DockAction[] {
         {
           id: "print-invoice",
           label: "Factura",
-          shortcut: "Ctrl+P",
+          shortcut: "Mod+P",
           onSelect: () => did("Imprimir · Factura"),
         },
         {
@@ -88,7 +88,13 @@ export function invoiceActions(did: (what: string) => void): DockAction[] {
       icon: Undo2,
       onSelect: () => did("Nota de crédito"),
     },
-    { id: "copy", label: "Duplicar", icon: Copy, onSelect: () => did("Duplicar") },
+    {
+      id: "copy",
+      label: "Duplicar",
+      icon: Copy,
+      shortcut: "Alt+D",
+      onSelect: () => did("Duplicar"),
+    },
     {
       id: "share",
       label: "Copiar el enlace",
@@ -164,7 +170,12 @@ export function DockedInvoice(args: DockArgs) {
                 { label: INVOICE.number },
               ]}
             />
-            <Record.Pager index={12} total={32} onPrev={() => {}} onNext={() => {}} />
+            <Record.Pager
+              index={12}
+              total={32}
+              onPrev={() => setLast("Anterior")}
+              onNext={() => setLast("Siguiente")}
+            />
             <Record.Smart
               links={[
                 { icon: CreditCard, count: 1, label: "pagos", onClick: () => {} },
@@ -240,6 +251,12 @@ export async function actionsWork(canvasElement: HTMLElement) {
   /* The menu comes in with a transition: seen once it has. */
   await waitFor(() => expect(voiding).toBeVisible());
   await userEvent.keyboard("{Escape}");
+
+  // The keyboard: Alt+D duplicates — from «Más», out of sight —, Alt+N goes to the next.
+  await userEvent.keyboard("{Alt>}d{/Alt}");
+  await waitFor(() => expect(canvas.getByText("Duplicar")).toBeVisible());
+  await userEvent.keyboard("{Alt>}n{/Alt}");
+  await waitFor(() => expect(canvas.getByText("Siguiente")).toBeVisible());
 
   // A change: Discard · Save where the actions were, and back after saving.
   const reference = canvas.getByRole("textbox", { name: "Referencia del cliente" });

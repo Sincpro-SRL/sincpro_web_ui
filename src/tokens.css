@@ -1196,8 +1196,15 @@
     /* Horizontal only. Removing `overflow: hidden` entirely uncovered something that
      * overflows sideways —a panel hidden off-screen, measured for
      * a width that is no longer its own— and without this brake one could scroll to
-     * the right to see it. The height stays free: that is what was being fixed. */
-    overflow-x: hidden;
+     * the right to see it. The height stays free: that is what was being fixed.
+     *
+     * `clip`, not `hidden`: `hidden` on one axis turns the other into `auto`, so the body was
+     * a scroll container in waiting. While a menu or a dialog is open React Aria locks the
+     * page (`overflow: hidden` on `html`), the body's overflow stops reaching the viewport,
+     * and the body BECAME the scroller — every sticky thing (a list's bar, a table's header,
+     * the floating actions) let go and slid away with the page, menu and all. `clip` cuts
+     * the same and is never a scroller. */
+    overflow-x: clip;
   }
 
   /* Tabular figures on everything monospaced: a column of rows has to line up

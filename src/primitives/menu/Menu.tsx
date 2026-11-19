@@ -125,6 +125,9 @@ export interface MenuOption {
    *  exist until it is opened. In an ERP the frequent verbs have a shortcut, and the menu
    *  is where people learn it. */
   shortcut?: string;
+  /** It destroys or undoes — «Anular», «Eliminar»: the label and its icon in the danger tone,
+   *  so it is read before it is pressed. Put such options in a group of their own, last. */
+  danger?: boolean;
   /** The option opens a SUBMENU with these options instead of running. Its own `onSelect`
    *  and `checked` are ignored — a row that opens something does not also do something.
    *  Children may carry `items` too, but a third level is usually a dialog in disguise. */
@@ -496,7 +499,11 @@ export function MenuList({
         data-ui="menu.item"
         className={`flex w-full cursor-default rounded-ui-option ${
           hasHints ? "items-start py-1.5" : "items-center py-1"
-        } gap-2 ${nested ? "pr-2 pl-(--spacing-indent)" : "px-2"} text-left outline-0 transition-colors duration-(--duration-instant) data-focused:bg-ui-option-active data-open:bg-ui-option-active disabled:opacity-45`}
+        } gap-2 ${nested ? "pr-2 pl-(--spacing-indent)" : "px-2"} text-left outline-0 transition-colors duration-(--duration-instant) ${
+          o.danger === true
+            ? "data-focused:bg-danger/10"
+            : "data-focused:bg-ui-option-active data-open:bg-ui-option-active"
+        } disabled:opacity-45`}
       >
         {/* The mark column exists only when some option carries an icon
             or a checked state, and then for every row, so toggling one
@@ -513,7 +520,7 @@ export function MenuList({
               />
             ) : Icon !== undefined ? (
               <Icon
-                className="size-(--size-icon-sm) text-muted"
+                className={`size-(--size-icon-sm) ${o.danger === true ? "text-danger" : "text-muted"}`}
                 strokeWidth={2}
                 aria-hidden
               />
@@ -523,7 +530,13 @@ export function MenuList({
         <span className="min-w-0 flex-1">
           <span className="flex items-center gap-1.5">
             <span
-              className={`truncate text-meta ${checked ? "font-medium text-ink" : "text-ink"}`}
+              className={`truncate text-meta ${
+                o.danger === true
+                  ? "text-danger"
+                  : checked
+                    ? "font-medium text-ink"
+                    : "text-ink"
+              }`}
             >
               {o.label}
             </span>

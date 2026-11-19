@@ -38,12 +38,27 @@ export {
   useFormMode,
   useFormStyle,
 } from "@sincpro/web-ui/foundations/form";
-/* A SHORTCUT, drawn the way the person's keyboard says it: «⌘K» on a Mac, «Ctrl K» elsewhere. */
+/* A SHORTCUT, drawn the way the person's keyboard says it («⌘K» on a Mac, «Ctrl K» elsewhere),
+   and BOUND: `useShortcuts` runs it while the piece that declares it is on screen — the last
+   mounted wins. A combination is written once («Alt+D», «Mod+S») and read by `foundations/keys`. */
+export {
+  type KeyPress,
+  type Keys,
+  keysAria,
+  keysLabel,
+  matchesKeys,
+  needsModifier,
+  type ParsedKeys,
+  parseKeys,
+} from "@sincpro/web-ui/foundations/keys";
 export {
   type KeyboardPlatform,
   type ModShortcut,
   modShortcut,
+  type Shortcut,
   useKeyboardPlatform,
+  useKeysHint,
+  useShortcuts,
 } from "@sincpro/web-ui/foundations/shortcut";
 /* THE THEME — light, dark or the operating system's. The palettes live in `tokens.css`; this
    only writes `data-theme`. */

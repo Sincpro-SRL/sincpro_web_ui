@@ -273,7 +273,7 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`, `sidebar.brand`,
 `sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
 `navigation.item`, `dirty.blocked`, `dirty.bar`, `field`, `field.label`, `form.section`,
-`form.index`, `dock`, `dock.pill`, `dock.bare`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
+`form.index`, `dock`, `dock.pill`, `dock.bare`, `pager`, `smart`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
 `guide.progress`, `guide.title`, `guide.body`, `guide.actions`. A part that is one of many
 carries `data-key` too (`navigation.item`). Put your rules in a cascade layer above web-ui's, or
 outside any layer.
@@ -360,20 +360,40 @@ The record is written once — `Record.Dock` with its actions as data — and th
 style decides how it is drawn, the way it chooses its density:
 
 ```tsx
+// "traditional" is the default; a single Record can say its own with `look`.
 <RecordStyleProvider value="modern">
-  {" "}
-  {/* or "traditional", the default; a Record can say `look` */}
   <App />
 </RecordStyleProvider>
 ```
 
-- **classic**: the ERP rail — a band with the trail, the counters and the pager; the dock's
+- **traditional**: the ERP rail — a band with the trail, the counters and the pager; the dock's
   actions as the rail's buttons (the primary first and gold, «⋯» with the rest), the state as
   Odoo's filled well.
-- **clean**: the trail is the page's heading (`Breadcrumb size="lg"`), the pager on its line; a
-  step down, the counters and the state as steps (`StatusBar look="steps"`); the band is the
-  ground; and the actions float in a pill at the bottom, centred. `placement="top"` rests the
-  pill in the rail and floats it at the top on scroll.
+- **modern**: the trail is the page's heading (`Breadcrumb size="lg"`) with the pager as a
+  translucent primary pill on its line (`Pager look="pill"`); a step down, the counters as
+  links (`SmartButton look="link"`) and the state as a segmented progress bar
+  (`StatusBar look="progress"`); the band is the ground; and the actions float in a pill at
+  the bottom, centred. `placement="top"` rests the pill in the rail and floats it at the top
+  on scroll.
+
+`StatusBar look` has four widgets — `track` (Odoo's), `progress`, `steps` and `pill` (one chip
+that unfolds the stages) —, side by side in `4 · Vistas/Registro/Riel`, with the two pagers and
+the two kinds of counter.
+
+#### Keyboard shortcuts that run
+
+A combination is written once — `"Alt+D"`, `"Mod+S"` (⌘ on a Mac, Ctrl elsewhere) — and is
+pressed, drawn and announced for the person's keyboard (`foundations/keys`: «⌥D» / «Alt+D»,
+`aria-keyshortcuts`). It RUNS while the piece that declares it is on screen, and declarations
+stack: the record in a peek over the page answers, not the page under it.
+
+- `DockAction.shortcut` — any action, a sub-action or one waiting in «Más» included.
+- `Record.Pager` / `Pager keys` — Alt+P and Alt+N by default (Odoo's), `false` for none.
+- Save answers Mod+S wherever it is (`DirtyActions`).
+- Your own: `useShortcuts([{ keys: "Alt+K", run, enabled }])`, and `useKeysHint(keys)` to draw
+  it.
+
+A combination with a modifier works while a field is being typed in; a bare key does not.
 
 #### Experimental: the record's actions floating (`Record.Dock`)
 
@@ -381,9 +401,10 @@ The «settings» style floats Save and Discard in a dark pill; `Record.Dock` tri
 ALL of a record's actions. In place of `Record.Actions`, the actions are written as data, and the
 pill decides what is seen: the primary, gold and last; `visible` secondary ones (one with
 sub-actions is a menu button, «Imprimir ▾»); the rest in «Más ⋯», sub-actions as submenus, what
-undoes apart and last. At the top it sits over the paper and stays in view as the record scrolls
-(a layer of the sticky stack: a table header sticks under it); while there are changes the same
-pill holds «N cambios · Descartar · Guardar».
+undoes apart and last, in red. Where it goes is `placement`: `rail` (the traditional buttons),
+`bottom` (the modern default, floating centred) or `top` (resting in the rail, a layer of the
+sticky stack once it scrolls away); while there are changes the same pill holds «N cambios ·
+Descartar · Guardar».
 
 ```tsx
 <Record.Rail>
@@ -394,20 +415,19 @@ pill holds «N cambios · Descartar · Guardar».
       { id: "pay", label: "Registrar pago", icon: CreditCard, primary: true, onSelect: pay },
       { id: "send", label: "Enviar", icon: Send, onSelect: send },
       { id: "print", label: "Imprimir", icon: Printer, items: [
-        { id: "print-invoice", label: "Factura", shortcut: "Ctrl+P", onSelect: printInvoice },
+        { id: "print-invoice", label: "Factura", shortcut: "Mod+P", onSelect: printInvoice },
         { id: "print-note", label: "Remito", onSelect: printNote },
       ] },
-      { id: "copy", label: "Duplicar", icon: Copy, onSelect: duplicate },
+      { id: "copy", label: "Duplicar", icon: Copy, shortcut: "Alt+D", onSelect: duplicate },
       { id: "void", label: "Anular en el SIAT", icon: Ban, danger: true, onSelect: voidIt },
     ]}
-    // placement="top" | "bottom", align="center" | "end", look="chrome" | "canvas", visible={2}
+    // placement="rail" | "bottom" | "top", align="center" | "end", look="chrome" | "canvas", visible={2}
   />
   <Record.Status stages={…} current="posted" />
 </Record.Rail>
 ```
 
-At rest the pill sits in the rail, centred in its second row (the state and the pager at the
-end); it detaches and floats once the rail scrolls away. A list says the same with `List.Dock`:
+A list says the same with `List.Dock`:
 what it starts is a pill in its bar, and what is done to the chosen rows floats at the bottom
 while some are chosen — «2 elegidos ✕ · Enviar · Imprimir ▾ · ⋯» — and the search stays in the
 bar (`selectionPlacement="bar"` puts it in the bar instead, as a plain selection does).
