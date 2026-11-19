@@ -7,6 +7,8 @@ export {
   type ActionDockProps,
   type DockLook,
   type DockPlacement,
+  type RecordDockPlacement,
+  type RecordDockProps,
 } from "@sincpro/web-ui/components/record/ActionDock";
 export { Breadcrumb, type Crumb } from "@sincpro/web-ui/components/record/Breadcrumb";
 export {
@@ -26,3 +28,9 @@ export { RecordRibbon } from "@sincpro/web-ui/components/record/RecordRibbon";
 export { RecordSkeleton } from "@sincpro/web-ui/components/record/RecordSkeleton";
 export { SmartButton, SmartButtons } from "@sincpro/web-ui/components/record/SmartButtons";
 export { type Stage, StatusBar } from "@sincpro/web-ui/components/record/StatusBar";
+/* How a whole application draws its records — `classic` or `clean` (experimental). */
+export {
+  type RecordStyle,
+  RecordStyleProvider,
+  useRecordStyle,
+} from "@sincpro/web-ui/components/record/style";

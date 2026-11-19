@@ -24,7 +24,7 @@ export interface Crumb {
  *  read. */
 const crumbStyles = tv({
   extend: focusRing,
-  base: "block min-w-0 rounded-mark text-meta transition-colors duration-(--duration-instant)",
+  base: "block min-w-0 rounded-mark transition-colors duration-(--duration-instant)",
   variants: {
     surface: { canvas: "", chrome: "outline-chrome-link" },
     kind: {
@@ -32,8 +32,13 @@ const crumbStyles = tv({
       inert: "cursor-default",
       current: "cursor-default font-medium",
     },
+    /* `lg`: the trail IS the page's heading — where I am, at the title's size, the way back
+       at the body's. */
+    size: { md: "text-meta", lg: "" },
   },
   compoundVariants: [
+    { size: "lg", kind: ["link", "inert"], class: "text-body" },
+    { size: "lg", kind: "current", class: "text-title font-semibold" },
     { surface: "canvas", kind: ["link", "inert"], class: "text-muted" },
     { surface: "canvas", kind: "link", class: "hover:text-ink" },
     { surface: "canvas", kind: "current", class: "text-ink" },
@@ -75,10 +80,13 @@ const crumbStyles = tv({
 export function Breadcrumb({
   crumbs,
   surface: surfaceProp,
+  size = "md",
   folded = 3,
 }: {
   crumbs: readonly Crumb[];
   surface?: Surface;
+  /** `lg`: the trail is the page's heading — the record's «clean» style draws it so. */
+  size?: "md" | "lg";
   /** From how many crumbs the middle folds. Below this every crumb is drawn:
    *  folding two crumbs hides half the trail to save one chevron. */
   folded?: number;
@@ -101,7 +109,10 @@ export function Breadcrumb({
     last === undefined ? copy.record.location : `${copy.record.location}: ${last.label}`;
   return (
     <nav aria-label={name} className="flex min-w-0">
-      <Breadcrumbs aria-label={name} className="flex min-w-0 flex-wrap items-center gap-1">
+      <Breadcrumbs
+        aria-label={name}
+        className={`flex min-w-0 flex-wrap items-center ${size === "lg" ? "gap-1.5" : "gap-1"}`}
+      >
         {shown.map((crumb, i) => {
           const key = crumb === null ? "folded" : `${i}-${crumb.label}`;
           const last = i === shown.length - 1;
@@ -109,7 +120,7 @@ export function Breadcrumb({
             <AriaBreadcrumb key={key} id={key} className="flex min-w-0 items-center gap-1">
               {i === 0 ? null : (
                 <ChevronRight
-                  className={`size-(--size-icon-sm) shrink-0 ${edge}`}
+                  className={`${size === "lg" ? "size-(--size-icon-md)" : "size-(--size-icon-sm)"} shrink-0 ${edge}`}
                   strokeWidth={2}
                   aria-hidden
                 />
@@ -146,6 +157,7 @@ export function Breadcrumb({
                   className={({ isFocusVisible }) =>
                     crumbStyles({
                       surface,
+                      size,
                       isFocusVisible,
                       kind: last ? "current" : crumb.onClick === undefined ? "inert" : "link",
                     })

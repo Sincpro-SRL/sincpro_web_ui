@@ -6,7 +6,7 @@ import {
   type SheetField,
   type SheetLayout,
 } from "@sincpro/web-ui/components/form/Sheet";
-import type { ActionDockProps } from "@sincpro/web-ui/components/record/ActionDock";
+import type { RecordDockProps } from "@sincpro/web-ui/components/record/ActionDock";
 import type { Crumb } from "@sincpro/web-ui/components/record/Breadcrumb";
 import type { DirtyState } from "@sincpro/web-ui/components/record/DirtyActions";
 import { Pager as PagerControl } from "@sincpro/web-ui/components/record/Pager";
@@ -22,6 +22,7 @@ import { RecordRibbon } from "@sincpro/web-ui/components/record/RecordRibbon";
 import { RecordSkeleton } from "@sincpro/web-ui/components/record/RecordSkeleton";
 import { SmartButton, SmartButtons } from "@sincpro/web-ui/components/record/SmartButtons";
 import { type Stage, StatusBar } from "@sincpro/web-ui/components/record/StatusBar";
+import { type RecordStyle, useRecordStyle } from "@sincpro/web-ui/components/record/style";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import {
@@ -202,7 +203,7 @@ const Actions = slot("actions", (_props: ActionsProps): ReactNode => null);
 /** The actions FLOATING, as data (experimental — `ActionDock`): in place of `Record.Actions`,
  *  one pill over the paper that stays in view as the record scrolls, «Más» with the rest and
  *  their sub-actions, and Save / Discard in the same pill while there are changes. */
-type DockProps = Omit<ActionDockProps, "dirty" | "saved">;
+type DockProps = RecordDockProps;
 const Dock = slot("dock", (_props: DockProps): ReactNode => null);
 
 /** The status, as DATA and not as a node: the bar lives in the rail and
@@ -338,6 +339,9 @@ export type RecordProps = {
    * whole tree under the paper the moment one of them appears or goes away.
    */
   placement?: "page" | "card";
+  /** How this record is drawn — `classic` or `clean` (experimental). Absent, the
+   *  `RecordStyleProvider`'s: an application chooses once. */
+  look?: RecordStyle;
   children?: ReactNode;
 };
 
@@ -346,7 +350,15 @@ function NotebookScope({ tabs, children }: { tabs: boolean; children: ReactNode 
   return tabs ? <TabsScope>{children}</TabsScope> : children;
 }
 
-export function Record({ identity, error = null, dirty, placement, children }: RecordProps) {
+export function Record({
+  identity,
+  error = null,
+  dirty,
+  placement,
+  look: ownLook,
+  children,
+}: RecordProps) {
+  const look = useRecordStyle(ownLook);
   const d = useDensity();
   const copy = useUiCopy();
 
@@ -395,6 +407,8 @@ export function Record({ identity, error = null, dirty, placement, children }: R
             current={status.current ?? status.stages[0]?.id ?? ""}
             failed={status.failed ?? false}
             surface={surface}
+            /* The clean style's state is quieter: steps, not a filled well. */
+            {...(look === "clean" ? { look: "steps" as const } : {})}
             {...(status.onSelect === undefined ? {} : { onSelect: status.onSelect })}
           />
         )}
@@ -522,6 +536,7 @@ export function Record({ identity, error = null, dirty, placement, children }: R
                 })}
             {...(actions === undefined ? {} : { actions })}
             {...(dock === undefined ? {} : { dock })}
+            look={look}
             {...(statusBlock === undefined ? {} : { status: statusBlock })}
             {...(identity.icon === undefined ? {} : { icon: identity.icon })}
             title={identity.title}

@@ -28,6 +28,7 @@ import {
   type OpenTarget,
   Picker,
   Record,
+  RecordStyleProvider,
   RelationValue,
   SearchField,
   Select,
@@ -793,7 +794,8 @@ function FullInvoice({ api }: ViewProps) {
           <Record.Dock
             label="Acciones de la factura"
             actions={dockActions}
-            placement={docked === "bottom" ? "bottom" : "top"}
+            /* Bottom is the clean style's own; top is said. */
+            {...(docked === "top" ? { placement: "top" as const } : {})}
           />
         ) : (
           <>
@@ -1310,14 +1312,20 @@ function Page({
   docked = false,
 }: {
   draft?: boolean;
+  /** The clean record style, its actions floating at the bottom (or the top). */
   docked?: false | "top" | "bottom";
 }) {
-  return (
+  const page = (
     <DockedContext value={docked}>
       <InvoiceProvider draft={draft}>
         <Workspace views={VIEWS} start={invoiceRef(draft)} menu={MENU} />
       </InvoiceProvider>
     </DockedContext>
+  );
+  return docked === false ? (
+    page
+  ) : (
+    <RecordStyleProvider value="clean">{page}</RecordStyleProvider>
   );
 }
 
@@ -1365,15 +1373,15 @@ export const Borrador: Story = {
 };
 
 /**
- * **Con las acciones flotando** (experimental, `Record.Dock`): la misma factura publicada, con
- * sus acciones en una píldora sobre el papel en vez del riel — «Registrar pago» dorada y última,
- * «Enviar» e «Imprimir ▾» a la vista, y en «Más ⋯» la nota de crédito, duplicar y, aparte, lo que
- * deshace. Bajá por las catorce líneas: la píldora se queda; el encabezado de la grilla se pega
- * debajo de ella.
+ * **Estilo limpio** (experimental — `RecordStyleProvider value="clean"`): la MISMA factura, con
+ * el mismo código. Las migas son el título de la página y el paginador va en su línea; un escalón
+ * abajo, los contadores y el estado en pasos; y las acciones flotan en una píldora abajo, al
+ * centro — «Registrar pago» dorada y última, «Enviar» e «Imprimir ▾» a la vista, en «Más ⋯» la
+ * nota de crédito, duplicar y, aparte, lo que deshace.
  */
-export const ConAccionesFlotantes: Story = {
-  name: "Con acciones flotantes (experimental)",
-  render: () => <Page docked="top" />,
+export const EstiloLimpio: Story = {
+  name: "Estilo limpio (experimental)",
+  render: () => <Page docked="bottom" />,
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
     const dock = await canvas.findByRole("toolbar", { name: "Acciones de la factura" });
@@ -1382,17 +1390,9 @@ export const ConAccionesFlotantes: Story = {
   },
 };
 
-/**
- * **Con las acciones abajo** (experimental): la misma píldora en el lugar del estilo «settings» y
- * del pulgar — flotando al pie de la pantalla mientras se lee la factura de arriba abajo. El riel
- * queda con su lugar, sus contadores y el estado.
- */
-export const ConAccionesAbajo: Story = {
-  name: "Con acciones abajo (experimental)",
-  render: () => <Page docked="bottom" />,
-  play: async ({ canvasElement }) => {
-    const canvas = within(canvasElement);
-    const dock = await canvas.findByRole("toolbar", { name: "Acciones de la factura" });
-    await expect(within(dock).getByRole("button", { name: "Registrar pago" })).toBeVisible();
-  },
+/** **Estilo limpio, las acciones arriba**: descansan en el riel, al centro, y flotan arriba
+ *  cuando el riel se va. */
+export const EstiloLimpioArriba: Story = {
+  name: "Estilo limpio, acciones arriba (experimental)",
+  render: () => <Page docked="top" />,
 };

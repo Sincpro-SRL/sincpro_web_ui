@@ -273,7 +273,7 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`, `sidebar.brand`,
 `sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
 `navigation.item`, `dirty.blocked`, `dirty.bar`, `field`, `field.label`, `form.section`,
-`form.index`, `dock`, `dock.pill`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
+`form.index`, `dock`, `dock.pill`, `dock.bare`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
 `guide.progress`, `guide.title`, `guide.body`, `guide.actions`. A part that is one of many
 carries `data-key` too (`navigation.item`). Put your rules in a cascade layer above web-ui's, or
 outside any layer.
@@ -353,6 +353,27 @@ What can be extended, and how:
 | The filter said with names, for your own chip    | `describeFilter(selection, model, modelAt, names)`, `FilterBuilder onApply(selection, said)` |
 | Your own builder                                 | `SelectionTree`, `RuleValue`, `liftRecords`, `recordsFilter`, `recordOps`                    |
 | The words of an operator («no está establecido») | the copy table: `ops`                                                                        |
+
+#### Experimental: one API, two record styles (`RecordStyleProvider`)
+
+The record is written once — `Record.Dock` with its actions as data — and the application's
+style decides how it is drawn, the way it chooses its density:
+
+```tsx
+<RecordStyleProvider value="clean">
+  {" "}
+  {/* or "classic", the default; a Record can say `look` */}
+  <App />
+</RecordStyleProvider>
+```
+
+- **classic**: the ERP rail — a band with the trail, the counters and the pager; the dock's
+  actions as the rail's buttons (the primary first and gold, «⋯» with the rest), the state as
+  Odoo's filled well.
+- **clean**: the trail is the page's heading (`Breadcrumb size="lg"`), the pager on its line; a
+  step down, the counters and the state as steps (`StatusBar look="steps"`); the band is the
+  ground; and the actions float in a pill at the bottom, centred. `placement="top"` rests the
+  pill in the rail and floats it at the top on scroll.
 
 #### Experimental: the record's actions floating (`Record.Dock`)
 

@@ -13,7 +13,7 @@ import {
 } from "@sincpro/web-ui/components/record/dock";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { stickyTop } from "@sincpro/web-ui/foundations/sticky";
-import { SurfaceProvider } from "@sincpro/web-ui/foundations/surface";
+import { SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
 import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { Menu } from "@sincpro/web-ui/primitives/menu/Menu";
 import { MoreHorizontal } from "lucide-react";
@@ -50,8 +50,9 @@ import type { CSSProperties, ReactNode } from "react";
  *  draws only the pill — its host places it (`Record.Dock` does). */
 export type DockPlacement = "top" | "bottom" | "inline";
 
-/** The pill's band: the dark one (the settings bar's) or a light card. */
-export type DockLook = "chrome" | "canvas";
+/** The pill's band: the dark one (the settings bar's), a light card — or `bare`: no pill at
+ *  all, the actions as the rail's buttons (the record's `classic` style draws them so). */
+export type DockLook = "chrome" | "canvas" | "bare";
 
 export interface ActionDockProps {
   actions: readonly DockAction[];
@@ -74,6 +75,99 @@ export interface ActionDockProps {
 
 const PILL = { "--ui-button-radius": "var(--radius-pill)" } as CSSProperties;
 
+/** Where a record's actions go: as the rail's buttons, or floating — resting in the rail and
+ *  detaching on scroll (`top`), or at the bottom of the screen (`bottom`). Absent, the record's
+ *  style decides: `classic` → `rail`, `clean` → `bottom`. */
+export type RecordDockPlacement = "rail" | "top" | "bottom";
+
+/** What `Record.Dock` takes: the dock's, with the record's placements. */
+export type RecordDockProps = Omit<ActionDockProps, "dirty" | "saved" | "placement"> & {
+  placement?: RecordDockPlacement;
+};
+
+/** The same actions with no pill: the rail's buttons — the primary first and gold, the
+ *  secondary ones bordered, «⋯» with the rest. What the `classic` style draws. */
+function Bare({
+  actions,
+  visible,
+  dirty,
+  saved,
+  label,
+}: Required<Pick<ActionDockProps, "actions" | "visible">> &
+  Pick<ActionDockProps, "dirty" | "saved" | "label">) {
+  const copy = useUiCopy();
+  const surface = useSurface();
+  const plan = dockPlan(actions, visible);
+  const more = moreGroups(plan);
+  if (dirty !== undefined) {
+    return (
+      <div className="flex shrink-0 items-center gap-1.5">
+        <DirtyActions {...dirty} />
+      </div>
+    );
+  }
+  return (
+    <div
+      role="toolbar"
+      aria-label={label ?? copy.dock.label}
+      data-ui="dock.bare"
+      className="flex shrink-0 items-center gap-1.5"
+    >
+      {plan.primary === undefined ? null : (
+        <Button
+          role="primary"
+          size="sm"
+          surface={surface}
+          {...(plan.primary.icon === undefined ? {} : { icon: plan.primary.icon })}
+          {...(plan.primary.disabled === undefined
+            ? {}
+            : { disabled: plan.primary.disabled })}
+          {...(plan.primary.onSelect === undefined ? {} : { onClick: plan.primary.onSelect })}
+        >
+          {plan.primary.label}
+        </Button>
+      )}
+      {plan.shown.map((action) =>
+        action.items === undefined ? (
+          <Button
+            key={action.id}
+            role="secondary"
+            size="sm"
+            surface={surface}
+            {...(action.icon === undefined ? {} : { icon: action.icon })}
+            {...(action.disabled === undefined ? {} : { disabled: action.disabled })}
+            {...(action.onSelect === undefined ? {} : { onClick: action.onSelect })}
+          >
+            {action.label}
+          </Button>
+        ) : (
+          <Menu
+            key={action.id}
+            role="secondary"
+            size="sm"
+            surface={surface === "chrome" ? "chrome" : "canvas"}
+            label={action.label}
+            {...(action.icon === undefined ? {} : { icon: action.icon })}
+            groups={[{ options: action.items.map(dockOption) }]}
+          />
+        ),
+      )}
+      {more.length === 0 ? null : (
+        <Menu
+          label={copy.dock.more}
+          icon={MoreHorizontal}
+          iconOnly
+          chevron={false}
+          size="sm"
+          surface={surface === "chrome" ? "chrome" : "canvas"}
+          groups={more}
+        />
+      )}
+      <SavedMark saved={saved === true} />
+    </div>
+  );
+}
+
 /** The pill alone: the actions, or Save and Discard. */
 function Pill({
   actions,
@@ -83,8 +177,9 @@ function Pill({
   look,
   label,
   lead,
-}: Required<Pick<ActionDockProps, "actions" | "visible" | "look">> &
-  Pick<ActionDockProps, "dirty" | "saved" | "label" | "lead">) {
+}: Required<Pick<ActionDockProps, "actions" | "visible">> & {
+  look: "chrome" | "canvas";
+} & Pick<ActionDockProps, "dirty" | "saved" | "label" | "lead">) {
   const copy = useUiCopy();
   const plan = dockPlan(actions, visible);
   const more = moreGroups(plan);
@@ -175,17 +270,26 @@ export function ActionDock({
   label,
   lead,
 }: ActionDockProps) {
-  const pill = (
-    <Pill
-      actions={actions}
-      visible={visible}
-      look={look}
-      {...(lead === undefined ? {} : { lead })}
-      {...(dirty === undefined ? {} : { dirty })}
-      {...(saved === undefined ? {} : { saved })}
-      {...(label === undefined ? {} : { label })}
-    />
-  );
+  const pill =
+    look === "bare" ? (
+      <Bare
+        actions={actions}
+        visible={visible}
+        {...(dirty === undefined ? {} : { dirty })}
+        {...(saved === undefined ? {} : { saved })}
+        {...(label === undefined ? {} : { label })}
+      />
+    ) : (
+      <Pill
+        actions={actions}
+        visible={visible}
+        look={look}
+        {...(lead === undefined ? {} : { lead })}
+        {...(dirty === undefined ? {} : { dirty })}
+        {...(saved === undefined ? {} : { saved })}
+        {...(label === undefined ? {} : { label })}
+      />
+    );
   if (placement === "inline") return pill;
   /* Sticky to the edge of what scrolls, as the settings bar: no padding to keep in sync with
      its height, and at the end of the page it settles in its place in the flow. Only the pill

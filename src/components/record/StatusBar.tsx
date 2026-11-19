@@ -134,6 +134,7 @@ export function StatusBar({
   onSelect,
   selected,
   layout,
+  look = "track",
 }: {
   stages: readonly Stage[];
   current: string;
@@ -148,6 +149,13 @@ export function StatusBar({
   /** `trail` side by side, `stacked` one per row. Without it the surface's density
    *  decides — it is what knows how much width there is. */
   layout?: "trail" | "stacked";
+  /**
+   * `track` (the default) is Odoo's statusbar: segments of one well, the current one filled.
+   * `steps` is quieter: dots joined by a line, the current one ringed in its colour — the
+   * record's «clean» style, where the state sits on the ground beside the counters and a
+   * filled well was one more box among them.
+   */
+  look?: "track" | "steps";
 }) {
   const d = useDensity();
   const surface = useSurface(surfaceProp);
@@ -198,6 +206,107 @@ export function StatusBar({
   }
 
   const track = trackStyles({ surface, layout: shape });
+
+  if (look === "steps" && !stacked) {
+    const chrome = surface === "chrome";
+    const dotOf = (step: "done" | "current" | "next") =>
+      step === "current"
+        ? failed
+          ? `${chrome ? "bg-chrome-bad" : "bg-danger"} ring-3 ${chrome ? "ring-chrome-bad/25" : "ring-danger/20"}`
+          : `${chrome ? "bg-chrome-ink" : "bg-primary"} ring-3 ${chrome ? "ring-chrome-ink/25" : "ring-primary/20"}`
+        : step === "done"
+          ? chrome
+            ? "bg-chrome-ink/60"
+            : "bg-ink/55"
+          : `border ${chrome ? "border-chrome-muted/60" : "border-line-strong"} bg-transparent`;
+    const labelOf = (step: "done" | "current" | "next") =>
+      step === "current"
+        ? `font-semibold ${chrome ? "text-chrome-ink" : "text-ink"}`
+        : step === "done"
+          ? chrome
+            ? "text-chrome-ink"
+            : "text-ink"
+          : chrome
+            ? "text-chrome-muted"
+            : "text-muted";
+    const joinOf = (i: number) =>
+      i <= at
+        ? chrome
+          ? "bg-chrome-ink/45"
+          : "bg-ink/35"
+        : chrome
+          ? "bg-chrome-muted/35"
+          : "bg-line-strong";
+    const step = (stage: Stage, i: number, viewed: boolean) => {
+      const where = stepOf(i);
+      return (
+        <>
+          {i === 0 ? null : <span aria-hidden className={`h-px w-5 shrink-0 ${joinOf(i)}`} />}
+          <span aria-hidden className={`size-2 shrink-0 rounded-pill ${dotOf(where)}`} />
+          {where === "current" && failed ? (
+            <CircleAlert
+              className={`size-(--size-icon-sm) shrink-0 ${chrome ? "text-chrome-bad" : "text-danger"}`}
+              strokeWidth={2}
+              aria-hidden
+            />
+          ) : null}
+          <span
+            aria-current={where === "current" && selectable ? "step" : undefined}
+            className={cn(
+              "min-w-0 truncate text-meta whitespace-nowrap",
+              labelOf(where),
+              viewed && "underline decoration-2 underline-offset-4",
+            )}
+          >
+            {stage.label}
+          </span>
+        </>
+      );
+    };
+    if (!selectable) {
+      return (
+        <ol
+          aria-label={copy.record.status}
+          className="flex min-w-0 shrink-0 items-center gap-2"
+        >
+          {stages.map((stage, i) => (
+            <li
+              key={stage.id}
+              aria-current={stepOf(i) === "current" ? "step" : undefined}
+              data-failed={stepOf(i) === "current" && failed ? true : undefined}
+              className="flex min-w-0 items-center gap-2"
+            >
+              {step(stage, i, false)}
+            </li>
+          ))}
+        </ol>
+      );
+    }
+    return (
+      <RadioGroup
+        aria-label={copy.record.status}
+        orientation="horizontal"
+        {...(selected === undefined ? {} : { value: selected })}
+        onChange={onSelect}
+        className="flex min-w-0 shrink-0 items-center gap-2"
+      >
+        {stages.map((stage, i) => (
+          <Radio
+            key={stage.id}
+            value={stage.id}
+            className={({ isFocusVisible }) =>
+              cn(
+                "flex min-w-0 cursor-pointer items-center gap-2 rounded-mark",
+                isFocusVisible && "outline-2 outline-offset-2 outline-primary",
+              )
+            }
+          >
+            {({ isSelected }) => step(stage, i, isSelected)}
+          </Radio>
+        ))}
+      </RadioGroup>
+    );
+  }
 
   if (!selectable) {
     return (

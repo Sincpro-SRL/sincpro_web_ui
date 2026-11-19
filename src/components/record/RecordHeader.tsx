@@ -2,7 +2,7 @@
 
 import {
   ActionDock,
-  type ActionDockProps,
+  type RecordDockProps,
 } from "@sincpro/web-ui/components/record/ActionDock";
 import { Breadcrumb, type Crumb } from "@sincpro/web-ui/components/record/Breadcrumb";
 import {
@@ -12,6 +12,7 @@ import {
   SavedMark,
   useJustSaved,
 } from "@sincpro/web-ui/components/record/DirtyActions";
+import { type RecordStyle, useRecordStyle } from "@sincpro/web-ui/components/record/style";
 import { isPrimary, ThumbBar, thumbPlan } from "@sincpro/web-ui/components/record/ThumbBar";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { useFormStyle } from "@sincpro/web-ui/foundations/form";
@@ -86,6 +87,7 @@ export function RecordHeader({
   indicator,
   paper: onPaper,
   dock,
+  look,
   children,
 }: {
   crumbs?: readonly Crumb[];
@@ -162,7 +164,10 @@ export function RecordHeader({
    * view as the record scrolls; at the bottom, the settings bar's place. The rail keeps where
    * I am, which of eighty, and the state.
    */
-  dock?: Omit<ActionDockProps, "dirty" | "saved">;
+  dock?: RecordDockProps;
+  /** How the record is drawn — `classic` or `clean` (experimental). Absent, the
+   *  `RecordStyleProvider`'s. See `style.tsx`. */
+  look?: RecordStyle;
   /** The record body. It sits IN the paper with the title, so groups, tabs
    *  and the page are one white sheet on the ground — Odoo's `<sheet>`. */
   children?: ReactNode;
@@ -175,10 +180,20 @@ export function RecordHeader({
   /* «Guardado» is said where Save was; a record whose rail exists only while it has changes
      keeps it for that moment, or the answer would leave with the question. */
   const saved = useJustSaved(dirty);
-  /* With a dock, the actions and Save / Discard are the dock's: the rail keeps the rest. */
-  const docked = dock !== undefined;
+  /* THE STYLE decides where the dock's actions go when the dock does not say: the rail's
+     buttons in `classic`, the floating pill at the bottom in `clean`. The same `DockAction`s
+     draw both. Floating, the pill holds the actions AND Save / Discard: the rail keeps the
+     rest. */
+  const clean = useRecordStyle(look) === "clean";
+  const dockWhere =
+    dock === undefined ? undefined : (dock.placement ?? (clean ? "bottom" : "rail"));
+  const docked = dockWhere === "top" || dockWhere === "bottom";
   const railDirty = floating || docked ? undefined : dirty;
-  const railActions_ = docked ? undefined : actions;
+  const railActions_ = docked ? undefined : dock !== undefined ? (
+    <ActionDock {...dock} look="bare" placement="inline" />
+  ) : (
+    actions
+  );
   /* Save is gone the moment it has saved, and the focus that was on it fell to the page —
      a keyboard was left at the top of the document. It comes back to the record's name:
      where reading the record starts, and announced together with «Guardado». */
@@ -242,7 +257,10 @@ export function RecordHeader({
   const paper =
     onPaper === undefined
       ? withRail &&
-        (crumbs !== undefined || pager !== undefined || actions !== undefined || docked)
+        (crumbs !== undefined ||
+          pager !== undefined ||
+          actions !== undefined ||
+          dock !== undefined)
       : onPaper && d === "comfortable";
 
   /* ONE column for the rail and the page: the rail used to span the screen while the sheet
@@ -263,7 +281,7 @@ export function RecordHeader({
      behind it— over a veil of the ground, so what scrolls passes under the pill instead of
      peeking between it and the header. Without a rail (a dialog, compact) it floats from the
      start, in the flow. */
-  const dockTop = dock !== undefined && dock.placement !== "bottom";
+  const dockTop = dockWhere === "top";
   const inRail = dockTop && withRail;
   const anchor = useRef<HTMLDivElement>(null);
   const [detached, setDetached] = useState(false);
@@ -406,12 +424,75 @@ export function RecordHeader({
               rail that asks an unnamed `@container` finds this one. */}
           <div className="@container/record">
             <div
-              className={`px-3 py-2.5 ${
-                railSurface === "chrome" ? "bg-chrome" : "border-b border-line bg-surface"
-              }`}
+              className={
+                clean
+                  ? /* Clean: the rail is the page's heading on the ground, not a white strip. */
+                    "bg-ground px-3 pt-4 pb-1"
+                  : `px-3 py-2.5 ${
+                      railSurface === "chrome"
+                        ? "bg-chrome"
+                        : "border-b border-line bg-surface"
+                    }`
+              }
             >
               <div className={`flex flex-col gap-2 ${paper ? column : ""}`}>
-                {/* Row 1 — WHERE I AM: where I come from, what hangs off this, and
+                {clean ? (
+                  <>
+                    {/* THE CLEAN RAIL — two lines, by weight. Row 1: WHERE I AM, the trail at the
+                    title's size, and which of eighty. Row 2, a step down: what hangs off the
+                    record and where it is at — the counters and the state as steps —, and the
+                    pill when it rests here. The actions float (`Record.Dock`). */}
+                    <Line
+                      start={
+                        crumbs === undefined || crumbs.length === 0 ? null : (
+                          <Breadcrumb crumbs={crumbs} surface={railSurface} size="lg" />
+                        )
+                      }
+                      end={pager}
+                    />
+                    {smart === undefined &&
+                    indicator === undefined &&
+                    status === undefined &&
+                    !inRail &&
+                    railActions_ === undefined &&
+                    railDirty === undefined ? null : (
+                      <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+                        {railDirty !== undefined ? (
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            <DirtyActions {...railDirty} />
+                          </div>
+                        ) : railActions_ === undefined ? null : (
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            {railActions_}
+                            <SavedMark saved={saved} />
+                          </div>
+                        )}
+                        {smart === undefined && indicator === undefined ? null : (
+                          <div className="flex min-w-0 flex-wrap items-center gap-2">
+                            {smart}
+                            {indicator}
+                          </div>
+                        )}
+                        {inRail ? (
+                          <div
+                            ref={anchor}
+                            className={`flex flex-1 items-center ${dock?.align === "end" ? "justify-end" : "justify-center"}`}
+                            {...(detached ? { inert: true, "aria-hidden": true } : {})}
+                          >
+                            {dockPill}
+                          </div>
+                        ) : null}
+                        {status === undefined ? null : (
+                          <div className="ml-auto flex shrink-0 flex-col items-end gap-1.5">
+                            {status}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
+                ) : (
+                  <>
+                    {/* Row 1 — WHERE I AM: where I come from, what hangs off this, and
               which of eighty I am on. The counters go in the center because they
               are the bridge between the two: they hang off the record but they
               take you somewhere else.
@@ -422,109 +503,115 @@ export function RecordHeader({
               counters against the edge. What does not fit in its half is clipped
               inside its half; what does not fit in the line drops to the next
               row. See `primitives/block/Line.tsx`. */}
-                <Line
-                  start={
-                    crumbs === undefined || crumbs.length === 0 ? null : (
-                      <Breadcrumb crumbs={crumbs} surface={railSurface} />
-                    )
-                  }
-                  center={
-                    /* The notices' indicator rides with the counters: both are about the
+                    <Line
+                      start={
+                        crumbs === undefined || crumbs.length === 0 ? null : (
+                          <Breadcrumb crumbs={crumbs} surface={railSurface} />
+                        )
+                      }
+                      center={
+                        /* The notices' indicator rides with the counters: both are about the
                      record and both open something; neither is my position in front of
                      it. The line wraps on a phone, so it is never pushed out of reach. */
-                    smart === undefined && indicator === undefined ? undefined : (
-                      <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
-                        {smart}
-                        {indicator}
-                      </div>
-                    )
-                  }
-                  /* With the dock in the rail the pager goes down to its second row, beside
+                        smart === undefined && indicator === undefined ? undefined : (
+                          <div className="flex min-w-0 flex-wrap items-center justify-center gap-2">
+                            {smart}
+                            {indicator}
+                          </div>
+                        )
+                      }
+                      /* With the dock in the rail the pager goes down to its second row, beside
                      the state: row 2 has room on the right, and row 1 —crumbs and seven
                      counters— pushed it to a line of its own. */
-                  end={inRail ? undefined : pager}
-                />
+                      end={inRail ? undefined : pager}
+                    />
 
-                {!inRail &&
-                railActions_ === undefined &&
-                status === undefined &&
-                railDirty === undefined &&
-                (!saved || floating || docked) ? null : (
-                  /* Row 2 — WHAT I CAN DO and WHERE IT IS AT: actions stuck to the
+                    {!inRail &&
+                    railActions_ === undefined &&
+                    status === undefined &&
+                    railDirty === undefined &&
+                    (!saved || floating || docked) ? null : (
+                      /* Row 2 — WHAT I CAN DO and WHERE IT IS AT: actions stuck to the
                left edge, the history and the state stuck to the right one. No
                `flex-wrap`: wrapping split the row in two and the state ended up
                below the actions, which is another hierarchy. */
-                  <div
-                    className={`flex min-w-0 gap-x-4 ${inRail ? "items-center" : "items-start"}`}
-                  >
-                    {/* The dock sits in the MIDDLE of the row, over the record it acts on —
+                      <div
+                        className={`flex min-w-0 gap-x-4 ${inRail ? "items-center" : "items-start"}`}
+                      >
+                        {/* The dock sits in the MIDDLE of the row, over the record it acts on —
                         the place it read best in —, the state at the end: a spacer as wide as
                         the state's half keeps the pill centred against the row. */}
-                    {inRail && dock?.align !== "end" ? (
-                      <div aria-hidden className="min-w-0 flex-1 basis-0" />
-                    ) : null}
-                    {/* The actions are NEVER clipped: they are the only thing in this
+                        {inRail && dock?.align !== "end" ? (
+                          <div aria-hidden className="min-w-0 flex-1 basis-0" />
+                        ) : null}
+                        {/* The actions are NEVER clipped: they are the only thing in this
                   row that produces something, and a button cut in half is a
                   button that does not get pressed. What gives way is the state. */}
-                    {inRail ? (
-                      /* The dock at rest. While it floats this copy is out of sight, and out
+                        {inRail ? (
+                          /* The dock at rest. While it floats this copy is out of sight, and out
                          of reach too — one toolbar at a time for a keyboard and a reader. */
-                      <div
-                        ref={anchor}
-                        className={`flex shrink-0 items-center ${dock?.align === "end" ? "ml-auto" : ""}`}
-                        {...(detached ? { inert: true, "aria-hidden": true } : {})}
-                      >
-                        {dockPill}
-                      </div>
-                    ) : railDirty !== undefined ? (
-                      <div className="flex shrink-0 items-center gap-1.5 @max-handheld/record:hidden">
-                        <DirtyActions {...railDirty} />
-                      </div>
-                    ) : railActions_ === undefined ? (
-                      floating || docked ? null : (
-                        <SavedMark saved={saved} />
-                      )
-                    ) : (
-                      <div className="flex shrink-0 items-center gap-1.5">
-                        {primaries.length === 0
-                          ? railActions_
-                          : railActions.map((node) =>
-                              isPrimary(node) ? (
-                                <span
-                                  key={node.key}
-                                  data-thumb-moves=""
-                                  className="contents @max-handheld/record:hidden"
-                                >
-                                  {node}
-                                </span>
-                              ) : (
-                                node
-                              ),
-                            )}
-                        {/* After the actions, not before: the primary stays where the hand
+                          <div
+                            ref={anchor}
+                            className={`flex shrink-0 items-center ${dock?.align === "end" ? "ml-auto" : ""}`}
+                            {...(detached ? { inert: true, "aria-hidden": true } : {})}
+                          >
+                            {dockPill}
+                          </div>
+                        ) : railDirty !== undefined ? (
+                          <div className="flex shrink-0 items-center gap-1.5 @max-handheld/record:hidden">
+                            <DirtyActions {...railDirty} />
+                          </div>
+                        ) : railActions_ === undefined ? (
+                          floating || docked ? null : (
+                            <SavedMark saved={saved} />
+                          )
+                        ) : (
+                          <div className="flex shrink-0 items-center gap-1.5">
+                            {primaries.length === 0
+                              ? railActions_
+                              : railActions.map((node) =>
+                                  isPrimary(node) ? (
+                                    <span
+                                      key={node.key}
+                                      data-thumb-moves=""
+                                      className="contents @max-handheld/record:hidden"
+                                    >
+                                      {node}
+                                    </span>
+                                  ) : (
+                                    node
+                                  ),
+                                )}
+                            {/* After the actions, not before: the primary stays where the hand
                             left it, and «Guardado» is read as the answer to it. */}
-                        {floating ? null : <SavedMark saved={saved} />}
-                      </div>
-                    )}
-                    {status === undefined && !(inRail && pager !== undefined) ? (
-                      inRail && dock?.align !== "end" ? (
-                        <div aria-hidden className="min-w-0 flex-1 basis-0" />
-                      ) : null
-                    ) : (
-                      <div
-                        className={`flex min-w-0 items-center justify-end gap-x-3 ${
-                          inRail && dock?.align !== "end" ? "flex-1 basis-0" : "ml-auto"
-                        }`}
-                      >
-                        {status === undefined ? null : (
-                          <div className="flex min-w-0 flex-col items-end gap-1.5">
-                            {status}
+                            {floating ? null : <SavedMark saved={saved} />}
                           </div>
                         )}
-                        {inRail ? pager : null}
+                        {status === undefined && !(inRail && pager !== undefined) ? (
+                          inRail && dock?.align !== "end" ? (
+                            <div aria-hidden className="min-w-0 flex-1 basis-0" />
+                          ) : null
+                        ) : (
+                          <div
+                            /* Centred, the state's side never shrinks below what it holds: a
+                           pill grown by «Guardado» pushes the spacer, not over the state. */
+                            className={`flex items-center justify-end gap-x-3 ${
+                              inRail && dock?.align !== "end"
+                                ? "flex-1 basis-0"
+                                : "ml-auto min-w-0"
+                            }`}
+                          >
+                            {status === undefined ? null : (
+                              <div className="flex min-w-0 flex-col items-end gap-1.5">
+                                {status}
+                              </div>
+                            )}
+                            {inRail ? pager : null}
+                          </div>
+                        )}
                       </div>
                     )}
-                  </div>
+                  </>
                 )}
               </div>
             </div>
@@ -623,7 +710,7 @@ export function RecordHeader({
         <ThumbBar mode={thumb} dirty={railDirty} primaries={primaries} />
       )}
       {floating && !docked ? <DirtyBar dirty={dirty} saved={saved} /> : null}
-      {dock === undefined || dock.placement !== "bottom" ? null : (
+      {dock === undefined || dockWhere !== "bottom" ? null : (
         <ActionDock
           {...dock}
           {...(dirty === undefined ? {} : { dirty })}
