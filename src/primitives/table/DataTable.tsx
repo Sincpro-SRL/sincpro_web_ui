@@ -15,6 +15,7 @@ import {
   pileItems,
 } from "@sincpro/web-ui/foundations/grouping";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
+import { Switch } from "@sincpro/web-ui/primitives/choice/Switch";
 import { CellCopy } from "@sincpro/web-ui/primitives/table/CellCopy";
 import { CellEditor } from "@sincpro/web-ui/primitives/table/CellEditor";
 import { EditRow, firstControl } from "@sincpro/web-ui/primitives/table/EditableTable";
@@ -23,6 +24,7 @@ import { type RowAction, RowActions } from "@sincpro/web-ui/primitives/table/Row
 import { useRowWindow } from "@sincpro/web-ui/primitives/table/rowWindow";
 import type { SortState } from "@sincpro/web-ui/primitives/table/sorting";
 import { SelectBox, Table, Td, Th, THead, Tr } from "@sincpro/web-ui/primitives/table/Table";
+import { YesNo, type YesNoLook } from "@sincpro/web-ui/primitives/value/YesNo";
 import {
   aggregationFns,
   type ColumnDef,
@@ -188,12 +190,40 @@ function raw(copy: UiCopy, v: string | number | boolean | null): string {
   return v;
 }
 
+/** A boolean drawn by its column's `yesNo`: read, or a control that changes it in place. The
+ *  control's press stays in the cell — the row opens its record on a click. */
+function drawYesNo<T>(column: DataColumn<T>, row: T, value: boolean): ReactNode {
+  const look = column.yesNo?.look ?? "word";
+  const toggle = column.yesNo?.onToggle;
+  const can = toggle !== undefined && column.yesNo?.when?.(row) !== false;
+  if (look !== "checkbox" && look !== "switch") return <YesNo value={value} look={look} />;
+  if (!can) return <YesNo value={value} look="check" />;
+  return (
+    <span className="inline-flex" onClick={(event) => event.stopPropagation()}>
+      {look === "checkbox" ? (
+        <SelectBox
+          label={column.header}
+          checked={value}
+          onChange={(next) => toggle(row, next)}
+        />
+      ) : (
+        <Switch
+          label={column.header}
+          checked={value}
+          onChange={(next) => toggle(row, next)}
+        />
+      )}
+    </span>
+  );
+}
+
 /** What a cell draws: its `cell`; without one, how it READS (`text`); only then the raw
- *  value — which is the sort key, «posted» and not «publicada». */
+ *  value — which is the sort key, «posted» and not «publicada». A boolean reads as yes / no. */
 function drawCell<T>(copy: UiCopy, column: DataColumn<T>, row: T): ReactNode {
   if (column.cell !== undefined) return column.cell(row);
   if (column.text !== undefined) return column.text(row);
   const value = column.value(row);
+  if (typeof value === "boolean") return drawYesNo(column, row, value);
   /* A number is written the way the column writes its numbers — the same way its footer and
      its piles write them —, so a cell, its pile and the total never disagree on decimals. */
   const format = typeof value === "number" ? columnFormat(column, copy.locale) : undefined;
@@ -283,7 +313,21 @@ export interface DataColumn<T> {
    *  A function copies what it returns for the row instead; `false` removes it from this
    *  column — a column of tags or of buttons has nothing worth pasting. */
   copy?: false | ((row: T) => string);
+  /** A yes/no column (its `value` a boolean): how it reads — `check`, `icon`, `word` (the
+   *  default, see `YesNo`) — or, with `onToggle`, a `checkbox` or a `switch` that changes it
+   *  from the list without opening the record. */
+  yesNo?: YesNoColumn<T>;
 }
+
+/** How a yes/no column reads, and whether it is changed from the list. */
+export type YesNoColumn<T> = {
+  look?: YesNoLook | "checkbox" | "switch";
+  /** Changes the row's value. Without it a checkbox or a switch reads as `check`: a control
+   *  that cannot be pressed is a promise the cell does not keep. */
+  onToggle?: (row: T, next: boolean) => void;
+  /** Which rows can be changed — a closed course's enrolment cannot. All of them by default. */
+  when?: (row: T) => boolean;
+};
 
 /** Writing a new record in the list. See the file's header. */
 export type DataTableCreate<T> = {

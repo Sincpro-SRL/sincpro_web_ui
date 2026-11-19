@@ -57,6 +57,9 @@ export type SwitchProps = {
   describedBy?: string;
   /** Forces the mode. By default it inherits the form's: in read mode it draws the answer. */
   mode?: FormMode;
+  /** Its name when there is no `Field` and no sentence beside it — a switch in a table cell,
+   *  named by its column. */
+  label?: string;
 };
 
 export function Switch({
@@ -67,6 +70,7 @@ export function Switch({
   id: ownId,
   describedBy: ownDescribedBy,
   mode,
+  label,
 }: SwitchProps) {
   const { id, labelledBy, describedBy } = useFieldIds({
     id: ownId,
@@ -98,6 +102,7 @@ export function Switch({
     <AriaSwitch
       id={id}
       aria-labelledby={named}
+      {...(named === undefined && label !== undefined ? { "aria-label": label } : {})}
       aria-describedby={describedBy}
       isSelected={checked}
       onChange={(next) => onChange?.(next)}
