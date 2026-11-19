@@ -278,14 +278,13 @@ export type ListDock = {
   /** What is done to the CHOSEN rows — «Enviar», «Imprimir ▸», «Archivar». Give the list a
    *  `selection` too. */
   selection?: readonly DockAction[];
-  /** Where the actions go: the BAR's buttons, or ONE pill floating at the BOTTOM, centred — the
-   *  list's actions, and the chosen rows' while some are chosen. Absent, the view style decides
-   *  (`ViewStyleProvider`): `traditional` → `bar`, `modern` → `bottom`. A collection
-   *  (`embedded`) keeps its own actions on its line, and in `modern` its chosen rows' pill takes
-   *  the record's floating place — the screen has one (`DockHost`). */
+  /** Where the list's actions go: the BAR's buttons (the default, in both styles — in the
+   *  modern bar at the start of the controls' row), or a pill floating at the BOTTOM, centred. */
   placement?: "bar" | "bottom";
-  /** Where the chosen rows' actions go when it is not where `placement` puts them: the BAR in
-   *  place of the search, or floating at the BOTTOM while the search stays in the bar. */
+  /** Where the chosen rows' actions go: the BAR in place of the search, or floating at the
+   *  BOTTOM while the search stays in the bar. Absent, the view style decides
+   *  (`ViewStyleProvider`): `traditional` → `bar`, `modern` → `bottom`. In a collection
+   *  (`embedded`) the floating pill takes the record's place — a screen has one (`DockHost`). */
   selectionPlacement?: "bottom" | "bar";
   /** The pill's band — `chrome` (dark) or `canvas` (light) — or `bare`, the bar's buttons. By
    *  default `bare` in the bar and `chrome` floating. */

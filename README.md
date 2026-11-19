@@ -273,7 +273,7 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`, `sidebar.brand`,
 `sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
 `navigation.item`, `dirty.blocked`, `dirty.bar`, `field`, `field.label`, `form.section`,
-`form.index`, `dock`, `dock.pill`, `dock.bare`, `pager`, `smart`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
+`form.index`, `dock`, `dock.pill`, `dock.bare`, `pager`, `pagination`, `smart`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
 `guide.progress`, `guide.title`, `guide.body`, `guide.actions`. A part that is one of many
 carries `data-key` too (`navigation.item`). Put your rules in a cascade layer above web-ui's, or
 outside any layer.
@@ -427,7 +427,8 @@ data — and the application's style decides how they are drawn, the way it choo
   its line (`Pager look="pill"`); a step down, the counters (boxes, as in the traditional
   style — `SmartButton look="link"` stays for an application that asks for it) and the state;
   the band is the ground; and the actions float in ONE pill at
-  the bottom, centred — a record's, and a list's. `placement="top"` rests a record's pill in
+  the bottom, centred — a record's, and what is done to a list's chosen rows (a list's own
+  actions are its bar's buttons, at the start of the controls' row). `placement="top"` rests a record's pill in
   the rail and floats it at the top on scroll.
 
 **The state.** `StatusBar look`: `track` (Odoo's — the traditional style's), `segmented` (a

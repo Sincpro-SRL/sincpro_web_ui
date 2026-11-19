@@ -6,6 +6,7 @@ import { SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface
 import type { Surface } from "@sincpro/web-ui/foundations/types";
 import type { ViewStyle } from "@sincpro/web-ui/foundations/viewStyle";
 import { Line } from "@sincpro/web-ui/primitives/block/Line";
+import { Hint } from "@sincpro/web-ui/primitives/hint/Hint";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
 
@@ -46,17 +47,19 @@ import type { ReactNode } from "react";
  *  ── The modern style: the trail is the heading ──────────────────────
  *
  *      ┌──────────────────────────────────────────────────────────────────┐
- *      │ Pagos › María Fernanda › Pagos                     1–2 / 2 ‹ › │
- *      │ what it is made of       🔍 search…        [sort][cols] [▤▦] │
+ *      │ Pagos › María Fernanda › Pagos (?)                  ( 1–2 / 2 ‹ › ) │
+ *      │ [+ Nuevo] [⋯]           🔍 search…          [sort][cols] [▤▦] │
  *      └──────────────────────────────────────────────────────────────────┘
- *                      ( Exportar · + Nuevo )   ← the list's actions float
+ *                  ( 2 elegidos ✕ · Aprobar )   ← only while rows are chosen
  *
  *  As a record in the modern style, WHERE I AM is the page's heading: the trail at the
  *  title's size (`Breadcrumb size="lg"`), its last crumb the list's name — so the title is
- *  not said twice —, the page range at the other end. The second row is how I look at the
- *  set: what it is made of, the search centred, sort, columns and the faces. The list's
- *  actions are the floating pill (`List.Dock`); drawn by hand they close the second row.
- *  Without crumbs the title is the heading. Compact keeps the one bar below.
+ *  not said twice —, what the list is made of on demand (`Hint`) and its counters beside
+ *  it, and the page range at the other end, as the record's pager pill. The second row is
+ *  what I do with the set: its actions at the start, the search centred, sort, columns and
+ *  the faces at the end. What is done to the chosen rows floats at the bottom while they are
+ *  chosen (`List.Dock`). Without crumbs the title is the heading. Compact keeps the one bar
+ *  below.
  *
  *  ── Inside a record it is ONE line (`inline`) ────────────────────────
  *
@@ -357,19 +360,43 @@ export function ListingBar({
   /* THE MODERN BAR — see «The modern style» above. Only with room for an identity:
      compact (a drawer, a phone) keeps the one bar. */
   const modern = look === "modern" && withIdentity;
+  /* Its counters, in the modern heading's line: how much there is of each kind, small. */
+  const counted =
+    counters === undefined ? null : (
+      <span className="flex min-w-0 flex-wrap items-baseline gap-x-3">
+        {counters.map((c) => (
+          <span key={c.label} className="flex items-baseline gap-1">
+            <span
+              className={`text-meta font-medium tabular-nums ${isChrome ? "text-chrome-ink" : "text-ink"}`}
+            >
+              {typeof c.value === "number" ? c.value.toLocaleString(copy.locale) : c.value}
+            </span>
+            <span className={`text-micro ${isChrome ? "text-chrome-muted" : "text-muted"}`}>
+              {c.label}
+            </span>
+          </span>
+        ))}
+      </span>
+    );
   const modernBar = !modern ? null : (
     <div className={`flex min-w-0 flex-col ${byDensity(d, "gap-2", "gap-1.5")}`}>
       <Line
         start={
-          crumbs === undefined ? (
-            heading
-          ) : (
-            <>
-              {/* The trail says the name; the outline still has the list's heading. */}
-              {title === undefined ? null : <h2 className="sr-only">{title}</h2>}
-              {crumbs}
-            </>
-          )
+          <div className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1">
+            {crumbs === undefined ? (
+              heading
+            ) : (
+              <>
+                {/* The trail says the name; the outline still has the list's heading. */}
+                {title === undefined ? null : <h2 className="sr-only">{title}</h2>}
+                {crumbs}
+              </>
+            )}
+            {/* What the list is made of, on demand: a sentence on the controls' row was a
+                line read once and then in the way. */}
+            {description === undefined ? null : <Hint>{description}</Hint>}
+            {counted}
+          </div>
         }
         end={pagination}
       />
@@ -377,7 +404,11 @@ export function ListingBar({
         asks="var(--container-crumb)"
         centerAsks={center === null ? "auto" : "var(--container-search)"}
         gap={byDensity(d, "gap-x-4 gap-y-2", "gap-x-2 gap-y-1.5")}
-        start={about}
+        start={
+          actions === undefined ? null : (
+            <div className="flex shrink-0 items-center gap-1.5">{actions}</div>
+          )
+        }
         center={
           center === null ? null : (
             /* `overflow-x-clip`: the same reason as the traditional top row's. */
@@ -387,13 +418,8 @@ export function ListingBar({
           )
         }
         end={
-          views === undefined && actions === undefined ? null : (
-            <div className="ml-auto flex shrink-0 items-center gap-2">
-              {views}
-              {actions === undefined ? null : (
-                <div className="flex shrink-0 items-center gap-1.5">{actions}</div>
-              )}
-            </div>
+          views === undefined ? null : (
+            <div className="ml-auto flex shrink-0 items-center gap-2">{views}</div>
           )
         }
       />

@@ -28,6 +28,9 @@ function Payments() {
         <List.Search>
           <input aria-label="Buscar" data-search />
         </List.Search>
+        <List.Dock
+          actions={[{ id: "new", label: "Nuevo pago", primary: true, onSelect: () => {} }]}
+        />
       </List.Bar>
       <List.Table<Payment>
         columns={[{ id: "detail", header: "Detalle", value: (p) => p.detail }]}
@@ -56,13 +59,16 @@ test("modern: the trail is the heading, at the title's size, and the title is no
   assert.equal(html.match(/<h2 class="text-title/g), null);
 });
 
-test("modern: the controls' row reads description · search · switcher, in that order", () => {
+test("modern: the controls' row reads actions · search · switcher; the description is on demand", () => {
   const html = modern();
-  const description = html.indexOf("los comprobantes enviados");
+  const start = html.indexOf("Nuevo pago");
   const search = html.indexOf("data-search");
   const switcher = html.indexOf('role="group"');
-  assert.ok(description > -1 && search > -1 && switcher > -1, "all three are drawn");
-  assert.ok(description < search && search < switcher, "in the order of the row");
+  assert.ok(start > -1 && search > -1 && switcher > -1, "all three are drawn");
+  assert.ok(start < search && search < switcher, "in the order of the row");
+  // The sentence is the heading's hint, not a line on the controls' row.
+  assert.match(html, /aria-label="los comprobantes enviados"/);
+  assert.doesNotMatch(html, /text-micro[^"]*">los comprobantes enviados</);
 });
 
 test("traditional is unchanged: small crumbs, the title as the visible heading", () => {

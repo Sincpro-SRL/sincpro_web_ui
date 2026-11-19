@@ -321,21 +321,22 @@ export function ListView<T extends object>({
       </>
     );
 
-  /* THE DOCK: the list's actions and what is done to the chosen rows, from the
-     same data. Where they go is the view style's: `traditional` draws them as the bar's buttons
-     (the primary first and gold, «⋯» with the rest), and the chosen rows' in the bar in place of
-     the search; `modern` floats ONE pill at the bottom, centred, as a record does — the list's
-     actions, and while rows are chosen, what is done to them instead («3 elegidas ✕ · …»). */
-  /* A collection (`embedded`) is a field of the record, and the record owns the screen's ONE
-     floating place (`DockHost`): its own actions stay on its line, and what is done to its
-     chosen rows TAKES the record's place in the modern style — or goes to its line while the
-     record is saying Save / Discard, which keeps the place. Without a record that floats
-     (a dialog, the traditional style) it floats on its own, as a screen's list does. */
+  /* THE DOCK: the list's actions and what is done to the chosen rows, from the same data.
+     The list's actions are the bar's buttons in both styles (the primary first and gold, «⋯»
+     with the rest) — in the modern bar, at the start of the controls' row. What is done to
+     the chosen rows is the view style's: `traditional` puts it in the bar in place of the
+     search; `modern` floats it at the bottom, centred, while rows are chosen («3 elegidas ✕ ·
+     …») — the one thing that floats on a list, as a record floats its own actions.
+
+     A collection (`embedded`) is a field of the record, and the record owns the screen's ONE
+     floating place (`DockHost`): what is done to its chosen rows TAKES the record's place in
+     the modern style — or goes to its line while the record is saying Save / Discard, which
+     keeps the place. Without a record that floats (a dialog, the traditional style) it floats
+     on its own, as a screen's list does. */
   const host = useDockHost();
   const modern = viewStyle === "modern";
-  const dockAt = dock?.placement ?? (modern && !embedded ? "bottom" : "bar");
-  const chosenAt =
-    dock?.selectionPlacement ?? (embedded ? (modern ? "bottom" : "bar") : dockAt);
+  const dockAt = dock?.placement ?? "bar";
+  const chosenAt = dock?.selectionPlacement ?? (modern ? "bottom" : "bar");
   const intoHost = embedded && host !== null && chosenAt === "bottom";
   const chosen = selection?.count ?? 0;
   const selectionDock =

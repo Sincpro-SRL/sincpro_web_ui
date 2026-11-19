@@ -187,14 +187,11 @@ export const EnUnaLista: Story = {
   ),
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    const pill = await canvas.findByRole("toolbar", { name: "Acciones de los pedidos" });
-    await expect(
-      within(pill).getByRole("button", { name: "Nueva cotización" }),
-    ).toBeVisible();
-    // It floats at the bottom, not in the bar.
-    await expect(pill.closest('[data-ui="dock"]')?.getAttribute("data-placement")).toBe(
-      "bottom",
-    );
+    const bar = await canvas.findByRole("toolbar", { name: "Acciones de los pedidos" });
+    await expect(within(bar).getByRole("button", { name: "Nueva cotización" })).toBeVisible();
+    // The list's actions are the bar's: nothing floats until rows are chosen.
+    await expect(bar.getAttribute("data-ui")).toBe("dock.bare");
+    await expect(canvasElement.querySelector('[data-ui="dock"]')).toBeNull();
     await expect(
       canvas.queryByRole("toolbar", { name: "Acciones de los elegidos" }),
     ).toBeNull();
@@ -204,10 +201,14 @@ export const EnUnaLista: Story = {
     await userEvent.click(boxes[1]!);
     const chosen = await canvas.findByRole("toolbar", { name: "Acciones de los elegidos" });
     await expect(within(chosen).getByText("elegidos")).toBeVisible();
-    // ONE pill at the bottom: the chosen rows' takes the list's place.
+    // What is done to them floats at the bottom; «Nueva cotización» stays in the bar —
+    // choosing is not entering a mode.
+    await expect(chosen.closest('[data-ui="dock"]')?.getAttribute("data-placement")).toBe(
+      "bottom",
+    );
     await expect(
-      canvas.queryByRole("toolbar", { name: "Acciones de los pedidos" }),
-    ).toBeNull();
+      canvas.getByRole("toolbar", { name: "Acciones de los pedidos" }),
+    ).toBeVisible();
     await expect(within(chosen).getByRole("button", { name: "Enviar" })).toBeVisible();
     await expect(
       within(chosen).getByRole("button", { name: /Elegir los 187 que coinciden/ }),
@@ -259,9 +260,10 @@ export const EnUnaListaTradicional: Story = {
 /**
  * **Una lista que cuelga de otra cosa, en el estilo moderno** (#68): las migas SON el encabezado,
  * como en un registro — «Ventas › Clientes › Distribuidora Andina S.R.L. › Pedidos» en una sola
- * línea, la última al tamaño del título y sin repetirlo debajo —, y la segunda fila es cómo se
- * mira el conjunto: de qué está hecho, el buscador al centro, ordenar y las caras. Las acciones,
- * en la píldora.
+ * línea, la última al tamaño del título y sin repetirlo debajo —, de qué está hecha a pedido (?),
+ * y el rango como la píldora del paginador del registro. La segunda fila es lo que hago con el
+ * conjunto: sus acciones, el buscador al centro, ordenar y las caras. Flota sólo lo que se hace
+ * con las filas elegidas.
  */
 export const MigasAnidadas: Story = {
   name: "Migas anidadas · moderno",
@@ -290,15 +292,24 @@ export const MigasAnidadas: Story = {
     const root = within(trail).getByRole("link", { name: "Ventas" });
     const top = (el: Element) => el.getBoundingClientRect();
     await expect(Math.abs(top(root).bottom - top(here).bottom)).toBeLessThan(6);
-    // One row for how the set is looked at: what it is made of, the search, sort.
+    // What the list is made of, on demand beside the heading — not a line of its own.
+    const about = canvas.getByRole("button", {
+      name: "cotizaciones, pedidos confirmados y lo que ya se facturó",
+    });
+    await expect(Math.abs(top(about).top - top(here).top)).toBeLessThan(24);
+    // The page range is the record's pager's pill.
+    await expect(
+      canvasElement.querySelector('[data-ui="pagination"]')?.getAttribute("data-look"),
+    ).toBe("pill");
+    // One row for what I do with the set: its actions, the search, sort — in that order.
+    const start = canvas.getByRole("button", { name: /Nueva cotización/ });
     const search = canvas.getByRole("combobox", { name: "Buscar" });
     const sort = canvas.getByRole("button", { name: /Ordenar/ });
-    const about = canvas.getByText(
-      "cotizaciones, pedidos confirmados y lo que ya se facturó",
-    );
     const middle = (el: Element) => (top(el).top + top(el).bottom) / 2;
     await expect(Math.abs(middle(search) - middle(sort))).toBeLessThan(12);
-    await expect(Math.abs(middle(search) - middle(about))).toBeLessThan(24);
+    await expect(Math.abs(middle(search) - middle(start))).toBeLessThan(12);
+    await expect(top(start).right).toBeLessThan(top(search).left);
+    await expect(top(search).right).toBeLessThan(top(sort).left);
     await expect(top(search).top).toBeGreaterThan(top(here).bottom);
   },
 };
