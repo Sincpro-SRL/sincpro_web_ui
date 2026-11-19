@@ -280,7 +280,9 @@ export type ListDock = {
   selection?: readonly DockAction[];
   /** Where the actions go: the BAR's buttons, or ONE pill floating at the BOTTOM, centred — the
    *  list's actions, and the chosen rows' while some are chosen. Absent, the view style decides
-   *  (`ViewStyleProvider`): `traditional` → `bar`, `modern` → `bottom`. */
+   *  (`ViewStyleProvider`): `traditional` → `bar`, `modern` → `bottom`. A collection
+   *  (`embedded`) keeps its own actions on its line, and in `modern` its chosen rows' pill takes
+   *  the record's floating place — the screen has one (`DockHost`). */
   placement?: "bar" | "bottom";
   /** Where the chosen rows' actions go when it is not where `placement` puts them: the BAR in
    *  place of the search, or floating at the BOTTOM while the search stays in the bar. */

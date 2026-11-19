@@ -2,6 +2,9 @@
 
 import {
   ActionDock,
+  DockBand,
+  type DockHost,
+  DockHostContext,
   type RecordDockProps,
 } from "@sincpro/web-ui/components/record/ActionDock";
 import { Breadcrumb, type Crumb } from "@sincpro/web-ui/components/record/Breadcrumb";
@@ -22,7 +25,7 @@ import { useViewStyle, type ViewStyle } from "@sincpro/web-ui/foundations/viewSt
 import { Line } from "@sincpro/web-ui/primitives/block/Line";
 import { Tag } from "@sincpro/web-ui/primitives/tag/Tag";
 import type { LucideIcon } from "lucide-react";
-import { type ReactNode, useEffect, useRef, useState } from "react";
+import { type ReactNode, useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 /* ==================================================================== *
  *  THE SHAPE OF A RECORD — the rail and the sheet.
@@ -189,6 +192,22 @@ export function RecordHeader({
     dock === undefined ? undefined : (dock.placement ?? (modern ? "bottom" : "rail"));
   const docked = dockWhere === "top" || dockWhere === "bottom";
   const railDirty = floating || docked ? undefined : dirty;
+  /* ONE PILL PER SCREEN (see `DockHost`): floating at the bottom, the record's pill is the
+     screen's place for one, and a collection inside it takes that place while it has rows
+     chosen. `taken` counts the takers; the band they draw into is `slot`. */
+  const hosting = dockWhere === "bottom";
+  const [taken, setTaken] = useState(0);
+  const [slot, setSlot] = useState<HTMLDivElement | null>(null);
+  const take = useCallback(() => {
+    setTaken((n) => n + 1);
+    return () => setTaken((n) => n - 1);
+  }, []);
+  const changed = dirty !== undefined;
+  const host = useMemo<DockHost | null>(
+    () => (hosting ? { target: slot, dirty: changed, take } : null),
+    [hosting, slot, changed, take],
+  );
+  const given = hosting && taken > 0 && !changed;
   const railActions_ = docked ? undefined : dock !== undefined ? (
     <ActionDock {...dock} look="bare" placement="inline" />
   ) : (
@@ -416,7 +435,7 @@ export function RecordHeader({
   );
 
   return (
-    <>
+    <DockHostContext value={host}>
       {withRail ? (
         <SurfaceProvider value={railSurface}>
           {/* The record's width, measured for the rail: below `handheld` its primary
@@ -710,7 +729,10 @@ export function RecordHeader({
         <ThumbBar mode={thumb} dirty={railDirty} primaries={primaries} />
       )}
       {floating && !docked ? <DirtyBar dirty={dirty} saved={saved} /> : null}
-      {dock === undefined || dockWhere !== "bottom" ? null : (
+      {dock === undefined || !hosting ? null : given ? (
+        /* Given away: an empty band where the taker draws its pill. */
+        <DockBand ref={setSlot} placement="bottom" />
+      ) : (
         <ActionDock
           {...dock}
           {...(dirty === undefined ? {} : { dirty })}
@@ -718,6 +740,6 @@ export function RecordHeader({
           placement="bottom"
         />
       )}
-    </>
+    </DockHostContext>
   );
 }

@@ -29,8 +29,9 @@ import {
   type ViewOption,
   ViewSwitcher,
 } from "@sincpro/web-ui/components/listing/ViewSwitcher";
-import { ActionDock } from "@sincpro/web-ui/components/record/ActionDock";
+import { ActionDock, useDockHost } from "@sincpro/web-ui/components/record/ActionDock";
 import { Breadcrumb } from "@sincpro/web-ui/components/record/Breadcrumb";
+import type { DockAction } from "@sincpro/web-ui/components/record/dock";
 import { RecordTimeline } from "@sincpro/web-ui/components/timeline/RecordTimeline";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { useDensity } from "@sincpro/web-ui/foundations/density";
@@ -77,7 +78,16 @@ import {
   Table2,
   X,
 } from "lucide-react";
-import { Fragment, lazy, type ReactNode, Suspense, useCallback, useMemo } from "react";
+import {
+  Fragment,
+  lazy,
+  type ReactNode,
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+} from "react";
+import { createPortal } from "react-dom";
 
 /* The calendar (FullCalendar) and the gantt (SVAR) are each about a third of a list's weight,
    and most lists never show either face. Each is its own chunk, fetched the first time its
@@ -316,19 +326,36 @@ export function ListView<T extends object>({
      (the primary first and gold, «⋯» with the rest), and the chosen rows' in the bar in place of
      the search; `modern` floats ONE pill at the bottom, centred, as a record does — the list's
      actions, and while rows are chosen, what is done to them instead («3 elegidas ✕ · …»). */
-  const dockAt = dock?.placement ?? (viewStyle === "modern" ? "bottom" : "bar");
+  /* A collection (`embedded`) is a field of the record, and the record owns the screen's ONE
+     floating place (`DockHost`): its own actions stay on its line, and what is done to its
+     chosen rows TAKES the record's place in the modern style — or goes to its line while the
+     record is saying Save / Discard, which keeps the place. Without a record that floats
+     (a dialog, the traditional style) it floats on its own, as a screen's list does. */
+  const host = useDockHost();
+  const modern = viewStyle === "modern";
+  const dockAt = dock?.placement ?? (modern && !embedded ? "bottom" : "bar");
+  const chosenAt =
+    dock?.selectionPlacement ?? (embedded ? (modern ? "bottom" : "bar") : dockAt);
+  const intoHost = embedded && host !== null && chosenAt === "bottom";
   const chosen = selection?.count ?? 0;
   const selectionDock =
     dock?.selection === undefined || selection === undefined || chosen === 0
       ? undefined
       : dock.selection;
   const floatsChosen =
-    selectionDock !== undefined && (dock?.selectionPlacement ?? dockAt) === "bottom";
+    selectionDock !== undefined && chosenAt === "bottom" && !(intoHost && host.dirty);
+  const taking = floatsChosen && intoHost;
+  /* ONE gold per screen, and inside a record it is the record's: on its own line a collection
+     draws its primary as the others. Taking the record's place, it is the only pill there is. */
+  const quiet = (actions: readonly DockAction[]): readonly DockAction[] =>
+    actions.map((one) => (one.primary === true ? { ...one, primary: false } : one));
+  const take = host?.take;
+  useEffect(() => (taking ? take?.() : undefined), [taking, take]);
   const listPill =
     dock?.actions === undefined ? undefined : (
       <ActionDock
         placement={dockAt === "bottom" ? "bottom" : "inline"}
-        actions={dock.actions}
+        actions={embedded && dockAt === "bar" ? quiet(dock.actions) : dock.actions}
         look={dock.look ?? (dockAt === "bottom" ? "chrome" : "bare")}
         {...(dock.visible === undefined ? {} : { visible: dock.visible })}
         {...(dock.label === undefined ? {} : { label: dock.label })}
@@ -347,8 +374,9 @@ export function ListView<T extends object>({
   const chosenPill =
     selectionDock === undefined ? null : (
       <ActionDock
-        placement={floatsChosen ? "bottom" : "inline"}
-        actions={selectionDock}
+        /* Into the record's band it is only the pill: the band is the record's. */
+        placement={floatsChosen && !taking ? "bottom" : "inline"}
+        actions={embedded && !floatsChosen ? quiet(selectionDock) : selectionDock}
         /* Floating, the pill says how many and offers the rest; in the bar the bar does. */
         {...(floatsChosen ? { lead: chosenLead } : {})}
         look={dock?.look ?? (floatsChosen ? "chrome" : "bare")}
@@ -357,7 +385,15 @@ export function ListView<T extends object>({
       />
     );
   /* At the bottom there is ONE pill: the chosen rows' while some are chosen, else the list's. */
-  const floating = floatsChosen ? chosenPill : dockAt === "bottom" ? listPill : null;
+  const floating = taking
+    ? host?.target == null || chosenPill === null
+      ? null
+      : createPortal(chosenPill, host.target)
+    : floatsChosen
+      ? chosenPill
+      : dockAt === "bottom"
+        ? listPill
+        : null;
 
   /* Embedded, the line is drawn only if it has something to OFFER: a count alone repeats
      what the rows (and the footer) already say. */

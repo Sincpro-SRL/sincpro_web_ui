@@ -1,4 +1,14 @@
-import { ActionDock, List, Pagination, SearchBar, ViewStyleProvider } from "@sincpro/web-ui";
+import {
+  ActionDock,
+  Field,
+  List,
+  Pagination,
+  Record,
+  SearchBar,
+  SearchField,
+  TextInput,
+  ViewStyleProvider,
+} from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   Archive,
@@ -8,7 +18,9 @@ import {
   Plus,
   Printer,
   Upload,
+  Users,
 } from "lucide-react";
+import { useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
 import { ORDER_COUNTERS as COUNTERS } from "../../support/erp-lists";
@@ -285,5 +297,146 @@ export const MigasAnidadas: Story = {
     await expect(Math.abs(middle(search) - middle(sort))).toBeLessThan(12);
     await expect(Math.abs(middle(search) - middle(about))).toBeLessThan(24);
     await expect(top(search).top).toBeGreaterThan(top(here).bottom);
+  },
+};
+
+/* A sales team: the record's actions floating, and its orders as a collection whose rows are
+   chosen and acted on. */
+function EquipoConPedidos() {
+  const l = useLista();
+  const [query, setQuery] = useState("");
+  const [goal, setGoal] = useState("250.000");
+  const [kept, setKept] = useState("250.000");
+  const [last, setLast] = useState("—");
+  return (
+    <div className="min-h-dvh bg-ground">
+      <Record
+        identity={{ icon: Users, title: "Corporativo · La Paz", subtitle: last }}
+        {...(goal === kept
+          ? {}
+          : {
+              dirty: {
+                changes: 1,
+                saving: false,
+                onDiscard: () => setGoal(kept),
+                onSave: () => setKept(goal),
+              },
+            })}
+      >
+        <Record.Rail>
+          <Record.Crumbs
+            crumbs={[
+              { label: "Equipos", onClick: () => {} },
+              { label: "Corporativo · La Paz" },
+            ]}
+          />
+          <Record.Dock actions={invoiceActions(setLast)} label="Acciones del equipo" />
+        </Record.Rail>
+        <Record.Paper>
+          <Field label="Meta del mes">
+            <TextInput value={goal} onChange={setGoal} />
+          </Field>
+          <List<Item>
+            embedded
+            items={ITEMS}
+            keyOf={(d) => d.id}
+            selection={l.selection}
+            onOpen={() => {}}
+          >
+            <List.Bar>
+              <List.Search>
+                <SearchField
+                  value={query}
+                  onChange={setQuery}
+                  placeholder="Buscar un pedido…"
+                />
+              </List.Search>
+              <List.Dock
+                selectionLabel="Acciones de los pedidos elegidos"
+                selection={[
+                  {
+                    id: "send",
+                    label: "Enviar pedidos",
+                    icon: Mail,
+                    primary: true,
+                    onSelect: () => {},
+                  },
+                  { id: "print", label: "Imprimir", icon: Printer, onSelect: () => {} },
+                ]}
+              />
+            </List.Bar>
+            <List.Rows<Item> row={filaDe} />
+          </List>
+        </Record.Paper>
+      </Record>
+    </div>
+  );
+}
+
+/**
+ * **Una colección dentro de un registro, en el estilo moderno** (#68): la pantalla tiene UNA
+ * píldora. Al elegir pedidos, la suya toma el lugar de la del registro — «2 elegidos ✕ · Imprimir
+ * · Enviar pedidos» donde estaba «Enviar · Imprimir · ⋯ · Registrar pago» — y al deshacer la
+ * selección lo devuelve. Con cambios sin guardar el lugar es de Guardar / Descartar: lo que se
+ * hace con los elegidos pasa a la línea de la colección.
+ */
+export const EnUnaColeccion: Story = {
+  name: "En una colección · moderno",
+  render: () => (
+    <ViewStyleProvider value="modern">
+      <EquipoConPedidos />
+    </ViewStyleProvider>
+  ),
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const record = () => canvas.queryByRole("toolbar", { name: "Acciones del equipo" });
+    const chosen = () =>
+      canvas.queryByRole("toolbar", { name: "Acciones de los pedidos elegidos" });
+    await waitFor(() => expect(record()).toBeVisible());
+
+    const boxes = canvas.getAllByRole("checkbox", { name: /^Elegir S/ });
+    await userEvent.click(boxes[0]!);
+    await userEvent.click(boxes[1]!);
+    // ONE pill: the chosen rows' took the record's place, in the record's band.
+    await waitFor(() => expect(chosen()).toBeVisible());
+    await expect(record()).toBeNull();
+    await expect(canvasElement.querySelectorAll('[data-ui="dock"]').length).toBe(1);
+    await expect(within(chosen()!).getByText("elegidos")).toBeVisible();
+
+    // A change: Save / Discard keep the place; the chosen rows' actions go to the line.
+    await userEvent.type(canvas.getByRole("textbox", { name: "Meta del mes" }), "0");
+    await waitFor(() =>
+      expect(canvas.getByRole("button", { name: /Guardar/ })).toBeVisible(),
+    );
+    await expect(canvasElement.querySelectorAll('[data-ui="dock"]').length).toBe(1);
+    await expect(chosen()!.getAttribute("data-ui")).toBe("dock.bare");
+    await userEvent.click(canvas.getByRole("button", { name: /Descartar/ }));
+
+    // Cleared, the place is the record's again.
+    await waitFor(() => expect(chosen()?.getAttribute("data-ui")).not.toBe("dock.bare"));
+    await userEvent.click(canvas.getByRole("button", { name: "Deshacer la selección" }));
+    await waitFor(() => expect(record()).toBeVisible());
+    await expect(chosen()).toBeNull();
+  },
+};
+
+/**
+ * **La misma colección, en el estilo tradicional**: las acciones del registro en su riel, y lo
+ * que se hace con los pedidos elegidos en la línea de la colección, en lugar del buscador.
+ */
+export const EnUnaColeccionTradicional: Story = {
+  name: "En una colección · tradicional",
+  render: () => <EquipoConPedidos />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await canvas.findByRole("toolbar", { name: "Acciones del equipo" });
+    const boxes = canvas.getAllByRole("checkbox", { name: /^Elegir S/ });
+    await userEvent.click(boxes[0]!);
+    const chosen = await canvas.findByRole("toolbar", {
+      name: "Acciones de los pedidos elegidos",
+    });
+    await expect(chosen.getAttribute("data-ui")).toBe("dock.bare");
+    await expect(canvas.getByRole("toolbar", { name: "Acciones del equipo" })).toBeVisible();
+    await expect(canvasElement.querySelector('[data-ui="dock"]')).toBeNull();
   },
 };
