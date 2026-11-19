@@ -1,5 +1,6 @@
 import type {
   BuiltFilter,
+  FieldPathValue,
   ModelDefinition,
   RecordOption,
   RecordSearch,
@@ -96,10 +97,146 @@ export const INVOICE_SEARCH_MODEL: ModelDefinition = {
   },
 };
 
-const PARTNERS: readonly RecordOption[] = CUSTOMER_OPTIONS.map((one) => ({
-  id: one.value,
-  name: one.label,
-  meta: `NIT ${one.value}`,
+/* ── The records on the other side ─────────────────────────────────── */
+
+export type Region = "andina" | "cono-sur" | "amazonica";
+const REGION_LABEL: Record<Region, string> = {
+  andina: "Andina",
+  "cono-sur": "Cono Sur",
+  amazonica: "Amazónica",
+};
+
+export type CountryRow = { id: string; name: string; code: string; region: Region };
+export const COUNTRY_ROWS: readonly CountryRow[] = [
+  { id: "BO", name: "Bolivia", code: "BO", region: "andina" },
+  { id: "PE", name: "Perú", code: "PE", region: "andina" },
+  { id: "EC", name: "Ecuador", code: "EC", region: "andina" },
+  { id: "CL", name: "Chile", code: "CL", region: "cono-sur" },
+  { id: "AR", name: "Argentina", code: "AR", region: "cono-sur" },
+  { id: "PY", name: "Paraguay", code: "PY", region: "cono-sur" },
+  { id: "BR", name: "Brasil", code: "BR", region: "amazonica" },
+];
+
+export type PartnerRow = {
+  id: string;
+  name: string;
+  tax_id: string;
+  country_id: string;
+  country: CountryRow;
+};
+const PARTNER_COUNTRY = ["BO", "PE", "BO", "AR", "BO", "CL"];
+export const PARTNER_ROWS: readonly PartnerRow[] = CUSTOMER_OPTIONS.map((one, at) => {
+  const country = COUNTRY_ROWS.find((each) => each.id === PARTNER_COUNTRY[at % 6])!;
+  return {
+    id: one.value,
+    name: one.label,
+    tax_id: one.value,
+    country_id: country.id,
+    country,
+  };
+});
+
+/** A customer as a many2one reaches it: the record, with its own country. */
+export function partnerOf(taxId: string): PartnerRow | undefined {
+  return PARTNER_ROWS.find((one) => one.id === taxId);
+}
+
+export const COUNTRY_MODEL: ModelDefinition = {
+  aggregate: "country",
+  identity: "id",
+  fields: {
+    name: { type: "text", nullable: false, sortable: true, ops: ["=", "!=", "like"] },
+    code: { type: "text", nullable: false, sortable: true, ops: ["=", "!=", "like"] },
+    region: {
+      type: "text",
+      nullable: false,
+      sortable: true,
+      ops: ["=", "!=", "in", "not in"],
+      choices: Object.keys(REGION_LABEL),
+    },
+  },
+  translations: {
+    name: { default: "País" },
+    labels: {
+      name: { default: "Nombre" },
+      code: { default: "Código" },
+      region: { default: "Región" },
+    },
+    choices: {
+      region: Object.fromEntries(
+        Object.entries(REGION_LABEL).map(([value, word]) => [value, { default: word }]),
+      ),
+    },
+  },
+};
+
+export const PARTNER_MODEL: ModelDefinition = {
+  aggregate: "partner",
+  identity: "id",
+  fields: {
+    name: { type: "text", nullable: false, sortable: true, ops: ["=", "!=", "like"] },
+    tax_id: { type: "text", nullable: false, sortable: true, ops: ["=", "like"] },
+    country: {
+      type: "many2one",
+      nullable: true,
+      sortable: false,
+      ops: [],
+      kind: "relation",
+      relation: "Country",
+      identifiedBy: "country_id",
+    },
+    country_id: {
+      type: "text",
+      nullable: true,
+      sortable: true,
+      ops: ["=", "!=", "in", "not in", "is null", "is not null"],
+    },
+  },
+  translations: {
+    name: { default: "Cliente" },
+    labels: {
+      name: { default: "Nombre" },
+      tax_id: { default: "NIT" },
+      country: { default: "País" },
+      country_id: { default: "País" },
+    },
+  },
+};
+
+const NAMED_MODEL = (aggregate: string, label: string): ModelDefinition => ({
+  aggregate,
+  identity: "id",
+  fields: { name: { type: "text", nullable: false, sortable: true, ops: ["=", "like"] } },
+  translations: { name: { default: label }, labels: { name: { default: "Nombre" } } },
+});
+
+const MODELS_AT: Readonly<Record<string, ModelDefinition>> = {
+  customer: PARTNER_MODEL,
+  "customer.country": COUNTRY_MODEL,
+  salesperson: NAMED_MODEL("user", "Vendedor"),
+  labels: NAMED_MODEL("tag", "Etiqueta"),
+};
+
+/** The model at the end of a path of relations, a little late — what `loadModel` answers. */
+export function loadInvoiceModel(path: FieldPathValue): Promise<ModelDefinition> {
+  const model = MODELS_AT[path.join(".")];
+  return new Promise((resolve, reject) =>
+    setTimeout(
+      () => (model === undefined ? reject(new Error(`no model at ${path}`)) : resolve(model)),
+      120,
+    ),
+  );
+}
+
+const PARTNERS: readonly RecordOption[] = PARTNER_ROWS.map((one) => ({
+  id: one.id,
+  name: one.name,
+  meta: `NIT ${one.tax_id} · ${one.country.name}`,
+}));
+const COUNTRIES: readonly RecordOption[] = COUNTRY_ROWS.map((one) => ({
+  id: one.id,
+  name: one.name,
+  meta: one.code,
 }));
 const USERS: readonly RecordOption[] = SALESPERSON_OPTIONS.map((one) => ({
   id: one.value,
@@ -111,9 +248,15 @@ const TAGS: readonly RecordOption[] = INVOICE_LABELS.map((one) => ({
 }));
 const RECORDS: Readonly<Record<string, readonly RecordOption[]>> = {
   Partner: PARTNERS,
+  Country: COUNTRIES,
   User: USERS,
   Tag: TAGS,
 };
+
+/** Every record of a relation, for a chooser. */
+export function recordsOf(relation: string): readonly RecordOption[] {
+  return RECORDS[relation] ?? [];
+}
 
 const fold = (text: string) =>
   text
@@ -162,6 +305,8 @@ export function readInvoice(invoice: Invoice, field: string): unknown {
   switch (field) {
     case "customer_id":
       return invoice.taxId;
+    case "customer":
+      return partnerOf(invoice.taxId);
     case "customer_name":
       return invoice.customer;
     case "salesperson_id":

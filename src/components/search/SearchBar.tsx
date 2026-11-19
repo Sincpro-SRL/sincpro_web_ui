@@ -29,7 +29,7 @@ import {
   suggest,
   withValue,
 } from "@sincpro/web-ui/components/search/query";
-import type { SearchRecords } from "@sincpro/web-ui/components/search/records";
+import type { BrowseRecords, SearchRecords } from "@sincpro/web-ui/components/search/records";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
@@ -551,10 +551,10 @@ export type SearchBarProps = {
    * Absent, the one of the nearest `SearchProvider`.
    */
   searchRecords?: SearchRecords;
-  /** «Buscar más…» under an unfolded relation's records: the chooser with the whole list
-   *  (`api.pick` + `List onChoose`), on what was typed. What is chosen there, the application
-   *  puts with `withValue(criteria, field, record)`. */
-  onBrowseRecords?: (field: QueryField, text: string) => void;
+  /** «Buscar más…» under a relation's records: the application's chooser with the whole list
+   *  —`List onChoose` with its own search bar—, on what was typed. What it answers lands in the
+   *  relation's chip. Absent, the one of the nearest `SearchProvider`. */
+  browseRecords?: BrowseRecords;
   /** How a record found reads in the dropdown — a face, a NIT, a balance —, for one that does
    *  not fit «name + meta». The row around it stays the bar's: keys, focus, choosing. */
   renderRecord?: (
@@ -585,7 +585,7 @@ export function SearchBar({
   onOpenBuilder,
   literal,
   searchRecords: ownSearchRecords,
-  onBrowseRecords,
+  browseRecords: ownBrowseRecords,
   renderRecord,
   trailing,
   collapseAfter,
@@ -594,9 +594,10 @@ export function SearchBar({
   const copy = useUiCopy();
   const sup = useSurface(surface);
   /* Its own, or the application's (`SearchProvider`): wired once for every bar. */
-  const { searchRecords } = useSearchSettings(
-    ownSearchRecords === undefined ? {} : { searchRecords: ownSearchRecords },
-  );
+  const { searchRecords, browseRecords } = useSearchSettings({
+    ...(ownSearchRecords === undefined ? {} : { searchRecords: ownSearchRecords }),
+    ...(ownBrowseRecords === undefined ? {} : { browseRecords: ownBrowseRecords }),
+  });
   const [text, setText] = useState("");
   const [panel, setPanel] = useState(false);
   /* Which edge of the field the panel hangs from. It is wider than the field when the
@@ -801,7 +802,7 @@ export function SearchBar({
             : undefined;
     if (status !== undefined)
       rows.push({ kind: "status", id: `s:${which}`, text: status, ...nested });
-    if (onBrowseRecords !== undefined) {
+    if (browseRecords !== undefined) {
       rows.push({ kind: "more", id: `m:${which}`, field, text: query, ...nested });
     }
     return rows;
@@ -1003,6 +1004,40 @@ export function SearchBar({
     input.current?.focus();
   }
 
+  /** Several values of a field at once —what a chooser answers—, into the same chip. */
+  function putValues(field: QueryField, options: readonly RecordOption[]) {
+    if (options.length === 0) return;
+    const node = openGroup === null ? undefined : at(criteria, openGroup);
+    const into = (list: readonly SearchCriteria[]) =>
+      options.reduce<SearchCriteria[]>((all, one) => withValue(all, field, one), [...list]);
+    if (openGroup !== null && node?.kind === "join") {
+      onCriteriaChange(replaceAt(criteria, openGroup, { ...node, of: into(node.of) }));
+    } else {
+      onCriteriaChange(into(criteria));
+    }
+    setText("");
+    setStep({});
+    setUnfolded(null);
+    input.current?.focus();
+  }
+
+  /** «Buscar más…»: the application's chooser over the relation, on what was typed. What is
+   *  already in the relation's chip is said, so a chooser of many leaves it out. */
+  function browse(field: QueryField, query: string) {
+    const relation = field.relation;
+    if (browseRecords === undefined || relation === undefined) return;
+    const held = criteria.find((one) => one.id === `v:${fieldKey(field)}`);
+    browseRecords({
+      relation: relation.relation,
+      path: [relation.name],
+      label: field.label,
+      text: query,
+      many: true,
+      chosen: held?.kind === "filter" ? (held.values ?? []) : [],
+      choose: (records) => putValues(field, records),
+    });
+  }
+
   /** What was chosen in the dropdown, depending on what kind it is. */
   function pick(suggestion: QuerySuggestion) {
     if (suggestion.kind === "field") {
@@ -1069,7 +1104,7 @@ export function SearchBar({
   function choose(item: Item | undefined) {
     if (item === undefined) return;
     if (item.kind === "suggestion") pick(item.suggestion);
-    else if (item.kind === "more") onBrowseRecords?.(item.field, item.text);
+    else if (item.kind === "more") browse(item.field, item.text);
     else if (item.kind === "advanced") {
       /* What was typed was not a question the bar could write — that is why the builder was
          chosen —: it goes, and the dropdown with it, instead of staying open behind the

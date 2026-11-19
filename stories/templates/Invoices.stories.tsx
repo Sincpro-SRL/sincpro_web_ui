@@ -37,6 +37,8 @@ import {
   type OpenTarget,
   Pagination,
   Record,
+  type RecordBrowse,
+  type RecordOption,
   RelationValue,
   SearchBar,
   type SearchCriteria,
@@ -69,6 +71,7 @@ import {
   LogOut,
   Package,
   Receipt,
+  Search,
   Settings,
   ShoppingCart,
   SlidersHorizontal,
@@ -111,6 +114,7 @@ import {
   SUGGESTED_TERM,
   TERM_SOURCE,
 } from "../support/erp-assist";
+import { RecordChooser } from "../support/erp-chooser";
 import {
   blankLine,
   lineColumns,
@@ -123,6 +127,7 @@ import { customerCard, salesperson } from "../support/erp-people";
 import {
   INVOICE_SEARCH_MODEL,
   literalInvoices,
+  loadInvoiceModel,
   readInvoice,
   searchInvoiceRecords,
 } from "../support/erp-search";
@@ -305,6 +310,31 @@ const builderRef = (selection: BuiltFilter | undefined): ResourceRef => ({
   ...(selection === undefined ? {} : { params: { selection: JSON.stringify(selection) } }),
 });
 const BUILDER_MODAL = { to: Destination.Modal, size: { w: 880, h: 560 } };
+
+/** «Buscar más…» of a relation: its records in choosing mode, as a view that answers. What it
+ *  carries travels as params — words — and the answer is the records chosen. */
+const chooserRef = (browse: RecordBrowse): ResourceRef => ({
+  domain: "ventas",
+  kind: "elegir-registros",
+  params: {
+    relation: browse.relation,
+    label: browse.label,
+    text: browse.text,
+    many: browse.many ? "1" : "",
+    chosen: JSON.stringify(browse.chosen),
+  },
+});
+const CHOOSER_MODAL = { to: Destination.Modal, size: { w: 760, h: 520 } };
+
+/** The chooser opened from where the person is: a modal over a page, beside a modal —never a
+ *  modal over a modal—. What web-framework wires once per surface. */
+const browseFrom =
+  (api: ViewProps["api"], over: "page" | "modal") => (browse: RecordBrowse) =>
+    api.pick<RecordOption[]>(
+      chooserRef(browse),
+      (records) => browse.choose(records),
+      over === "page" ? CHOOSER_MODAL : { to: Destination.Side },
+    );
 type Applied = { selection: BuiltFilter | undefined; said: string | undefined };
 
 /** The cuts somebody already thought of, by name: one click in the bar's panel. */
@@ -522,6 +552,7 @@ function InvoiceList({ api }: ViewProps) {
           <SearchBar
             facets={[]}
             model={INVOICE_SEARCH_MODEL}
+            browseRecords={browseFrom(api, "page")}
             criteria={criteria}
             onCriteriaChange={(next) => {
               setCriteria(next);
@@ -1406,11 +1437,29 @@ const matching = (query: string) => (i: Invoice) =>
 function AdvancedSearch({ api, resource }: ViewProps) {
   const opened = resource.params?.["selection"];
   return (
-    <FilterBuilder
-      model={INVOICE_SEARCH_MODEL}
-      {...(opened === undefined ? {} : { initial: JSON.parse(opened) as BuiltFilter })}
-      onApply={(selection, said) => api.answer({ selection, said } satisfies Applied)}
-      onCancel={() => api.close()}
+    /* «Buscar más…» from here goes BESIDE: this is already a modal. */
+    <SearchProvider browseRecords={browseFrom(api, "modal")}>
+      <FilterBuilder
+        model={INVOICE_SEARCH_MODEL}
+        loadModel={loadInvoiceModel}
+        {...(opened === undefined ? {} : { initial: JSON.parse(opened) as BuiltFilter })}
+        onApply={(selection, said) => api.answer({ selection, said } satisfies Applied)}
+        onCancel={() => api.close()}
+      />
+    </SearchProvider>
+  );
+}
+
+/** «Buscar más…»: the relation's records with their own search, answering the ones chosen. */
+function ChooseRecords({ api, resource }: ViewProps) {
+  const params = resource.params ?? {};
+  return (
+    <RecordChooser
+      relation={params["relation"] ?? ""}
+      text={params["text"] ?? ""}
+      many={params["many"] === "1"}
+      chosen={JSON.parse(params["chosen"] ?? "[]") as RecordOption[]}
+      onChoose={(records) => api.answer(records)}
     />
   );
 }
@@ -1483,6 +1532,13 @@ const VIEWS: readonly ViewSpec[] = [
     title: () => "Búsqueda avanzada",
     icon: SlidersHorizontal,
     load: async () => AdvancedSearch,
+  },
+  {
+    domain: "ventas",
+    kind: "elegir-registros",
+    title: (ref) => ref.params?.["label"] ?? "Elegir",
+    icon: Search,
+    load: async () => ChooseRecords,
   },
 ];
 

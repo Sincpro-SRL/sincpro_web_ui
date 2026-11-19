@@ -23,7 +23,7 @@ import {
   filterableNames,
   type ModelDefinition,
 } from "@sincpro/web-ui/components/search/model";
-import type { SearchRecords } from "@sincpro/web-ui/components/search/records";
+import type { BrowseRecords, SearchRecords } from "@sincpro/web-ui/components/search/records";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { GRAIN_ORDER } from "@sincpro/web-ui/foundations/grouping";
 import { useSurface } from "@sincpro/web-ui/foundations/surface";
@@ -222,6 +222,7 @@ export function CriteriaBuilder({
   onApply,
   onCancel,
   searchRecords: ownSearchRecords,
+  browseRecords: ownBrowseRecords,
   valueEditor: ownValueEditor,
 }: {
   model: ModelDefinition;
@@ -230,6 +231,9 @@ export function CriteriaBuilder({
   /** Searches the records of a relation: a rule can then be about a relation itself, its
    *  records picked by name (see `records.ts`). Absent, the `SearchProvider`'s. */
   searchRecords?: SearchRecords;
+  /** «Buscar más…» under a relation's records: the application's chooser. Absent, the
+   *  provider's. */
+  browseRecords?: BrowseRecords;
   /** The application's own value controls (see `ValueEditor`). Absent, the provider's. */
   valueEditor?: ValueEditor;
   /**
@@ -249,6 +253,7 @@ export function CriteriaBuilder({
   const surface = useSurface();
   const settings = useSearchSettings({
     ...(ownSearchRecords === undefined ? {} : { searchRecords: ownSearchRecords }),
+    ...(ownBrowseRecords === undefined ? {} : { browseRecords: ownBrowseRecords }),
     ...(ownValueEditor === undefined ? {} : { valueEditor: ownValueEditor }),
   });
   /* A filter read back carries keys; with records searchable, the rules about records are
