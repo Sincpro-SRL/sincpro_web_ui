@@ -1,4 +1,4 @@
-import { currentCopy, currentCopyLocale, fillCopy } from "@sincpro/web-ui/foundations/copy";
+import { currentCopy, currentCopyLocale, fillCopy } from "@sincpro/web-ui/foundations/uiCopy";
 
 /**
  * A FRAME is a rectangle of values: columns × rows.

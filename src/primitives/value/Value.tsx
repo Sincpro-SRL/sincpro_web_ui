@@ -1,6 +1,12 @@
 "use client";
 
-import { currentCopyLocale, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import {
+  formatCount,
+  formatDistance,
+  formatNumber,
+  formatWith,
+} from "@sincpro/web-ui/primitives/value/format";
 import { type Rounding, roundTo } from "@sincpro/web-ui/primitives/value/rounding";
 import type { ReactNode } from "react";
 
@@ -13,28 +19,10 @@ import type { ReactNode } from "react";
  * Formats follow the session locale, not a baked-in Spanish `Intl`.
  */
 
-function integerFormat(locale: string) {
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 0 });
-}
-function decimalFormat(locale: string) {
-  return new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
-}
-/** Four decimals and not two for distances — they live near zero
- *  (`0.0696`, `0.0149`) and with two they turn into `0.07` and `0.01`, which is
- *  losing exactly the part that tells one column from another. */
-function distanceFormat(locale: string) {
-  return new Intl.NumberFormat(locale, {
-    minimumFractionDigits: 4,
-    maximumFractionDigits: 4,
-  });
-}
-
-export const formatCount = (value: number, locale = currentCopyLocale()) =>
-  integerFormat(locale).format(value);
-export const formatNumber = (value: number, locale = currentCopyLocale()) =>
-  decimalFormat(locale).format(value);
-export const formatDistance = (value: number, locale = currentCopyLocale()) =>
-  distanceFormat(locale).format(value);
+/* The formatters — `formatCount`, `formatNumber`, `formatDistance`, `formatWith` — are
+   `format.ts`, without the directive, so a server component writes a number the same way;
+   re-exported so every path that read them here keeps reading them. */
+export { formatCount, formatDistance, formatNumber, formatWith };
 
 /** A label with its number, for the glance at the top of a view. */
 export function KeyValue({ label, value }: { label: string; value: ReactNode }) {
@@ -47,21 +35,12 @@ export function KeyValue({ label, value }: { label: string; value: ReactNode }) 
 }
 
 /** The three presets, as the options they are — so `signed` and a custom format share one
- *  path. Kept in step with `integerFormat`, `decimalFormat` and `distanceFormat` above. */
+ *  path. Kept in step with `integerFormat`, `decimalFormat` and `distanceFormat` (`format.ts`). */
 const PRESET: Record<"integer" | "decimal" | "distance", Intl.NumberFormatOptions> = {
   integer: { maximumFractionDigits: 0 },
   decimal: { maximumFractionDigits: 2 },
   distance: { minimumFractionDigits: 4, maximumFractionDigits: 4 },
 };
-
-/** A number written with any `Intl.NumberFormatOptions` — a currency, a percentage, fixed
- *  decimals — in the session locale. The same options `NumberInput` takes, so a value reads
- *  the same in its form and in the cell or the figure that shows it elsewhere. */
-export const formatWith = (
-  value: number,
-  options: Intl.NumberFormatOptions,
-  locale = currentCopyLocale(),
-) => new Intl.NumberFormat(locale, options).format(value);
 
 /**
  * A number with its unit: right aligned, with tabular figures.

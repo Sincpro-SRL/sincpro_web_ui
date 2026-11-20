@@ -24,6 +24,10 @@
  *  be visible in the calling code. See the long note in `system/density.tsx`. */
 export type Surface = "canvas" | "chrome";
 
+/** How much air a surface gives what is inside it — `comfortable` or `compact`. The surface
+ *  declares it (`DensityProvider`), uniform inside; see the note in `density.tsx`. */
+export type Density = "comfortable" | "compact";
+
 /** The meaning of a state color. It is NOT a decorative palette.
  *
  *  The moment a tag uses a hue because some variety was needed, all six stop

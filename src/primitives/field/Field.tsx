@@ -17,6 +17,7 @@ import {
 } from "@sincpro/web-ui/foundations/form";
 import { focusRing, tv } from "@sincpro/web-ui/foundations/variants";
 import { FieldGroup, listOptionStyles } from "@sincpro/web-ui/primitives/field/aria";
+import { controlClasses } from "@sincpro/web-ui/primitives/field/classes";
 import { FieldCopy, useFieldCopy } from "@sincpro/web-ui/primitives/field/clipboard";
 import { useSheetLayout } from "@sincpro/web-ui/primitives/field/layout";
 import {
@@ -531,18 +532,9 @@ export function ReadValue({ value, mono = false }: { value: ReactNode; mono?: bo
   );
 }
 
-/** The shared look of everything that is written into or chosen from.
- *
- *  It exists as a function and not as a loose class so that a new control cannot
- *  be born with another height, another radius or another focus. That was the
- *  original defect: every file wrote its own `<input className="…">`. */
-export function controlClasses(invalid = false): string {
-  return `h-(--size-control-md) w-full min-w-0 rounded-ui-control border bg-ui-control px-2.5 text-meta text-ink transition-colors duration-(--duration-instant) placeholder:text-muted focus-visible:outline-2 focus-visible:outline-offset-2 disabled:cursor-not-allowed disabled:bg-ground disabled:text-muted ${
-    invalid
-      ? "border-danger focus-visible:border-danger focus-visible:outline-danger"
-      : "border-ui-control-border focus-visible:border-primary focus-visible:outline-primary"
-  }`;
-}
+/* `controlClasses` is a plain function (`classes.ts`), without the directive, so a server
+   component reads it; re-exported so every path that read it here keeps reading it. */
+export { controlClasses };
 
 /** What every text control shares: the field's wiring, overridable prop by prop. Exported for
  *  the family's other controls (`PasswordInput`, `CardNumberInput`), not from the barrel. */

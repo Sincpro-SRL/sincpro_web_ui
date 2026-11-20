@@ -1,7 +1,11 @@
 "use client";
 
+import {
+  type MessageKind,
+  writeANote,
+} from "@sincpro/web-ui/components/activity/messageKind";
 import type { AttachmentFile } from "@sincpro/web-ui/components/attachments/files";
-import { currentCopy, type UiCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { TextArea } from "@sincpro/web-ui/primitives/field/Field";
 import { Send, Users, X } from "lucide-react";
@@ -46,36 +50,11 @@ export type Message = {
   files?: readonly AttachmentFile[];
 };
 
-/** A way of writing. `note` stays inside; everything else leaves, and what
- *  changes between them is only the channel and who is on the other side. */
-export type MessageKind = {
-  id: string;
-  label: string;
-  /** It stays inside. Without this the kit assumes it leaves, which is the
-   *  answer that errs on the side of asking. */
-  internal?: boolean;
-  /** Who gets it, in their own words: names for a mail, numbers for WhatsApp.
-   *  Shown before sending, never after. */
-  recipients?: readonly string[];
-  placeholder?: string;
-};
-
-/**
- * WRITE A NOTE, the way every list has.
- *
- * It is a function and not a constant because its words come from the copy, and a
- * constant would freeze them with whatever there was when the module loaded —that is, the
- * factory ones— even if another is installed afterwards. Without `copy`, the installed ones; a
- * component passes it those of its branch.
- */
-export function writeANote(copy: UiCopy = currentCopy()): MessageKind {
-  return {
-    id: "note",
-    label: copy.activity.writeNote,
-    internal: true,
-    placeholder: copy.activity.notePlaceholder,
-  };
-}
+/* `MessageKind` and `writeANote` are plain (`messageKind.ts`), without the directive, so a
+   server component hands an `Activity` its kinds; re-exported so every path that read them
+   here keeps reading them. */
+export type { MessageKind };
+export { writeANote };
 
 export type MessageComposerProps = {
   /** The ways of writing this record takes. Its own list because it is the

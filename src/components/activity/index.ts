@@ -13,11 +13,13 @@ export {
   type ActivityState,
 } from "@sincpro/web-ui/components/activity/ActivityBadge";
 export {
+  type MessageKind,
+  writeANote,
+} from "@sincpro/web-ui/components/activity/messageKind";
+export {
   type Message,
   MessageComposer,
   type MessageComposerProps,
-  type MessageKind,
-  writeANote,
 } from "@sincpro/web-ui/components/activity/Messages";
 export {
   Timeline,

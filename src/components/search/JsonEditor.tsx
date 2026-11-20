@@ -2,6 +2,7 @@
 
 import { json, jsonParseLinter } from "@codemirror/lang-json";
 import { linter, lintGutter } from "@codemirror/lint";
+import { formatJson } from "@sincpro/web-ui/components/search/formatJson";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { useSurface } from "@sincpro/web-ui/foundations/surface";
 import { useTheme } from "@sincpro/web-ui/foundations/theme";
@@ -25,20 +26,10 @@ import { useId } from "react";
  *  says something else: that the JSON is well written but is not a filter.
  * ====================================================================== */
 
-/** A JSON laid out, or the same text if it cannot be read yet.
- *
- *      in   '{"all":[{"field":"a","operator":"=","value":1}]}'
- *      out  the same, indented by two spaces and one field per line
- *
- *  Separated from the component so it can be tested without drawing anything, which is the only thing
- *  with logic in here. */
-export function formatJson(text: string): string {
-  try {
-    return JSON.stringify(JSON.parse(text), null, 2);
-  } catch {
-    return text;
-  }
-}
+/* `formatJson` is plain (`formatJson.ts`), without the directive — and without CodeMirror —
+   so a server component reads it; re-exported so every path that read it here keeps reading
+   it. */
+export { formatJson };
 
 /* The built-in `light`/`dark` themes pick the SYNTAX colours; this layer paints the box from
    the system's tokens, so the editor sits on the same surface as the fields around it in

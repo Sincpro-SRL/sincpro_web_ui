@@ -1,12 +1,13 @@
 "use client";
 
-import { grainName } from "@sincpro/web-ui/foundations/calendar";
+import {
+  fromId,
+  levelId,
+  levelLabeler,
+  namer,
+} from "@sincpro/web-ui/components/listing/levels";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
-import type {
-  GroupableField,
-  GroupGrain,
-  GroupLevel,
-} from "@sincpro/web-ui/foundations/grouping";
+import type { GroupableField, GroupLevel } from "@sincpro/web-ui/foundations/grouping";
 import { Menu } from "@sincpro/web-ui/primitives/menu/Menu";
 import { Tags } from "@sincpro/web-ui/primitives/tag/Tags";
 import { Plus } from "lucide-react";
@@ -19,34 +20,10 @@ import { Plus } from "lucide-react";
  * (its axis and its series). Two copies would drift; this is the one both draw.
  */
 
-export const levelId = (level: GroupLevel): string => `${level.field}:${level.grain ?? ""}`;
-
-const fromId = (id: string): GroupLevel => {
-  const [field = "", grain = ""] = id.split(":");
-  return grain === "" ? { field } : { field, grain: grain as GroupGrain };
-};
-
-/** How a level is named: the field's label, and its grain when it is a date. */
-export function levelLabeler(fields: readonly GroupableField[]) {
-  return (level: GroupLevel): string => {
-    const field = fields.find((one) => one.field === level.field)?.label ?? level.field;
-    return level.grain === undefined
-      ? field
-      : `${field} · ${grainName(level.grain).toLowerCase()}`;
-  };
-}
-
-/** `fields` name what they list; anything else is named by `fallback`, then by its id. */
-export function namer(
-  fields: readonly GroupableField[],
-  fallback?: (level: GroupLevel) => string,
-) {
-  const named = levelLabeler(fields);
-  return (level: GroupLevel): string =>
-    fallback !== undefined && !fields.some((one) => one.field === level.field)
-      ? fallback(level)
-      : named(level);
-}
+/* `levelId`, `levelLabeler` and `namer` are plain (`levels.ts`), without the directive, so a
+   server component names a level the same way; re-exported so every path that read them here
+   keeps reading them. */
+export { levelId, levelLabeler, namer };
 
 export function AxisLevels({
   name,

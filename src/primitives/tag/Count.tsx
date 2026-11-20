@@ -3,6 +3,7 @@
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
+import { countText } from "@sincpro/web-ui/primitives/tag/countText";
 import { useMemo } from "react";
 
 /* ==================================================================== *
@@ -89,15 +90,9 @@ const DOT: Record<Tone, Record<Surface, string>> = {
   accent: { canvas: "bg-accent", chrome: "bg-chrome-accent" },
 };
 
-/** The text of a count: formatted for the locale, and «99+» past `max`. Exported for the
- *  hosts that also need it in words — a button's `aria-label`, a `title`. */
-export function countText(
-  value: number,
-  format: (n: number) => string,
-  max?: number,
-): string {
-  return max !== undefined && value > max ? `${format(max)}+` : format(value);
-}
+/* `countText` is a plain function (`countText.ts`), without the directive, so a server
+   component reads it; re-exported so every path that read it here keeps reading it. */
+export { countText };
 
 function skinOf(
   tone: Tone,

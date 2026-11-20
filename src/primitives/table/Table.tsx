@@ -3,6 +3,7 @@
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { stickyTop, useScrollBox } from "@sincpro/web-ui/foundations/sticky";
 import type { Tone } from "@sincpro/web-ui/foundations/types";
+import { CELL_TONE } from "@sincpro/web-ui/primitives/table/cellTone";
 import type { WindowedRow } from "@sincpro/web-ui/primitives/table/rowWindow";
 import {
   pressSort,
@@ -330,17 +331,9 @@ export function TrDetail({
     </RowMark.Provider>
   );
 }
-/** The background of a cell, by tone. It replaces the row wash on that cell:
- *  a hovered row and a painted cell are two signals, and stacking them reads
- *  as a third color. */
-export const CELL_TONE: Record<Tone, string> = {
-  neutral: "bg-ink/6",
-  info: "bg-info/12",
-  good: "bg-good/12",
-  warn: "bg-warn/15",
-  bad: "bg-bad/12",
-  accent: "bg-accent/20",
-};
+/* `CELL_TONE` is a plain table (`cellTone.ts`), without the directive, so a server component
+   reads it; re-exported so every path that read it here keeps reading it. */
+export { CELL_TONE };
 
 /** The wash of the row a cell sits in: for cells drawn outside `Td`, like the row's actions. */
 export function useRowWash(): string {

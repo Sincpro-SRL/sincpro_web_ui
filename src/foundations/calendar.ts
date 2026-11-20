@@ -1,4 +1,4 @@
-import { currentCopy, currentCopyLocale, fillCopy } from "@sincpro/web-ui/foundations/copy";
+import { currentCopy, currentCopyLocale, fillCopy } from "@sincpro/web-ui/foundations/uiCopy";
 
 /** The grain of a date level. Without a grain, a date field splits by
  *  instant and every row ends up in its own bucket, which is not grouping. */

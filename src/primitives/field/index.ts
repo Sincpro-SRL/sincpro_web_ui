@@ -59,8 +59,9 @@ export { DropZone, type DropZoneProps } from "@sincpro/web-ui/primitives/field/D
 /* A duration in hours, read «8:30». */
 export { formatDuration, parseDuration } from "@sincpro/web-ui/primitives/field/duration";
 export { DurationInput } from "@sincpro/web-ui/primitives/field/DurationInput";
+/* The look every control shares, without `"use client"`: a server component calls it. */
+export { controlClasses } from "@sincpro/web-ui/primitives/field/classes";
 export {
-  controlClasses,
   DataField,
   Field,
   NumberInput,

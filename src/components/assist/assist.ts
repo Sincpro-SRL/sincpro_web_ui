@@ -1,4 +1,4 @@
-import { fillCopy, type UiCopy } from "@sincpro/web-ui/foundations/copy";
+import { fillCopy, type UiCopy } from "@sincpro/web-ui/foundations/uiCopy";
 import type { ToastSpec } from "@sincpro/web-ui/primitives/notice/Toast";
 import { Bot, type LucideIcon } from "lucide-react";
 import type { ReactNode } from "react";
