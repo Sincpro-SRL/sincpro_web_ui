@@ -1,4 +1,4 @@
-import type { UiCopyOverride } from "@sincpro/web-ui/foundations/copy";
+import type { UiCopyOverride } from "@sincpro/web-ui/foundations/uiCopy";
 
 /* ==================================================================== *
  *  EL CASTELLANO DEL SISTEMA.

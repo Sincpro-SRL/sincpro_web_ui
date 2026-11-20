@@ -1,10 +1,10 @@
 "use client";
 
+import { formatFileSize } from "@sincpro/web-ui/components/attachments/files";
 import {
-  attachmentKind,
-  fileExtension,
-  formatFileSize,
-} from "@sincpro/web-ui/components/attachments/files";
+  type PreviewKind,
+  previewKind,
+} from "@sincpro/web-ui/components/preview/previewKind";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { Button, ButtonLink } from "@sincpro/web-ui/primitives/button/Button";
 import { Empty, Failed, Skeleton } from "@sincpro/web-ui/primitives/notice/Notice";
@@ -46,10 +46,10 @@ const MarkdownView = lazy(() =>
 /** A text preview larger than this is not read into the tab: download instead. */
 const MAX_TEXT_BYTES = 1_000_000;
 
-const TEXT_EXTENSIONS = new Set(["txt", "csv", "json", "log", "xml", "yaml", "yml"]);
-const MARKDOWN_EXTENSIONS = new Set(["md", "markdown"]);
-
-export type PreviewKind = "image" | "pdf" | "markdown" | "text" | "other";
+/* Which renderer a file takes is plain (`previewKind.ts`), without the directive, so a server
+   component reads it; re-exported so every path that read it here keeps reading it. */
+export type { PreviewKind };
+export { previewKind };
 
 export type PreviewFile = {
   /** The file name as saved: it picks the kind together with `type`. */
@@ -61,16 +61,6 @@ export type PreviewFile = {
   /** In bytes. Written for the locale in the header. */
   size?: number;
 };
-
-/** The renderer for a file. Pure, so the choice is tested without a browser. */
-export function previewKind(name: string, type?: string): PreviewKind {
-  const kind = attachmentKind(name, type);
-  if (kind === "image" || kind === "pdf") return kind;
-  const extension = fileExtension(name).toLowerCase();
-  if (MARKDOWN_EXTENSIONS.has(extension)) return "markdown";
-  if (TEXT_EXTENSIONS.has(extension) || type?.startsWith("text/") === true) return "text";
-  return "other";
-}
 
 export type FilePreviewProps = {
   file: PreviewFile;

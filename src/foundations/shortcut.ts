@@ -6,6 +6,8 @@ import {
   keysAria,
   keysLabel,
   matchesKeys,
+  type ModShortcut,
+  modShortcut,
   needsModifier,
 } from "@sincpro/web-ui/foundations/keys";
 import { useEffect, useRef, useSyncExternalStore } from "react";
@@ -36,19 +38,10 @@ export function useKeyboardPlatform(): KeyboardPlatform | null {
   return useSyncExternalStore(unchanging, readPlatform, () => null);
 }
 
-export type ModShortcut = {
-  /** What is drawn: «⌘K», «Ctrl K». */
-  label: string;
-  /** For `aria-keyshortcuts`: «Meta+K», «Control+K». */
-  aria: string;
-};
-
-/** The platform's command key with `key`: ⌘ on a Mac, Ctrl elsewhere. */
-export function modShortcut(key: string, platform: KeyboardPlatform): ModShortcut {
-  return platform === "apple"
-    ? { label: `⌘${key}`, aria: `Meta+${key}` }
-    : { label: `Ctrl ${key}`, aria: `Control+${key}` };
-}
+/* `modShortcut` is a plain function (`keys.ts`), without the directive, so a server component
+   draws a shortcut too; re-exported so every path that read it here keeps reading it. */
+export type { ModShortcut };
+export { modShortcut };
 
 /* ==================================================================== *
  *  SHORTCUTS THAT RUN — not only drawn.

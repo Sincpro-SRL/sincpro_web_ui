@@ -1,5 +1,5 @@
 import { monthName as calendarMonthName } from "@sincpro/web-ui/foundations/calendar";
-import { currentCopy, fillCopy } from "@sincpro/web-ui/foundations/copy";
+import { currentCopy, fillCopy } from "@sincpro/web-ui/foundations/uiCopy";
 
 /**
  * THE DATE FILTER, the way Odoo does it: months, quarters and years that

@@ -1,16 +1,12 @@
 "use client";
 
+import { DEFAULT_PAGE_SIZE, PAGE_SIZES } from "@sincpro/web-ui/components/listing/pageSizes";
 import { useEffect, useState } from "react";
 
-/**
- * How many records a list shows until someone asks for another size.
- *
- * 80 is the product default: enough to scan a catalog without paging every
- * twenty-five rows, still small enough that a table stays a table. 25 / 80 / 100
- * are the presets; any other positive integer is valid and is kept.
- */
-export const DEFAULT_PAGE_SIZE = 80;
-export const PAGE_SIZES = [25, 80, 100] as const;
+/* The sizes are plain values (`pageSizes.ts`), without the directive, so a server component
+   asks its first page with the size the list will show; re-exported so every path that read
+   them here keeps reading them. */
+export { DEFAULT_PAGE_SIZE, PAGE_SIZES };
 
 /** What `Pagination` needs, already computed from a set in memory. */
 export interface PaginationBridge {

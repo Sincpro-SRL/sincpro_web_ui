@@ -1,5 +1,6 @@
 /* The presentation (`Table`) is ours and is used on its own; `DataTable` is the
    wiring to TanStack for grouping and sorting. See the note in `DataTable.tsx`. */
+export { CELL_TONE } from "@sincpro/web-ui/primitives/table/cellTone";
 export {
   type Aggregate,
   type DataColumn,
@@ -17,12 +18,14 @@ export {
   type EditFlag,
   type EditLayout,
   type EditRowState,
+} from "@sincpro/web-ui/primitives/table/EditableTable";
+export {
   sectionLines,
   type StackPlace,
   stackPlaces,
   type TabTarget,
   tabTarget,
-} from "@sincpro/web-ui/primitives/table/EditableTable";
+} from "@sincpro/web-ui/primitives/table/editRules";
 export { PileFootLine } from "@sincpro/web-ui/primitives/table/PileFootLine";
 export {
   PivotTable,
@@ -45,4 +48,4 @@ export {
   sortPosition,
   type SortState,
 } from "@sincpro/web-ui/primitives/table/sorting";
-export { CELL_TONE, Table, Td, Th, THead, Tr } from "@sincpro/web-ui/primitives/table/Table";
+export { Table, Td, Th, THead, Tr } from "@sincpro/web-ui/primitives/table/Table";

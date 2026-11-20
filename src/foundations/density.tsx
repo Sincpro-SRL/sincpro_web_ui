@@ -1,5 +1,7 @@
 "use client";
 
+import { byDensity } from "@sincpro/web-ui/foundations/pickBy";
+import type { Density } from "@sincpro/web-ui/foundations/types";
 import { createContext, type ReactNode, useContext } from "react";
 
 /* ==================================================================== *
@@ -37,7 +39,11 @@ import { createContext, type ReactNode, useContext } from "react";
  *  and not five.
  * ==================================================================== */
 
-export type Density = "comfortable" | "compact";
+/* `Density` is a shared type (`types.ts`) and `byDensity` a plain function (`pickBy.ts`), both
+   without the directive, so a server component reads them; re-exported so every path that
+   read them here keeps reading them. */
+export type { Density };
+export { byDensity };
 
 const Ctx = createContext<Density>("comfortable");
 
@@ -55,14 +61,4 @@ export function DensityProvider({
 
 export function useDensity(): Density {
   return useContext(Ctx);
-}
-
-/** Pick between two values according to the density, without writing the
- *  ternary.
- *
- *  It exists so the difference between the two stays on ONE readable line next
- *  to the class, and not scattered across conditionals — which is how one of
- *  the two densities ends up unmaintained. */
-export function byDensity<T>(d: Density, comfortable: T, compact: T): T {
-  return d === "compact" ? compact : comfortable;
 }

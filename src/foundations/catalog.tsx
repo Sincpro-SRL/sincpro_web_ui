@@ -1,5 +1,12 @@
 "use client";
 
+import {
+  type CopyOverride,
+  type CopyStore,
+  copyStore,
+  fillCopy,
+  mergeCopyOver,
+} from "@sincpro/web-ui/foundations/copyStore";
 import { createContext, type ReactNode, useContext, useMemo } from "react";
 
 /* ==================================================================== *
@@ -28,34 +35,11 @@ import { createContext, type ReactNode, useContext, useMemo } from "react";
  *    word inside a Spanish application stays Spanish.
  * ==================================================================== */
 
-/** What changes, at any depth. A word is replaced; a section is merged. */
-export type CopyOverride<C> = {
-  [K in keyof C]?: C[K] extends string
-    ? string
-    : C[K] extends readonly unknown[]
-      ? C[K]
-      : C[K] extends object
-        ? CopyOverride<C[K]>
-        : C[K];
-};
-
-const isSection = (value: unknown): value is Record<string, unknown> =>
-  typeof value === "object" && value !== null && !Array.isArray(value);
-
-/** `base` with `over` on top: sections merge, everything else is replaced. */
-export function mergeCopyOver<C extends object>(
-  base: C,
-  over: CopyOverride<C> | undefined,
-): C {
-  if (over === undefined) return base;
-  const out = { ...base } as Record<string, unknown>;
-  for (const [key, value] of Object.entries(over)) {
-    if (value === undefined) continue;
-    const under = out[key];
-    out[key] = isSection(under) && isSection(value) ? mergeCopyOver(under, value) : value;
-  }
-  return out as C;
-}
+/* The words without React — the override, the merge, the template, the store — live in
+   `copyStore.ts`, without the directive, so a server component reads them too. Re-exported so
+   every path that read them here keeps reading them. */
+export type { CopyOverride };
+export { fillCopy, mergeCopyOver };
 
 export type CopyCatalog<C extends object> = {
   /** The factory words: what is there before anything is installed. */
@@ -73,12 +57,17 @@ export type CopyCatalog<C extends object> = {
 };
 
 export function createCopy<C extends object>(english: C): CopyCatalog<C> {
-  let installed = english;
+  return catalogOver(copyStore(english));
+}
+
+/** The React half over a store that already exists: web-ui's own words are built in a module
+ *  without the directive (`uiCopy.ts`), and their `Provider` reads the same installed ones.
+ *  Not public. */
+export function catalogOver<C extends object>(store: CopyStore<C>): CopyCatalog<C> {
   /* `null` and not English: a context keeps the value it was created with, so with the
      factory words inside it a component without a provider would ignore `install`. */
   const Context = createContext<C | null>(null);
-  const current = () => installed;
-  const useCopy = () => useContext(Context) ?? installed;
+  const useCopy = () => useContext(Context) ?? store.current();
 
   function Provider({ copy, children }: { copy?: CopyOverride<C>; children: ReactNode }) {
     const enclosing = useCopy();
@@ -86,23 +75,5 @@ export function createCopy<C extends object>(english: C): CopyCatalog<C> {
     return <Context.Provider value={merged}>{children}</Context.Provider>;
   }
 
-  return {
-    english,
-    install: (over) => {
-      installed = mergeCopyOver(english, over);
-      return installed;
-    },
-    current,
-    merge: (over) => mergeCopyOver(english, over),
-    Provider,
-    useCopy,
-  };
-}
-
-/** `{name}` → value. A missing key stays visible in the template. */
-export function fillCopy(template: string, params: Record<string, string | number>): string {
-  return template.replace(/\{(\w+)\}/g, (whole, name: string) => {
-    const value = params[name];
-    return value === undefined ? whole : String(value);
-  });
+  return { ...store, Provider, useCopy };
 }

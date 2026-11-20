@@ -1,6 +1,7 @@
 "use client";
 
-import type { ColumnControl, ColumnSpec } from "@sincpro/web-ui/components/listing/columns";
+import type { ColumnControl } from "@sincpro/web-ui/components/listing/columns";
+import { specsFromColumns } from "@sincpro/web-ui/components/listing/columnSpecs";
 import { FieldPath, type PathPick } from "@sincpro/web-ui/components/search/FieldPath";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
@@ -96,19 +97,6 @@ export function ColumnsMenu({
   );
 }
 
-export function specsFromColumns(
-  columns: readonly {
-    id: string;
-    header: string;
-    optional?: boolean;
-    defaultHidden?: boolean;
-  }[],
-  fallbackOptional: boolean,
-): ColumnSpec[] {
-  return columns.map((column) => ({
-    id: column.id,
-    label: column.header,
-    optional: column.optional ?? fallbackOptional,
-    ...(column.defaultHidden === true ? { defaultHidden: true } : {}),
-  }));
-}
+/* `specsFromColumns` is plain (`columnSpecs.ts`), without the directive; re-exported so every
+   path that read it here keeps reading it. */
+export { specsFromColumns };

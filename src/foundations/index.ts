@@ -1,11 +1,13 @@
 /* What is shared by more than one family and belongs to none of them. */
-/* THE MECHANISM of a copy catalog — web-ui's words are one; an application's own are another. */
-export {
-  type CopyCatalog,
-  type CopyOverride,
-  createCopy,
-  mergeCopyOver,
-} from "@sincpro/web-ui/foundations/catalog";
+/* THE MECHANISM of a copy catalog — web-ui's words are one; an application's own are another.
+   What needs no React — the words, their store, a merge, a template, a pick by density or
+   surface — comes from modules without `"use client"`, so a server component reads it
+   (`tests/serverBoundary.test.ts`). */
+export { type CopyCatalog, createCopy } from "@sincpro/web-ui/foundations/catalog";
+export { UiCopyProvider, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+export { type CopyOverride, mergeCopyOver } from "@sincpro/web-ui/foundations/copyStore";
+export { DensityProvider, useDensity } from "@sincpro/web-ui/foundations/density";
+export { byDensity, bySurface } from "@sincpro/web-ui/foundations/pickBy";
 export {
   currentCopy,
   currentCopyLocale,
@@ -15,15 +17,7 @@ export {
   mergeCopy,
   type UiCopy,
   type UiCopyOverride,
-  UiCopyProvider,
-  useUiCopy,
-} from "@sincpro/web-ui/foundations/copy";
-export {
-  byDensity,
-  type Density,
-  DensityProvider,
-  useDensity,
-} from "@sincpro/web-ui/foundations/density";
+} from "@sincpro/web-ui/foundations/uiCopy";
 /* How a whole application draws its views — `traditional` or `modern` (the direction): the
    record's rail and the actions of a record and of a list. Set once, like the density. */
 export {
@@ -33,8 +27,8 @@ export {
 } from "@sincpro/web-ui/foundations/viewStyle";
 /* A CONTROL'S CONTRACT — the ids its `Field` gives it and whether it is viewed or written. The
    package's controls and the application's speak it alike. */
+export { controlName } from "@sincpro/web-ui/foundations/controlName";
 export {
-  controlName,
   FieldBoundary,
   type FieldIds,
   type FormMode,
@@ -54,14 +48,14 @@ export {
   keysAria,
   keysLabel,
   matchesKeys,
+  type ModShortcut,
+  modShortcut,
   needsModifier,
   type ParsedKeys,
   parseKeys,
 } from "@sincpro/web-ui/foundations/keys";
 export {
   type KeyboardPlatform,
-  type ModShortcut,
-  modShortcut,
   type Shortcut,
   useKeyboardPlatform,
   useKeysHint,
@@ -69,20 +63,28 @@ export {
 } from "@sincpro/web-ui/foundations/shortcut";
 /* THE THEME — light, dark or the operating system's. The palettes live in `tokens.css`; this
    only writes `data-theme`. */
-export { bySurface, SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
+export { SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
 export {
   applyTheme,
+  ThemeProvider,
+  type ThemeProviderProps,
+  useTheme,
+} from "@sincpro/web-ui/foundations/theme";
+export {
   isTheme,
   type ResolvedTheme,
   resolveTheme,
   type Theme,
   THEME_ATTRIBUTE,
-  ThemeProvider,
-  type ThemeProviderProps,
   THEMES,
-  useTheme,
-} from "@sincpro/web-ui/foundations/theme";
-export type { OpenTarget, Size, Surface, Tone } from "@sincpro/web-ui/foundations/types";
+} from "@sincpro/web-ui/foundations/themeChoice";
+export type {
+  Density,
+  OpenTarget,
+  Size,
+  Surface,
+  Tone,
+} from "@sincpro/web-ui/foundations/types";
 /** The system's Spanish, for whoever wants to install it whole. */
 export { SPANISH_COPY } from "@sincpro/web-ui/foundations/copy.es";
 /* THE SLOTS — how an archetype is written as a TREE. It lives here and not inside
@@ -185,18 +187,13 @@ export {
   type PivotSheetOptions,
   pivotXlsx,
 } from "@sincpro/web-ui/foundations/pivotSheet";
-export {
-  STICKY_TOP,
-  stickyReset,
-  stickyTop,
-  useScrollBox,
-  useStickyLayer,
-} from "@sincpro/web-ui/foundations/sticky";
+export { useScrollBox, useStickyLayer } from "@sincpro/web-ui/foundations/sticky";
+export { STICKY_TOP, stickyReset, stickyTop } from "@sincpro/web-ui/foundations/stickyStyle";
 export {
   columnName,
-  downloadXlsx,
   writeXlsx,
   type XlsxCell,
   type XlsxMerge,
   type XlsxSheet,
 } from "@sincpro/web-ui/foundations/xlsx";
+export { downloadXlsx } from "@sincpro/web-ui/foundations/xlsxDownload";

@@ -1,5 +1,6 @@
 "use client";
 
+import { controlName } from "@sincpro/web-ui/foundations/controlName";
 import { createContext, type ReactNode, useContext } from "react";
 
 /* ==================================================================== *
@@ -81,24 +82,9 @@ export function useFieldIds(own: { id?: string; describedBy?: string; invalid?: 
   };
 }
 
-/**
- * The `aria-label` a control puts on itself: none inside a `Field` — the field's label names
- * it — and outside one the control's own, or as a last resort its placeholder (what a browser
- * reads for a bare `<input placeholder>` anyway, so a control outside a form is never
- * nameless).
- *
- * Context: a control inside a `Field` used to keep its `aria-label` too. With both, React Aria
- * names the control by the label AND itself («Cliente Cliente», «Cantidad cantidad»), so the
- * name was read twice. The field wins: an `aria-label` is for a control that has no label
- * on screen — a table cell, a search box — and inside a field it is ignored.
- */
-export function controlName(
-  labelledBy: string | undefined,
-  ariaLabel: string | undefined,
-  fallback?: string,
-): string | undefined {
-  return labelledBy === undefined ? (ariaLabel ?? fallback) : undefined;
-}
+/* `controlName` is a plain function (`controlName.ts`), without the directive, so a server
+   component reads it; re-exported so every path that read it here keeps reading it. */
+export { controlName };
 
 /* ==================================================================== *
  *  THE FORM MODE — look or write, and the VIEW decides it.

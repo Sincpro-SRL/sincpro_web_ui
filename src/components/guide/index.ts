@@ -14,10 +14,9 @@ export {
   type Size as GuideSize,
   placeCard,
 } from "@sincpro/web-ui/components/guide/place";
+export { type GuideTarget, selectorOf } from "@sincpro/web-ui/components/guide/selector";
 export {
   boxOf,
   findTarget,
   type Found as GuideMatch,
-  type GuideTarget,
-  selectorOf,
 } from "@sincpro/web-ui/components/guide/target";

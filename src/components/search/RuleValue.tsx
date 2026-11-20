@@ -2,6 +2,7 @@
 
 import type { ValueEditorProps } from "@sincpro/web-ui/components/search/context";
 import type { RecordOption } from "@sincpro/web-ui/components/search/criteria";
+import { takesMany } from "@sincpro/web-ui/components/search/filterTree";
 import { choiceLabel } from "@sincpro/web-ui/components/search/model";
 import type {
   BrowseRecords,
@@ -31,10 +32,10 @@ import { useEffect, useState } from "react";
  *  that wants a field drawn its own way answers it from `valueEditor` before any of this.
  * ==================================================================== */
 
-/** The comparisons that take several values. */
-export function takesMany(operator: string): boolean {
-  return operator === "in" || operator === "not in";
-}
+/* `takesMany` is plain (`filterTree.ts`, beside the other operator sets), without the
+   directive, so a server component reads it; re-exported so every path that read it here
+   keeps reading it. */
+export { takesMany };
 
 /** How long the control waits for the typing to stop before asking. */
 const DELAY = 200;

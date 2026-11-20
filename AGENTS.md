@@ -66,7 +66,12 @@ idea; this file is how to keep it.
   `Field`'s family: a value that reads differently in read mode, and an application's own
   control, connect the same way.
 - **Client boundary.** A module with hooks, context, event handlers or `document`/`window`
-  starts with `"use client";` (`tests/clientBoundary.test.ts`). Pure logic stays without it.
+  starts with `"use client";` (`tests/clientBoundary.test.ts`). Pure logic stays without it —
+  and a public helper that draws nothing (a class builder, a formatter, a constant) never lives
+  in a client module beside its component: a Server Component would get a client reference,
+  not the value. It goes in a module of its own without the directive (`button/classes.ts`,
+  `value/format.ts`), the family barrel exports it from there, and nothing without the
+  directive calls into a client module (`tests/serverBoundary.test.ts`).
 - **An application ships what it uses.** A heavy library is reached with `lazy(import())`
   (`tests/heavyChunks.test.ts`); its stylesheet is imported by the component that draws it,
   never by `tokens.css`; and a `Button`, a form, a `Record` and a `List` keep a first-load

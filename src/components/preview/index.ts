@@ -3,6 +3,8 @@ export {
   FilePreview,
   type FilePreviewProps,
   type PreviewFile,
+} from "@sincpro/web-ui/components/preview/FilePreview";
+export {
   type PreviewKind,
   previewKind,
-} from "@sincpro/web-ui/components/preview/FilePreview";
+} from "@sincpro/web-ui/components/preview/previewKind";

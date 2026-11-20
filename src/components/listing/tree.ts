@@ -1,5 +1,6 @@
 "use client";
 
+import { toggleCollapsed } from "@sincpro/web-ui/components/listing/collapsed";
 import { useCallback, useState } from "react";
 
 /**
@@ -27,11 +28,9 @@ export type TreeControl = {
   toggle: (key: string) => void;
 };
 
-export function toggleCollapsed(collapsed: readonly string[], key: string): string[] {
-  return collapsed.includes(key)
-    ? collapsed.filter((one) => one !== key)
-    : [...collapsed, key];
-}
+/* `toggleCollapsed` is plain (`collapsed.ts`), without the directive, so a server component
+   reads it; re-exported so every path that read it here keeps reading it. */
+export { toggleCollapsed };
 
 // One empty array for every render: a fresh `[]` would change `toggle` each time.
 const NONE_COLLAPSED: readonly string[] = [];

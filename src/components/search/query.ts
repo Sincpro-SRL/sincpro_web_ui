@@ -19,8 +19,8 @@ import {
   recordTarget,
   sameKey,
 } from "@sincpro/web-ui/components/search/records";
-import { currentCopy, fillCopy } from "@sincpro/web-ui/foundations/copy";
 import { matches as contains } from "@sincpro/web-ui/foundations/match";
+import { currentCopy, fillCopy } from "@sincpro/web-ui/foundations/uiCopy";
 
 /* ==================================================================== *
  *  THE BAR'S GRAMMAR — what can be asked, and with what.

@@ -1,6 +1,10 @@
 "use client";
 
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import {
+  isRichTextEmpty,
+  richTextPlain,
+} from "@sincpro/web-ui/primitives/value/richTextPlain";
 import DOMPurify from "dompurify";
 import { useSyncExternalStore } from "react";
 
@@ -95,26 +99,10 @@ export function sanitizeRichText(html: string): string | null {
   });
 }
 
-/** The words of an HTML, without its tags: what is shown where it cannot be cleaned. */
-export function richTextPlain(html: string): string {
-  return html
-    .replace(/<(?:br|\/p|\/li|\/h[1-6]|\/tr)\s*\/?>/gi, " ")
-    .replace(/<[^>]*>/g, "")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&lt;/g, "<")
-    .replace(/&gt;/g, ">")
-    .replace(/&quot;/g, '"')
-    .replace(/&#39;/g, "'")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-/** Nothing written: no text and no image — «<p></p>» from an emptied editor counts as nothing. */
-export function isRichTextEmpty(html: string | null | undefined): boolean {
-  if (html === null || html === undefined) return true;
-  return richTextPlain(html) === "" && !/<(?:img|hr|table)\b/i.test(html);
-}
+/* `richTextPlain` and `isRichTextEmpty` are plain functions (`richTextPlain.ts`), without the
+   directive, so a server component reads them; re-exported so every path that read them here
+   keeps reading them. `sanitizeRichText` stays: DOMPurify needs a DOM. */
+export { isRichTextEmpty, richTextPlain };
 
 const subscribe = () => () => {};
 

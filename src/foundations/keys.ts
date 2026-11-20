@@ -133,3 +133,17 @@ export function keysAria(keys: Keys, platform: KeyboardPlatform | null): string 
     want.key.length === 1 ? want.key.toUpperCase() : want.key,
   ].join("+");
 }
+
+export type ModShortcut = {
+  /** What is drawn: «⌘K», «Ctrl K». */
+  label: string;
+  /** For `aria-keyshortcuts`: «Meta+K», «Control+K». */
+  aria: string;
+};
+
+/** The platform's command key with `key`: ⌘ on a Mac, Ctrl elsewhere. */
+export function modShortcut(key: string, platform: KeyboardPlatform): ModShortcut {
+  return platform === "apple"
+    ? { label: `⌘${key}`, aria: `Meta+${key}` }
+    : { label: `Ctrl ${key}`, aria: `Control+${key}` };
+}

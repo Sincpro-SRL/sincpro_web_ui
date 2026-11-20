@@ -4,19 +4,24 @@ export {
   type CopyableProps,
   CopyButton,
 } from "@sincpro/web-ui/primitives/value/Copyable";
+export { DateValue } from "@sincpro/web-ui/primitives/value/DateValue";
+/* The formatters, without `"use client"`: a server component writes a number or a date the
+   same way. */
 export {
-  DateValue,
+  formatCount,
   formatDateTime,
+  formatDistance,
+  formatNumber,
   formatRelative,
-} from "@sincpro/web-ui/primitives/value/DateValue";
+  formatWith,
+} from "@sincpro/web-ui/primitives/value/format";
 export { Markdown, type MarkdownProps } from "@sincpro/web-ui/primitives/value/Markdown";
+export { Meter, type MeterProps } from "@sincpro/web-ui/primitives/value/Meter";
 export {
-  Meter,
   type MeterLevel,
   meterLevel,
-  type MeterProps,
   type MeterThresholds,
-} from "@sincpro/web-ui/primitives/value/Meter";
+} from "@sincpro/web-ui/primitives/value/meterLevel";
 export { Metric, type MetricProps, Metrics } from "@sincpro/web-ui/primitives/value/Metric";
 export {
   Avatar,
@@ -38,12 +43,11 @@ export {
   type RelationValueProps,
 } from "@sincpro/web-ui/primitives/value/Relation";
 /* The HTML of a note, read — cleaned of anything that runs. */
+export { RichTextValue, sanitizeRichText } from "@sincpro/web-ui/primitives/value/RichText";
 export {
   isRichTextEmpty,
   richTextPlain,
-  RichTextValue,
-  sanitizeRichText,
-} from "@sincpro/web-ui/primitives/value/RichText";
+} from "@sincpro/web-ui/primitives/value/richTextPlain";
 export {
   type Rounding,
   type RoundingMethod,
@@ -57,13 +61,5 @@ export {
   type TotalsProps,
   type TotalsRow,
 } from "@sincpro/web-ui/primitives/value/Totals";
-export {
-  Cell,
-  formatCount,
-  formatDistance,
-  formatNumber,
-  formatWith,
-  KeyValue,
-  Numeric,
-} from "@sincpro/web-ui/primitives/value/Value";
+export { Cell, KeyValue, Numeric } from "@sincpro/web-ui/primitives/value/Value";
 export { YesNo, type YesNoLook } from "@sincpro/web-ui/primitives/value/YesNo";

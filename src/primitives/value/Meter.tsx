@@ -2,6 +2,12 @@
 
 import { AriaLocale } from "@sincpro/web-ui/foundations/aria";
 import { tv } from "@sincpro/web-ui/foundations/variants";
+import {
+  DEFAULT_THRESHOLDS,
+  type MeterLevel,
+  meterLevel,
+  type MeterThresholds,
+} from "@sincpro/web-ui/primitives/value/meterLevel";
 import type { ReactNode } from "react";
 import { Meter as AriaMeter } from "react-aria-components";
 
@@ -32,22 +38,10 @@ const fill = tv({
   },
 });
 
-export type MeterLevel = "good" | "warn" | "danger";
-
-/** Percentages of the range where the color changes. */
-export type MeterThresholds = { warn: number; danger: number };
-
-const DEFAULT_THRESHOLDS: MeterThresholds = { warn: 70, danger: 90 };
-
-/** The level of a percentage: under `warn` is good, up to `danger` is warn, above is danger. */
-export function meterLevel(
-  percentage: number,
-  thresholds: MeterThresholds = DEFAULT_THRESHOLDS,
-): MeterLevel {
-  if (percentage > thresholds.danger) return "danger";
-  if (percentage >= thresholds.warn) return "warn";
-  return "good";
-}
+/* `meterLevel` is a plain function (`meterLevel.ts`), without the directive, so a server
+   component reads it; re-exported so every path that read it here keeps reading it. */
+export type { MeterLevel, MeterThresholds };
+export { meterLevel };
 
 export type MeterProps = {
   /** What is measured: «Crédito usado», «Stock». */

@@ -1,5 +1,4 @@
 import { dateKeysBetween, dateKeyYear, dateTick } from "@sincpro/web-ui/foundations/calendar";
-import { currentCopy, fillCopy } from "@sincpro/web-ui/foundations/copy";
 import { pathKey } from "@sincpro/web-ui/foundations/grouping";
 import {
   axisLabels,
@@ -8,6 +7,7 @@ import {
   type PivotCell,
   type PivotKey,
 } from "@sincpro/web-ui/foundations/pivot";
+import { currentCopy, fillCopy } from "@sincpro/web-ui/foundations/uiCopy";
 
 /**
  * THE CHART: a pivot read as marks.

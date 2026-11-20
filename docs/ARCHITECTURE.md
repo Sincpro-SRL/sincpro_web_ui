@@ -70,6 +70,18 @@ uses them. **Enforced by**: `tests/architecture.test.ts`.
 What two views need goes down to `components/`; what two tiers need goes down to the one below or to
 `foundations`.
 
+**Beside the component, not inside it.** A module that runs a hook starts with `"use client"`,
+and in a React Server Components app EVERY export of such a module is a client reference — a
+pure one too: `buttonClasses()` called from a server component returned a reference, not a
+class string. So what a family exports that draws nothing — a class builder, a formatter, a
+constant, a model — lives in a module of its own WITHOUT the directive, next to the component
+that uses it (`primitives/button/classes.ts`, `primitives/value/format.ts`,
+`components/search/filterTree.ts`), and the family's `index.ts` exports it from there. The
+client module imports it and re-exports it, so a deep path keeps working. What only a browser
+can run stays client, named on purpose (`downloadFile`, `applyTheme`, …). **Enforced by**:
+`tests/serverBoundary.test.ts` — every public helper resolves to a module without the
+directive, and nothing without it calls into a client module.
+
 ## 5. Open to extension
 
 The application builds its own with the public API (`@sincpro/web-ui`), with no forks or loose classes:

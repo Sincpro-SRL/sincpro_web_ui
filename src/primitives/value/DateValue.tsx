@@ -1,11 +1,11 @@
 "use client";
 
+import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import {
-  currentCopy,
-  currentCopyLocale,
-  type UiCopy,
-  useUiCopy,
-} from "@sincpro/web-ui/foundations/copy";
+  dateFormat,
+  formatDateTime,
+  formatRelative,
+} from "@sincpro/web-ui/primitives/value/format";
 
 /* ==================================================================== *
  *  WHEN — a date says two things and they can't both be said together.
@@ -26,57 +26,10 @@ import {
  *  drawn, which is what at that distance is really being asked.
  * ==================================================================== */
 
-function relativeFormat(locale: string) {
-  return new Intl.RelativeTimeFormat(locale, { numeric: "auto" });
-}
-function dateFormat(locale: string) {
-  return new Intl.DateTimeFormat(locale, {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
-function timeFormat(locale: string) {
-  return new Intl.DateTimeFormat(locale, {
-    hour: "2-digit",
-    minute: "2-digit",
-    hourCycle: "h23",
-  });
-}
-
-const MINUTE = 60_000;
-const HOUR = 60 * MINUTE;
-const DAY = 24 * HOUR;
-
-/** The steps, from finest to coarsest. The first one that fits, wins. */
-const STEPS: readonly [ms: number, unit: Intl.RelativeTimeFormatUnit][] = [
-  [MINUTE, "minute"],
-  [HOUR, "hour"],
-  [DAY, "day"],
-];
-
-/** Context: `copy` defaults to the installed words — what a caller outside a component has;
- *  a component passes its branch's (`useUiCopy()`), so a provider reaches the sentence. */
-export function formatRelative(
-  when: Date,
-  now: Date = new Date(),
-  copy: UiCopy = currentCopy(),
-): string {
-  const locale = copy.locale;
-  const delta = when.getTime() - now.getTime();
-  const abs = Math.abs(delta);
-
-  if (abs < MINUTE) return copy.time.justNow;
-  if (abs > 7 * DAY) return dateFormat(locale).format(when);
-
-  const step = STEPS.find(([ms]) => abs < ms * 60) ?? STEPS[STEPS.length - 1]!;
-  const [ms, unit] = step;
-  return relativeFormat(locale).format(Math.round(delta / ms), unit);
-}
-
-export function formatDateTime(when: Date, locale: string = currentCopyLocale()): string {
-  return `${dateFormat(locale).format(when)} ${timeFormat(locale).format(when)}`;
-}
+/* The formatters — `formatRelative`, `formatDateTime` — are `format.ts`, without the
+   directive, so a server component writes a date the same way; re-exported so every path that
+   read them here keeps reading them. */
+export { formatDateTime, formatRelative };
 
 /** A day written as `YYYY-MM-DD` (what a date field stores) is that day HERE. `new Date()`
  *  reads it as midnight in UTC, and west of Greenwich that is the evening before: a due date

@@ -1,5 +1,6 @@
 "use client";
 
+import { bySurface } from "@sincpro/web-ui/foundations/pickBy";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
 import { createContext, type ReactNode, useContext } from "react";
 
@@ -18,6 +19,10 @@ import { createContext, type ReactNode, useContext } from "react";
  */
 const Ctx = createContext<Surface>("canvas");
 
+/* `bySurface` is a plain function (`pickBy.ts`), without the directive, so a server component
+   reads it; re-exported so every path that read it here keeps reading it. */
+export { bySurface };
+
 export function SurfaceProvider({
   value,
   children,
@@ -32,7 +37,3 @@ export function useSurface(explicit?: Surface): Surface {
   const inherited = useContext(Ctx);
   return explicit ?? inherited;
 }
-
-/** Picks between two values according to the surface. The twin of `byDensity`. */
-export const bySurface = <T,>(surface: Surface, canvas: T, chrome: T): T =>
-  surface === "chrome" ? chrome : canvas;

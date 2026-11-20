@@ -1,6 +1,14 @@
 "use client";
 
 import {
+  isTheme,
+  type ResolvedTheme,
+  resolveTheme,
+  type Theme,
+  THEME_ATTRIBUTE,
+  THEMES,
+} from "@sincpro/web-ui/foundations/themeChoice";
+import {
   createContext,
   type ReactNode,
   useCallback,
@@ -33,26 +41,11 @@ import {
  *  (localStorage, the user's profile) is the application's decision.
  * ==================================================================== */
 
-export type Theme = "system" | "light" | "dark";
-/** What the palette actually is once `system` has been looked up. */
-export type ResolvedTheme = "light" | "dark";
-
-export const THEMES: readonly Theme[] = ["system", "light", "dark"];
-/** The attribute the stylesheet reads. */
-export const THEME_ATTRIBUTE = "data-theme";
-
-/** `system` is the operating system's answer; the other two are themselves. Pure, so it can
- *  be tested without a browser. */
-export function resolveTheme(theme: Theme, systemPrefersDark: boolean): ResolvedTheme {
-  if (theme === "system") return systemPrefersDark ? "dark" : "light";
-  return theme;
-}
-
-/** True for a string that is one of the three values — what comes out of storage or a URL
- *  is `string | null`, and this is the way back to `Theme`. */
-export function isTheme(value: unknown): value is Theme {
-  return value === "system" || value === "light" || value === "dark";
-}
+/* The names — `Theme`, `THEMES`, `THEME_ATTRIBUTE`, `resolveTheme`, `isTheme` — are
+   `themeChoice.ts`, without the directive, so a server layout reads them; re-exported so every
+   path that read them here keeps reading them. */
+export type { ResolvedTheme, Theme };
+export { isTheme, resolveTheme, THEME_ATTRIBUTE, THEMES };
 
 /** Writes the choice on an element. `system` REMOVES the attribute: the stylesheet then
  *  follows `prefers-color-scheme` by itself, and an attribute saying "system" would be a

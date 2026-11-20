@@ -14,21 +14,26 @@ export {
   CriteriaBuilder,
 } from "@sincpro/web-ui/components/search/CriteriaBuilder";
 export {
+  FilterBuilder,
+  SelectionTree,
+} from "@sincpro/web-ui/components/search/FilterBuilder";
+/* The builder's model — the tree, the JSON, the filter said in a line — without `"use client"`:
+   a server component reads it (`tests/serverBoundary.test.ts`). */
+export {
   blankGroup,
   describeFilter,
-  FilterBuilder,
   liftRecords,
   namesOf,
   type RecordNames,
   recordOps,
-  SelectionTree,
+  takesMany,
   type TreeCondition,
   treeFromFilter,
   type TreeGroup,
   type TreeHop,
   type TreeNode,
   treeToFilter,
-} from "@sincpro/web-ui/components/search/FilterBuilder";
+} from "@sincpro/web-ui/components/search/filterTree";
 /* A field reached through relations: the selector (web-ui draws) and its model (whoever uses it
    passes `loadModel`). */
 export {
@@ -39,7 +44,8 @@ export {
   useFieldPathSteps,
   useModelCache,
 } from "@sincpro/web-ui/components/search/FieldPath";
-export { formatJson, JsonEditor } from "@sincpro/web-ui/components/search/JsonEditor";
+export { formatJson } from "@sincpro/web-ui/components/search/formatJson";
+export { JsonEditor } from "@sincpro/web-ui/components/search/JsonEditor";
 export {
   createModelCache,
   type FieldPathStep,
@@ -153,7 +159,7 @@ export {
   sameKey,
   type SearchRecords,
 } from "@sincpro/web-ui/components/search/records";
-export { RuleValue, takesMany } from "@sincpro/web-ui/components/search/RuleValue";
+export { RuleValue } from "@sincpro/web-ui/components/search/RuleValue";
 
 /* The date cut, the way Odoo does it: months, quarters and years that
    combine. The INTENT is saved and resolved on read. */

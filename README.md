@@ -123,9 +123,36 @@ export default { plugins: { "@tailwindcss/postcss": {} } };
 ```
 
 - **Server Components** may import from `@sincpro/web-ui`. Every module that needs the browser
-  (hooks, context, events) starts with `"use client"`, and a test keeps it that way; pure logic
-  (calendar, pivot, criteria) stays callable from the server. The views are client components:
-  compose `Record` or `List` inside a client component of your own.
+  (hooks, context, events) starts with `"use client"`, and a test keeps it that way. What is
+  public and draws nothing lives in a module WITHOUT it, so a Server Component calls it and
+  gets a value, not a client reference: the looks (`buttonClasses`, `controlClasses`,
+  `menuTriggerClasses`, `CELL_TONE`, `byDensity`, `bySurface`), the formatters (`formatCount`,
+  `formatNumber`, `formatWith`, `formatDateTime`, `formatRelative`, `countText`), the words
+  (`installCopy`, `currentCopy`, `fillCopy`, `ENGLISH_COPY`), the theme's names
+  (`THEME_ATTRIBUTE`, `isTheme`), `writeXlsx`, the calendar, the pivot, the criteria and the
+  filter's tree (`describeFilter`, `treeFromFilter`) — `tests/serverBoundary.test.ts` holds
+  it. What needs a browser stays client: `downloadFile`, `downloadXlsx`, `applyTheme`,
+  `sanitizeRichText`. The views are client components: compose `Record` or `List` inside a
+  client component of your own.
+
+  ```tsx
+  // app/invoices/page.tsx — a Server Component
+  import Link from "next/link";
+  import { buttonClasses, formatCount } from "@sincpro/web-ui";
+
+  export default async function Invoices() {
+    const pending = await countPending();
+    return (
+      <header>
+        <p>{formatCount(pending)} por cobrar</p>
+        <Link href="/invoices/new" className={buttonClasses("primary", "md")}>
+          Nueva factura
+        </Link>
+      </header>
+    );
+  }
+  ```
+
 - **The language.** `installCopy` sets the one global there is — and on a server, one process
   renders every page and every request. Installed in one page, it leaks into the next page the
   server renders, which the browser then draws in English: a hydration error. Install it in a
@@ -141,6 +168,11 @@ export default { plugins: { "@tailwindcss/postcss": {} } };
     return <UiCopyProvider copy={SPANISH_COPY}>{children}</UiCopyProvider>;
   }
   ```
+
+  A Server Component that formats (`formatCount`, `formatDateTime`, `describeFilter`) reads
+  the words installed in ITS module graph — the server components' copy of the package is not
+  the browser's. Install the language there too, at the top of a module your root layout
+  imports (the same for every request), or pass the locale: `formatCount(total, "es-BO")`.
 
 - **webpack** (`next build --webpack`): a Server Component that imports from the package root
   makes webpack send the WHOLE library to the browser (~1.2 MB gzip for one `Button`). Let Next
