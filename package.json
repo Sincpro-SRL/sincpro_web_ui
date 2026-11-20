@@ -1,6 +1,6 @@
 {
   "name": "@sincpro/web-ui",
-  "version": "2.11.0",
+  "version": "2.12.0",
   "description": "An enterprise web design system for business software — ERPs, back offices, management tools — in React and Tailwind: tokens, primitives, components and the two views every management screen is made of.",
   "type": "module",
   "main": "./dist/index.js",
