@@ -10,7 +10,7 @@ import { expect, within } from "storybook/test";
  * el servidor no dibuja nada.
  */
 const meta: Meta = {
-  title: "2 · Primitivas/Valores/Espera · el tiempo que lleva",
+  title: "2 · Primitivas/Mostrador/Espera · el tiempo que lleva",
   parameters: { layout: "padded" },
 };
 

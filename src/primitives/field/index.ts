@@ -52,6 +52,7 @@ export {
   UrlInput,
 } from "@sincpro/web-ui/primitives/field/ContactInputs";
 export { Keypad, type KeypadProps } from "@sincpro/web-ui/primitives/field/Keypad";
+/* A QUANTITY pressed, not typed — a cart's line, a kiosk's item. */
 export {
   applyKey,
   isKeypadKey,
@@ -59,6 +60,7 @@ export {
   type KeypadKey,
   type KeypadRules,
 } from "@sincpro/web-ui/primitives/field/keypadKeys";
+export { Stepper, type StepperProps } from "@sincpro/web-ui/primitives/field/Stepper";
 /* The copy button every field carries by its label — on by default, off by field or by form. */
 export {
   FieldCopyProvider,

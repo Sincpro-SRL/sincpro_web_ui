@@ -301,8 +301,10 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card` (with `data-layout`
 `card` | `compact` | `tile`), `record-card.title`, `record-card.figure`, `record-card.fields`,
 `record-card.media`, `record-card.badge`, `record-card.footer`, `record-card.stripe`,
-`board.lane`, `list.tiles`, `elapsed`, `keypad`, `keypad.key`, `radio-group`,
-`radio-group.card`, `tags.count`, `board.tile`,
+`board.lane`, `list.tiles`, `elapsed`, `keypad`, `keypad.key`, `keypad.screen`, `stepper`,
+`radio-group`, `radio-group.card`, `tags.count`, `outcome`, `outcome.figure`, `receipt`,
+`receipt.document`, `receipt.lines`, `receipt.totals`, `kiosk`, `kiosk.attract`,
+`kiosk.content`, `kiosk.reach`, `board.tile`,
 `board.stat`, `board.stat.value`, `activity.changes`, `file-list`, `file-list.file`, `file-value`, `metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
 `search.panel`, `search.suggestions`, `search.suggestion`, `search.record`, `search.advanced`,
 `search.keys`, `search-entry`, `search-entry.keys`, `table`, `table.pile`, `yes-no`,
@@ -314,6 +316,24 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `guide.progress`, `guide.title`, `guide.body`, `guide.actions`. A part that is one of many
 carries `data-key` too (`navigation.item`). Put your rules in a cascade layer above web-ui's, or
 outside any layer.
+
+#### Touch and the counter: a till, a kitchen, a kiosk, a shop
+
+The same pieces as the ERP, drawn for a finger — no «POS» inside the package. The application
+says what the person presses with, on `<html>` or on a zone (a till is a touch monitor with a
+mouse plugged in, so the browser alone says «mouse»):
+
+```tsx
+<html {...pointerAttributes("touch")}> {/* data-pointer="touch" */}
+```
+
+Controls grow to 44 px, what is drawn small answers to `--size-target` (`hit-target`), and what
+only shows on hover follows the `touch:` variant. Then: `List.Tiles` (a product grid),
+`List.Filters` with `Tags size="md" | "lg"` and `count`, `RadioGroup look="cards"`, `Keypad`
+(with `screen`), `Stepper`, `RecordCard elapsed`, `Outcome`, `Receipt`, and `KioskFrame` (an
+attract screen, `idleAfter`, a reduced-height mode). The Storybook page «Táctil y mostrador»
+orders them by what they solve; `5 · Plantillas/Mostrador` has the till, the express till, the
+kitchen, the kiosk and the shop.
 
 #### A form that explains itself: the «settings» style
 

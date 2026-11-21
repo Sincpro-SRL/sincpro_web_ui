@@ -14,10 +14,13 @@ import {
   type LineItemColumn,
   LineItems,
   List,
+  Outcome,
   Pane,
   Panes,
   Picker,
   RadioGroup,
+  Receipt as ReceiptTicket,
+  type ReceiptProps,
   Record,
   RecordCard,
   SearchField,
@@ -33,9 +36,12 @@ import type { Meta, StoryObj } from "@storybook/react-vite";
 import {
   Banknote,
   Bike,
+  Coffee,
   CreditCard,
+  LayoutGrid,
   ListOrdered,
   Lock,
+  MonitorSmartphone,
   Plus,
   Printer,
   QrCode,
@@ -121,6 +127,8 @@ type Order = {
   state: OrderState;
   payment?: Payment;
   time: string;
+  /** When it was opened — epoch ms, for how long a table has been waiting. */
+  openedAt?: number;
 };
 
 /** The final consumer: what an invoice carries when the customer gives no tax id. */
@@ -215,6 +223,7 @@ const SEED: readonly Order[] = [
     lines: [line("e1", "m5", 2), line("e2", "m9", 2)],
     state: "open",
     time: "09:48",
+    openedAt: Date.now() - 34 * 60_000,
   },
   {
     id: 117,
@@ -237,6 +246,8 @@ type Till = {
   order: Order;
   select: (id: number) => void;
   newOrder: () => void;
+  /** The open order of a table, or a new one for it. */
+  forTable: (table: string) => void;
   update: (id: number, change: Partial<Order>) => void;
   add: (item: MenuItem) => void;
   setLine: (lineId: string | null) => void;
@@ -262,18 +273,19 @@ function TillProvider({ children }: { children: ReactNode }) {
   const invoices = orders.filter((o) => o.payment?.invoice !== undefined).length;
   const set = (id: number, change: Partial<Order>) =>
     setOrders((now) => now.map((o) => (o.id === id ? { ...o, ...change } : o)));
-  const newOrderIn = (now: readonly Order[]) => {
+  const newOrderIn = (now: readonly Order[], table = "") => {
     const id = Math.max(...now.map((o) => o.id)) + 1;
     setOrders([
       ...now,
       {
         id,
-        channel: "away",
-        table: "",
+        channel: table === "" ? "away" : "here",
+        table,
         customer: NO_NAME,
         lines: [],
         state: "open",
         time: "10:15",
+        openedAt: Date.now(),
       },
     ]);
     setCurrent(id);
@@ -297,6 +309,14 @@ function TillProvider({ children }: { children: ReactNode }) {
       setCurrentLine(null);
     },
     newOrder: () => newOrderIn(orders),
+    forTable: (table) => {
+      const open = orders.find((o) => o.state === "open" && o.table === table);
+      if (open === undefined) newOrderIn(orders, table);
+      else {
+        setCurrent(open.id);
+        setCurrentLine(null);
+      }
+    },
     update: set,
     add: (item) => {
       const there = order.lines.find((l) => l.item === item.id && l.discount === 0);
@@ -362,6 +382,8 @@ const chargeRef = (id: number): ResourceRef => ({
   kind: "cobro",
   params: { pedido: String(id) },
 });
+const tablesRef: ResourceRef = { domain: "caja", kind: "mesas" };
+const customerRef: ResourceRef = { domain: "caja", kind: "cliente" };
 const orderRef = (id: number): ResourceRef => ({
   domain: "caja",
   kind: "pedido",
@@ -583,6 +605,13 @@ function Sale({ api }: ViewProps) {
                   onSelect: cancel,
                 },
                 {
+                  id: "tables",
+                  label: "Mesas",
+                  icon: LayoutGrid,
+                  tucked: true,
+                  onSelect: () => api.open(tablesRef),
+                },
+                {
                   id: "orders",
                   label: "Pedidos del día",
                   icon: ListOrdered,
@@ -661,20 +690,19 @@ function Sale({ api }: ViewProps) {
               }}
               options={KEYPAD_MODES}
             />
-            <Field
-              label={
-                current === undefined
-                  ? "Tocá un producto"
-                  : `${current.name} · ${KEYPAD_MODES.find((m) => m.value === keypadMode)!.label} ${shownValue === "" ? "—" : shownValue.replace(".", ",")}`
-              }
-            >
-              <Keypad
-                value={typed ?? ""}
-                onChange={type}
-                decimals={keypadMode === "quantity" ? 0 : 2}
-                disabled={current === undefined}
-              />
-            </Field>
+            <Keypad
+              value={typed ?? ""}
+              onChange={type}
+              decimals={keypadMode === "quantity" ? 0 : 2}
+              disabled={current === undefined}
+              screen={{
+                label:
+                  current === undefined
+                    ? "Tocá un producto"
+                    : `${current.name} · ${KEYPAD_MODES.find((m) => m.value === keypadMode)!.label}`,
+                value: shownValue === "" ? "—" : shownValue.replace(".", ","),
+              }}
+            />
           </Record.Paper>
         </Record>
       </Pane>
@@ -909,6 +937,53 @@ function Orders({ api }: ViewProps) {
   );
 }
 
+/* An order as its ticket: the same words the printer gets. */
+function ticketOf(order: Order): ReceiptProps {
+  const paid = order.payment;
+  const where = [CHANNEL_LABEL[order.channel], order.table]
+    .filter((p) => p !== "")
+    .join(" · ");
+  return {
+    issuer: "Café Illimani",
+    issuerLines: ["NIT 1023456028", "Av. Arce 2631, La Paz"],
+    document:
+      paid === undefined
+        ? `PEDIDO ${order.id}`
+        : paid.document === "factura"
+          ? `FACTURA N.º ${paid.invoice}`
+          : "NOTA DE VENTA",
+    facts: [
+      { label: "Pedido", value: String(order.id) },
+      { label: "Hora", value: order.time },
+      { label: "Canal", value: where },
+      ...(paid === undefined
+        ? []
+        : [
+            { label: "Cliente", value: paid.customer.name },
+            ...(paid.customer.taxId === "0"
+              ? []
+              : [{ label: "NIT/CI", value: paid.customer.taxId }]),
+          ]),
+    ],
+    lines: order.lines.map((l) => ({
+      quantity: l.quantity,
+      name: l.name,
+      amount: bs(lineAmount(l)),
+      ...(l.discount === 0 ? {} : { note: `descuento ${l.discount} %` }),
+    })),
+    totals: [
+      { label: "Total", value: bs(totalOf(order.lines)), total: true },
+      ...(paid === undefined
+        ? []
+        : [
+            { label: paid.method, value: bs(paid.received) },
+            { label: "Vuelto", value: bs(paid.change) },
+          ]),
+    ],
+    footer: order.state === "cancelled" ? ["— ANULADO —"] : ["¡Gracias por su compra!"],
+  };
+}
+
 function OrderDetail({ api, resource }: ViewProps) {
   const till = useTill();
   const toast = useToast();
@@ -925,27 +1000,8 @@ function OrderDetail({ api, resource }: ViewProps) {
       }}
     >
       <Record.Paper>
-        {facts === undefined ? null : (
-          <Totals
-            rows={[
-              { label: "Comprobante", value: documentOf(order) },
-              {
-                label: "Cliente",
-                value: `${facts.customer.name}${facts.customer.taxId === "0" ? "" : ` · NIT ${facts.customer.taxId}`}`,
-              },
-              { label: "Recibido", value: bs(facts.received) },
-              { label: "Vuelto", value: bs(facts.change), total: true },
-            ]}
-          />
-        )}
-        <LineItems<TicketLine>
-          lines={order.lines}
-          columns={TICKET_COLUMNS}
-          getLineId={(l) => l.id}
-          lineLabel={(l) => l.name}
-          mode="read"
-          totals={[{ label: "Total", value: bs(total), total: true }]}
-        />
+        {/* The order IS its ticket: what was printed, as it was printed. */}
+        <ReceiptTicket {...ticketOf(order)} />
         <FormActions
           secondary={
             order.state === "paid" ? (
@@ -1088,10 +1144,118 @@ function Closing({ api }: ViewProps) {
 }
 
 /* ---------------------------------------------------------------- *
+ *  Mesas — the room, each table with its order and how long it waits
+ * ---------------------------------------------------------------- */
+
+type Table = { id: string; name: string };
+const TABLES: readonly Table[] = Array.from({ length: 8 }, (_, i) => ({
+  id: `t${i + 1}`,
+  name: `Mesa ${i + 1}`,
+}));
+
+function Tables({ api }: ViewProps) {
+  const till = useTill();
+  useEffect(() => api.setTitle("Mesas"), [api]);
+  const orderOf = (table: string) =>
+    till.orders.find((o) => o.state === "open" && o.table === table);
+  const busy = TABLES.filter((t) => orderOf(t.name) !== undefined).length;
+  return (
+    <List<Table>
+      items={TABLES}
+      keyOf={(t) => t.id}
+      present="tiles"
+      onChoose={(table) => {
+        till.forTable(table.name);
+        api.open(saleRef);
+      }}
+    >
+      <List.Bar>
+        <List.Identity
+          title="Mesas"
+          description="el salón · tocá una mesa para atenderla"
+          counters={[
+            { label: "ocupadas", value: busy, tone: "info" },
+            { label: "libres", value: TABLES.length - busy },
+          ]}
+        />
+      </List.Bar>
+      <List.Tiles<Table>
+        size="md"
+        card={(table, ways) => {
+          const open = orderOf(table.name);
+          const press = ways.press === undefined ? {} : { onOpen: ways.press };
+          return open === undefined ? (
+            <RecordCard title={table.name} subtitle="Libre" {...press} />
+          ) : (
+            /* Occupied: what it has, how much, and how long since it sat down — amber at 30
+               minutes, red at an hour, so the waiter sees who is waiting. */
+            <RecordCard
+              title={table.name}
+              subtitle={`Pedido ${open.id} · ${itemsOf(open)} productos`}
+              figure={bs(totalOf(open.lines))}
+              elapsed={{ since: open.openedAt ?? Date.now(), warnAfter: 30, badAfter: 60 }}
+              {...press}
+            />
+          );
+        }}
+      />
+    </List>
+  );
+}
+
+/* ---------------------------------------------------------------- *
+ *  Pantalla del cliente — the order being rung up, across the counter
+ * ---------------------------------------------------------------- */
+
+function CustomerDisplay({ api }: ViewProps) {
+  const till = useTill();
+  useEffect(() => api.setTitle("Pantalla del cliente"), [api]);
+  const { order } = till;
+  if (order.lines.length === 0) {
+    return (
+      <Outcome
+        tone="info"
+        icon={Coffee}
+        title="¡Bienvenido a Café Illimani!"
+        detail="Tu pedido aparece aquí mientras lo cargamos."
+      />
+    );
+  }
+  return (
+    <ReceiptTicket
+      look="screen"
+      issuer="Café Illimani"
+      document={`TU PEDIDO · ${order.id}`}
+      lines={order.lines.map((l) => ({
+        quantity: l.quantity,
+        name: l.name,
+        amount: bs(lineAmount(l)),
+      }))}
+      totals={[{ label: "Total", value: bs(totalOf(order.lines)), total: true }]}
+      footer={["Pagá con QR, tarjeta o efectivo en la caja"]}
+    />
+  );
+}
+
+/* ---------------------------------------------------------------- *
  *  The workspace and its bar
  * ---------------------------------------------------------------- */
 
 const VIEWS: readonly ViewSpec[] = [
+  {
+    domain: "caja",
+    kind: "mesas",
+    title: () => "Mesas",
+    icon: LayoutGrid,
+    load: async () => Tables,
+  },
+  {
+    domain: "caja",
+    kind: "cliente",
+    title: () => "Pantalla del cliente",
+    icon: MonitorSmartphone,
+    load: async () => CustomerDisplay,
+  },
   {
     domain: "caja",
     kind: "venta",
@@ -1131,6 +1295,7 @@ const VIEWS: readonly ViewSpec[] = [
 
 const DESTINATIONS: Readonly<Record<string, ResourceRef>> = {
   venta: saleRef,
+  mesas: tablesRef,
   pedidos: ordersRef,
   cierre: closingRef,
 };
@@ -1147,6 +1312,7 @@ const bar = (go: (ref: ResourceRef) => void) => (
           {
             options: [
               { id: "venta", label: "Vender", icon: ShoppingBasket },
+              { id: "mesas", label: "Mesas", icon: LayoutGrid },
               { id: "pedidos", label: "Pedidos del día", icon: ListOrdered },
               { id: "cierre", label: "Cierre de caja", icon: Lock },
             ],
@@ -1162,10 +1328,22 @@ const bar = (go: (ref: ResourceRef) => void) => (
   />
 );
 
-function TillScreen({ start }: { start: ResourceRef }) {
+function TillScreen({
+  start,
+  panels,
+}: {
+  start: ResourceRef;
+  panels?: readonly { ref: ResourceRef; zone?: "left" | "right" | "bottom" }[];
+}) {
   return (
     <TillProvider>
-      <Workspace views={VIEWS} start={start} menu={bar} pointer="touch" />
+      <Workspace
+        views={VIEWS}
+        start={start}
+        menu={bar}
+        pointer="touch"
+        {...(panels === undefined ? {} : { panels })}
+      />
     </TillProvider>
   );
 }
@@ -1255,5 +1433,30 @@ export const CierreDeCaja: Story = {
     for (const key of ["2", "8", "8"])
       await userEvent.click(canvas.getByRole("button", { name: key }));
     await expect(canvas.getAllByText("Bs 0,00").length).toBeGreaterThan(0);
+  },
+};
+
+/** **Las mesas.** El salón de un vistazo: libres y ocupadas, con lo que tienen, cuánto llevan
+ *  y cuánto esperan. Tocá la Mesa 4: la caja abre su pedido. */
+export const Mesas: Story = {
+  render: () => <TillScreen start={tablesRef} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(await canvas.findByRole("button", { name: "Mesa 4" }));
+    await expect(await canvas.findByRole("heading", { name: "Pedido 116" })).toBeVisible();
+  },
+};
+
+/** **La pantalla del cliente**, al costado: lo que se carga en la caja aparece del otro lado
+ *  del mostrador, en vivo. */
+export const PantallaDelCliente: Story = {
+  name: "Pantalla del cliente",
+  render: () => <TillScreen start={saleRef} panels={[{ ref: customerRef }]} />,
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await expect(await canvas.findByText("¡Bienvenido a Café Illimani!")).toBeVisible();
+    const menu = within(await canvas.findByRole("region", { name: "Menú" }));
+    await userEvent.click(await menu.findByRole("button", { name: "Capuchino" }));
+    await expect(await canvas.findByText("TU PEDIDO · 117")).toBeVisible();
   },
 };

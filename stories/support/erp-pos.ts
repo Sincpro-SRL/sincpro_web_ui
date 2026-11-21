@@ -309,3 +309,8 @@ export const CHANNEL_LABEL: Record<KitchenOrder["channel"], string> = {
   delivery: "Delivery",
   kiosco: "Kiosco",
 };
+
+/** The item's barcode — what a scanner types (and an Enter after it). */
+export function codeOf(item: MenuItem): string {
+  return `7771${item.id.slice(1).padStart(3, "0")}`;
+}

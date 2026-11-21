@@ -848,6 +848,27 @@ export type UiCopy = {
     /** The figure's title. `{time}` is «4:05». */
     waiting: string;
   };
+  /** A quantity with «−» and «+» (`Stepper`). The unit goes after: «Sumar uno: Capuchino». */
+  stepper: {
+    label: string;
+    decrease: string;
+    increase: string;
+    /** «−» at the minimum, when it takes the line away. */
+    remove: string;
+  };
+  /** A finished operation, said big (`Outcome`). */
+  outcome: {
+    /** Read before the figure: «Tu número: 118». */
+    figure: string;
+  };
+  /** A self-service frame (`KioskFrame`). */
+  kiosk: {
+    /** The button that brings the content down to a seated person's reach. */
+    reach: string;
+    reachOff: string;
+    /** The attract screen's call, when the application gives none. */
+    start: string;
+  };
   /** The on-screen number pad of a till or a kiosk (`Keypad`). */
   keypad: {
     /** The pad's name when nothing names it. */
@@ -1673,6 +1694,20 @@ export const ENGLISH_COPY: UiCopy = {
   elapsed: {
     label: "Waiting",
     waiting: "Waiting for {time}",
+  },
+  stepper: {
+    label: "Quantity",
+    decrease: "One less",
+    increase: "One more",
+    remove: "Remove",
+  },
+  outcome: {
+    figure: "Number",
+  },
+  kiosk: {
+    reach: "Bring it down within reach",
+    reachOff: "Back to full height",
+    start: "Touch to start",
   },
   keypad: {
     label: "Number pad",

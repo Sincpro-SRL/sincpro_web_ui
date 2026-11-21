@@ -1,4 +1,11 @@
-import { Button, Field, Keypad, RadioGroup, SegmentedControl } from "@sincpro/web-ui";
+import {
+  Button,
+  Field,
+  Keypad,
+  RadioGroup,
+  SegmentedControl,
+  Stepper,
+} from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { Banknote, CreditCard, QrCode, ShoppingBag, Utensils, Wallet } from "lucide-react";
 import { useState } from "react";
@@ -6,13 +13,14 @@ import { expect, userEvent, within } from "storybook/test";
 
 /**
  * Context: **controles de mostrador** — lo que se toca en un POS, un kiosco o el checkout de
- * una tienda. El teclado numérico (`Keypad`) edita un valor como una calculadora; lo que el
- * número ES (cantidad, descuento, precio) lo dice la pantalla con un `SegmentedControl`
- * encima. `RadioGroup look="cards"` es la misma elección de siempre dibujada como cajas que
- * se tocan enteras: el método de pago, «comer aquí / para llevar», el envío.
+ * una tienda. El teclado numérico (`Keypad`) edita un valor como una calculadora, con su
+ * pantalla arriba; lo que el número ES (cantidad, descuento, precio) lo dice la pantalla con un
+ * `SegmentedControl` encima. `Stepper` es una cantidad que se aprieta, no se escribe: «−» y «+»
+ * del tamaño de un control, y en el mínimo «−» quita la línea. `RadioGroup look="cards"` es la
+ * misma elección de siempre dibujada como cajas que se tocan enteras.
  */
 const meta: Meta = {
-  title: "2 · Primitivas/Campos/Mostrador · teclado y opciones grandes",
+  title: "2 · Primitivas/Mostrador/Teclado, cantidad y opciones grandes",
   parameters: { layout: "padded" },
 };
 
@@ -46,13 +54,19 @@ export const Teclado: Story = {
             { value: "price", label: "Precio" },
           ]}
         />
-        <p
-          className="text-right text-display font-semibold text-ink tabular-nums"
-          aria-live="polite"
+        <Keypad
+          value={text}
+          onChange={setText}
+          decimals={mode === "qty" ? 0 : 2}
+          screen={{
+            label: {
+              qty: "Capuchino · Cantidad",
+              disc: "Capuchino · % Desc.",
+              price: "Capuchino · Precio",
+            }[mode],
+            value: text === "" ? "0" : text.replace(".", ","),
+          }}
         >
-          {text === "" ? "0" : text.replace(".", ",")}
-        </p>
-        <Keypad value={text} onChange={setText} decimals={mode === "qty" ? 0 : 2}>
           <Button role="primary" size="lg" onClick={() => setText("")}>
             Aplicar
           </Button>
@@ -146,5 +160,64 @@ export const OpcionesGrandes: Story = {
     await userEvent.click(canvas.getByText("Efectivo"));
     await expect(canvas.getByRole("radio", { name: /Efectivo/ })).toBeChecked();
     await expect(canvas.getByRole("radio", { name: /Crédito de la casa/ })).toBeDisabled();
+  },
+};
+
+/** **Una cantidad que se aprieta.** La línea de un pedido: en 1, «−» es un tacho y la quita. En
+ *  el kiosco, grande. En lectura, la cifra. */
+export const Cantidad: Story = {
+  name: "Cantidad · Stepper",
+  render: function Render() {
+    const [coffee, setCoffee] = useState(2);
+    const [cake, setCake] = useState<number | null>(1);
+    const [people, setPeople] = useState(4);
+    return (
+      <div className="flex max-w-md flex-col gap-4 rounded-box border border-line bg-surface p-4">
+        <div className="flex items-center justify-between gap-3">
+          <span className="text-body text-ink">Capuchino</span>
+          <Stepper
+            value={coffee}
+            onChange={setCoffee}
+            min={1}
+            max={20}
+            unitLabel="Capuchino"
+            onRemove={() => setCoffee(1)}
+          />
+        </div>
+        {cake === null ? (
+          <p className="text-meta text-muted">La torta se quitó del pedido.</p>
+        ) : (
+          <div className="flex items-center justify-between gap-3">
+            <span className="text-body text-ink">Torta de chocolate</span>
+            <Stepper
+              value={cake}
+              onChange={setCake}
+              min={1}
+              unitLabel="Torta de chocolate"
+              onRemove={() => setCake(null)}
+            />
+          </div>
+        )}
+        <Field label="Personas en la mesa">
+          <Stepper value={people} onChange={setPeople} min={1} max={12} size="lg" />
+        </Field>
+        <Field label="En lectura">
+          <Stepper value={people} onChange={setPeople} mode="read" />
+        </Field>
+      </div>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    await userEvent.click(canvas.getByRole("button", { name: "Uno más: Capuchino" }));
+    await expect(canvas.getAllByRole("spinbutton")[0]).toHaveAttribute("aria-valuenow", "3");
+    /* At one, «−» is a bin: the line goes. */
+    await userEvent.click(canvas.getByRole("button", { name: "Quitar: Torta de chocolate" }));
+    await expect(canvas.getByText("La torta se quitó del pedido.")).toBeVisible();
+    /* The spin button takes the arrows. */
+    const people = canvas.getAllByRole("spinbutton")[1]!;
+    people.focus();
+    await userEvent.keyboard("{ArrowUp}{ArrowUp}");
+    await expect(people).toHaveAttribute("aria-valuenow", "6");
   },
 };

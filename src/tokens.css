@@ -612,6 +612,11 @@
   --grid-tiles-sm: repeat(auto-fill, minmax(min(100%, var(--container-tile-sm)), 1fr));
   --grid-tiles-md: repeat(auto-fill, minmax(min(100%, var(--container-tile-md)), 1fr));
   --grid-tiles-lg: repeat(auto-fill, minmax(min(100%, var(--container-tile-lg)), 1fr));
+  /* A kiosk's reduced height: the empty band above the flow, so every target sits below
+     ~120 cm on a standing kiosk — within a seated person's reach (ADA 308). */
+  --size-kiosk-reach: 45dvh;
+  /* A printed ticket: the width of an 80 mm thermal roll's printable area (72 mm). */
+  --container-receipt: 72mm;
   /* A tile's picture: 4:3, the shape a product photo is taken in and the one that keeps two
      lines of name under it on a 11rem tile. */
   --aspect-tile: 4 / 3;

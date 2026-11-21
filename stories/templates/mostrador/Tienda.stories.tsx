@@ -11,11 +11,12 @@ import {
   type LineItemColumn,
   LineItems,
   List,
-  NumberInput,
+  Outcome,
   RadioGroup,
   Record,
   RecordCard,
   SearchField,
+  Stepper,
   Tag,
   Tags,
   useToast,
@@ -215,11 +216,11 @@ const CART_COLUMNS: readonly LineItemColumn<CartLine>[] = [
     numeric: true,
     value: (l) => l.quantity,
     edit: (l, set) => (
-      <NumberInput
-        aria-label="Cantidad"
+      <Stepper
         value={l.quantity}
         min={1}
-        onChange={(v) => set({ ...l, quantity: v === "" ? 1 : v })}
+        unitLabel={l.name}
+        onChange={(quantity) => set({ ...l, quantity })}
       />
     ),
   },
@@ -234,7 +235,7 @@ const CART_COLUMNS: readonly LineItemColumn<CartLine>[] = [
 
 function CartView({ api }: ViewProps) {
   const cart = useCart();
-  const toast = useToast();
+  const [confirmed, setConfirmed] = useState<string | null>(null);
   const total = totalOf(cart.lines);
   useEffect(() => api.setTitle("Tu pedido"), [api]);
   const pay = () =>
@@ -242,7 +243,7 @@ function CartView({ api }: ViewProps) {
       checkoutRef(total),
       (summary) => {
         cart.clear();
-        toast.show({ message: `Pedido 1042 confirmado · ${summary}.`, tone: "good" });
+        setConfirmed(summary);
       },
       { to: Destination.Modal, size: { w: 680, h: 560 } },
     );
@@ -264,15 +265,31 @@ function CartView({ api }: ViewProps) {
         </Record.Actions>
       </Record.Rail>
       <Record.Paper>
-        <LineItems<CartLine>
-          lines={cart.lines}
-          columns={CART_COLUMNS}
-          getLineId={(l) => l.id}
-          lineLabel={(l) => l.name}
-          onChange={cart.change}
-          onRemove={cart.remove}
-          totals={[{ label: "Total", value: bs(total), total: true }]}
-        />
+        {confirmed !== null && cart.lines.length === 0 ? (
+          /* The end of a purchase is the page, not a toast: the number to quote, what
+             follows, and the way back to the shop. */
+          <Outcome
+            title="Pedido confirmado"
+            figure="1042"
+            figureLabel="Tu pedido"
+            detail={`Pagado ${confirmed}. Te avisamos por WhatsApp cuando salga.`}
+            action={
+              <Button role="secondary" onClick={() => setConfirmed(null)}>
+                Seguir comprando
+              </Button>
+            }
+          />
+        ) : (
+          <LineItems<CartLine>
+            lines={cart.lines}
+            columns={CART_COLUMNS}
+            getLineId={(l) => l.id}
+            lineLabel={(l) => l.name}
+            onChange={cart.change}
+            onRemove={cart.remove}
+            totals={[{ label: "Total", value: bs(total), total: true }]}
+          />
+        )}
       </Record.Paper>
     </Record>
   );
@@ -403,6 +420,7 @@ export const Comprar: Story = {
       dialog.getByRole("button", { name: "Confirmar pedido · Bs 58,00" }),
     );
     await waitFor(() => expect(page.queryByRole("dialog", { name: "Pagar" })).toBeNull());
-    await expect(await page.findByText(/Pedido 1042 confirmado/)).toBeVisible();
+    await expect(await canvas.findByText("Pedido confirmado")).toBeVisible();
+    await expect(canvas.getByText("1042")).toBeVisible();
   },
 };

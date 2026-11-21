@@ -24,6 +24,12 @@ export type KeypadProps = {
   size?: "md" | "lg";
   /** A wide key under the pad: «Cantidad», «Cobrar» — what the number is FOR. */
   children?: ReactNode;
+  /**
+   * The pad's screen, on top, as a calculator has: what is being typed, big and right-aligned,
+   * and what it is («Capuchino · Cant.»). Without it the screen is the application's. `value`
+   * is already written for the person (`«12,50»`), the pad does not format it.
+   */
+  screen?: { label?: ReactNode; value: ReactNode };
   /** The pad's accessible name, when no `Field` names it. */
   "aria-label"?: string;
   id?: string;
@@ -60,6 +66,7 @@ export function Keypad({
   "aria-label": ariaLabel,
   id: ownId,
   disabled = false,
+  screen,
 }: KeypadProps) {
   const copy = useUiCopy();
   const { id, labelledBy, describedBy } = useFieldIds({ id: ownId });
@@ -118,6 +125,23 @@ export function Keypad({
       onKeyDown={onKeyDown}
       className="grid w-full min-w-0 grid-cols-3 gap-1.5"
     >
+      {screen === undefined ? null : (
+        /* Live, so a screen reader hears the number as it is typed. */
+        <div
+          data-ui="keypad.screen"
+          aria-live="polite"
+          className="col-span-3 flex min-w-0 flex-col items-end rounded-control border border-line bg-ink/4 px-3 py-2"
+        >
+          {screen.label === undefined ? null : (
+            <span className="min-w-0 max-w-full truncate text-micro text-muted">
+              {screen.label}
+            </span>
+          )}
+          <span className="text-display leading-none font-semibold text-ink tabular-nums">
+            {screen.value}
+          </span>
+        </div>
+      )}
       {ROWS.flat().map((k) => key(k, k))}
       {extraKey}
       {key("0", "0")}

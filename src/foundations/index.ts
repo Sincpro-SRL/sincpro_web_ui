@@ -9,6 +9,8 @@ export { type CopyOverride, mergeCopyOver } from "@sincpro/web-ui/foundations/co
 export { DensityProvider, useDensity } from "@sincpro/web-ui/foundations/density";
 /* NOW, live — one shared ticking clock per interval, `null` on the server. */
 export { useNow } from "@sincpro/web-ui/foundations/clock";
+/* IDLE — nobody touched it for a while: a kiosk forgets the abandoned order. */
+export { useIdle } from "@sincpro/web-ui/foundations/idle";
 export { byDensity, bySurface } from "@sincpro/web-ui/foundations/pickBy";
 export {
   currentCopy,

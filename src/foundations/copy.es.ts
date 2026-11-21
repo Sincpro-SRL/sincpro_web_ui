@@ -579,6 +579,20 @@ export const SPANISH_COPY: UiCopyOverride = {
     label: "Esperando",
     waiting: "Esperando hace {time}",
   },
+  stepper: {
+    label: "Cantidad",
+    decrease: "Uno menos",
+    increase: "Uno más",
+    remove: "Quitar",
+  },
+  outcome: {
+    figure: "Número",
+  },
+  kiosk: {
+    reach: "Bajar la pantalla al alcance",
+    reachOff: "Volver a la altura completa",
+    start: "Tocá para empezar",
+  },
   keypad: {
     label: "Teclado numérico",
     backspace: "Borrar el último dígito",
