@@ -517,7 +517,7 @@ export const UnoDeLaLista: Story = {
     await userEvent.click(await page.findByRole("option", { name: /Buscar más/ }));
     /* The list's own search, already holding what was typed; a chooser offers no 👁 / ↗. */
     const dialog = within(await page.findByRole("dialog"));
-    await waitFor(() => expect(dialog.getByText("cliente contiene ferre")).toBeVisible());
+    await waitFor(() => expect(dialog.getByTitle("cliente contiene ferre")).toBeVisible());
     await expect(
       dialog.queryAllByRole("button", { name: /^Vista previa|^Abrir/ }),
     ).toHaveLength(0);

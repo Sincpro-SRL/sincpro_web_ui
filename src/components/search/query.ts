@@ -879,6 +879,59 @@ export function conditionCriteria(
   );
 }
 
+/**
+ * A chip's PARTS — the field, the comparison and the value —, when the chip is a question the
+ * bar itself writes.
+ *
+ * Context: «total como mucho 1000» read at one weight, and changing 1000 to 2000 meant opening
+ * the whole builder. Split, the chip reads the way the eye scans it —the field quiet, the
+ * comparison a small word, the value strong— and each part is touched on its own. Only a chip
+ * that DESCRIBES itself splits: a declared one keeps its name («sólo vencidas») and is one
+ * piece, since that name is somebody's decision and not the condition read aloud.
+ */
+export type ChipParts =
+  | { kind: "condition"; field: QueryField; op: string; value: string }
+  | { kind: "values"; field: QueryField; values: readonly RecordOption[] };
+
+export function chipParts(
+  node: SearchCriteria,
+  fields: readonly QueryField[],
+): ChipParts | undefined {
+  if (node.kind !== "filter" || node.selection === undefined) return undefined;
+  if (node.values !== undefined) {
+    const field = fields.find((one) => node.id === `v:${fieldKey(one)}`);
+    return field === undefined || node.values.length === 0
+      ? undefined
+      : { kind: "values", field, values: node.values };
+  }
+  const selection = node.selection;
+  if (!("operator" in selection)) return undefined;
+  const op = selection.operator;
+  const raw = selection.value;
+  const value = withoutValue(op)
+    ? ""
+    : typeof raw === "string" || typeof raw === "number"
+      ? String(raw)
+      : undefined;
+  if (value === undefined) return undefined;
+  const field = fields.find(
+    (one) =>
+      one.field === selection.field && node.label === describeCondition(one, op, value),
+  );
+  return field === undefined ? undefined : { kind: "condition", field, op, value };
+}
+
+/** The same chip asking with another comparison or value — its identity (`id`) kept, so it
+ *  stays where it was and nothing that points at it loses it. */
+export function withParts(
+  node: SearchCriteria,
+  field: QueryField,
+  op: string,
+  value: string,
+): SearchCriteria {
+  return { ...conditionCriteria(field, op, value), id: node.id };
+}
+
 /** What asks for these values of a field: records of a relation by their key (see
  *  `recordsFilter`), values of an enum or of any column with `=` / `in`. */
 export function valuesSelection(

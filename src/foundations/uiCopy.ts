@@ -290,8 +290,30 @@ export type UiCopy = {
     moreRecords: string;
     /** The way into the builder — in the dropdown, under what is offered, and in the panel. */
     advanced: string;
-    /** The keys of the dropdown, said once at its foot. */
-    keysHint: string;
+    /** The keys of the dropdown, said once at its foot: each word goes beside its key, drawn
+     *  the way this keyboard writes it. */
+    keys: {
+      move: string;
+      put: string;
+      open: string;
+      complete: string;
+      undo: string;
+      panel: string;
+      advanced: string;
+    };
+    /** The bar offers before anything is typed: what was searched lately, and by what. */
+    recent: string;
+    searchBy: string;
+    /** A removed instance, said where it can be taken back. */
+    removed: string;
+    undo: string;
+    /** A chip marked from the keyboard (← on the empty bar): what it is and what can be done. */
+    chipMarked: string;
+    /** The parts of a chip, each touched on its own. */
+    editValue: string;
+    changeOp: string;
+    /** The box that narrows a long column of the panel. */
+    findIn: string;
     placeholder: string;
     /** The titles of the three columns of the tools panel. */
     filters: string;
@@ -1303,7 +1325,23 @@ export const ENGLISH_COPY: UiCopy = {
     recordsFailed: "The search could not be done",
     moreRecords: "Search more…",
     advanced: "Advanced search…",
-    keysHint: "↑↓ move · Enter set · → open · Esc undo",
+    keys: {
+      move: "move",
+      put: "set",
+      open: "open",
+      complete: "complete",
+      undo: "undo",
+      panel: "filters",
+      advanced: "advanced",
+    },
+    recent: "Recent",
+    searchBy: "Search by",
+    removed: "Removed: {label}",
+    undo: "Undo",
+    chipMarked: "{label} marked. Delete removes it, Enter edits it, arrows move.",
+    editValue: "Change the value of {label}",
+    changeOp: "Compare {field} another way",
+    findIn: "Search in {column}",
     placeholder: "search…",
     filters: "Filters",
     groupBy: "Group by",

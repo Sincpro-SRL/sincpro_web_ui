@@ -541,6 +541,169 @@ export const ConModelo: Story = {
   },
 };
 
+/** Dónde guarda esta historia lo buscado hace poco — se borra antes de cada pasada. */
+const RECIENTES = "historia-teclado";
+
+/**
+ * **Todo desde el teclado.** La barra se usa sin mouse de punta a punta:
+ *
+ * - `/` desde cualquier lugar que no sea un campo enfoca la barra, y la barra vacía OFRECE:
+ *   lo buscado hace poco y los campos por los que se puede buscar.
+ * - Escribir «cli» dibuja en gris «ente»: `Tab` lo toma como campo.
+ * - `←` con la barra vacía marca la última ficha; `← →` recorren, `Supr` quita (con
+ *   «Deshacer», y `⌘Z`/`Ctrl+Z`), `Enter` edita el valor ahí mismo, `Esc` suelta.
+ * - Una ficha que escribió la barra se lee en partes —campo, comparación, valor— y cada una se
+ *   toca sola: la comparación abre las del campo, el valor se edita en el lugar.
+ * - `⌥↓`/`Alt+↓` abre el panel con su primera opción enfocada: `↑ ↓` dentro de una columna,
+ *   `← →` entre columnas, una letra salta. `⌘↵`/`Ctrl+↵` abre la búsqueda avanzada.
+ */
+export const DesdeElTeclado: Story = {
+  name: "Desde el teclado",
+  args: { facets: FACETAS, criteria: [], onCriteriaChange: () => {} },
+  beforeEach: () => {
+    try {
+      window.localStorage.removeItem(`sincpro-web-ui:search-recent:${RECIENTES}`);
+    } catch {
+      /* Sin almacenamiento: no hay nada que borrar. */
+    }
+  },
+  render: function Render() {
+    const total = queryField(MODELO, "amount_total", "es")!;
+    const [criteria, setCriteria] = useState<SearchCriteria[]>(() => [
+      conditionCriteria(total, "<=", "1000"),
+    ]);
+    const [avanzada, setAvanzada] = useState(false);
+    return (
+      <Caja>
+        <SearchBar
+          facets={FACETAS}
+          model={MODELO}
+          criteria={criteria}
+          onCriteriaChange={setCriteria}
+          filters={FILTROS.map((group) => ({
+            ...group,
+            options: group.options.map((one) => ({ ...one, checked: false })),
+          }))}
+          favorites={FAVORITOS}
+          onOpenBuilder={() => setAvanzada(true)}
+          recentKey={RECIENTES}
+          placeholder="buscá una factura…"
+        />
+        <p className="mt-3 font-mono text-micro text-muted" aria-label="lo que viaja">
+          {JSON.stringify(selectionOf(criteria) ?? null)}
+        </p>
+        {/* The builder itself is the other stories'; here what matters is that the key opened it. */}
+        {avanzada ? (
+          <Dialog
+            open
+            width="sm"
+            title="Búsqueda avanzada"
+            onClose={() => setAvanzada(false)}
+          >
+            <p className="text-meta text-muted">Acá va el constructor.</p>
+          </Dialog>
+        ) : null}
+      </Caja>
+    );
+  },
+  play: async ({ canvasElement }) => {
+    const canvas = within(canvasElement);
+    const doc = canvasElement.ownerDocument;
+    const box = canvas.getByRole("combobox", { name: "Buscar" });
+    const travels = canvas.getByLabelText("lo que viaja");
+    const list = () => within(canvas.getByRole("listbox", { name: "Sugerencias" }));
+
+    // «/» from the page: the bar takes the focus and offers the fields it searches by.
+    (doc.activeElement as HTMLElement | null)?.blur();
+    await userEvent.keyboard("/");
+    await expect(box).toHaveFocus();
+    await expect(await canvas.findByText("Buscar por")).toBeVisible();
+
+    // «cli» shows «ente» in grey; Tab takes «cliente» as the field.
+    await userEvent.keyboard("cli");
+    const completion = canvasElement.querySelector('[data-ui="search.completion"]');
+    await expect(completion).toHaveTextContent("ente");
+    await userEvent.keyboard("{Tab}");
+    await expect(box).toHaveFocus();
+    await expect(box).toHaveValue("");
+    // The comparison (the first one offered), then the value.
+    await userEvent.keyboard("{Enter}");
+    await userEvent.keyboard("andes{Enter}");
+    await waitFor(() => expect(travels).toHaveTextContent('"value":"andes"'));
+    await expect(travels).toHaveTextContent('"field":"customer_name"');
+
+    // ← marks the last chip, ← again the first; Enter edits its value in place.
+    await userEvent.keyboard("{ArrowLeft}");
+    const marked = () => canvasElement.querySelector("[data-marked]");
+    await expect(marked()).toHaveTextContent("andes");
+    await userEvent.keyboard("{ArrowLeft}{Enter}");
+    const valor = await canvas.findByRole("textbox", { name: "Cambiar el valor de total" });
+    await expect(valor).toHaveFocus();
+    await userEvent.keyboard("2500{Enter}");
+    await waitFor(() => expect(travels).toHaveTextContent('"value":"2500"'));
+    await expect(travels).toHaveTextContent('"operator":"<="');
+    await waitFor(() => expect(box).toHaveFocus());
+
+    // Backspace marks first and removes second; «Deshacer» (and Ctrl+Z) bring it back.
+    await userEvent.keyboard("{Backspace}");
+    await expect(marked()).toHaveTextContent("andes");
+    await userEvent.keyboard("{Backspace}");
+    await waitFor(() => expect(travels).not.toHaveTextContent("andes"));
+    await expect(canvas.getByRole("button", { name: "Deshacer" })).toBeVisible();
+    await userEvent.keyboard("{Control>}z{/Control}");
+    await waitFor(() => expect(travels).toHaveTextContent("andes"));
+
+    // The comparison is a word that opens into the field's own: «como mucho» → «al menos».
+    await userEvent.click(
+      canvas.getByRole("button", { name: /comparar total de otra manera/ }),
+    );
+    await userEvent.click(
+      await within(doc.body).findByRole("menuitemradio", { name: /al menos/ }),
+    );
+    await waitFor(() => expect(travels).toHaveTextContent('"operator":">="'));
+
+    // Alt+↓: the panel, its first option focused; ↓ moves, → jumps column, Escape gives back.
+    await userEvent.click(box);
+    await userEvent.keyboard("{Alt>}{ArrowDown}{/Alt}");
+    const panel = await within(doc.body).findByRole("button", { name: /sólo borradores/ });
+    await waitFor(() => expect(panel).toHaveFocus());
+    await userEvent.keyboard("{ArrowDown}");
+    await expect(
+      within(doc.body).getByRole("button", { name: /sólo publicadas/ }),
+    ).toHaveFocus();
+    await userEvent.keyboard("{ArrowRight}");
+    /* → keeps the height: the second filter goes to the second favourite. */
+    await expect(doc.activeElement?.textContent).toMatch(/por cobrar de Carla/);
+    await userEvent.keyboard("{Escape}");
+    await expect(
+      canvas.getByRole("button", { name: /Filtrar, agrupar y favoritos/ }),
+    ).toHaveFocus();
+
+    // What was searched comes back the next time the bar is entered — once it is not set.
+    await userEvent.click(
+      canvas.getByRole("button", { name: "Quitar el filtro cliente es andes" }),
+    );
+    await waitFor(() => expect(travels).not.toHaveTextContent("andes"));
+    (doc.activeElement as HTMLElement | null)?.blur();
+    await userEvent.keyboard("/");
+    await expect(await canvas.findByText("Recientes")).toBeVisible();
+    await expect(list().getByRole("option", { name: /cliente es andes/ })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await userEvent.keyboard("{Enter}");
+    await waitFor(() => expect(travels).toHaveTextContent('"value":"andes"'));
+
+    // Mod+Enter: the advanced search, from the bar.
+    await userEvent.keyboard("{Control>}{Enter}{/Control}");
+    const dialog = await within(doc.body).findByRole("dialog", { name: "Búsqueda avanzada" });
+    /* It arrives with its entrance; then it is closed, so the next story starts clean. */
+    await waitFor(() => expect(dialog).toBeVisible());
+    await userEvent.keyboard("{Escape}");
+    await waitFor(() => expect(within(doc.body).queryByRole("dialog")).toBeNull());
+  },
+};
+
 /**
  * La búsqueda literal: lo que un texto suelto quiere decir. Con `literal`, la barra ofrece
  * «Buscar «andina»» — el conjunto entero buscado como lo busca el servidor (número y cliente a
@@ -926,7 +1089,7 @@ export const RegistrosDeUnaRelacion: Story = {
       await list().findByRole("option", { name: /Distribuidora Andina/ }),
     );
     await expect(
-      await canvas.findByText("Cliente: Distribuidora Andina S.R.L."),
+      await canvas.findByTitle("Cliente: Distribuidora Andina S.R.L."),
     ).toBeVisible();
     await expect(travels).toHaveTextContent(
       '"field":"customer_id","operator":"=","value":"1028457021"',
@@ -950,7 +1113,7 @@ export const RegistrosDeUnaRelacion: Story = {
     await userEvent.keyboard("{ArrowDown}{Enter}");
     // The same chip, now with both: what travels is `in`.
     await expect(
-      await canvas.findByText(
+      await canvas.findByTitle(
         /Cliente: Distribuidora Andina S\.R\.L\. o Ferretería El Progreso/,
       ),
     ).toBeVisible();
@@ -959,7 +1122,12 @@ export const RegistrosDeUnaRelacion: Story = {
     // An enum's word written whole is offered right away, and what travels is its value.
     await userEvent.type(box, "pagada");
     await userEvent.keyboard("{Enter}");
-    await expect(await canvas.findByText("Estado: Pagada")).toBeVisible();
+    // The chip, by its whole sentence (a folded «+N» says it too).
+    await waitFor(() =>
+      expect(
+        canvasElement.querySelector('[data-ui="search.chip"][title="Estado: Pagada"]'),
+      ).toBeVisible(),
+    );
     await expect(travels).toHaveTextContent('"field":"state","operator":"=","value":"paid"');
   },
 };
@@ -1015,8 +1183,8 @@ export const BusquedasPorDefecto: Story = {
   },
   play: async ({ canvasElement }) => {
     const canvas = within(canvasElement);
-    await expect(canvas.getByText("Cliente: Ferretería El Progreso")).toBeVisible();
-    await expect(canvas.getByText("Estado: Publicada o Vencida")).toBeVisible();
+    await expect(canvas.getByTitle("Cliente: Ferretería El Progreso")).toBeVisible();
+    await expect(canvas.getByTitle("Estado: Publicada o Vencida")).toBeVisible();
     await expect(canvas.getByLabelText("lo que viaja")).toHaveTextContent(
       '"field":"state","operator":"in","value":["posted","overdue"]',
     );

@@ -502,6 +502,11 @@
      `ListingBar`. */
   --container-search: 30rem;
 
+  /* How wide the bar's suggestions grow: a «campo : comparación valor» row and its hint, at a
+     reading width. Hung from the field's start and as wide as the field below this; a field
+     as wide as the page no longer stretches two short rows across it. */
+  --container-suggestions: 36rem;
+
   /* How wide the cuts panel may grow: filters, grouping and favourites side by side — three
      columns of a facet each — and never wider than the screen, so on a phone the columns
      stack and it reads as a popover. It is the SCREEN that decides, not the field: a list's
@@ -779,6 +784,11 @@
      answers in 150ms showed a skeleton for one frame — a flash that says «something broke»
      more than «loading». It waits 200ms invisible, then fades in. */
   --animate-reveal-late: reveal var(--duration-quick) var(--ease-out) 200ms both;
+
+  /* A chip that lands in the search bar ARRIVES: it grows in from a little smaller while it
+     takes its opacity. Something set by Enter — the dropdown closes, the text clears — has to
+     be seen landing, or the eye looks for where the question went. Behind `motion-safe:`. */
+  --animate-chip-in: chip-in var(--duration-quick) var(--ease-out) both;
 }
 
 /* ==================================================================== *
@@ -889,6 +899,15 @@
      its own colour (`text-ui-guide-scrim`) — the hole is exact and rounded, and it glides. The
      same in both themes: the colour is the scrim's, which already is per theme. */
   --shadow-guide-veil: 0 0 0 100vmax currentColor;
+}
+
+/* From a third and not from nothing: the chip is THERE from its first frame — read, found by
+   whoever looks for it — and the motion only says it just arrived. */
+@keyframes chip-in {
+  from {
+    opacity: 0.35;
+    scale: 0.92;
+  }
 }
 
 @keyframes reveal {

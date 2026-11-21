@@ -72,6 +72,7 @@ export {
   criteriaId,
   type CriteriaJoin,
   type CriteriaPath,
+  facetPaths,
   filterCriteria,
   filtersOf,
   type GroupCriteria,
@@ -82,8 +83,10 @@ export {
   nextJoin,
   type RecordKey,
   type RecordOption,
+  type Removal,
   removeAt,
   replaceAt,
+  restoreRemoval,
   type SearchCriteria,
   selectionOf,
   toggleNamed,
@@ -112,6 +115,8 @@ export {
    Three steps —field, operator, value— that can be written as one. */
 export {
   answers,
+  type ChipParts,
+  chipParts,
   choiceValues,
   conditionCriteria,
   defaultOp,
@@ -135,6 +140,7 @@ export {
   type ValueShape,
   valuesSelection,
   withoutValue,
+  withParts,
   withValue,
 } from "@sincpro/web-ui/components/search/query";
 
