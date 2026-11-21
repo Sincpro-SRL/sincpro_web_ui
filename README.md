@@ -265,22 +265,23 @@ follows:
 }
 ```
 
-| Component                                                   | Tokens                                                                                 |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `Button`, `ButtonLink`                                      | `--ui-button-radius`                                                                   |
-| `IconButton`, `IconLink`                                    | `--ui-icon-button-radius`                                                              |
-| Inputs, selects, date and pickers' boxes                    | `--ui-control-radius`, `--ui-control-bg`, `--ui-control-border`                        |
-| Menus, lists, popovers, the cuts panel                      | `--ui-popover-radius`, `--ui-popover-bg`, `--ui-popover-border`, `--ui-popover-shadow` |
-| A row inside them (menu item, option)                       | `--ui-option-radius`, `--ui-option-active-bg`                                          |
-| `Dialog`                                                    | `--ui-dialog-radius`, `--ui-dialog-bg`                                                 |
-| `Block`, `RecordCard`, `Metric`                             | `--ui-card-radius`, `--ui-card-bg`, `--ui-card-border`                                 |
-| A board's `BoardTile` and `BoardStat`                       | `--ui-tile-radius`, `--ui-tile-bg`, `--ui-tile-border` (fall back to the card's)       |
-| `Tag`, `Tags`, the search bar's chips                       | `--ui-tag-radius`                                                                      |
-| `SearchBar`'s field                                         | `--ui-search-radius` (and the control's bg and border)                                 |
-| The sidebar on the canvas                                   | `--ui-sidebar-bg`, `--ui-sidebar-border`                                               |
-| `NavigationTree`                                            | `--ui-nav-radius`, `--ui-nav-current-bg`                                               |
-| Table headers (`DataTable`, `EditableTable`, `ReportTable`) | `--ui-table-head-bg`                                                                   |
-| `Guide` (a guided tour): its card and its veil              | `--ui-guide-radius`, `--ui-guide-bg`, `--ui-guide-scrim`                               |
+| Component                                                                      | Tokens                                                                                 |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `Button`, `ButtonLink`                                                         | `--ui-button-radius`                                                                   |
+| `IconButton`, `IconLink`                                                       | `--ui-icon-button-radius`                                                              |
+| Inputs, selects, date and pickers' boxes                                       | `--ui-control-radius`, `--ui-control-bg`, `--ui-control-border`                        |
+| Menus, lists, popovers, the cuts panel                                         | `--ui-popover-radius`, `--ui-popover-bg`, `--ui-popover-border`, `--ui-popover-shadow` |
+| A row inside them (menu item, option)                                          | `--ui-option-radius`, `--ui-option-active-bg`                                          |
+| `Dialog`                                                                       | `--ui-dialog-radius`, `--ui-dialog-bg`                                                 |
+| `Block`, `RecordCard`, `Metric`                                                | `--ui-card-radius`, `--ui-card-bg`, `--ui-card-border`                                 |
+| A record's card on a board or a grid (`RecordCard`, `RadioGroup look="cards"`) | `--ui-record-card-radius` (falls back to the card's, then to the control's corner)     |
+| A board's `BoardTile` and `BoardStat`                                          | `--ui-tile-radius`, `--ui-tile-bg`, `--ui-tile-border` (fall back to the card's)       |
+| `Tag`, `Tags`, the search bar's chips                                          | `--ui-tag-radius`                                                                      |
+| `SearchBar`'s field                                                            | `--ui-search-radius` (and the control's bg and border)                                 |
+| The sidebar on the canvas                                                      | `--ui-sidebar-bg`, `--ui-sidebar-border`                                               |
+| `NavigationTree`                                                               | `--ui-nav-radius`, `--ui-nav-current-bg`                                               |
+| Table headers (`DataTable`, `EditableTable`, `ReportTable`)                    | `--ui-table-head-bg`                                                                   |
+| `Guide` (a guided tour): its card and its veil                                 | `--ui-guide-radius`, `--ui-guide-bg`, `--ui-guide-scrim`                               |
 
 What a token does not cover, a **part** does. Every customizable piece names its root
 `data-ui="<component>"` and its parts `data-ui="<component>.<part>"`, with its variant beside
@@ -297,7 +298,11 @@ of classes that change with the next refactor:
 ```
 
 The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`,
-`menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card`, `board.tile`,
+`menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card` (with `data-layout`
+`card` | `compact` | `tile`), `record-card.title`, `record-card.figure`, `record-card.fields`,
+`record-card.media`, `record-card.badge`, `record-card.footer`, `record-card.stripe`,
+`board.lane`, `list.tiles`, `elapsed`, `keypad`, `keypad.key`, `radio-group`,
+`radio-group.card`, `tags.count`, `board.tile`,
 `board.stat`, `board.stat.value`, `activity.changes`, `file-list`, `file-list.file`, `file-value`, `metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
 `search.panel`, `search.suggestions`, `search.suggestion`, `search.record`, `search.advanced`,
 `search.keys`, `search-entry`, `search-entry.keys`, `table`, `table.pile`, `yes-no`,

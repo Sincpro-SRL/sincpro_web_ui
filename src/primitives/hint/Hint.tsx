@@ -7,7 +7,7 @@ import { type ReactNode, useId } from "react";
 import { Button, Dialog, DialogTrigger } from "react-aria-components";
 
 const mark = tv({
-  base: "inline-flex size-4 shrink-0 cursor-help items-center justify-center rounded-pill text-muted outline-0 transition-colors duration-(--duration-instant) hover:bg-ink/8 hover:text-ink aria-expanded:bg-ink/8 aria-expanded:text-ink forced-colors:text-[ButtonText]",
+  base: "hit-target inline-flex size-4 shrink-0 cursor-help items-center justify-center rounded-pill text-muted outline-0 transition-colors duration-(--duration-instant) hover:bg-ink/8 hover:text-ink aria-expanded:bg-ink/8 aria-expanded:text-ink forced-colors:text-[ButtonText]",
   variants: {
     isFocusVisible: {
       true: "outline-2 outline-offset-1 outline-primary forced-colors:outline-[Highlight]",

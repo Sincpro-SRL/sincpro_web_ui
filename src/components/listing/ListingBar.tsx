@@ -3,12 +3,26 @@
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
 import { SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";
-import type { Surface } from "@sincpro/web-ui/foundations/types";
+import type { Surface, Tone } from "@sincpro/web-ui/foundations/types";
 import type { ViewStyle } from "@sincpro/web-ui/foundations/viewStyle";
 import { Line } from "@sincpro/web-ui/primitives/block/Line";
 import { Hint } from "@sincpro/web-ui/primitives/hint/Hint";
 import { X } from "lucide-react";
 import type { ReactNode } from "react";
+
+/**
+ * One count of what the list is made of — «64 cotizaciones». With `onClick` it also NARROWS
+ * the list to them (a quick filter that already says how many it will leave), and `active`
+ * says it is applied: a number that leads somewhere is pressed, as a `Metric` is.
+ */
+export type ListCounter = {
+  label: string;
+  value: number | string;
+  onClick?: () => void;
+  active?: boolean;
+  /** What the count means — overdue in `bad`. The figure takes it; the label stays muted. */
+  tone?: Tone;
+};
 
 /** THE BAR — two rows, two questions.
  *
@@ -95,6 +109,15 @@ import type { ReactNode } from "react";
  *  The count is a live region: typing in the search changes it, and somebody
  *  who cannot see the rows thin out hears how many are left. With
  *  `pagination` the page range replaces it — it already says how many. */
+/* A count's figure in its tone — text on the canvas, so the readable ones. */
+const COUNTER_TONE: Record<Exclude<Tone, "neutral">, string> = {
+  info: "text-info",
+  good: "text-good",
+  warn: "text-warn",
+  bad: "text-bad",
+  accent: "text-ink",
+};
+
 export function ListingBar({
   actions,
   title,
@@ -121,7 +144,7 @@ export function ListingBar({
   description?: string;
   /** The totals per category. The ones in the pagination say how many there
    *  are; these say what they are made of, which is another question. */
-  counters?: readonly { label: string; value: number | string }[];
+  counters?: readonly ListCounter[];
   /** When there are selected rows. It replaces the identity, in the same place. */
   selection?: {
     count: number;
@@ -183,7 +206,7 @@ export function ListingBar({
           onClick={selection?.onClear}
           aria-label={copy.selection.clear}
           title={copy.selection.clear}
-          className={`inline-flex size-5 items-center justify-center rounded-pill transition-colors duration-(--duration-instant) ${
+          className={`hit-target inline-flex size-5 items-center justify-center rounded-pill transition-colors duration-(--duration-instant) ${
             isChrome ? "hover:bg-chrome-ink/20" : "hover:bg-primary/20"
           }`}
         >
@@ -313,18 +336,49 @@ export function ListingBar({
   const about =
     description === undefined && counters === undefined ? null : (
       <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-0.5">
-        {counters?.map((c) => (
-          <span key={c.label} className="flex items-baseline gap-1">
-            <span
-              className={`text-meta font-medium tabular-nums ${isChrome ? "text-chrome-ink" : "text-ink"}`}
+        {counters?.map((c) => {
+          const inside = (
+            <>
+              <span
+                className={`text-meta font-medium tabular-nums ${
+                  c.active === true
+                    ? isChrome
+                      ? "text-chrome-link"
+                      : "text-primary"
+                    : c.tone !== undefined && c.tone !== "neutral" && !isChrome
+                      ? COUNTER_TONE[c.tone]
+                      : isChrome
+                        ? "text-chrome-ink"
+                        : "text-ink"
+                }`}
+              >
+                {typeof c.value === "number" ? c.value.toLocaleString(copy.locale) : c.value}
+              </span>
+              <span className={`text-micro ${isChrome ? "text-chrome-muted" : "text-muted"}`}>
+                {c.label}
+              </span>
+            </>
+          );
+          return c.onClick === undefined ? (
+            <span key={c.label} className="flex items-baseline gap-1">
+              {inside}
+            </span>
+          ) : (
+            /* Pressed like a link and not like a button: it sits in a sentence about the
+               list. Applied, it says so in the primary and with `aria-pressed`. */
+            <button
+              key={c.label}
+              type="button"
+              onClick={c.onClick}
+              aria-pressed={c.active === true}
+              className={`hit-target flex items-baseline gap-1 rounded-control underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                c.active === true ? "underline" : ""
+              }`}
             >
-              {typeof c.value === "number" ? c.value.toLocaleString(copy.locale) : c.value}
-            </span>
-            <span className={`text-micro ${isChrome ? "text-chrome-muted" : "text-muted"}`}>
-              {c.label}
-            </span>
-          </span>
-        ))}
+              {inside}
+            </button>
+          );
+        })}
         {description === undefined ? null : (
           <span
             className={`min-w-0 text-micro ${isChrome ? "text-chrome-muted" : "text-muted"}`}
@@ -468,5 +522,5 @@ export function ListingBar({
 export type ListIdentity = {
   title?: string;
   description?: string;
-  counters?: readonly { label: string; value: number | string }[];
+  counters?: readonly ListCounter[];
 };

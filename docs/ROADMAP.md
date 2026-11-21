@@ -193,6 +193,29 @@ quipu shown as a demo: what the screen already does, it has to SAY.
 | A tour on a phone goes through the sidebar's drawer and back             | ✅ 11-17 | `Guide` opens and closes the frame's drawer (`useSidebarDrawer`)            |
 | A «¿Qué es esto?» mode and hotspots on new features                      | ❓       | later, on the same anchors                                                  |
 
+## 4d. Touch and the counter: POS, kitchen, kiosk, shop (round of 2026-11-20)
+
+The same pieces as the ERP, for a till, a kitchen display, a self-service kiosk and an online
+shop — and a kanban that reads as records, not as boxes inside boxes.
+
+| Need                                                                            | Status   | Piece / owner                                                               |
+| ------------------------------------------------------------------------------- | -------- | --------------------------------------------------------------------------- |
+| The application says «touch» (a till is a touch monitor with a mouse)           | ✅ 11-20 | `data-pointer` (`POINTER_ATTRIBUTE`, `pointerAttributes`), `touch:` variant |
+| What is drawn small answers to a finger (a chip's «×» was 16 px)                | ✅ 11-20 | `--size-target` + `hit-target` (24 px, 44 under a finger)                   |
+| Quick filters in sight, with how many each leaves                               | ✅ 11-20 | `List.Filters` + `Tags size="md"/"lg"`, `count`, `scroll`                   |
+| A list's counter narrows the list                                               | ✅ 11-20 | `ListCounter onClick` / `active` / `tone`                                   |
+| A card with N facts, a count on its corner, chosen, unavailable, a state stripe | ✅ 11-20 | `RecordCard fields` / `badge` / `selected` / `disabled` / `tone`            |
+| A product grid (till, shop)                                                     | ✅ 11-20 | `RecordCard layout="tile"`, `List.Tiles` (`present="tiles"`)                |
+| A kanban that is not boxes inside boxes; the name never cut by the figure       | ✅ 11-20 | `BoardColumns` lanes as a wash, one-line head; `--ui-record-card-radius`    |
+| How long it has been waiting, live (kitchen, SLA)                               | ✅ 11-20 | `Elapsed`, `RecordCard elapsed`, `useNow`                                   |
+| An on-screen number pad                                                         | ✅ 11-20 | `Keypad` (`applyKey` pure)                                                  |
+| Few options chosen with a finger (payment, dine-in / takeaway, shipping)        | ✅ 11-20 | `RadioGroup look="cards"` (`ChoiceOption.icon`)                             |
+| A workspace modal over a record covered by the record's own dock                | ✅ 11-20 | `Record` and `List` are `isolate`                                           |
+| Templates: till, kitchen, kiosk, shop, reconciliation in three windows          | ✅ 11-20 | `5 · Plantillas/Mostrador/*`, `Procesos/Conciliación › Tres ventanas`       |
+| A kiosk frame: attract screen, back to start when idle, reduced-height mode     | ❓       | later — the kiosk template runs on `StepFlow` meanwhile                     |
+| A customer-facing display (the ticket mirrored, QR, tip)                        | ❓       | later, a template over the same pieces                                      |
+| Panels a cashier cannot close by mistake                                        | ❓       | composer                                                                    |
+
 ## 5. Tests
 
 | Need                                                 | Status   | Owner                                                       |

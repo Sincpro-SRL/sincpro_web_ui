@@ -286,7 +286,7 @@ function GroupChain({
           onClick={() => onRemoveMany(groups.map((one) => one.path))}
           aria-label={copy.search.removeGrouping}
           title={copy.search.removeGrouping}
-          className={`inline-flex size-4 shrink-0 items-center justify-center rounded-pill transition-colors duration-(--duration-instant) ${bySurface(
+          className={`hit-target inline-flex size-4 shrink-0 items-center justify-center rounded-pill transition-colors touch:size-6 duration-(--duration-instant) ${bySurface(
             surface,
             "hover:bg-ink/10",
             "hover:bg-chrome-ink/20",
@@ -390,7 +390,9 @@ function Chip({
   surface: Surface;
 }) {
   const copy = useUiCopy();
-  const shell = `inline-flex min-w-0 max-w-(--container-facet) items-center gap-1 rounded-ui-tag py-0.5 text-micro ${chosenTone(
+  /* Under a finger the chip grows to a size a thumb can aim at (32px, the label in the
+     reading size); with a mouse it stays a line of the bar. */
+  const shell = `inline-flex min-w-0 max-w-(--container-facet) items-center gap-1 rounded-ui-tag py-0.5 text-micro touch:min-h-8 touch:text-meta ${chosenTone(
     surface,
   )} ${onRemove === undefined ? "px-2" : "pr-0.5 pl-2"}`;
 
@@ -405,7 +407,7 @@ function Chip({
           onRemove(path);
         }}
         aria-label={copy.search.removeFilter.replace("{label}", label)}
-        className={`inline-flex size-4 shrink-0 items-center justify-center rounded-pill transition-colors duration-(--duration-instant) ${bySurface(
+        className={`hit-target inline-flex size-4 shrink-0 items-center justify-center rounded-pill transition-colors touch:size-6 duration-(--duration-instant) ${bySurface(
           surface,
           "hover:bg-primary/20",
           "hover:bg-chrome-link/25",

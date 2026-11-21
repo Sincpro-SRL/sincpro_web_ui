@@ -77,6 +77,7 @@ import {
   List,
   Sheet,
   Sigma,
+  SquareKanban,
   Table2,
   X,
 } from "lucide-react";
@@ -141,7 +142,8 @@ const ChartExplorer = lazy(() =>
 const PRESENT_ICONS: readonly { id: BuiltInPresent; icon: LucideIcon }[] = [
   { id: "rows", icon: List },
   { id: "table", icon: Table2 },
-  { id: "board", icon: LayoutGrid },
+  { id: "board", icon: SquareKanban },
+  { id: "tiles", icon: LayoutGrid },
   { id: "sheet", icon: Sheet },
   /* The sigma and not a table icon: what sets a report apart from the other
      four is that it SUMS. */
@@ -163,6 +165,7 @@ export function ListView<T extends object>({
   embedded = false,
   surface: requestedSurface,
   metrics,
+  filters,
   search,
   pagination,
   views,
@@ -174,6 +177,7 @@ export function ListView<T extends object>({
   visibleColumnIds,
   onVisibleColumnIdsChange,
   card,
+  tiles,
   boardStages,
   calendar,
   gantt,
@@ -435,19 +439,31 @@ export function ListView<T extends object>({
     !statsBelow || identity?.counters === undefined ? undefined : (
       <Metrics>
         {identity.counters.map((c) => (
-          <Metric key={c.label} value={c.value} label={c.label} />
+          <Metric
+            key={c.label}
+            value={c.value}
+            label={c.label}
+            {...(c.tone === undefined ? {} : { tone: c.tone })}
+            {...(c.onClick === undefined
+              ? {}
+              : { onClick: c.onClick, active: c.active === true })}
+          />
         ))}
       </Metrics>
     );
+  /* Under the bar, in the order they are used: the quick filters (what I narrow by), then
+     the counters and the metrics (what the set is made of). */
+  const statParts = [filters, counterStats, metrics].filter(
+    (part): part is NonNullable<ReactNode> => part !== undefined && part !== null,
+  );
   const stats =
-    counterStats === undefined ? (
-      metrics
-    ) : metrics === undefined ? (
-      counterStats
+    statParts.length === 0 ? undefined : statParts.length === 1 ? (
+      statParts[0]
     ) : (
-      <div className="flex flex-col gap-2">
-        {counterStats}
-        {metrics}
+      <div className="flex min-w-0 flex-col gap-2">
+        {statParts.map((part, at) => (
+          <Fragment key={at}>{part}</Fragment>
+        ))}
       </div>
     );
 
@@ -672,6 +688,31 @@ export function ListView<T extends object>({
     );
   };
 
+  /* A tile is a card in its tile shape: the picture on top, pressed whole. Without a `card` of
+     its own, it is told by the row — its name, its meta, its chips, its icon. */
+  const renderTile = (item: T) => {
+    if (tiles?.card !== undefined) {
+      return <Fragment key={keyOf(item)}>{tiles.card(item, waysOf(item))}</Fragment>;
+    }
+    const d = row(item);
+    return (
+      <RecordCard
+        key={keyOf(item)}
+        layout="tile"
+        title={d.name}
+        {...(d.tags === undefined ? {} : { tags: d.tags })}
+        {...(d.meta === undefined ? {} : { meta: d.meta })}
+        {...(d.icon === undefined ? {} : { media: { icon: d.icon } })}
+        {...(press === undefined ? {} : { onOpen: () => press(item) })}
+      />
+    );
+  };
+  const TILE_GRID = {
+    sm: "grid-cols-(--grid-tiles-sm)",
+    md: "grid-cols-(--grid-tiles-md)",
+    lg: "grid-cols-(--grid-tiles-lg)",
+  } as const;
+
   const body =
     face !== undefined ? (
       face.render({
@@ -840,6 +881,17 @@ export function ListView<T extends object>({
           keyOf={keyOf}
           {...(press === undefined ? {} : { onOpen: press })}
         />
+      </div>
+    ) : present === "tiles" ? (
+      <div className="flex flex-col">
+        {wrapGroups((inside) => (
+          <div
+            data-ui="list.tiles"
+            className={`grid gap-3 p-3 ${TILE_GRID[tiles?.size ?? "md"]}`}
+          >
+            {inside.map(renderTile)}
+          </div>
+        ))}
       </div>
     ) : present === "board" && boardStages !== undefined ? (
       <BoardColumns items={ordered} keyOf={keyOf} stages={boardStages} card={renderCard} />

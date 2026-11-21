@@ -137,9 +137,11 @@ type SlotName =
   | "pagination"
   | "views"
   | "metrics"
+  | "filters"
   | "rows"
   | "table"
   | "board"
+  | "tiles"
   | "sheet"
   | "report"
   | "pivot"
@@ -187,6 +189,11 @@ const Views = slot("views", (_props: NodeProps): ReactNode => null);
  *  above the rows, because they belong to the set and not to the frame. */
 const Metrics = slot("metrics", (_props: NodeProps): ReactNode => null);
 
+/** The QUICK filters: the few cuts changed all day — a category, a state — always in sight
+ *  under the bar instead of behind the search's panel. Usually a `Tags size="md"` with
+ *  `selected` and `count`; under a finger they are the way a till or a shop narrows. */
+const Filters = slot("filters", (_props: NodeProps): ReactNode => null);
+
 /* ---------------------------------------------------------------- *
  *  Las caras
  * ---------------------------------------------------------------- */
@@ -229,6 +236,16 @@ type BoardProps<T> = {
   stages?: BoardStages<T>;
 };
 
+/** The TILES: a grid of `RecordCard layout="tile"` — a till's products, a shop's items.
+ *  Without `card`, the tile comes from what `List.Rows` says (name, meta, chips). */
+type TilesProps<T> = {
+  /** `ways` carries the list's rule of what a press does — call `ways.press` from the tile. */
+  card?: (item: T, ways: CardWays) => ReactNode;
+  /** How wide a tile gets at least — `sm` a dense back office, `md` a till, `lg` a shop's
+   *  storefront. The grid fits as many as the width takes. */
+  size?: "sm" | "md" | "lg";
+};
+
 /** The sheet. Without columns of its own, it comes from those `List.Table` declared — the
  *  one for RAW data does bring them, because there they come from the file and the code does not know
  *  which they are. */
@@ -245,6 +262,10 @@ const TableSlot = slot(
   "table",
   (_props: TableProps<never>): ReactNode => null,
 ) as unknown as <T extends object>(props: TableProps<T>) => ReactNode;
+
+const Tiles = slot("tiles", (_props: TilesProps<never>): ReactNode => null) as <T>(
+  props: TilesProps<T>,
+) => ReactNode;
 
 const Board = slot("board", (_props: BoardProps<never>): ReactNode => null) as <T>(
   props: BoardProps<T>,
@@ -275,6 +296,7 @@ const PRESENT_OF: Readonly<Record<string, BuiltInPresent>> = {
   rows: "rows",
   table: "table",
   board: "board",
+  tiles: "tiles",
   sheet: "sheet",
   report: "report",
   pivot: "pivot",
@@ -288,6 +310,7 @@ const FACES: readonly SlotName[] = [
   "rows",
   "table",
   "board",
+  "tiles",
   "sheet",
   "report",
   "pivot",
@@ -464,10 +487,12 @@ export function List<T extends object>({
   const pagination = propsOf<NodeProps>(pick(bar, "pagination"))?.children;
   const views = propsOf<NodeProps>(pick(bar, "views"))?.children;
   const metrics = propsOf<NodeProps>(pick(top, "metrics"))?.children;
+  const filters = propsOf<NodeProps>(pick(top, "filters"))?.children;
 
   const rows = propsOf<RowsProps<T>>(pick(top, "rows"));
   const table = propsOf<TableProps<T>>(pick(top, "table"));
   const board = propsOf<BoardProps<T>>(pick(top, "board"));
+  const tiles = propsOf<TilesProps<T>>(pick(top, "tiles"));
   const sheet = propsOf<SheetProps<T>>(pick(top, "sheet"));
   const report = propsOf<ListReport>(pick(top, "report"));
   const pivot = propsOf<ListPivot<T>>(pick(top, "pivot"));
@@ -489,7 +514,7 @@ export function List<T extends object>({
 
   /* The escape hatch: what the archetype did not foresee is drawn anyway, below.
      Something showing up here is the sign that the archetype is missing a piece. */
-  const rest = loose(top, ["bar", "metrics", "present", ...FACES]);
+  const rest = loose(top, ["bar", "metrics", "filters", "present", ...FACES]);
 
   return (
     <ListView<T>
@@ -516,6 +541,7 @@ export function List<T extends object>({
       {...(pagination === undefined ? {} : { pagination })}
       {...(views === undefined ? {} : { views })}
       {...(metrics === undefined ? {} : { metrics })}
+      {...(filters === undefined ? {} : { filters })}
       {...(table === undefined
         ? {}
         : {
@@ -537,6 +563,7 @@ export function List<T extends object>({
           })}
       {...(board?.card === undefined ? {} : { card: board.card })}
       {...(board?.stages === undefined ? {} : { boardStages: board.stages })}
+      {...(tiles === undefined ? {} : { tiles })}
       {...(sheet?.columns === undefined || sheet.cell === undefined
         ? {}
         : { sheet: sheet as ListSheet<T> })}
@@ -586,9 +613,11 @@ List.Dock = Dock;
 List.Pagination = Pagination;
 List.Views = Views;
 List.Metrics = Metrics;
+List.Filters = Filters;
 List.Rows = Rows;
 List.Table = TableSlot;
 List.Board = Board;
+List.Tiles = Tiles;
 List.Sheet = SheetSlot;
 List.Report = Report;
 List.Pivot = Pivot;

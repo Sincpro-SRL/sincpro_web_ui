@@ -55,6 +55,13 @@ export type RadioGroupProps = {
   invalid?: boolean;
   /** Forces the mode. By default it inherits the form's: in read mode it draws the label. */
   mode?: FormMode;
+  /**
+   * `cards` draws each option as a box pressed whole, with its icon — the payment methods of
+   * a till, «Comer aquí / Para llevar» on a kiosk, the shipping of a shop: few options, chosen
+   * by a finger, where the dot of a list is too small a target. The grid fits as many as the
+   * width takes. It is still one radio group: arrows move, one is chosen.
+   */
+  look?: "list" | "cards";
 };
 
 export function RadioGroup({
@@ -67,6 +74,7 @@ export function RadioGroup({
   describedBy: ownDescribedBy,
   invalid: ownInvalid,
   mode,
+  look = "list",
 }: RadioGroupProps) {
   const { id, labelledBy, describedBy, invalid } = useFieldIds({
     id: ownId,
@@ -74,6 +82,72 @@ export function RadioGroup({
     invalid: ownInvalid,
   });
   if (useFormMode(mode) === "read") return <ReadValue value={labelOf(options, value)} />;
+  if (look === "cards") {
+    return (
+      <AriaRadioGroup
+        id={id}
+        aria-labelledby={labelledBy}
+        aria-describedby={describedBy}
+        value={value}
+        onChange={(next) => onChange?.(next)}
+        isInvalid={invalid}
+        isDisabled={disabled}
+        data-ui="radio-group"
+        data-look="cards"
+        className="grid min-w-0 grid-cols-(--grid-tiles-sm) gap-2"
+      >
+        {options.map((o) => {
+          const Icon = o.icon;
+          return (
+            <RadioField
+              key={o.value}
+              value={o.value}
+              isDisabled={o.disabled}
+              className="flex min-w-0"
+            >
+              <RadioButton
+                data-ui="radio-group.card"
+                className={({ isSelected, isFocusVisible, isDisabled }) =>
+                  `relative flex min-h-(--size-control-lg) w-full min-w-0 cursor-pointer flex-col items-start gap-1 rounded-ui-record-card border p-3 text-left transition-colors duration-(--duration-instant) ${
+                    isSelected
+                      ? "border-primary bg-primary/6 ring-1 ring-primary"
+                      : "border-line-strong bg-surface hover:border-ink/40"
+                  } ${isFocusVisible ? "outline-2 outline-offset-2 outline-primary" : ""} ${
+                    isDisabled ? "cursor-not-allowed opacity-45" : ""
+                  }`
+                }
+              >
+                {(state) => (
+                  <>
+                    <span className={`absolute top-3 right-3 ${mark(state)}`}>
+                      <span
+                        className={`size-1.5 rounded-pill bg-surface transition-transform duration-(--duration-instant) ${
+                          state.isSelected ? "scale-100" : "scale-0"
+                        }`}
+                      />
+                    </span>
+                    {Icon === undefined ? null : (
+                      <Icon
+                        aria-hidden
+                        className={`size-(--size-icon-lg) ${state.isSelected ? "text-primary" : "text-muted"}`}
+                        strokeWidth={1.75}
+                      />
+                    )}
+                    <span className="min-w-0 pr-6 text-body font-medium text-ink">
+                      {o.label}
+                    </span>
+                    {o.description === undefined ? null : (
+                      <span className="min-w-0 text-micro text-muted">{o.description}</span>
+                    )}
+                  </>
+                )}
+              </RadioButton>
+            </RadioField>
+          );
+        })}
+      </AriaRadioGroup>
+    );
+  }
   return (
     <AriaRadioGroup
       id={id}

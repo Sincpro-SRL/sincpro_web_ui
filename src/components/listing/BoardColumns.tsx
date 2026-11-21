@@ -101,7 +101,7 @@ function ProgressBar<T>({
     <div
       role="img"
       aria-label={parts.map((tone) => `${tone}: ${counts.get(tone)}`).join(", ")}
-      className="mx-1 flex h-1.5 overflow-hidden rounded-pill bg-ink/8"
+      className="mx-1.5 flex h-1 overflow-hidden rounded-pill bg-ink/8"
     >
       {parts.map((tone) => (
         <span
@@ -193,7 +193,10 @@ export function BoardColumns<T>({
   };
 
   return (
-    <div className="flex min-w-0 items-start gap-3 overflow-x-auto p-3">
+    /* The lanes are a wash on the canvas and not boxes: the card is the only box, so a board
+       reads as columns of records and not as boxes inside boxes. They share the width when
+       the stages fit (up to `--container-lane-max`) and scroll sideways when they do not. */
+    <div className="flex min-w-0 items-start gap-2 overflow-x-auto p-3">
       {columns.map((column) => {
         const inside = items.filter((item) => of(item) === column.id);
         if (folded.has(column.id)) {
@@ -204,8 +207,8 @@ export function BoardColumns<T>({
               key={column.id}
               aria-label={column.label}
               {...dropOn(column.id)}
-              className={`flex w-12 shrink-0 flex-col items-center gap-2 rounded-box border py-2 ${
-                over === column.id ? "border-primary/50 bg-primary/6" : "border-line bg-ink/3"
+              className={`flex w-12 shrink-0 flex-col items-center gap-2 rounded-control py-2 ${
+                over === column.id ? "bg-primary/8 ring-1 ring-primary/40" : "bg-ink/3"
               }`}
             >
               <IconButton
@@ -225,11 +228,14 @@ export function BoardColumns<T>({
             key={column.id}
             aria-label={column.label}
             {...dropOn(column.id)}
-            className={`flex w-(--container-lane) shrink-0 flex-col gap-2 rounded-box border p-2 transition-colors duration-(--duration-instant) ${
-              over === column.id ? "border-primary/50 bg-primary/6" : "border-line bg-ink/3"
+            data-ui="board.lane"
+            className={`flex max-w-(--container-lane-max) min-w-(--container-lane) flex-1 shrink-0 basis-(--container-lane) flex-col gap-1.5 rounded-control p-1.5 transition-colors duration-(--duration-instant) ${
+              over === column.id ? "bg-primary/8 ring-1 ring-primary/40" : "bg-ink/3"
             }`}
           >
-            <header className="flex min-w-0 items-center gap-1.5 px-1 py-0.5">
+            {/* One line: what the stage is, how many, how much — the three things a lane's
+                head is read for. */}
+            <header className="flex min-w-0 items-center gap-1.5 px-1.5 pt-0.5">
               <h3 className="min-w-0 flex-1 truncate text-meta font-semibold text-ink">
                 {column.tone === undefined ? (
                   column.label
@@ -237,9 +243,14 @@ export function BoardColumns<T>({
                   <StatusDot tone={column.tone} label={column.label} />
                 )}
               </h3>
-              <span className="shrink-0 text-micro text-muted tabular-nums">
+              <span className="shrink-0 rounded-pill bg-ink/6 px-1.5 text-micro text-muted tabular-nums">
                 {inside.length}
               </span>
+              {total === undefined ? null : (
+                <span className="shrink-0 text-meta font-semibold text-ink tabular-nums">
+                  {total(inside)}
+                </span>
+              )}
               {onQuickCreate === undefined ? null : (
                 <IconButton
                   icon={Plus}
@@ -253,11 +264,6 @@ export function BoardColumns<T>({
                 onClick={() => toggleFold(column.id)}
               />
             </header>
-            {total === undefined ? null : (
-              <p className="px-1 text-meta font-semibold text-ink tabular-nums">
-                {total(inside)}
-              </p>
-            )}
             {progress === undefined || inside.length === 0 ? null : (
               <ProgressBar items={inside} progress={progress} />
             )}
@@ -272,7 +278,7 @@ export function BoardColumns<T>({
             {inside.length === 0 ? (
               <p className="px-1 py-3 text-micro text-muted">{copy.board.emptyLane}</p>
             ) : (
-              <ul className="flex min-w-0 flex-col gap-2">
+              <ul className="flex min-w-0 flex-col gap-1.5">
                 {inside.map((item) => {
                   const id = keyOf(item);
                   return (
@@ -293,7 +299,7 @@ export function BoardColumns<T>({
                             onDragEnd: () => setDragging(null),
                             onKeyDown: (event) => byKeyboard(event, item),
                           })}
-                      className={`flex min-w-0 flex-col rounded-box focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
+                      className={`flex min-w-0 flex-col rounded-ui-record-card focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary ${
                         onMove === undefined ? "" : "cursor-grab active:cursor-grabbing"
                       } ${dragging === id ? "opacity-50" : ""}`}
                     >
@@ -307,7 +313,7 @@ export function BoardColumns<T>({
         );
       })}
       {onAddColumn === undefined ? null : (
-        <div className="flex w-(--container-lane) shrink-0 flex-col gap-2 p-2">
+        <div className="flex w-(--container-lane) shrink-0 flex-col gap-2 p-1.5">
           {adding ? (
             <BoardInput
               label={copy.board.addColumn}

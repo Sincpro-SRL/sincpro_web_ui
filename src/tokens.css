@@ -599,6 +599,22 @@
   /* One stage of a board by stages: a card with its name, a tag and a figure, without
      wrapping the name into three lines. Five stages fit a desk; more scroll sideways. */
   --container-lane: 18rem;
+  /* …and the widest it grows to when the stages fit the screen: lanes share the width
+     instead of leaving a blank on the right, but a lane of three cards stretched to 60rem
+     reads as a table with one column. */
+  --container-lane-max: 26rem;
+  /* The narrowest a tile of a grid gets (a product on a till, an item of a shop) — three
+     places, like the controls: a dense back-office grid, a till, a shop window. The grid
+     fits as many as the width takes (`--grid-tiles-*`). */
+  --container-tile-sm: 8.5rem;
+  --container-tile-md: 11rem;
+  --container-tile-lg: 15rem;
+  --grid-tiles-sm: repeat(auto-fill, minmax(min(100%, var(--container-tile-sm)), 1fr));
+  --grid-tiles-md: repeat(auto-fill, minmax(min(100%, var(--container-tile-md)), 1fr));
+  --grid-tiles-lg: repeat(auto-fill, minmax(min(100%, var(--container-tile-lg)), 1fr));
+  /* A tile's picture: 4:3, the shape a product photo is taken in and the one that keeps two
+     lines of name under it on a 11rem tile. */
+  --aspect-tile: 4 / 3;
   /* The names column of a timeline (an employee with an avatar, a room, a machine): wide enough
      for «Ammy Shalem Aranibar Zambrana» before it truncates. */
   --container-timeline-label: 15rem;
@@ -704,6 +720,11 @@
   --size-control-sm: 30px;
   --size-control-md: 36px;
   --size-control-lg: 42px;
+
+  /* The least a pressable thing answers to, whatever it LOOKS like (`hit-target`): a chip's
+     «×» is drawn at 16px so a bar of ten filters stays one line, but it answers to 24px —
+     WCAG 2.2's minimum target (2.5.8) — and to 44px under a finger (TOUCH, below). */
+  --size-target: 24px;
 
   --size-icon-sm: 12px;
   --size-icon-md: 16px;
@@ -815,6 +836,13 @@
 
   /* A box of content: a block, a card of a list, a metric. */
   --radius-ui-card: var(--ui-card-radius, var(--radius-box));
+  /* A RECORD's card — one of many on a board or a grid: the control's corner, not the box's.
+     Twelve 12px boxes in a lane read as bubbles, not as records. It falls back to the card's
+     knob, so an application that re-skinned its cards re-skins these too. */
+  --radius-ui-record-card: var(
+    --ui-record-card-radius,
+    var(--ui-card-radius, var(--radius-control))
+  );
   --color-ui-card: var(--ui-card-bg, var(--color-surface));
   --color-ui-card-border: var(--ui-card-border, var(--color-line));
 
@@ -1553,12 +1581,65 @@
  *  a desktop browser narrowed to 400 px keeps the mouse sizes, a tablet in
  *  landscape gets the finger ones. Every component reads these tokens, so
  *  nothing else has to know about touch.
+ *
+ *  ── The application can SAY it (`data-pointer`) ─────────────────────
+ *
+ *  The browser answers for the PRIMARY pointer, and a till is a touch monitor
+ *  with a mouse plugged in: `pointer: coarse` is false there and the cashier
+ *  gets 30 px targets. So the application can decide instead, on `<html>` or
+ *  on any zone: `data-pointer="touch"` sizes for a finger whatever the device
+ *  says, `data-pointer="fine"` keeps the mouse sizes on a tablet that drives a
+ *  back office. Without it, the device decides, as before.
+ *
+ *  What is not a size — a control that only shows on hover, a shortcut hint —
+ *  asks the same question with the `touch:` variant, so it follows the same
+ *  decision.
  * ==================================================================== */
 @media (pointer: coarse) {
-  :root {
+  :root:not([data-pointer="fine"]) {
     --size-control-sm: 44px;
     --size-control-md: 44px;
     --size-control-lg: 48px;
+    --size-target: 44px;
+  }
+}
+[data-pointer="touch"] {
+  --size-control-sm: 44px;
+  --size-control-md: 44px;
+  --size-control-lg: 48px;
+  --size-target: 44px;
+}
+:root [data-pointer="fine"] {
+  --size-control-sm: 30px;
+  --size-control-md: 36px;
+  --size-control-lg: 42px;
+  --size-target: 24px;
+}
+
+/* `touch:` — under a finger, by the device or by the application's word. */
+@custom-variant touch {
+  @media (pointer: coarse) {
+    &:not(:where([data-pointer="fine"], [data-pointer="fine"] *)) {
+      @slot;
+    }
+  }
+  &:where([data-pointer="touch"], [data-pointer="touch"] *) {
+    @slot;
+  }
+}
+
+/* A pressable thing drawn smaller than a finger answers to `--size-target` around its
+   centre: the drawing stays (a bar of chips stays one line), the target grows. */
+@utility hit-target {
+  position: relative;
+  &::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: max(100%, var(--size-target));
+    height: max(100%, var(--size-target));
+    transform: translate(-50%, -50%);
   }
 }
 

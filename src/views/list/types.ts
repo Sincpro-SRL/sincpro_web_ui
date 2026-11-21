@@ -310,6 +310,8 @@ export type ListViewProps<T extends object> = {
   /** The metrics that also NARROW: «2 por confirmar», «41 por entregar». They go
    *  below the bar and above the rows — they belong to the set, not to the frame. */
   metrics?: ReactNode;
+  /** The quick filters (`List.Filters`): a row under the bar, before the metrics. */
+  filters?: ReactNode;
   /** The list is a FIELD of a record (a one2many / many2many) and not a screen: the bar
    *  is one line — search, count, sort, columns, switcher, actions —, it does not stick
    *  and it does not move into the frame's header. Identity and crumbs are not drawn: the
@@ -375,6 +377,11 @@ export type ListViewProps<T extends object> = {
   card?: (item: T, ways: CardWays) => ReactNode;
   /** The board by stages: one column each, cards moved between them. */
   boardStages?: BoardStages<T>;
+  /** The tiles presentation: a grid of tiles, and the tile of one record. */
+  tiles?: {
+    card?: (item: T, ways: CardWays) => ReactNode;
+    size?: "sm" | "md" | "lg";
+  };
   /** The calendar presentation: when each record happens. */
   calendar?: ListCalendar<T>;
   /** The Gantt presentation: each record as a span on a timeline. */

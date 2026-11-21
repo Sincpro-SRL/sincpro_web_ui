@@ -84,7 +84,7 @@ export function SearchEntry({
            aloud is noise after the name. Not drawn for a finger: a phone has no ⌘. */
         <kbd
           aria-hidden
-          className={`shrink-0 rounded-control border px-1.5 font-mono text-micro pointer-coarse:hidden ${
+          className={`shrink-0 rounded-control border px-1.5 font-mono text-micro touch:hidden ${
             bar ? "max-sm:hidden" : ""
           } ${skin.keys}`}
           data-ui="search-entry.keys"

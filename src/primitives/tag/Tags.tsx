@@ -69,6 +69,9 @@ export type TagItem = {
    *  the chip; this replaces the verb when the chip needs a more exact one
    *  («quitar el filtro»). */
   removeLabel?: string;
+  /** How many records answer to it — «Bebidas 12», «Pagada 187». Drawn after the label in
+   *  figures that line up, so a strip of filters reads as a small histogram. */
+  count?: number | string;
   /** It is chosen right now. */
   selected?: boolean;
   /** It is MARKED by the keyboard of someone else — the search input that
@@ -82,6 +85,18 @@ export type TagItem = {
   title?: string;
 };
 
+/**
+ * How big a chip is drawn — a PLACE, like a button's size:
+ *
+ *     sm  a line of text: the chips of a field, of a search bar, of a row
+ *     md  a control of the bar: the quick filters over a list, a shop's facets
+ *     lg  a till's or a kiosk's categories — aimed at from arm's length
+ *
+ * `md` and `lg` are as tall as the controls (`--size-control-sm` / `-lg`), so under a finger
+ * they grow with the rest; `sm` grows to a size a thumb can aim at.
+ */
+export type TagsSize = "sm" | "md" | "lg";
+
 export function Tags({
   items,
   surface,
@@ -89,6 +104,8 @@ export function Tags({
   labelledBy,
   stack = false,
   multiple = false,
+  size = "sm",
+  scroll = false,
 }: {
   items: readonly TagItem[];
   /** By default it inherits the surface that wraps it. */
@@ -114,12 +131,29 @@ export function Tags({
    *  default the choice is ONE — a join, a grain, a period — and the strip is
    *  announced as single-select. */
   multiple?: boolean;
+  size?: TagsSize;
+  /**
+   * One line that scrolls sideways, instead of wrapping. The categories of a till are read
+   * in a row and found by position — wrapped into three lines they move every time one is
+   * added. The edges fade while there is more to see.
+   */
+  scroll?: boolean;
 }) {
   const sup = useSurface(surface);
   if (items.length === 0) return null;
   const interactive = items.some((i) => i.onSelect !== undefined || i.onRemove !== undefined);
+  const layout = stack ? STACK : scroll ? SCROLL : STRIP[size];
   if (!interactive)
-    return <StillStrip items={items} surface={sup} label={label} stack={stack} />;
+    return (
+      <StillStrip
+        items={items}
+        surface={sup}
+        label={label}
+        stack={stack}
+        layout={layout}
+        size={size}
+      />
+    );
   return (
     <AriaLocale>
       <ChipGroup
@@ -129,12 +163,22 @@ export function Tags({
         labelledBy={labelledBy}
         stack={stack}
         multiple={multiple}
+        layout={layout}
+        size={size}
       />
     </AriaLocale>
   );
 }
 
-const STRIP = "flex min-w-0 flex-wrap items-center gap-1";
+const STRIP: Record<TagsSize, string> = {
+  sm: "flex min-w-0 flex-wrap items-center gap-1",
+  md: "flex min-w-0 flex-wrap items-center gap-1.5",
+  lg: "flex min-w-0 flex-wrap items-center gap-2",
+};
+/* The fade at the edges is `scroll-hint`'s, over the surface the strip sits on; the bottom
+   padding keeps a focus ring from being clipped by the scroll box. */
+const SCROLL =
+  "scroll-hint scroll-quiet flex min-w-0 flex-nowrap items-center gap-2 overflow-x-auto py-1";
 const STACK = "flex min-w-0 flex-col items-stretch gap-0.5";
 
 /** A strip nobody presses: text in a row, a list only when it is named. */
@@ -143,25 +187,34 @@ function StillStrip({
   surface,
   label,
   stack,
+  layout,
+  size,
 }: {
   items: readonly TagItem[];
   surface: Surface;
   label: string | undefined;
   stack: boolean;
+  layout: string;
+  size: TagsSize;
 }) {
   const listed = label !== undefined;
   return (
-    <span
-      className={stack ? STACK : STRIP}
-      {...(listed ? { role: "list", "aria-label": label } : {})}
-    >
+    <span className={layout} {...(listed ? { role: "list", "aria-label": label } : {})}>
       {items.map((item) => (
         <span
           key={item.id}
           data-ui="tags.item"
           {...(listed ? { role: "listitem" } : {})}
           {...(item.title === undefined ? {} : { title: item.title })}
-          className={shell({ item, surface, stack, removable: false, pressable: false })}
+          data-size={size}
+          className={shell({
+            item,
+            surface,
+            stack,
+            size,
+            removable: false,
+            pressable: false,
+          })}
         >
           <Inside item={item} />
         </span>
@@ -177,6 +230,8 @@ function ChipGroup({
   labelledBy,
   stack,
   multiple,
+  layout,
+  size,
 }: {
   items: readonly TagItem[];
   surface: Surface;
@@ -184,6 +239,8 @@ function ChipGroup({
   labelledBy: string | undefined;
   stack: boolean;
   multiple: boolean;
+  layout: string;
+  size: TagsSize;
 }) {
   const byId = new Map(items.map((item) => [item.id, item]));
   const removable = items.some((i) => i.onRemove !== undefined);
@@ -232,10 +289,11 @@ function ChipGroup({
       escapeKeyBehavior="none"
       className="min-w-0"
     >
-      <TagList items={items} className={stack ? STACK : STRIP}>
+      <TagList items={items} className={layout}>
         {(item) => (
           <AriaTag
             data-ui="tags.item"
+            data-size={size}
             id={item.id}
             textValue={item.note === undefined ? item.label : `${item.label} ${item.note}`}
             {...(!selecting && item.onSelect !== undefined
@@ -248,10 +306,14 @@ function ChipGroup({
                   item,
                   surface,
                   stack,
+                  size,
                   removable: item.onRemove !== undefined,
                   pressable: item.onSelect !== undefined,
                 }),
-                item.onSelect !== undefined && isHovered && item.active !== true
+                item.onSelect !== undefined &&
+                  isHovered &&
+                  item.active !== true &&
+                  !(item.selected === true && size !== "sm")
                   ? bySurface(surface, "border-ink/40", "border-chrome-ink/40")
                   : "",
                 "outline-offset-1",
@@ -268,7 +330,17 @@ function ChipGroup({
   );
 }
 
-function paint(item: TagItem, surface: Surface): string {
+function paint(item: TagItem, surface: Surface, size: TagsSize): string {
+  /* A chosen chip of a filter row or a till's categories is the CHOICE the screen is in —
+     filled, like the chosen segment of a `SegmentedControl`. A chosen `sm` chip stays a tint:
+     there it is a value among values. */
+  if (item.selected === true && size !== "sm") {
+    return bySurface(
+      surface,
+      "border border-primary bg-primary text-surface",
+      "border border-chrome-link bg-chrome-link text-chrome",
+    );
+  }
   if (item.active === true) {
     return bySurface(
       surface,
@@ -288,24 +360,45 @@ function paint(item: TagItem, surface: Surface): string {
 /* Stacked, each chip takes its whole line: a column of chips of different widths does not
    read as a list, it reads as a mess — and the blank on the right is what lets it be
    pressed without aiming. */
+/* The height of each size, and the room the label gets inside it. `sm` is a line of text and
+   grows under a finger only if someone can press it. */
+const SIZE: Record<TagsSize, { box: string; pad: string; removePad: string }> = {
+  sm: { box: "gap-1 py-0.5 text-micro", pad: "px-2", removePad: "pr-0.5 pl-2" },
+  md: {
+    box: "h-(--size-control-sm) gap-1.5 text-meta",
+    pad: "px-3",
+    removePad: "pr-1.5 pl-3",
+  },
+  lg: {
+    box: "h-(--size-control-lg) gap-2 text-body font-medium",
+    pad: "px-4",
+    removePad: "pr-2 pl-4",
+  },
+};
+
 function shell({
   item,
   surface,
   stack,
+  size,
   removable,
   pressable,
 }: {
   item: TagItem;
   surface: Surface;
   stack: boolean;
+  size: TagsSize;
   removable: boolean;
   pressable: boolean;
 }): string {
+  const box = SIZE[size];
   return cn(
     stack ? "flex w-full justify-start" : "inline-flex shrink-0",
-    "min-w-0 items-center gap-1 rounded-ui-tag py-0.5 text-micro transition-colors duration-(--duration-instant)",
-    paint(item, surface),
-    removable ? "pr-0.5 pl-2" : "px-2",
+    "min-w-0 items-center rounded-ui-tag transition-colors duration-(--duration-instant)",
+    box.box,
+    size === "sm" && (pressable || removable) ? "touch:min-h-8 touch:text-meta" : "",
+    paint(item, surface, size),
+    removable ? box.removePad : box.pad,
     pressable ? "cursor-pointer" : "cursor-default",
   );
 }
@@ -332,6 +425,12 @@ function Inside({ item }: { item: TagItem }): ReactNode {
            under 4.5:1 on a tinted chip. */
         <span className="shrink-0 font-normal">· {item.note}</span>
       )}
+      {item.count === undefined ? null : (
+        /* Apart by a gap and lighter, not dimmer — the same reason as the note. */
+        <span data-ui="tags.count" className="shrink-0 font-normal tabular-nums">
+          {item.count}
+        </span>
+      )}
     </>
   );
 }
@@ -345,7 +444,7 @@ function Remove({ item, surface }: { item: TagItem; surface: Surface }) {
       {...(item.removeLabel === undefined ? {} : { "aria-label": item.removeLabel })}
       className={({ isFocusVisible }) =>
         cn(
-          "inline-flex size-4 shrink-0 cursor-default items-center justify-center rounded-pill transition-colors duration-(--duration-instant)",
+          "hit-target inline-flex size-4 shrink-0 cursor-default items-center justify-center rounded-pill transition-colors duration-(--duration-instant)",
           bySurface(
             surface,
             "hover:bg-ink/15 pressed:bg-ink/20",

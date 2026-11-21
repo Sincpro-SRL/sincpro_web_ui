@@ -119,7 +119,7 @@ export function RowActions({
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity duration-(--duration-instant) group-hover/row:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100"
+        className="flex items-center justify-end gap-0.5 opacity-0 transition-opacity duration-(--duration-instant) group-hover/row:opacity-100 focus-within:opacity-100 touch:opacity-100"
       >
         {ways.length === 0 ? null : (
           <span
