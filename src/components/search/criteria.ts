@@ -178,6 +178,19 @@ export function filtersOf(all: readonly SearchCriteria[]): SearchCriteria[] {
   return all.filter((one) => one.kind !== "group");
 }
 
+/**
+ * The PIECES the bar draws, in its order, each with the top-level paths it covers: the
+ * grouping chain first —every level in ONE piece—, then each filter on top.
+ *
+ * It is what the keyboard walks: ← on the empty bar marks the last piece, and removing a
+ * piece removes everything it covers — the whole chain, or one filter with its nesting.
+ */
+export function facetPaths(all: readonly SearchCriteria[]): CriteriaPath[][] {
+  const groups = all.flatMap((one, index) => (one.kind === "group" ? [[index]] : []));
+  const filters = all.flatMap((one, index) => (one.kind === "group" ? [] : [[[index]]]));
+  return [...(groups.length === 0 ? [] : [groups]), ...filters];
+}
+
 /** The instance at that path, if there is one. */
 export function at(
   all: readonly SearchCriteria[],
@@ -227,6 +240,38 @@ export function removeAt(
     if (inside.length === 1 && one.join !== "not") return inside;
     return [{ ...one, of: inside }];
   });
+}
+
+/** What was removed, and how to put it back: «Quitado: cliente contiene andina · Deshacer». */
+export type Removal = {
+  label: string;
+  removed: readonly { path: CriteriaPath; node: SearchCriteria }[];
+  before: readonly SearchCriteria[];
+  after: readonly SearchCriteria[];
+};
+
+/**
+ * What was removed, back in the list as it is NOW.
+ *
+ * A removed piece on top goes back to its place even if something was set after it — undoing
+ * one chip must not take away the next one. A piece removed from inside a group can only go
+ * back while nothing changed since: its group may be gone (`removeAt` dismantles a group left
+ * with one), and guessing where it lands is worse than not offering it.
+ */
+export function restoreRemoval(
+  current: readonly SearchCriteria[],
+  removal: Removal,
+): SearchCriteria[] | null {
+  if (removal.removed.every((one) => one.path.length === 1)) {
+    const next = [...current];
+    const ordered = [...removal.removed].sort((a, b) => (a.path[0] ?? 0) - (b.path[0] ?? 0));
+    for (const one of ordered) {
+      if (next.some((each) => each.id === one.node.id)) continue;
+      next.splice(Math.min(one.path[0] ?? next.length, next.length), 0, one.node);
+    }
+    return next;
+  }
+  return current === removal.after ? [...removal.before] : null;
 }
 
 /** How a node's instances are joined: `all` → `any` → `not` and round again. It is

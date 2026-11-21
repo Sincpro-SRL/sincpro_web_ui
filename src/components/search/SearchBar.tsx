@@ -8,15 +8,19 @@ import {
   criteriaId,
   type CriteriaJoin,
   type CriteriaPath,
+  facetPaths,
   filterCriteria,
   type RecordOption,
+  type Removal,
   removeAt,
   replaceAt,
+  restoreRemoval,
   type SearchCriteria,
 } from "@sincpro/web-ui/components/search/criteria";
 import { CriteriaChips } from "@sincpro/web-ui/components/search/CriteriaChips";
 import type { ModelDefinition } from "@sincpro/web-ui/components/search/model";
 import {
+  chipParts,
   choiceValues,
   conditionCriteria,
   fieldKey,
@@ -27,14 +31,19 @@ import {
   type QuerySuggestion,
   readTyped,
   suggest,
+  valuesCriteria,
+  withoutValue,
   withValue,
 } from "@sincpro/web-ui/components/search/query";
 import type { BrowseRecords, SearchRecords } from "@sincpro/web-ui/components/search/records";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
+import { keysLabel } from "@sincpro/web-ui/foundations/keys";
+import { useKeyboardPlatform } from "@sincpro/web-ui/foundations/shortcut";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
 import { CheckMark } from "@sincpro/web-ui/primitives/field/Checks";
 import type { MenuGroup, MenuOption } from "@sincpro/web-ui/primitives/menu/Menu";
+import { useToastIfAny } from "@sincpro/web-ui/primitives/notice/Toast";
 import { MatchedText } from "@sincpro/web-ui/primitives/picker/MatchedText";
 import { Count } from "@sincpro/web-ui/primitives/tag/Count";
 import { chosenTone } from "@sincpro/web-ui/primitives/tag/Tag";
@@ -44,6 +53,7 @@ import {
   ChevronRight,
   CornerDownRight,
   Hash,
+  History,
   Layers,
   Link2,
   List,
@@ -54,6 +64,7 @@ import {
   Star,
   ToggleLeft,
   Type,
+  Undo2,
   X,
 } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useId, useRef, useState } from "react";
@@ -167,7 +178,86 @@ type Item =
     }
   | { kind: "status"; id: string; text: string; child?: true }
   | { kind: "more"; id: string; field: QueryField; text: string; child?: true }
-  | { kind: "advanced"; id: string };
+  | { kind: "advanced"; id: string }
+  /* What the empty bar offers: a title over a block, and a search done lately. */
+  | { kind: "heading"; id: string; text: string }
+  | { kind: "recent"; id: string; criteria: Extract<SearchCriteria, { kind: "filter" }> };
+
+/** How many searches the bar remembers. Five is what fits above the fields without pushing them
+ *  out of sight, and past five a «recent» is a history nobody reads. */
+const RECENT_MAX = 5;
+
+/** A column of the panel longer than this gets a box to narrow it — and the keyboard a letter. */
+const FIND_AFTER = 8;
+
+/** Two words are the same for the eye whatever their case and accents: «Fecha» is «fecha». */
+function fold(text: string): string {
+  return text
+    .normalize("NFD")
+    .replace(/\p{Diacritic}/gu, "")
+    .toLowerCase();
+}
+
+/** A search remembered in the browser, read back only if it still has the shape of one. */
+function recentFromStorage(
+  raw: string | null,
+): Extract<SearchCriteria, { kind: "filter" }>[] {
+  if (raw === null) return [];
+  const parsed: unknown = JSON.parse(raw);
+  if (!Array.isArray(parsed)) return [];
+  return parsed
+    .filter(
+      (one): one is Extract<SearchCriteria, { kind: "filter" }> =>
+        typeof one === "object" &&
+        one !== null &&
+        (one as { kind?: unknown }).kind === "filter" &&
+        typeof (one as { id?: unknown }).id === "string" &&
+        typeof (one as { label?: unknown }).label === "string",
+    )
+    .slice(0, RECENT_MAX);
+}
+
+/* «/» goes to the search — GitHub's key, Gmail's, Linear's. With several bars on screen (a
+   reconciliation's panes, a chooser over a list) the last mounted that is SEEN answers, the
+   way shortcuts stack. Its own listener and not `useShortcuts`: on a Spanish keyboard «/» is
+   Shift+7, and a combination there matches its modifiers exactly. */
+const slashBars: { current: HTMLInputElement | null }[] = [];
+
+function typingIn(target: EventTarget | null): boolean {
+  return (
+    target instanceof HTMLElement &&
+    (target.isContentEditable ||
+      target.tagName === "INPUT" ||
+      target.tagName === "TEXTAREA" ||
+      target.tagName === "SELECT")
+  );
+}
+
+function onSlash(event: KeyboardEvent) {
+  if (
+    event.key !== "/" ||
+    event.defaultPrevented ||
+    event.isComposing ||
+    event.ctrlKey ||
+    event.metaKey ||
+    event.altKey ||
+    typingIn(event.target)
+  )
+    return;
+  for (let at = slashBars.length - 1; at >= 0; at--) {
+    const field = slashBars[at]!.current;
+    /* Seen and not behind a modal: a bar under an open dialog is not where «/» should land. */
+    if (
+      field !== null &&
+      field.getClientRects().length > 0 &&
+      field.closest("[aria-hidden='true'], [inert]") === null
+    ) {
+      event.preventDefault();
+      field.focus();
+      return;
+    }
+  }
+}
 
 /** The records found for a relation: for which search (`key`) and of which field. */
 type Found = {
@@ -179,7 +269,7 @@ type Found = {
 
 /** A row the keyboard and the pointer stop on — every one but a status. */
 function selectable(item: Item): boolean {
-  return item.kind !== "status";
+  return item.kind !== "status" && item.kind !== "heading";
 }
 
 /** A row that opens what is under it with → (or its ▸). */
@@ -187,6 +277,30 @@ function unfoldable(item: Item | undefined): boolean {
   if (item?.kind !== "suggestion" || item.child === true) return false;
   const one = item.suggestion;
   return one.kind === "unfold" || (one.kind === "condition" && one.unfolds === true);
+}
+
+/** The keys of the dropdown, each drawn as a key beside its word. */
+function KeysHint({ keys }: { keys: readonly (readonly [readonly string[], string])[] }) {
+  return (
+    <p
+      data-ui="search.keys"
+      className="hidden flex-wrap items-center gap-x-3 gap-y-1 border-t border-line px-3 py-1.5 text-micro text-muted sm:flex"
+    >
+      {keys.map(([caps, word]) => (
+        <span key={word} className="inline-flex items-center gap-1">
+          {caps.map((cap) => (
+            <kbd
+              key={cap}
+              className="inline-flex min-w-5 items-center justify-center rounded-control border border-line bg-surface px-1 font-mono text-micro leading-tight text-ink"
+            >
+              {cap}
+            </kbd>
+          ))}
+          <span>{word}</span>
+        </span>
+      ))}
+    </p>
+  );
 }
 
 /**
@@ -242,6 +356,24 @@ function SuggestionRow({
         />
         {copy.search.advanced}
       </span>
+    );
+  }
+
+  if (item.kind === "heading") {
+    return (
+      <span className="min-w-0 truncate text-micro font-medium text-muted">{item.text}</span>
+    );
+  }
+  if (item.kind === "recent") {
+    return (
+      <>
+        <History
+          className="size-(--size-icon-sm) shrink-0 text-muted"
+          strokeWidth={2}
+          aria-hidden
+        />
+        <span className="min-w-0 flex-1 truncate text-ink">{item.criteria.label}</span>
+      </>
     );
   }
 
@@ -381,8 +513,12 @@ function Option({
             </span>
           )}
         </span>
+        {/* Two lines and not one: cut at one, «todavía no se enviaron al S…» hid the very
+            word that said what the filter does. */}
         {o.hint === undefined ? null : (
-          <span className="mt-0.5 block truncate text-micro text-muted">{o.hint}</span>
+          <span className="mt-0.5 line-clamp-2 text-micro text-muted" title={o.hint}>
+            {o.hint}
+          </span>
         )}
       </span>
     </button>
@@ -397,14 +533,18 @@ function Group({
   first,
   checks,
   onSelect,
+  forceOpen = false,
 }: {
   group: MenuGroup;
   first: boolean;
   checks: boolean;
   onSelect?: (id: string) => void;
+  /** The column is being searched: what matches is shown, folded or not. */
+  forceOpen?: boolean;
 }) {
   const active = group.options.some((o) => o.checked === true);
-  const [open, setOpen] = useState(active);
+  const [unfolded, setOpen] = useState(active);
+  const open = unfolded || forceOpen;
 
   const options = (
     <>
@@ -566,6 +706,15 @@ export type SearchBarProps = {
   /** How many facets the bar shows before folding the rest into «+N»; the grouping chain
    *  counts as one. On a narrow bar only the first shows. `Infinity` never folds. */
   collapseAfter?: number;
+  /**
+   * Under which name this bar remembers what was searched with it, in this browser: the last
+   * five questions put, offered when the empty bar takes the focus («Recientes»). Give each
+   * list its own — «facturas», «contactos». Without it, nothing is remembered.
+   */
+  recentKey?: string;
+  /** «/» focuses the bar from anywhere on the page that is not a field (on by default). With
+   *  several bars on screen the last one mounted answers. `false` leaves «/» to the page. */
+  focusOnSlash?: boolean;
   /** By default it inherits it from the surface that wraps it. */
   surface?: Surface;
 };
@@ -589,10 +738,14 @@ export function SearchBar({
   renderRecord,
   trailing,
   collapseAfter,
+  recentKey,
+  focusOnSlash = true,
   surface,
 }: SearchBarProps) {
   const copy = useUiCopy();
   const sup = useSurface(surface);
+  const platform = useKeyboardPlatform();
+  const toasts = useToastIfAny();
   /* Its own, or the application's (`SearchProvider`): wired once for every bar. */
   const { searchRecords, browseRecords } = useSearchSettings({
     ...(ownSearchRecords === undefined ? {} : { searchRecords: ownSearchRecords }),
@@ -600,10 +753,27 @@ export function SearchBar({
   });
   const [text, setText] = useState("");
   const [panel, setPanel] = useState(false);
-  /* Which edge of the field the panel hangs from. It is wider than the field when the
-     field is narrow, so it opens toward the side of the screen with room: from the start
-     of a field on the left of a page, from its end on the right. */
-  const [panelSide, setPanelSide] = useState<"start" | "end">("end");
+  /** The panel was opened from the keyboard (Alt+↓, or Enter on the funnel): its first option
+   *  takes the focus, or the keys that opened it would have nothing to move through. */
+  const panelFromKeys = useRef(false);
+  /** What a long column of the panel is narrowed to, by the column's title. */
+  const [find, setFind] = useState<Record<string, string>>({});
+  /** The focus is somewhere in the bar. What is offered closes when it leaves: a dropdown that
+   *  stays open over the list after a click elsewhere covers what the person went to look at. */
+  const [focused, setFocused] = useState(false);
+  /** The empty bar offers — recent searches, the fields — once it takes the focus, and stops
+   *  after something is set or Escape, until the next time it is entered or ↓ asks again. */
+  const [starter, setStarter] = useState(false);
+  /** The piece marked from the keyboard, by its place in `facetPaths`. */
+  const [marked, setMarked] = useState<number | null>(null);
+  /** The piece whose value is being edited in place. */
+  const [editing, setEditing] = useState<number | null>(null);
+  /** The last removal, offered back in the bar when there is no notice stack to offer it. */
+  const [undo, setUndo] = useState<Removal | null>(null);
+  const lastRemoval = useRef<Removal | null>(null);
+  const [recent, setRecent] = useState<
+    readonly Extract<SearchCriteria, { kind: "filter" }>[]
+  >([]);
   /** The step the question being written is at: no field, with a field, or
    *  with a field and operator. */
   const [step, setStep] = useState<{ field?: QueryField; op?: string }>({});
@@ -650,6 +820,13 @@ export function SearchBar({
      «three» has to be what is seen in the bar, and what
      is seen is a group, not its two conditions. */
   const puestos = criteria.length;
+  const pieces = facetPaths(criteria);
+  /* The list as it is NOW, for an «undo» pressed in a notice long after it was offered: the
+     notice keeps the closure of the moment it was shown. */
+  const criteriaNow = useRef(criteria);
+  useEffect(() => {
+    criteriaNow.current = criteria;
+  });
   const input = useRef<HTMLInputElement>(null);
   const box = useRef<HTMLDivElement>(null);
   const toolsButton = useRef<HTMLButtonElement>(null);
@@ -830,7 +1007,30 @@ export function SearchBar({
     }));
   }
 
+  /* THE EMPTY BAR OFFERS. Focused with nothing typed, it said nothing until a letter was
+     pressed — and a person who does not know what can be searched does not know what to
+     type. Now it shows what was searched lately and the fields it can search by: the second
+     search of the day is one Enter, and the first one starts by reading. */
+  const starting =
+    starter &&
+    focused &&
+    text === "" &&
+    step.field === undefined &&
+    marked === null &&
+    editing === null;
   const items: Item[] = [];
+  if (starting) {
+    const again = recent.filter(
+      (one) => !criteria.some((each) => each.kind !== "join" && each.label === one.label),
+    );
+    if (again.length > 0) {
+      items.push({ kind: "heading", id: "h:recent", text: copy.search.recent });
+      for (const one of again)
+        items.push({ kind: "recent", id: `rc:${one.label}`, criteria: one });
+    }
+    if (suggestions.length > 0)
+      items.push({ kind: "heading", id: "h:by", text: copy.search.searchBy });
+  }
   for (const one of suggestions) {
     items.push({ kind: "suggestion", id: one.id, suggestion: one });
     if (one.id === unfoldedRow?.id) items.push(...unfoldedRows(one));
@@ -841,7 +1041,10 @@ export function SearchBar({
 
   /* It opens when there is something to offer AND somebody has started: typing, or
      choosing a field, which is already having started. */
-  const open = items.some(selectable) && (text.trim() !== "" || step.field !== undefined);
+  const open =
+    focused &&
+    items.some(selectable) &&
+    (text.trim() !== "" || step.field !== undefined || starting);
   /* THE WAY INTO THE BUILDER, under what is offered: whoever typed a question the bar cannot
      write —a range, a group of three, «ninguna línea con…»— is looking at this list when they
      find out. It was only at the foot of the panel, behind another button. */
@@ -849,9 +1052,24 @@ export function SearchBar({
     items.push({ kind: "advanced", id: "a:advanced" });
   }
 
+  /* THE COMPLETION, in grey after the caret: «cli» shows «ente» and Tab takes «cliente» as
+     the field. Only for a name being written —no operator, no value shape— and only when a
+     field's name STARTS with it: completing from the middle of a word is guessing. */
+  const typedName = text.startsWith("#") ? text.slice(1) : text;
+  const completion =
+    open && step.field === undefined && /^[\p{L}\p{N}_][\p{L}\p{N}_ ]*$/u.test(typedName)
+      ? suggestions.find(
+          (one): one is Extract<QuerySuggestion, { kind: "field" }> =>
+            one.kind === "field" &&
+            one.label.length > typedName.length &&
+            fold(one.label).startsWith(fold(typedName)),
+        )
+      : undefined;
+  const ghost = completion?.label.slice(typedName.length);
+
   const firstSelectable = items.findIndex(selectable);
-  const marked = items.findIndex((one) => one.id === activeId && selectable(one));
-  const active = marked >= 0 ? marked : firstSelectable;
+  const markedRow = items.findIndex((one) => one.id === activeId && selectable(one));
+  const active = markedRow >= 0 ? markedRow : firstSelectable;
   const activeItem = items[active];
 
   /* What is marked goes back to the first when what is offered changes: leaving the mark on the
@@ -940,10 +1158,13 @@ export function SearchBar({
      (`ListingBar`, so the field never paints over «1–80») and a page may clip its card, and a
      panel drawn inside them was cut wherever it outgrew the field. Placed this way it is as
      wide as `--container-cuts`, inside the screen, toward the side with room. */
+  /* It hangs from the FUNNEL that opened it, its end on the funnel's end: hung from the field's
+     edge, a bar as wide as the page opened it a screen away from the hand that asked. Near the
+     left edge, React Aria slides it back inside the screen. */
   const { overlayProps: positionProps } = useOverlayPosition({
-    targetRef: box,
+    targetRef: toolsButton,
     overlayRef: panelBox,
-    placement: panelSide === "start" ? "bottom start" : "bottom end",
+    placement: "bottom end",
     offset: 4,
     containerPadding: 16,
     shouldFlip: false,
@@ -952,6 +1173,59 @@ export function SearchBar({
   /* With the focus still in the bar (the input, the button) and the panel open, Escape is
      the panel's too — used up the same way, so it does not reach the dialog either. With the
      panel closed, Escape is not the bar's and goes on to whoever owns it. */
+  /**
+   * THE PANEL FROM THE KEYBOARD. ↑ ↓ go through a column's options (and wrap), ← → jump to the
+   * next column at the same height, Home / End to its ends, a letter to the next option that
+   * starts with it, Space ticks — it is a button. Tab still goes through everything, in order.
+   * It was Tab, option by option, through three columns: forty presses to reach a favourite.
+   */
+  const walkPanel = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    if (e.defaultPrevented || e.altKey || e.ctrlKey || e.metaKey) return;
+    const here = e.target as HTMLElement;
+    const columnsNow = [
+      ...e.currentTarget.querySelectorAll<HTMLElement>("[data-cuts-column]"),
+    ];
+    const stops = (column: Element) =>
+      [...column.querySelectorAll<HTMLElement>("button:not([disabled])")].filter(
+        (one) => one.getClientRects().length > 0,
+      );
+    const column = here.closest("[data-cuts-column]");
+    if (column === null) return;
+    /* In a column's box only ↓ is the panel's: the rest is writing. */
+    if (here.tagName === "INPUT") {
+      if (e.key === "ArrowDown") {
+        e.preventDefault();
+        stops(column)[0]?.focus();
+      }
+      return;
+    }
+    if (here.tagName !== "BUTTON") return;
+    const list = stops(column);
+    const at = list.indexOf(here);
+    const go = (one: HTMLElement | undefined) => {
+      if (one === undefined) return;
+      e.preventDefault();
+      one.focus();
+    };
+    if (e.key === "ArrowDown") go(list[(at + 1) % list.length]);
+    else if (e.key === "ArrowUp") go(list[(at - 1 + list.length) % list.length]);
+    else if (e.key === "Home") go(list[0]);
+    else if (e.key === "End") go(list[list.length - 1]);
+    else if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+      const next =
+        columnsNow[
+          columnsNow.indexOf(column as HTMLElement) + (e.key === "ArrowRight" ? 1 : -1)
+        ];
+      if (next === undefined) return;
+      const there = stops(next);
+      go(there[Math.min(Math.max(at, 0), there.length - 1)]);
+    } else if (e.key.length === 1 && e.key !== " ") {
+      const letter = fold(e.key);
+      const after = [...list.slice(at + 1), ...list.slice(0, at + 1)];
+      go(after.find((one) => fold(one.textContent?.trim() ?? "").startsWith(letter)));
+    }
+  };
+
   const closePanelOnEscape = (e: React.KeyboardEvent) => {
     if (e.key !== "Escape" || !panel || e.defaultPrevented) return;
     e.preventDefault();
@@ -974,11 +1248,181 @@ export function SearchBar({
         ? [...criteria, one]
         : replaceAt(criteria, openGroup, addTo(at(criteria, openGroup), one)),
     );
+    remember(one);
+    settle();
+  }
+
+  /** Back to the start once something is set: no draft, nothing offered until asked. */
+  function settle() {
     setText("");
     setStep({});
     setUnfolded(null);
+    setStarter(false);
     input.current?.focus();
   }
+
+  /* ── WHAT WAS SEARCHED LATELY ─────────────────────────────────────
+     Only with `recentKey`, and only in this browser: a list's recent searches are the
+     person's habit on this screen, not data of the application. Read after mounting — the
+     server has no storage — and every read and write survives a private window that refuses
+     it. */
+  const recentStore =
+    recentKey === undefined ? undefined : `sincpro-web-ui:search-recent:${recentKey}`;
+  useEffect(() => {
+    if (recentStore === undefined) return;
+    try {
+      setRecent(recentFromStorage(window.localStorage.getItem(recentStore)));
+    } catch {
+      /* No storage, or something that is not ours under the name: nothing remembered. */
+    }
+  }, [recentStore]);
+
+  function remember(one: SearchCriteria) {
+    if (recentStore === undefined || one.kind !== "filter") return;
+    const kept = one;
+    setRecent((before) => {
+      const next = [kept, ...before.filter((each) => each.label !== kept.label)].slice(
+        0,
+        RECENT_MAX,
+      );
+      try {
+        window.localStorage.setItem(recentStore, JSON.stringify(next));
+      } catch {
+        /* Remembered for this visit only. */
+      }
+      return next;
+    });
+  }
+
+  /** A recent search, set again: a chip of values goes back into its field's chip; any other
+   *  enters as a new instance. */
+  function putRecent(one: SearchCriteria) {
+    if (one.id.startsWith("v:")) {
+      const there = criteria.findIndex((each) => each.id === one.id);
+      onCriteriaChange(there < 0 ? [...criteria, one] : replaceAt(criteria, [there], one));
+      remember(one);
+      settle();
+      return;
+    }
+    put({ ...one, id: criteriaId("f") });
+  }
+
+  /* ── REMOVING, AND TAKING IT BACK ──────────────────────────────────
+     Undo over confirm (PRINCIPLES): a chip goes at once —its ×, Delete on a marked chip, the
+     × that clears everything— and the bar offers it back. In the screen's notice stack when
+     there is one (`ToastProvider`), in the bar itself when not. */
+  function removeWithUndo(paths: readonly CriteriaPath[], label: string) {
+    const removed = paths.flatMap((path) => {
+      const node = at(criteria, path);
+      return node === undefined ? [] : [{ path, node }];
+    });
+    if (removed.length === 0) return;
+    /* The deepest and the last first, so each removal leaves the next path valid. */
+    const ordered = [...paths].sort((a, b) => {
+      for (let i = 0; i < Math.max(a.length, b.length); i++) {
+        const diff = (b[i] ?? -1) - (a[i] ?? -1);
+        if (diff !== 0) return diff;
+      }
+      return 0;
+    });
+    const next = ordered.reduce<SearchCriteria[]>(
+      (left, path) => removeAt(left, path),
+      [...criteria],
+    );
+    onCriteriaChange(next);
+    /* If what was removed held the open group, it stops being so: writing inside something
+       that no longer exists is writing into the air. */
+    if (
+      openGroup !== null &&
+      (paths.some((path) => openGroup.join(".").startsWith(path.join("."))) ||
+        at(next, openGroup)?.kind !== "join")
+    )
+      setOpenGroup(null);
+    const removal: Removal = { label, removed, before: criteria, after: next };
+    lastRemoval.current = removal;
+    if (toasts === null) {
+      setUndo(removal);
+      return;
+    }
+    toasts.show({
+      key: `search-undo-${id}`,
+      message: fillCopy(copy.search.removed, { label }),
+      action: { label: copy.search.undo, onSelect: () => takeBack(removal) },
+    });
+  }
+
+  function takeBack(removal: Removal | null = lastRemoval.current) {
+    if (removal === null) return;
+    const next = restoreRemoval(criteriaNow.current, removal);
+    if (next !== null) onCriteriaChange(next);
+    lastRemoval.current = null;
+    setUndo(null);
+    input.current?.focus();
+  }
+
+  /* The offer in the bar lasts what a notice lasts: long enough to change one's mind, not so
+     long that «Deshacer» undoes something nobody remembers. */
+  useEffect(() => {
+    if (undo === null) return;
+    const timer = window.setTimeout(() => setUndo(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [undo]);
+
+  /** How a piece reads when it is named — marked, removed. */
+  function facetLabel(paths: readonly CriteriaPath[]): string {
+    return paths
+      .map((path) => {
+        const node = at(criteria, path);
+        if (node === undefined) return "";
+        if (node.kind !== "join") return node.label;
+        return `${copy.search.joins[node.join === "not" ? "none" : node.join]} (${node.of.length})`;
+      })
+      .join(" › ");
+  }
+
+  /* A mark on a piece that is no longer there marks nothing. */
+  useEffect(() => {
+    if (marked !== null && marked >= pieces.length) setMarked(null);
+  }, [marked, pieces.length]);
+
+  /* «/» from anywhere that is not a field. */
+  useEffect(() => {
+    if (!focusOnSlash) return;
+    const entry = input;
+    slashBars.push(entry);
+    if (slashBars.length === 1) window.addEventListener("keydown", onSlash);
+    return () => {
+      const where = slashBars.indexOf(entry);
+      if (where >= 0) slashBars.splice(where, 1);
+      if (slashBars.length === 0) window.removeEventListener("keydown", onSlash);
+    };
+  }, [focusOnSlash]);
+
+  /** The edit in place ended. From the keyboard the bar takes the focus back at once — the
+   *  keys go on writing —; after a click elsewhere the focus stays where it went. */
+  function edited(giveBack: boolean) {
+    setEditing(null);
+    setMarked(null);
+    if (giveBack) input.current?.focus();
+  }
+
+  /** The panel, opened from the keyboard: its first option takes the focus. */
+  function openPanelFromKeys() {
+    panelFromKeys.current = true;
+    setPanel(true);
+  }
+  useEffect(() => {
+    if (!panel || !panelFromKeys.current) return;
+    panelFromKeys.current = false;
+    const frame = window.requestAnimationFrame(() => {
+      panelBox.current
+        ?.querySelector<HTMLElement>(
+          "[data-cuts-column] button:not([disabled]), [data-cuts-column] input, button:not([disabled])",
+        )
+        ?.focus();
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [panel]);
 
   function commit(field: QueryField, op: string, value: string) {
     put(conditionCriteria(field, op, value));
@@ -998,10 +1442,8 @@ export function SearchBar({
     } else {
       onCriteriaChange(withValue(criteria, field, option));
     }
-    setText("");
-    setStep({});
-    setUnfolded(null);
-    input.current?.focus();
+    remember(valuesCriteria(field, [option]));
+    settle();
   }
 
   /** Several values of a field at once —what a chooser answers—, into the same chip. */
@@ -1015,10 +1457,7 @@ export function SearchBar({
     } else {
       onCriteriaChange(into(criteria));
     }
-    setText("");
-    setStep({});
-    setUnfolded(null);
-    input.current?.focus();
+    settle();
   }
 
   /** «Buscar más…»: the application's chooser over the relation, on what was typed. What is
@@ -1104,6 +1543,7 @@ export function SearchBar({
   function choose(item: Item | undefined) {
     if (item === undefined) return;
     if (item.kind === "suggestion") pick(item.suggestion);
+    else if (item.kind === "recent") putRecent(item.criteria);
     else if (item.kind === "more") browse(item.field, item.text);
     else if (item.kind === "advanced") {
       /* What was typed was not a question the bar could write — that is why the builder was
@@ -1134,6 +1574,20 @@ export function SearchBar({
     <div
       ref={box}
       onKeyDown={closePanelOnEscape}
+      onFocus={() => setFocused(true)}
+      onBlur={(event) => {
+        /* Out of the bar —and not into its panel, which floats elsewhere in the DOM—: what is
+           offered closes, and a mark on a chip is let go. */
+        const next = event.relatedTarget;
+        if (
+          next instanceof Node &&
+          (box.current?.contains(next) === true || panelBox.current?.contains(next) === true)
+        )
+          return;
+        setFocused(false);
+        setStarter(false);
+        setMarked(null);
+      }}
       /* `min-w-48`: placed in a flex row without a width, the bar used to collapse to its
          narrowest and the input slid UNDER the filters button («bu⊞car»). 12rem is the
          magnifier, a word of input and the buttons; a narrower container scrolls, it does
@@ -1146,6 +1600,15 @@ export function SearchBar({
           stay where the eye starts reading, instead of floating to its middle. */}
       <div
         data-ui="search.field"
+        /* A press on the field's own padding —not on a chip, not on a button— writes: the whole
+           field reads as one input, so the whole field has to answer as one. */
+        onMouseDown={(event) => {
+          if (event.target === event.currentTarget) {
+            event.preventDefault();
+            input.current?.focus();
+            setStarter(true);
+          }
+        }}
         className={`@container/bar flex min-h-(--size-control-md) w-full min-w-0 items-start rounded-ui-search border transition-colors duration-(--duration-instant) ${bySurface(
           sup,
           "border-ui-control-border bg-ui-control focus-within:border-primary/60",
@@ -1175,32 +1638,21 @@ export function SearchBar({
           <CriteriaChips
             criteria={criteria}
             surface={sup}
+            fields={fields}
+            {...(marked === null ? {} : { marked })}
+            {...(editing === null ? {} : { editing })}
+            onEdited={edited}
+            onReplace={(path, next) => onCriteriaChange(replaceAt(criteria, path, next))}
             {...(openGroup === null ? {} : { open: openGroup })}
             {...(onOpenBuilder === undefined ? {} : { onOpen: onOpenBuilder })}
             {...(collapseAfter === undefined ? {} : { collapseAfter })}
-            onRemoveMany={(paths) => {
-              /* From the deepest index up, so each removal leaves the next path valid. */
-              const sorted = [...paths].sort((a, b) => (b[0] ?? 0) - (a[0] ?? 0));
-              onCriteriaChange(
-                sorted.reduce<SearchCriteria[]>(
-                  (left, path) => removeAt(left, path),
-                  [...criteria],
-                ),
-              );
-            }}
+            onRemoveMany={(paths) => removeWithUndo(paths, facetLabel(paths))}
             onJoin={(path, join) => {
               const node = at(criteria, path);
               if (node?.kind !== "join") return;
               onCriteriaChange(replaceAt(criteria, path, { ...node, join }));
             }}
-            onRemove={(path) => {
-              onCriteriaChange(removeAt(criteria, path));
-              /* If what was removed was the open group, it stops being so: writing
-                 inside something that no longer exists is writing into the air. */
-              if (openGroup !== null && path.join(".") === openGroup.join(".")) {
-                setOpenGroup(null);
-              }
-            }}
+            onRemove={(path) => removeWithUndo([path], facetLabel([path]))}
           />
 
           {/* THE DRAFT, in the bar and not in the dropdown.
@@ -1268,78 +1720,214 @@ export function SearchBar({
             ]}
           />
 
-          <input
-            ref={input}
-            /* Named even when a placeholder shows: a placeholder is not a label, and once
+          {/* In the first step the input sits in a box of its own, so the completion can be drawn
+              right after what was typed —the same font, the same start— without being text in
+              the input. In the value step the box steps aside (`contents`). */}
+          <span
+            className={
+              step.field === undefined
+                ? `relative flex h-7 ${criteria.length === 0 ? "min-w-24" : "min-w-16"} flex-1 items-center`
+                : "contents"
+            }
+          >
+            <input
+              ref={input}
+              {...(focusOnSlash ? { "aria-keyshortcuts": "/" } : {})}
+              onFocus={(event) => {
+                /* Entered from outside the bar: it offers. Coming back from a chip of its own,
+                 it does not — the person is working on what is set. */
+                const from = event.relatedTarget;
+                if (!(from instanceof Node && box.current?.contains(from) === true))
+                  setStarter(true);
+              }}
+              /* Named even when a placeholder shows: a placeholder is not a label, and once
                chips are set there is none at all. */
-            aria-label={copy.choice.search}
-            role="combobox"
-            aria-autocomplete="list"
-            aria-expanded={open}
-            {...(open ? { "aria-controls": listId } : {})}
-            {...(open && !asTags && activeItem !== undefined
-              ? { "aria-activedescendant": optionId(active) }
-              : {})}
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            onKeyDown={(e) => {
-              /* Backspace with the field empty removes the LAST instance: the gesture
-                 that already exists in any chip field and the only one that is
-                 discovered without anybody explaining it. The last and not the last of
-                 its kind — now they are a single list, so there is no order of
-                 preference to remember. */
-              if (e.key === "Backspace" && text === "") {
-                if (criteria.length > 0) {
-                  onCriteriaChange(removeAt(criteria, [criteria.length - 1]));
+              aria-label={copy.choice.search}
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={open}
+              {...(open ? { "aria-controls": listId } : {})}
+              {...(open && !asTags && activeItem !== undefined
+                ? { "aria-activedescendant": optionId(active) }
+                : {})}
+              value={text}
+              onChange={(e) => {
+                setText(e.target.value);
+                setMarked(null);
+                setStarter(true);
+              }}
+              onKeyDown={(e) => {
+                const mod = e.metaKey || e.ctrlKey;
+                /* THE BAR'S OWN KEYS, before anything is read as text.
+                 Mod+Enter: the advanced search, from where the hands already are.
+                 Alt+↓: the panel, its first option focused — the combobox's «open the list».
+                 Mod+Z on the empty bar: the last removal, back. */
+                if (e.key === "Enter" && mod && onOpenBuilder !== undefined) {
+                  e.preventDefault();
+                  setText("");
+                  setStep({});
+                  setUnfolded(null);
+                  onOpenBuilder();
+                  return;
                 }
-                return;
-              }
-              /* The arrows TRAVERSE what is offered and Enter takes what is
+                if (
+                  e.key === "ArrowDown" &&
+                  e.altKey &&
+                  columns.length + (onOpenBuilder ? 1 : 0) > 0
+                ) {
+                  e.preventDefault();
+                  openPanelFromKeys();
+                  return;
+                }
+                if (
+                  e.code === "KeyZ" &&
+                  mod &&
+                  !e.shiftKey &&
+                  text === "" &&
+                  lastRemoval.current
+                ) {
+                  e.preventDefault();
+                  takeBack();
+                  return;
+                }
+
+                /* A PIECE MARKED. ← on the empty bar marks the last one; ← → walk them, Delete or
+                 Backspace removes the marked one (with its «Deshacer»), Enter edits it —its value
+                 in place when it has one, the builder otherwise— and Escape lets it go.
+                 Backspace used to remove the last chip at once: one key too many on an empty
+                 bar and a filter was gone without a word. Now the first press shows what the
+                 second one will take. */
+                if (marked !== null) {
+                  const piece = pieces[marked];
+                  if (e.key === "ArrowLeft") {
+                    e.preventDefault();
+                    setMarked(Math.max(0, marked - 1));
+                    return;
+                  }
+                  if (e.key === "ArrowRight") {
+                    e.preventDefault();
+                    setMarked(marked + 1 < pieces.length ? marked + 1 : null);
+                    return;
+                  }
+                  if ((e.key === "Backspace" || e.key === "Delete") && piece !== undefined) {
+                    e.preventDefault();
+                    setMarked(null);
+                    removeWithUndo(piece, facetLabel(piece));
+                    return;
+                  }
+                  if (e.key === "Enter" && piece !== undefined) {
+                    e.preventDefault();
+                    const path = piece[0]!;
+                    const node = at(criteria, path);
+                    const parts = node === undefined ? undefined : chipParts(node, fields);
+                    if (
+                      piece.length === 1 &&
+                      parts?.kind === "condition" &&
+                      (parts.field.choices ?? []).length === 0 &&
+                      !withoutValue(parts.op)
+                    ) {
+                      setEditing(marked);
+                    } else {
+                      setMarked(null);
+                      onOpenBuilder?.(path);
+                    }
+                    return;
+                  }
+                  if (e.key === "Escape") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setMarked(null);
+                    return;
+                  }
+                  /* Any other key goes back to writing. */
+                  setMarked(null);
+                }
+                if (
+                  (e.key === "ArrowLeft" || e.key === "Backspace") &&
+                  text === "" &&
+                  step.field === undefined &&
+                  pieces.length > 0
+                ) {
+                  e.preventDefault();
+                  setMarked(pieces.length - 1);
+                  return;
+                }
+                /* Backspace on an empty draft goes back one step: the comparison, then the field. */
+                if (e.key === "Backspace" && text === "" && step.field !== undefined) {
+                  e.preventDefault();
+                  setStep(
+                    step.op !== undefined && !(records && step.field.relation !== undefined)
+                      ? { field: step.field }
+                      : {},
+                  );
+                  return;
+                }
+                /* Tab TAKES the completion drawn in grey: «cli» + Tab is «cliente», chosen as the
+                 field, the way a terminal completes. Without a completion Tab is Tab. */
+                if (
+                  e.key === "Tab" &&
+                  !e.shiftKey &&
+                  completion !== undefined &&
+                  e.currentTarget.selectionStart === text.length
+                ) {
+                  e.preventDefault();
+                  pick(completion);
+                  return;
+                }
+                /* The arrows TRAVERSE what is offered and Enter takes what is
                  marked. Without this, typing «#nom» and going down did nothing: the
                  list was seen and could not be touched without the mouse, which is
-                 precisely what a search bar cannot ask for. */
-              if (e.key === "ArrowDown" || e.key === "ArrowUp") {
-                if (!items.some(selectable)) return;
-                e.preventDefault();
-                move(e.key === "ArrowDown" ? 1 : -1);
-                return;
-              }
-              /* → OPENS what is under the marked row —a relation's records, an enum's values—
+                 precisely what a search bar cannot ask for. ↓ on the closed empty bar
+                 opens what it offers. */
+                if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+                  if (!open) {
+                    if (e.key === "ArrowDown" && text === "" && step.field === undefined) {
+                      e.preventDefault();
+                      setStarter(true);
+                    }
+                    return;
+                  }
+                  e.preventDefault();
+                  move(e.key === "ArrowDown" ? 1 : -1);
+                  return;
+                }
+                /* → OPENS what is under the marked row —a relation's records, an enum's values—
                  and ← closes it and goes back to the row, the way a tree and Odoo's bar do.
                  Only with the caret at the end: in the middle of the text the arrows are still
                  the text's. */
-              const atEnd = e.currentTarget.selectionStart === text.length;
-              if (e.key === "ArrowRight" && atEnd && open && unfoldable(activeItem)) {
-                if (activeItem !== undefined && activeItem.id !== unfolded) {
-                  e.preventDefault();
-                  toggle(activeItem.id);
+                const atEnd = e.currentTarget.selectionStart === text.length;
+                if (e.key === "ArrowRight" && atEnd && open && unfoldable(activeItem)) {
+                  if (activeItem !== undefined && activeItem.id !== unfolded) {
+                    e.preventDefault();
+                    toggle(activeItem.id);
+                  }
+                  return;
                 }
-                return;
-              }
-              if (e.key === "ArrowLeft" && atEnd && open && unfolded !== null) {
-                const parent =
-                  activeItem?.kind === "suggestion" && activeItem.suggestion.kind === "value"
-                    ? activeItem.suggestion.under
-                    : activeItem?.kind === "status" || activeItem?.kind === "more"
-                      ? unfolded
-                      : activeItem?.id === unfolded
+                if (e.key === "ArrowLeft" && atEnd && open && unfolded !== null) {
+                  const parent =
+                    activeItem?.kind === "suggestion" &&
+                    activeItem.suggestion.kind === "value"
+                      ? activeItem.suggestion.under
+                      : activeItem?.kind === "status" || activeItem?.kind === "more"
                         ? unfolded
-                        : undefined;
-                if (parent !== undefined) {
-                  e.preventDefault();
-                  setUnfolded(null);
-                  setActiveId(parent);
+                        : activeItem?.id === unfolded
+                          ? unfolded
+                          : undefined;
+                  if (parent !== undefined) {
+                    e.preventDefault();
+                    setUnfolded(null);
+                    setActiveId(parent);
+                  }
+                  return;
                 }
-                return;
-              }
-              /* Enter takes what is MARKED, which starts out being the first — and the
+                /* Enter takes what is MARKED, which starts out being the first — and the
                  first is the most likely: with «test» the first text field,
                  with «<= 100» the only one that can answer it. */
-              if (e.key === "Enter") {
-                e.preventDefault();
-                choose(activeItem);
-              }
-              /* Escape UNDOES, one step at a time and always the last: first what is
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  if (open) choose(activeItem);
+                }
+                /* Escape UNDOES, one step at a time and always the last: first what is
                  unfolded, then what is written, then the comparison, then the field. Whoever
                  got the field wrong wants to change it, not start over — and
                  whoever is not building anything does not expect anything to happen.
@@ -1347,56 +1935,64 @@ export function SearchBar({
                  Before, it only dismantled the step when a field had already been chosen,
                  so with «vent» half-written it did nothing: the key that
                  everybody presses to undo did not undo. */
-              if (e.key === "Escape" && unfolded !== null && open) {
-                e.preventDefault();
-                e.stopPropagation();
-                setActiveId(unfolded);
-                setUnfolded(null);
-                return;
-              }
-              if (e.key === "Escape") {
-                if (text !== "") {
+                if (e.key === "Escape" && unfolded !== null && open) {
                   e.preventDefault();
                   e.stopPropagation();
-                  setText("");
+                  setActiveId(unfolded);
+                  setUnfolded(null);
                   return;
                 }
-                if (step.op !== undefined) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  /* A relation searched by its records skipped the comparison: undoing goes
+                if (e.key === "Escape") {
+                  if (text !== "") {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setText("");
+                    return;
+                  }
+                  if (step.op !== undefined) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    /* A relation searched by its records skipped the comparison: undoing goes
                      back to choosing the field, not to a step it never showed. */
-                  setStep(
-                    records && step.field?.relation !== undefined
-                      ? {}
-                      : { field: step.field },
-                  );
-                  return;
-                }
-                if (step.field !== undefined) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setStep({});
-                  return;
-                }
-                /* And at the end, the group: the last thing opened is the last thing
+                    setStep(
+                      records && step.field?.relation !== undefined
+                        ? {}
+                        : { field: step.field },
+                    );
+                    return;
+                  }
+                  if (step.field !== undefined) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setStep({});
+                    return;
+                  }
+                  /* And at the end, the group: the last thing opened is the last thing
                    undone. */
-                if (openGroup !== null) {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  closeGroup();
+                  if (openGroup !== null) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    closeGroup();
+                    return;
+                  }
+                  /* Nothing left to undo but what the empty bar offers: it closes. With nothing
+                   open, Escape is not the bar's and goes on to whoever owns it. */
+                  if (open) {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setStarter(false);
+                  }
+                  return;
                 }
-                return;
+              }}
+              placeholder={
+                step.field !== undefined
+                  ? copy.search.typeValue
+                  : criteria.length === 0
+                    ? (placeholder ?? copy.search.placeholder)
+                    : ""
               }
-            }}
-            placeholder={
-              step.field !== undefined
-                ? copy.search.typeValue
-                : criteria.length === 0
-                  ? (placeholder ?? copy.search.placeholder)
-                  : ""
-            }
-            /* WITH A FIELD CHOSEN, what is written is the VALUE — and it is drawn
+              /* WITH A FIELD CHOSEN, what is written is the VALUE — and it is drawn
                as the chip it will become, behind the other two. It is not an
                ornament: the draft is read whole —«nombre · contiene · vent▌»—
                before existing as a cut, so you see what it will end up as
@@ -1407,24 +2003,97 @@ export function SearchBar({
                The width is asked for by the CONTENT —`field-sizing`— so the chip
                grows with what is written instead of reserving an empty band. Where it
                is not available, the input stretches as always. */
-            style={step.field === undefined ? undefined : { fieldSizing: "content" }}
-            className={
-              step.field === undefined
-                ? `h-7 ${criteria.length === 0 ? "min-w-24" : "min-w-16"} flex-1 bg-transparent text-meta outline-none ${bySurface(sup, "text-ink placeholder:text-muted", "text-chrome-ink placeholder:text-chrome-muted")}`
-                : `min-w-16 rounded-pill px-2 py-0.5 text-micro outline-none ${bySurface(
+              style={step.field === undefined ? undefined : { fieldSizing: "content" }}
+              className={
+                step.field === undefined
+                  ? `h-7 w-full min-w-0 bg-transparent text-meta outline-none ${bySurface(sup, "text-ink placeholder:text-muted", "text-chrome-ink placeholder:text-chrome-muted")}`
+                  : `min-w-16 rounded-pill px-2 py-0.5 text-micro outline-none ${bySurface(
+                      sup,
+                      "bg-primary/8 text-ink placeholder:text-muted",
+                      "bg-chrome-link/20 text-chrome-ink placeholder:text-chrome-muted",
+                    )}`
+              }
+            />
+            {ghost === undefined || step.field !== undefined ? null : (
+              <span
+                aria-hidden
+                data-ui="search.completion"
+                className="pointer-events-none absolute inset-y-0 left-0 flex max-w-full items-center overflow-hidden text-meta whitespace-pre"
+              >
+                <span className="invisible">{text}</span>
+                <span className={bySurface(sup, "text-muted", "text-chrome-muted")}>
+                  {ghost}
+                </span>
+                <kbd
+                  className={`ml-1.5 rounded-control border px-1 font-mono text-micro leading-none touch:hidden ${bySurface(
                     sup,
-                    "bg-primary/8 text-ink placeholder:text-muted",
-                    "bg-chrome-link/20 text-chrome-ink placeholder:text-chrome-muted",
-                  )}`
-            }
-          />
+                    "border-line text-muted",
+                    "border-chrome-ink/30 text-chrome-muted",
+                  )}`}
+                >
+                  Tab
+                </kbd>
+              </span>
+            )}
+          </span>
         </div>
+
+        {/* What a screen reader needs to hear and the eye already sees: a chip marked, a
+            removal that can be taken back. */}
+        <span role="status" className="sr-only">
+          {marked !== null && pieces[marked] !== undefined
+            ? fillCopy(copy.search.chipMarked, { label: facetLabel(pieces[marked]) })
+            : undo !== null
+              ? fillCopy(copy.search.removed, { label: undo.label })
+              : ""}
+        </span>
+
+        {/* «Deshacer», in the bar, when the screen has no notice stack to say it. */}
+        {undo === null ? null : (
+          <button
+            type="button"
+            data-ui="search.undo"
+            onClick={() => takeBack(undo)}
+            title={fillCopy(copy.search.removed, { label: undo.label })}
+            className={`my-0.5 inline-flex h-(--size-control-sm) shrink-0 items-center gap-1 rounded-control px-1.5 text-micro font-medium transition-colors duration-(--duration-instant) motion-safe:animate-chip-in focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${bySurface(
+              sup,
+              "text-primary hover:bg-primary/8",
+              "text-chrome-link hover:bg-chrome-link/15",
+            )}`}
+          >
+            <Undo2 className="size-(--size-icon-sm)" strokeWidth={2} aria-hidden />
+            {copy.search.undo}
+          </button>
+        )}
+
+        {/* «/» drawn where it works, while the bar waits — GitHub's way of teaching the key.
+            Not for a finger, and gone once the bar is in use. */}
+        {!focusOnSlash || focused || text !== "" || puestos > 0 || undo !== null ? null : (
+          <span
+            aria-hidden
+            data-ui="search.slash"
+            className="my-0.5 mr-1 inline-flex h-(--size-control-sm) shrink-0 items-center touch:hidden max-sm:hidden"
+          >
+            <kbd
+              className={`rounded-control border px-1.5 font-mono text-micro leading-tight ${bySurface(
+                sup,
+                "border-line text-muted",
+                "border-chrome-ink/30 text-chrome-muted",
+              )}`}
+            >
+              /
+            </kbd>
+          </span>
+        )}
 
         {puestos === 0 ? null : (
           <button
             type="button"
             onClick={() => {
-              onCriteriaChange([]);
+              removeWithUndo(
+                criteria.map((_, index) => [index]),
+                pieces.map((piece) => facetLabel(piece)).join(", "),
+              );
               setOpenGroup(null);
               input.current?.focus();
             }}
@@ -1444,10 +2113,9 @@ export function SearchBar({
           <button
             ref={toolsButton}
             type="button"
-            onClick={() => {
-              const rect = box.current?.getBoundingClientRect();
-              if (!panel && rect !== undefined)
-                setPanelSide(window.innerWidth - rect.left >= rect.right ? "start" : "end");
+            onClick={(event) => {
+              /* Opened with Enter or Space (no pointer, `detail` 0): the keys go on inside it. */
+              if (!panel && event.detail === 0) panelFromKeys.current = true;
               setPanel((v) => !v);
             }}
             aria-expanded={panel}
@@ -1503,7 +2171,11 @@ export function SearchBar({
         <div
           data-ui="search.suggestions"
           className={`absolute top-full z-30 mt-1 overflow-hidden rounded-ui-popover border border-ui-popover-border bg-ui-popover shadow-ui-popover ${
-            asTags ? "left-0 w-max max-w-full" : "right-0 left-0"
+            /* As wide as what it offers, up to a reading width: two short rows stretched over a
+               bar as wide as the page are two words lost in a band. */
+            asTags
+              ? "left-0 w-max max-w-full"
+              : "left-0 w-full max-w-(--container-suggestions)"
           }`}
         >
           {/* WHERE WHAT IS CHOSEN WILL LAND. It goes above what is offered because it is
@@ -1550,51 +2222,88 @@ export function SearchBar({
                 aria-label={copy.search.suggestions}
                 className="max-h-96 overflow-y-auto p-1"
               >
-                {items.map((item, at) => (
-                  <div
-                    key={item.id}
-                    id={optionId(at)}
-                    role="option"
-                    aria-selected={at === active}
-                    {...(item.kind === "status" ? { "aria-disabled": true } : {})}
-                    data-ui={
-                      item.kind === "advanced"
-                        ? "search.advanced"
-                        : item.kind === "suggestion" && item.child !== true
-                          ? "search.suggestion"
-                          : "search.record"
-                    }
-                    /* The input keeps the focus: pressing an option must not take it. */
-                    onMouseDown={(event) => event.preventDefault()}
-                    onClick={() => {
-                      if (item.kind === "suggestion" && item.suggestion.kind === "unfold") {
-                        toggle(item.id);
-                      } else choose(item);
-                    }}
-                    onMouseEnter={selectable(item) ? () => setActiveId(item.id) : undefined}
-                    className={`flex w-full items-center gap-2 rounded-ui-option px-2 py-1.5 text-left text-meta transition-colors duration-(--duration-instant) ${
-                      item.kind === "status" ? "cursor-default" : "cursor-pointer"
-                    } ${
-                      item.kind === "advanced" ? "mt-1" : ""
-                    } ${at === active ? "bg-ui-option-active" : selectable(item) ? "hover:bg-ink/4" : ""}`}
-                  >
-                    <SuggestionRow
-                      item={item}
-                      open={item.id === unfoldedRow?.id}
-                      onToggle={() => toggle(item.id)}
-                      {...(renderRecord === undefined ? {} : { renderRecord })}
-                    />
-                  </div>
-                ))}
+                {items.map((item, at) =>
+                  item.kind === "heading" ? (
+                    /* A block's title is not an option: the keys skip it, a reader hears it as
+                       the group's start. */
+                    <div
+                      key={item.id}
+                      role="presentation"
+                      className="px-2 pt-2 pb-0.5 first:pt-1"
+                    >
+                      <SuggestionRow item={item} open={false} onToggle={() => {}} />
+                    </div>
+                  ) : (
+                    <div
+                      key={item.id}
+                      id={optionId(at)}
+                      role="option"
+                      aria-selected={at === active}
+                      {...(item.kind === "status" ? { "aria-disabled": true } : {})}
+                      data-ui={
+                        item.kind === "advanced"
+                          ? "search.advanced"
+                          : item.kind === "recent"
+                            ? "search.recent"
+                            : item.kind === "suggestion" && item.child !== true
+                              ? "search.suggestion"
+                              : "search.record"
+                      }
+                      /* The input keeps the focus: pressing an option must not take it. */
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() => {
+                        if (item.kind === "suggestion" && item.suggestion.kind === "unfold") {
+                          toggle(item.id);
+                        } else choose(item);
+                      }}
+                      onMouseEnter={selectable(item) ? () => setActiveId(item.id) : undefined}
+                      className={`flex w-full items-center gap-2 rounded-ui-option px-2 py-1.5 text-left text-meta transition-colors duration-(--duration-instant) ${
+                        item.kind === "status" ? "cursor-default" : "cursor-pointer"
+                      } ${
+                        item.kind === "advanced" ? "mt-1" : ""
+                      } ${at === active ? "bg-ui-option-active" : selectable(item) ? "hover:bg-ink/4" : ""}`}
+                    >
+                      <SuggestionRow
+                        item={item}
+                        open={item.id === unfoldedRow?.id}
+                        onToggle={() => toggle(item.id)}
+                        {...(renderRecord === undefined ? {} : { renderRecord })}
+                      />
+                    </div>
+                  ),
+                )}
               </div>
-              {/* The keys, said once at the foot — → is the one nobody guesses. Not on a phone:
-                  there are no arrows to press. */}
-              <p
-                data-ui="search.keys"
-                className="hidden border-t border-line px-3 py-1 text-micro text-muted sm:block"
-              >
-                {copy.search.keysHint}
-              </p>
+              {/* The keys, said once at the foot and drawn as keys — → is the one nobody
+                  guesses, Tab only while there is something to complete, and the two that
+                  leave the dropdown (the panel, the advanced search) only where they exist.
+                  Not on a phone: there are no keys to press. */}
+              <KeysHint
+                keys={[
+                  [["↑", "↓"], copy.search.keys.move],
+                  [[keysLabel("Enter", platform)], copy.search.keys.put],
+                  [["→"], copy.search.keys.open],
+                  ...(ghost === undefined
+                    ? []
+                    : [[["Tab"], copy.search.keys.complete] as const]),
+                  [[keysLabel("Escape", platform)], copy.search.keys.undo],
+                  ...(columns.length === 0 && onOpenBuilder === undefined
+                    ? []
+                    : [
+                        [
+                          [keysLabel("Alt+ArrowDown", platform)],
+                          copy.search.keys.panel,
+                        ] as const,
+                      ]),
+                  ...(onOpenBuilder === undefined
+                    ? []
+                    : [
+                        [
+                          [keysLabel("Mod+Enter", platform)],
+                          copy.search.keys.advanced,
+                        ] as const,
+                      ]),
+                ]}
+              />
             </>
           )}
         </div>
@@ -1617,44 +2326,87 @@ export function SearchBar({
                its own popovers and live regions. */
             data-react-aria-top-layer=""
             data-ui="search.panel"
+            onKeyDown={walkPanel}
             className="z-30 flex w-max max-w-(--container-cuts) flex-wrap overflow-hidden rounded-ui-popover border border-ui-popover-border bg-ui-popover shadow-ui-popover"
           >
-            {columns.map((c, i) => (
-              <div
-                key={c.title}
-                className={`flex min-w-48 flex-1 flex-col ${
-                  i === 0 ? "" : "border-t border-line sm:border-t-0 sm:border-l"
-                }`}
-              >
-                {/* The title is the column's heading, the top of the panel's three steps:
+            {columns.map((c, i) => {
+              const total = c.groups?.reduce((n, g) => n + g.options.length, 0) ?? 0;
+              const query = find[c.title] ?? "";
+              const needle = fold(query.trim());
+              const shown =
+                needle === ""
+                  ? c.groups
+                  : c.groups
+                      ?.map((g) => ({
+                        ...g,
+                        options: g.options.filter((o) =>
+                          fold(`${o.label} ${o.hint ?? ""}`).includes(needle),
+                        ),
+                      }))
+                      .filter((g) => g.options.length > 0);
+              return (
+                <div
+                  key={c.title}
+                  data-cuts-column=""
+                  className={`flex min-w-48 flex-1 flex-col ${
+                    i === 0 ? "" : "border-t border-line sm:border-t-0 sm:border-l"
+                  }`}
+                >
+                  {/* The title is the column's heading, the top of the panel's three steps:
                   section (ink, semibold, its icon) › group (quiet, muted) › option. It was
                   the quiet size in muted, the same as the hints under it, so nothing said
                   where «Filtros» ended and «Agrupar por» began. Both columns start the
                   content at the same height. */}
-                <div className="flex items-center gap-2 px-2.5 pt-2.5 pb-1 text-meta font-semibold text-ink">
-                  <c.icon
-                    className="size-(--size-icon-sm) shrink-0 text-muted"
-                    strokeWidth={2}
-                    aria-hidden
-                  />
-                  {c.title}
-                </div>
-                {/* A long column (grouping lists every field a model has) scrolls inside
+                  <div className="flex items-center gap-2 px-2.5 pt-2.5 pb-1 text-meta font-semibold text-ink">
+                    <c.icon
+                      className="size-(--size-icon-sm) shrink-0 text-muted"
+                      strokeWidth={2}
+                      aria-hidden
+                    />
+                    {c.title}
+                  </div>
+                  {/* A long column (grouping lists every field a model has) scrolls inside
                   itself, so the panel never grows past the screen. */}
-                <div className="flex max-h-96 flex-col gap-0.5 overflow-y-auto p-1">
-                  {c.content ??
-                    c.groups?.map((g, gi) => (
-                      <Group
-                        key={g.label ?? gi}
-                        group={g}
-                        first={gi === 0}
-                        checks={c.checks === true}
-                        onSelect={c.onSelect}
+                  {/* A long column —a model's every field, a year of dates— gets a box: typing
+                    narrows it, ↓ goes down into what is left. */}
+                  {c.content !== undefined || total <= FIND_AFTER ? null : (
+                    <div className="px-2 pb-1">
+                      <input
+                        type="search"
+                        value={query}
+                        onChange={(event) =>
+                          setFind((before) => ({ ...before, [c.title]: event.target.value }))
+                        }
+                        placeholder={fillCopy(copy.search.findIn, {
+                          column: c.title.toLowerCase(),
+                        })}
+                        aria-label={fillCopy(copy.search.findIn, {
+                          column: c.title.toLowerCase(),
+                        })}
+                        className="h-(--size-control-sm) w-full rounded-control border border-ui-control-border bg-ui-control px-2 text-micro text-ink outline-none placeholder:text-muted focus:border-primary/60"
                       />
-                    ))}
+                    </div>
+                  )}
+                  <div className="flex max-h-96 flex-col gap-0.5 overflow-y-auto p-1">
+                    {c.content ??
+                      (shown === undefined || shown.length === 0 ? (
+                        <p className="px-1.5 py-1 text-micro text-muted">{copy.menu.empty}</p>
+                      ) : (
+                        shown.map((g, gi) => (
+                          <Group
+                            key={g.label ?? gi}
+                            group={g}
+                            first={gi === 0}
+                            checks={c.checks === true}
+                            onSelect={c.onSelect}
+                            forceOpen={needle !== ""}
+                          />
+                        ))
+                      ))}
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
 
             {/* THE DOOR TO THE BUILDER, below and across the width of the three columns.
               

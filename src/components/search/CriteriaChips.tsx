@@ -8,12 +8,23 @@ import {
   type SearchCriteria,
 } from "@sincpro/web-ui/components/search/criteria";
 import { JoinWord } from "@sincpro/web-ui/components/search/JoinWord";
+import {
+  type ChipParts,
+  chipParts,
+  opLabel,
+  type QueryField,
+  valueLabel,
+  withoutValue,
+  withParts,
+  withTwoValues,
+} from "@sincpro/web-ui/components/search/query";
+import { WordChoice } from "@sincpro/web-ui/components/search/WordChoice";
 import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
 import { chosenTone } from "@sincpro/web-ui/primitives/tag/Tag";
 import { ChevronRight, Layers, X } from "lucide-react";
-import { Fragment, type ReactNode, useState } from "react";
+import { Fragment, type ReactNode, useEffect, useRef, useState } from "react";
 
 /* ==================================================================== *
  *  WHAT IS SET, DRAWN IN THE BAR.
@@ -40,6 +51,21 @@ import { Fragment, type ReactNode, useState } from "react";
  *  Any instance opens the builder standing on it. There is not one that is
  *  edited here and another there: what you see in the bar and what is edited in the
  *  dialog are the same object.
+ *
+ *  ── A chip the bar wrote is read in its PARTS ──────────────────────
+ *
+ *      [ cliente  contiene  andina  × ]
+ *        quiet    a word    strong
+ *
+ *  The field opens the builder on it, the comparison opens into the field's comparisons, the
+ *  value is edited right there —or opens into an enum's words—. Changing 1000 to 2000 is
+ *  touching 1000, not opening a dialog. A declared chip («sólo vencidas») is one piece: its
+ *  name is somebody's decision.
+ *
+ *  ── The keyboard walks the pieces ───────────────────────────────────
+ *
+ *  The bar marks one (`marked`, ← on the empty bar): a ring, and never folded away — a mark on
+ *  something hidden is a mark nobody sees.
  * ==================================================================== */
 
 export type CriteriaChipsProps = {
@@ -64,6 +90,18 @@ export type CriteriaChipsProps = {
   /** How many facets show before the rest fold into «+N» (the grouping chain counts as one).
    *  Below `@md` of the bar only the first one shows. `Infinity` never folds. */
   collapseAfter?: number;
+  /** The fields the bar asks about. With them a chip the bar wrote reads in its parts — field,
+   *  comparison, value — and each part is touched on its own (see `chipParts`). */
+  fields?: readonly QueryField[];
+  /** One instance changed in place: a chip's comparison or value, edited on the chip. */
+  onReplace?: (path: CriteriaPath, next: SearchCriteria) => void;
+  /** The piece marked from the keyboard, by its place in `facetPaths`: ringed, never folded. */
+  marked?: number;
+  /** The piece whose value is being edited in place — Enter on a marked chip. */
+  editing?: number;
+  /** The edit in place ended — set or given up. `giveBack`: it ended from the keyboard (Enter,
+   *  Escape) and the focus goes back to whoever owns it; a blur went somewhere on purpose. */
+  onEdited?: (giveBack: boolean) => void;
   surface?: Surface;
 };
 
@@ -75,6 +113,11 @@ export function CriteriaChips({
   onRemoveMany,
   open,
   collapseAfter = 4,
+  fields,
+  onReplace,
+  marked,
+  editing,
+  onEdited,
   surface,
 }: CriteriaChipsProps) {
   const sup = useSurface(surface);
@@ -106,7 +149,7 @@ export function CriteriaChips({
             ),
           },
         ]),
-    ...filters.map((one) => ({
+    ...filters.map((one, at) => ({
       key: one.id,
       label: labelOf(one, copy.search.joins),
       node: (
@@ -116,7 +159,11 @@ export function CriteriaChips({
           {...(onOpen === undefined ? {} : { onOpen })}
           {...(onJoin === undefined ? {} : { onJoin })}
           {...(onRemove === undefined ? {} : { onRemove })}
+          {...(onReplace === undefined ? {} : { onReplace })}
           {...(open === undefined ? {} : { open })}
+          {...(fields === undefined ? {} : { fields })}
+          editing={editing === at + (groups.length === 0 ? 0 : 1)}
+          {...(onEdited === undefined ? {} : { onEdited })}
           surface={sup}
         />
       ),
@@ -125,7 +172,12 @@ export function CriteriaChips({
 
   /* Folding hides, it does not remove: the open node is where the next one lands, so while
      there is one everything shows. */
-  const unfolded = expanded || open !== undefined || !Number.isFinite(collapseAfter);
+  const unfolded =
+    expanded ||
+    open !== undefined ||
+    marked !== undefined ||
+    editing !== undefined ||
+    !Number.isFinite(collapseAfter);
   const beyondWide = Math.max(0, facets.length - collapseAfter);
   const beyondNarrow = Math.max(0, facets.length - 1);
   const more = (count: number, hidden: string, className: string) => (
@@ -149,10 +201,16 @@ export function CriteriaChips({
       .map((one) => one.label)
       .join(" · ");
 
+  /* Each piece ARRIVES (`animate-chip-in`): set with Enter, the text clears and the dropdown
+     closes, and without a landing the eye looks for where the question went. The key is the
+     instance's id, so only the new one moves. */
   const drawn = (facet: (typeof facets)[number], index: number) => (
     <span
       key={facet.key}
-      className={`min-w-0 max-w-full ${
+      data-marked={marked === index ? "" : undefined}
+      className={`min-w-0 max-w-full rounded-ui-tag motion-safe:animate-chip-in ${
+        marked === index ? "ring-2 ring-primary ring-offset-1 ring-offset-ui-control" : ""
+      } ${
         unfolded
           ? "inline-flex"
           : index >= collapseAfter
@@ -305,7 +363,11 @@ function Node({
   onOpen,
   onJoin,
   onRemove,
+  onReplace,
   open,
+  fields,
+  editing = false,
+  onEdited,
   surface,
 }: {
   node: SearchCriteria;
@@ -313,7 +375,11 @@ function Node({
   onOpen?: (path: CriteriaPath) => void;
   onJoin?: (path: CriteriaPath, join: CriteriaJoin) => void;
   onRemove?: (path: CriteriaPath) => void;
+  onReplace?: (path: CriteriaPath, next: SearchCriteria) => void;
   open?: CriteriaPath;
+  fields?: readonly QueryField[];
+  editing?: boolean;
+  onEdited?: (giveBack: boolean) => void;
   surface: Surface;
 }) {
   const copy = useUiCopy();
@@ -323,12 +389,17 @@ function Node({
        edits what TRAVELS, and this one is answered by whoever declared it. It is seen and removed
        like any other; what it does not do is promise a door that opens onto nothing. */
     const editable = node.kind === "group" || node.selection !== undefined;
+    const parts = fields === undefined ? undefined : chipParts(node, fields);
     return (
       <Chip
-        label={node.label}
+        node={node}
         path={path}
+        {...(parts === undefined ? {} : { parts })}
         {...(onOpen === undefined || !editable ? {} : { onOpen })}
         {...(onRemove === undefined ? {} : { onRemove })}
+        {...(onReplace === undefined ? {} : { onReplace })}
+        editing={editing}
+        {...(onEdited === undefined ? {} : { onEdited })}
         surface={surface}
       />
     );
@@ -368,7 +439,9 @@ function Node({
           {...(onOpen === undefined ? {} : { onOpen })}
           {...(onJoin === undefined ? {} : { onJoin })}
           {...(onRemove === undefined ? {} : { onRemove })}
+          {...(onReplace === undefined ? {} : { onReplace })}
           {...(open === undefined ? {} : { open })}
+          {...(fields === undefined ? {} : { fields })}
           surface={surface}
         />
       ))}
@@ -376,20 +449,33 @@ function Node({
   );
 }
 
+/** A part of a chip that is touched: a quiet hover inside the chip's own tone, and the ring. */
+const PART =
+  "min-w-0 rounded-control px-0.5 text-left outline-0 transition-colors duration-(--duration-instant) focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary data-focus-visible:outline-2 data-focus-visible:outline-offset-1 data-focus-visible:outline-primary";
+
 function Chip({
-  label,
+  node,
   path,
+  parts,
   onOpen,
   onRemove,
+  onReplace,
+  editing,
+  onEdited,
   surface,
 }: {
-  label: string;
+  node: Extract<SearchCriteria, { kind: "group" | "filter" }>;
   path: CriteriaPath;
+  parts?: ChipParts;
   onOpen?: (path: CriteriaPath) => void;
   onRemove?: (path: CriteriaPath) => void;
+  onReplace?: (path: CriteriaPath, next: SearchCriteria) => void;
+  editing: boolean;
+  onEdited?: (giveBack: boolean) => void;
   surface: Surface;
 }) {
   const copy = useUiCopy();
+  const label = node.label;
   /* Under a finger the chip grows to a size a thumb can aim at (32px, the label in the
      reading size); with a mouse it stays a line of the bar. */
   const shell = `inline-flex min-w-0 max-w-(--container-facet) items-center gap-1 rounded-ui-tag py-0.5 text-micro touch:min-h-8 touch:text-meta ${chosenTone(
@@ -417,6 +503,25 @@ function Chip({
       </button>
     );
 
+  if (parts !== undefined) {
+    return (
+      /* The whole sentence in the title: a long value is cut at the chip's width. */
+      <span data-ui="search.chip" data-parts="" title={label} className={shell}>
+        <PartsOf
+          node={node}
+          path={path}
+          parts={parts}
+          {...(onOpen === undefined ? {} : { onOpen })}
+          {...(onReplace === undefined ? {} : { onReplace })}
+          editing={editing}
+          {...(onEdited === undefined ? {} : { onEdited })}
+          surface={surface}
+        />
+        {remove}
+      </span>
+    );
+  }
+
   if (onOpen === undefined) {
     return (
       <span data-ui="search.chip" className={shell}>
@@ -442,5 +547,178 @@ function Chip({
       </button>
       {remove}
     </span>
+  );
+}
+
+/**
+ * The three parts of a chip the bar wrote: «cliente · contiene · andina».
+ *
+ * The field is quiet and opens the builder on the chip (the field is the one part that changes
+ * the whole question, so it changes where the whole question is edited). The comparison opens
+ * into the field's comparisons. The value is strong, and is edited right there: an enum's words
+ * open as a list, anything else becomes the text it is, with Enter to set and Escape to leave it
+ * as it was.
+ */
+function PartsOf({
+  node,
+  path,
+  parts,
+  onOpen,
+  onReplace,
+  editing,
+  onEdited,
+  surface,
+}: {
+  node: SearchCriteria;
+  path: CriteriaPath;
+  parts: ChipParts;
+  onOpen?: (path: CriteriaPath) => void;
+  onReplace?: (path: CriteriaPath, next: SearchCriteria) => void;
+  editing: boolean;
+  onEdited?: (giveBack: boolean) => void;
+  surface: Surface;
+}) {
+  const copy = useUiCopy();
+  const [writing, setWriting] = useState(false);
+  /* Enter and Escape settle the edit; the blur that follows the input leaving must not set it
+     a second time with the value it had before. */
+  const settled = useRef(false);
+  const field = parts.field;
+  const quiet = bySurface(surface, "text-muted", "text-chrome-muted");
+  const hover = bySurface(surface, "hover:bg-primary/12", "hover:bg-chrome-link/25");
+
+  /* Enter on a marked chip asks to edit it: the value is what gets edited. */
+  useEffect(() => {
+    if (editing) setWriting(true);
+  }, [editing]);
+  useEffect(() => {
+    if (writing) settled.current = false;
+  }, [writing]);
+
+  const fieldPart =
+    onOpen === undefined ? (
+      <span className={`shrink-0 ${quiet}`}>{field.label}</span>
+    ) : (
+      <button
+        type="button"
+        onClick={() => onOpen(path)}
+        title={copy.search.openBuilderHere}
+        className={`${PART} shrink-0 ${quiet} ${hover}`}
+      >
+        {field.label}
+      </button>
+    );
+
+  if (parts.kind === "values") {
+    const names = parts.values.slice(0, 3).map((one) => one.name);
+    const said =
+      parts.values.length > 3
+        ? `${names.join(", ")} ${fillCopy(copy.search.andMore, { count: parts.values.length - 3 })}`
+        : names.join(` ${copy.search.or} `);
+    return (
+      <>
+        {fieldPart}
+        <span className="min-w-0 truncate font-medium">{said}</span>
+      </>
+    );
+  }
+
+  const { op, value } = parts;
+  /* The focus is given back BEFORE the input goes: an input removed while it holds the focus
+     blurs in the middle of React's commit, and the focus falls to the page for a frame. */
+  const finish = (giveBack: boolean) => {
+    settled.current = true;
+    onEdited?.(giveBack);
+    setWriting(false);
+  };
+  const put = (nextOp: string, nextValue: string) => {
+    onReplace?.(path, withParts(node, field, nextOp, nextValue));
+  };
+
+  const ops = field.ops.filter((one) => !withTwoValues(one));
+  const opPart =
+    onReplace === undefined || ops.length < 2 ? (
+      <span className={`shrink-0 ${quiet}`}>{opLabel(op)}</span>
+    ) : (
+      <WordChoice
+        value={op}
+        options={ops.map((one) => ({ id: one, label: opLabel(one), note: one }))}
+        onChange={(next) => {
+          if (next === op) return;
+          put(next, withoutValue(next) ? "" : value);
+          /* From «está vacío» to a comparison that needs a value: there is none yet, so the
+             value is asked right there instead of leaving a chip that asks for «nothing». */
+          if (!withoutValue(next) && value === "") setWriting(true);
+        }}
+        label={fillCopy(copy.search.changeOp, { field: field.label })}
+        word={opLabel(op)}
+        className={`${PART} shrink-0 ${quiet} ${hover}`}
+      />
+    );
+
+  const choices = field.choices;
+  const valuePart = withoutValue(op) ? null : onReplace !== undefined &&
+    choices !== undefined &&
+    choices.length > 0 ? (
+    <WordChoice
+      value={value}
+      options={choices.map((one) => ({ id: one, label: valueLabel(field, one) }))}
+      onChange={(next) => {
+        if (next !== value) put(op, next);
+        onEdited?.(false);
+      }}
+      label={fillCopy(copy.search.editValue, { label: field.label })}
+      word={valueLabel(field, value)}
+      className={`${PART} truncate font-medium ${hover}`}
+    />
+  ) : onReplace !== undefined && writing ? (
+    <input
+      /* The person asked to edit this value: the focus goes where they will type. */
+      autoFocus
+      defaultValue={value}
+      aria-label={fillCopy(copy.search.editValue, { label: field.label })}
+      onFocus={(event) => event.currentTarget.select()}
+      onKeyDown={(event) => {
+        /* The bar's keys are not this field's: Escape here leaves the value as it was, and
+           does not undo a step of the bar nor close a dialog around it. */
+        event.stopPropagation();
+        if (event.key === "Enter") {
+          event.preventDefault();
+          const next = event.currentTarget.value.trim();
+          if (next !== "" && next !== value) put(op, next);
+          finish(true);
+        } else if (event.key === "Escape") {
+          event.preventDefault();
+          finish(true);
+        }
+      }}
+      onBlur={(event) => {
+        if (settled.current) return;
+        const next = event.currentTarget.value.trim();
+        if (next !== "" && next !== value) put(op, next);
+        finish(false);
+      }}
+      style={{ fieldSizing: "content" }}
+      className="min-w-8 rounded-control bg-ui-control px-1 font-medium text-ink outline-2 outline-primary"
+    />
+  ) : onReplace === undefined ? (
+    <span className="min-w-0 truncate font-medium">{valueLabel(field, value)}</span>
+  ) : (
+    <button
+      type="button"
+      onClick={() => setWriting(true)}
+      title={fillCopy(copy.search.editValue, { label: field.label })}
+      className={`${PART} truncate font-medium ${hover}`}
+    >
+      {valueLabel(field, value)}
+    </button>
+  );
+
+  return (
+    <>
+      {fieldPart}
+      {opPart}
+      {valuePart}
+    </>
   );
 }

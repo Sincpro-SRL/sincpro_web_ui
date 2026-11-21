@@ -1,11 +1,10 @@
 "use client";
 
 import type { CriteriaJoin } from "@sincpro/web-ui/components/search/criteria";
+import { WordChoice } from "@sincpro/web-ui/components/search/WordChoice";
 import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
-import { Tags } from "@sincpro/web-ui/primitives/tag/Tags";
-import { useState } from "react";
 
 /* ==================================================================== *
  *  HOW A NODE IS JOINED, in a word you touch.
@@ -27,7 +26,8 @@ import { useState } from "react";
  *
  *  It lives here and not inside the bar because the builder asks the same. A
  *  `<select>` there and a list here are two controls for one decision, and whoever
- *  learned one does not recognise the other.
+ *  learned one does not recognise the other. The list is `WordChoice`'s: it floats, the arrows
+ *  move through it, Escape closes it.
  * ==================================================================== */
 
 const OPTIONS: readonly CriteriaJoin[] = ["all", "any", "not"];
@@ -44,7 +44,6 @@ export function JoinWord({
 }) {
   const sup = useSurface(surface);
   const copy = useUiCopy();
-  const [open, setOpen] = useState(false);
   const word = copy.search.joins[join === "not" ? "none" : join];
 
   if (onChange === undefined) {
@@ -52,41 +51,20 @@ export function JoinWord({
   }
 
   return (
-    <span className="relative inline-flex shrink-0">
-      <button
-        type="button"
-        onClick={() => setOpen((current) => !current)}
-        aria-expanded={open}
-        title={copy.search.switchJoin}
-        className={`shrink-0 rounded-control px-1 text-micro font-medium underline decoration-dotted underline-offset-4 decoration-current/40 transition-colors hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary ${bySurface(
-          sup,
-          "text-muted hover:text-ink",
-          "text-chrome-muted hover:text-chrome-ink",
-        )}`}
-      >
-        {word}
-      </button>
-      {open ? (
-        <span
-          data-ui="popover"
-          className="absolute top-full left-0 z-40 mt-1 rounded-ui-popover border border-ui-popover-border bg-ui-popover p-1 shadow-ui-popover"
-        >
-          <Tags
-            stack
-            surface="canvas"
-            label={copy.search.switchJoin}
-            items={OPTIONS.map((one) => ({
-              id: one,
-              label: copy.search.joins[one === "not" ? "none" : one],
-              selected: one === join,
-              onSelect: () => {
-                onChange(one);
-                setOpen(false);
-              },
-            }))}
-          />
-        </span>
-      ) : null}
-    </span>
+    <WordChoice
+      value={join}
+      options={OPTIONS.map((one) => ({
+        id: one,
+        label: copy.search.joins[one === "not" ? "none" : one],
+      }))}
+      onChange={onChange}
+      label={copy.search.switchJoin}
+      word={word}
+      className={`shrink-0 rounded-control px-1 text-micro font-medium underline decoration-dotted underline-offset-4 decoration-current/40 transition-colors outline-0 hover:decoration-current data-focus-visible:outline-2 data-focus-visible:outline-offset-1 data-focus-visible:outline-primary ${bySurface(
+        sup,
+        "text-muted hover:text-ink",
+        "text-chrome-muted hover:text-chrome-ink",
+      )}`}
+    />
   );
 }
