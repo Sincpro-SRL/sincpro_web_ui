@@ -208,14 +208,21 @@ export function Row({
         role="presentation"
       >
         {onSelectedChange === undefined ? null : (
-          <input
-            type="checkbox"
-            checked={selected ?? false}
-            aria-label={fillCopy(copy.selection.named, { name })}
-            onChange={(e) => onSelectedChange(e.target.checked)}
+          /* Drawn small, answering to `--size-target` (44px under a finger) — and a tap on
+             the target chooses the row, it never opens it. */
+          <label
+            className="hit-target inline-flex shrink-0 cursor-pointer"
             onClick={(e) => e.stopPropagation()}
-            className="size-3.5 shrink-0 cursor-pointer accent-primary"
-          />
+          >
+            <input
+              type="checkbox"
+              checked={selected ?? false}
+              aria-label={fillCopy(copy.selection.named, { name })}
+              onChange={(e) => onSelectedChange(e.target.checked)}
+              onClick={(e) => e.stopPropagation()}
+              className="size-3.5 shrink-0 cursor-pointer accent-primary touch:size-5"
+            />
+          </label>
         )}
 
         {avatar !== undefined ? (
@@ -298,7 +305,7 @@ export function Row({
 
         {/* The gesture, made visible. It shows up on hover and always occupies its
           place, so nothing shifts when it appears. */}
-        <span className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-(--duration-instant) group-hover/row:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100">
+        <span className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity duration-(--duration-instant) group-hover/row:opacity-100 focus-within:opacity-100 touch:opacity-100">
           <Trail
             name={name}
             openAs={openAs}

@@ -34,6 +34,8 @@ export {
   CheckMark,
 } from "@sincpro/web-ui/primitives/field/Checks";
 export { CodeInput } from "@sincpro/web-ui/primitives/field/CodeInput";
+/* THE PAD — a till's or a kiosk's on-screen numbers. Its rules are pure (`keypadKeys.ts`), so a
+   physical keyboard or a test applies the same. */
 export { ColorInput } from "@sincpro/web-ui/primitives/field/ColorInput";
 export {
   emailHref,
@@ -49,6 +51,16 @@ export {
   PhoneInput,
   UrlInput,
 } from "@sincpro/web-ui/primitives/field/ContactInputs";
+export { Keypad, type KeypadProps } from "@sincpro/web-ui/primitives/field/Keypad";
+/* A QUANTITY pressed, not typed — a cart's line, a kiosk's item. */
+export {
+  applyKey,
+  isKeypadKey,
+  keyOfKeyboard,
+  type KeypadKey,
+  type KeypadRules,
+} from "@sincpro/web-ui/primitives/field/keypadKeys";
+export { Stepper, type StepperProps } from "@sincpro/web-ui/primitives/field/Stepper";
 /* The copy button every field carries by its label — on by default, off by field or by form. */
 export {
   FieldCopyProvider,

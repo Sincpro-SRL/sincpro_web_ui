@@ -7,8 +7,17 @@ import {
   useWorkspace,
   type ViewSpec,
 } from "@sincpro/web-composer";
-import { createRegistry } from "@sincpro/web-composer/domain";
-import { AppFrame, Button, Dialog, Missing, Peek, ToastProvider } from "@sincpro/web-ui";
+import { createRegistry, EMPTY, openPanel, push, Zone } from "@sincpro/web-composer/domain";
+import {
+  AppFrame,
+  Button,
+  Dialog,
+  Missing,
+  Peek,
+  type Pointer,
+  POINTER_ATTRIBUTE,
+  ToastProvider,
+} from "@sincpro/web-ui";
 import {
   AppWindow,
   ArrowLeft,
@@ -92,26 +101,62 @@ export function Workspace({
   menu,
   sidebar,
   phoneBelow,
+  panels,
+  pointer,
 }: {
   views: readonly ViewSpec[];
   start: ResourceRef;
-  menu?: ReactNode;
+  /** The application's bar. A function receives `go`, to start the workspace on another view
+   *  from a menu — the way a menu leaves: no crumb behind (`workspace.start`). */
+  menu?: ReactNode | ((go: (ref: ResourceRef) => void) => ReactNode);
   /** The module's map beside the workspace (`AppFrame sidebar`); only with a `menu`. */
   sidebar?: ReactNode;
   /** Below this width the workspace is a phone (composer's default: 640). */
   phoneBelow?: number;
+  /** Panels already open beside the page — a screen of several sets at once (the bank
+   *  reconciliation: the statement as the page, the entry and the items on the right). Panels
+   *  docked on the same side stack top to bottom. */
+  panels?: readonly { ref: ResourceRef; zone?: "left" | "right" | "bottom" }[];
+  /** What the person presses with, said by the application — a till is a touch monitor with a
+   *  mouse plugged in. Written on `<html>`, so the modals the workspace portals follow it too. */
+  pointer?: Pointer;
 }) {
+  useEffect(() => {
+    if (pointer === undefined || pointer === "auto") return;
+    const root = document.documentElement;
+    root.setAttribute(POINTER_ATTRIBUTE, pointer);
+    return () => root.removeAttribute(POINTER_ATTRIBUTE);
+  }, [pointer]);
   useState(() => {
     installComposerCopy(SPANISH_COMPOSER_COPY);
     return null;
   });
-  const workspace = useWorkspace();
+  const [initial] = useState(() =>
+    panels === undefined
+      ? undefined
+      : panels.reduce(
+          (w, panel) =>
+            openPanel(
+              w,
+              panel.ref,
+              panel.zone === "left"
+                ? Zone.Left
+                : panel.zone === "bottom"
+                  ? Zone.Bottom
+                  : Zone.Right,
+            ),
+          push(EMPTY, start),
+        ),
+  );
+  const workspace = useWorkspace(initial === undefined ? undefined : { initial });
   const registry = useMemo(() => createRegistry(views), [views]);
   useEffect(() => {
+    if (initial !== undefined) return;
     workspace.push(start);
     // The first screen only: a re-render must not push it again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspace]);
+  const bar = typeof menu === "function" ? menu((ref) => workspace.start(ref)) : menu;
   /* `agentTools`: the browser's agent (WebMCP) can see where the person is, open and search,
      through the same api a view uses. Feature-detected: without WebMCP nothing happens. */
   const composer = (
@@ -125,12 +170,12 @@ export function Workspace({
   );
   return (
     <ToastProvider>
-      {menu === undefined ? (
+      {bar === undefined ? (
         <div className="flex h-dvh min-h-0 flex-col bg-ground">{composer}</div>
       ) : (
         /* `scroll="view"`: the workspace scrolls inside its own boxes, so the frame is the
            window and the sticky stack starts from zero inside the view. */
-        <AppFrame scroll="view" menu={menu} {...(sidebar === undefined ? {} : { sidebar })}>
+        <AppFrame scroll="view" menu={bar} {...(sidebar === undefined ? {} : { sidebar })}>
           <div className="flex min-h-0 flex-1 flex-col">{composer}</div>
         </AppFrame>
       )}

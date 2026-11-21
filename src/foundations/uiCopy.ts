@@ -32,6 +32,7 @@ export type UiCopy = {
     rows: string;
     table: string;
     board: string;
+    tiles: string;
     /** The sheet: the raw data, with the file's columns. */
     sheet: string;
     /** The one that SUMS: a hierarchy that ends in totals. */
@@ -840,6 +841,43 @@ export type UiCopy = {
     addColumn: string;
     addColumnPlaceholder: string;
   };
+  /** How long something has been waiting (`Elapsed`, a card's `elapsed`). */
+  elapsed: {
+    /** Read before the figure by a screen reader: «Esperando 4:05». */
+    label: string;
+    /** The figure's title. `{time}` is «4:05». */
+    waiting: string;
+  };
+  /** A quantity with «−» and «+» (`Stepper`). The unit goes after: «Sumar uno: Capuchino». */
+  stepper: {
+    label: string;
+    decrease: string;
+    increase: string;
+    /** «−» at the minimum, when it takes the line away. */
+    remove: string;
+  };
+  /** A finished operation, said big (`Outcome`). */
+  outcome: {
+    /** Read before the figure: «Tu número: 118». */
+    figure: string;
+  };
+  /** A self-service frame (`KioskFrame`). */
+  kiosk: {
+    /** The button that brings the content down to a seated person's reach. */
+    reach: string;
+    reachOff: string;
+    /** The attract screen's call, when the application gives none. */
+    start: string;
+  };
+  /** The on-screen number pad of a till or a kiosk (`Keypad`). */
+  keypad: {
+    /** The pad's name when nothing names it. */
+    label: string;
+    backspace: string;
+    clear: string;
+    decimal: string;
+    sign: string;
+  };
   /** A timeline of records and its toolbar (`RecordTimeline`, `TimelineToolbar`). */
   timeline: {
     prev: string;
@@ -1102,6 +1140,7 @@ export const ENGLISH_COPY: UiCopy = {
     rows: "Rows",
     table: "Table",
     board: "Board",
+    tiles: "Tiles",
     sheet: "Sheet",
     report: "Report",
     pivot: "Pivot",
@@ -1651,6 +1690,31 @@ export const ENGLISH_COPY: UiCopy = {
     unfold: "Unfold {column}",
     addColumn: "Add a stage",
     addColumnPlaceholder: "Stage name… (Enter adds)",
+  },
+  elapsed: {
+    label: "Waiting",
+    waiting: "Waiting for {time}",
+  },
+  stepper: {
+    label: "Quantity",
+    decrease: "One less",
+    increase: "One more",
+    remove: "Remove",
+  },
+  outcome: {
+    figure: "Number",
+  },
+  kiosk: {
+    reach: "Bring it down within reach",
+    reachOff: "Back to full height",
+    start: "Touch to start",
+  },
+  keypad: {
+    label: "Number pad",
+    backspace: "Delete the last digit",
+    clear: "Clear",
+    decimal: "Decimal point",
+    sign: "Change the sign",
   },
   timeline: {
     prev: "Previous",

@@ -34,7 +34,7 @@ export function CellCopy({
   const button = (
     <span
       data-copy-skip=""
-      className="inline-flex shrink-0 opacity-0 transition-opacity duration-(--duration-instant) group-hover/cell:opacity-100 focus-within:opacity-100 pointer-coarse:opacity-100"
+      className="inline-flex shrink-0 opacity-0 transition-opacity duration-(--duration-instant) group-hover/cell:opacity-100 focus-within:opacity-100 touch:opacity-100"
     >
       <CopyButton
         label={fillCopy(ui.copyable.field, { label: header })}

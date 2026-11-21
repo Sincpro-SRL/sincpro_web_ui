@@ -265,22 +265,23 @@ follows:
 }
 ```
 
-| Component                                                   | Tokens                                                                                 |
-| ----------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| `Button`, `ButtonLink`                                      | `--ui-button-radius`                                                                   |
-| `IconButton`, `IconLink`                                    | `--ui-icon-button-radius`                                                              |
-| Inputs, selects, date and pickers' boxes                    | `--ui-control-radius`, `--ui-control-bg`, `--ui-control-border`                        |
-| Menus, lists, popovers, the cuts panel                      | `--ui-popover-radius`, `--ui-popover-bg`, `--ui-popover-border`, `--ui-popover-shadow` |
-| A row inside them (menu item, option)                       | `--ui-option-radius`, `--ui-option-active-bg`                                          |
-| `Dialog`                                                    | `--ui-dialog-radius`, `--ui-dialog-bg`                                                 |
-| `Block`, `RecordCard`, `Metric`                             | `--ui-card-radius`, `--ui-card-bg`, `--ui-card-border`                                 |
-| A board's `BoardTile` and `BoardStat`                       | `--ui-tile-radius`, `--ui-tile-bg`, `--ui-tile-border` (fall back to the card's)       |
-| `Tag`, `Tags`, the search bar's chips                       | `--ui-tag-radius`                                                                      |
-| `SearchBar`'s field                                         | `--ui-search-radius` (and the control's bg and border)                                 |
-| The sidebar on the canvas                                   | `--ui-sidebar-bg`, `--ui-sidebar-border`                                               |
-| `NavigationTree`                                            | `--ui-nav-radius`, `--ui-nav-current-bg`                                               |
-| Table headers (`DataTable`, `EditableTable`, `ReportTable`) | `--ui-table-head-bg`                                                                   |
-| `Guide` (a guided tour): its card and its veil              | `--ui-guide-radius`, `--ui-guide-bg`, `--ui-guide-scrim`                               |
+| Component                                                                      | Tokens                                                                                 |
+| ------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| `Button`, `ButtonLink`                                                         | `--ui-button-radius`                                                                   |
+| `IconButton`, `IconLink`                                                       | `--ui-icon-button-radius`                                                              |
+| Inputs, selects, date and pickers' boxes                                       | `--ui-control-radius`, `--ui-control-bg`, `--ui-control-border`                        |
+| Menus, lists, popovers, the cuts panel                                         | `--ui-popover-radius`, `--ui-popover-bg`, `--ui-popover-border`, `--ui-popover-shadow` |
+| A row inside them (menu item, option)                                          | `--ui-option-radius`, `--ui-option-active-bg`                                          |
+| `Dialog`                                                                       | `--ui-dialog-radius`, `--ui-dialog-bg`                                                 |
+| `Block`, `RecordCard`, `Metric`                                                | `--ui-card-radius`, `--ui-card-bg`, `--ui-card-border`                                 |
+| A record's card on a board or a grid (`RecordCard`, `RadioGroup look="cards"`) | `--ui-record-card-radius` (falls back to the card's, then to the control's corner)     |
+| A board's `BoardTile` and `BoardStat`                                          | `--ui-tile-radius`, `--ui-tile-bg`, `--ui-tile-border` (fall back to the card's)       |
+| `Tag`, `Tags`, the search bar's chips                                          | `--ui-tag-radius`                                                                      |
+| `SearchBar`'s field                                                            | `--ui-search-radius` (and the control's bg and border)                                 |
+| The sidebar on the canvas                                                      | `--ui-sidebar-bg`, `--ui-sidebar-border`                                               |
+| `NavigationTree`                                                               | `--ui-nav-radius`, `--ui-nav-current-bg`                                               |
+| Table headers (`DataTable`, `EditableTable`, `ReportTable`)                    | `--ui-table-head-bg`                                                                   |
+| `Guide` (a guided tour): its card and its veil                                 | `--ui-guide-radius`, `--ui-guide-bg`, `--ui-guide-scrim`                               |
 
 What a token does not cover, a **part** does. Every customizable piece names its root
 `data-ui="<component>"` and its parts `data-ui="<component>.<part>"`, with its variant beside
@@ -297,7 +298,13 @@ of classes that change with the next refactor:
 ```
 
 The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`,
-`menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card`, `board.tile`,
+`menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card` (with `data-layout`
+`card` | `compact` | `tile`), `record-card.title`, `record-card.figure`, `record-card.fields`,
+`record-card.media`, `record-card.badge`, `record-card.footer`, `record-card.stripe`,
+`board.lane`, `list.tiles`, `elapsed`, `keypad`, `keypad.key`, `keypad.screen`, `stepper`,
+`radio-group`, `radio-group.card`, `tags.count`, `outcome`, `outcome.figure`, `receipt`,
+`receipt.document`, `receipt.lines`, `receipt.totals`, `kiosk`, `kiosk.attract`,
+`kiosk.content`, `kiosk.reach`, `board.tile`,
 `board.stat`, `board.stat.value`, `activity.changes`, `file-list`, `file-list.file`, `file-value`, `metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
 `search.panel`, `search.suggestions`, `search.suggestion`, `search.record`, `search.advanced`,
 `search.keys`, `search-entry`, `search-entry.keys`, `table`, `table.pile`, `yes-no`,
@@ -309,6 +316,24 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `guide.progress`, `guide.title`, `guide.body`, `guide.actions`. A part that is one of many
 carries `data-key` too (`navigation.item`). Put your rules in a cascade layer above web-ui's, or
 outside any layer.
+
+#### Touch and the counter: a till, a kitchen, a kiosk, a shop
+
+The same pieces as the ERP, drawn for a finger — no «POS» inside the package. The application
+says what the person presses with, on `<html>` or on a zone (a till is a touch monitor with a
+mouse plugged in, so the browser alone says «mouse»):
+
+```tsx
+<html {...pointerAttributes("touch")}> {/* data-pointer="touch" */}
+```
+
+Controls grow to 44 px, what is drawn small answers to `--size-target` (`hit-target`), and what
+only shows on hover follows the `touch:` variant. Then: `List.Tiles` (a product grid),
+`List.Filters` with `Tags size="md" | "lg"` and `count`, `RadioGroup look="cards"`, `Keypad`
+(with `screen`), `Stepper`, `RecordCard elapsed`, `Outcome`, `Receipt`, and `KioskFrame` (an
+attract screen, `idleAfter`, a reduced-height mode). The Storybook page «Táctil y mostrador»
+orders them by what they solve; `5 · Plantillas/Mostrador` has the till, the express till, the
+kitchen, the kiosk and the shop.
 
 #### A form that explains itself: the «settings» style
 

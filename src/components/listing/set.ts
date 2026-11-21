@@ -48,6 +48,9 @@ export type BuiltInPresent =
   | "rows"
   | "table"
   | "board"
+  /* A grid of tiles — a product on a till, an item of a shop: the picture first, pressed
+     whole, as many per line as the width takes. Not a board: it has no stages. */
+  | "tiles"
   | "sheet"
   | "report"
   | "pivot"

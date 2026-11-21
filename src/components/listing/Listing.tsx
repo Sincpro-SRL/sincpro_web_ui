@@ -120,7 +120,9 @@ export function Listing({
        background is its white and its radius; a frame around a list that is
        already inside a framed panel is a nested rectangle, and nested
        rectangles are what make a product read like a cloud console. */
-    <div className={`flex min-w-0 flex-col ${byDensity(d, "gap-2.5", "gap-2")}`}>
+    /* `isolate`: the list's sticky bar and floating pill stay over its rows, and under
+       whatever the host lays on the list — a workspace's modal (see `Record`). */
+    <div className={`isolate flex min-w-0 flex-col ${byDensity(d, "gap-2.5", "gap-2")}`}>
       {/* The BAR sticks, not the metrics. The background is mandatory and not
           aesthetic: without it the rows are seen passing under the text. The
           metrics stay out because they are the only ones that in a chromeless list

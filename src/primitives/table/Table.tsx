@@ -305,7 +305,7 @@ export function TrDetail({
               aria-expanded={open}
               aria-controls={id}
               aria-label={label}
-              className="inline-flex size-5 items-center justify-center rounded-pill text-muted transition-colors duration-(--duration-instant) hover:bg-ink/6 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+              className="hit-target inline-flex size-5 items-center justify-center rounded-pill text-muted transition-colors duration-(--duration-instant) hover:bg-ink/6 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
             >
               <ChevronRight
                 className={`size-(--size-icon-sm) transition-transform duration-(--duration-instant) ${
@@ -399,17 +399,25 @@ export function SelectBox({
   label: string;
 }) {
   return (
-    <input
-      type="checkbox"
-      checked={checked}
-      aria-label={label}
-      ref={(el) => {
-        if (el !== null) el.indeterminate = indeterminate && !checked;
-      }}
-      onChange={(e) => onChange?.(e.target.checked)}
+    /* The box is drawn small so a list keeps its density, and it answers to `--size-target`
+       around it (44px under a finger): the label is the target. A tap on it never reaches the
+       row, which would open the record instead of choosing it. */
+    <label
+      className="hit-target inline-flex shrink-0 cursor-pointer"
       onClick={(e) => e.stopPropagation()}
-      className="size-3.5 shrink-0 cursor-pointer accent-primary"
-    />
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        aria-label={label}
+        ref={(el) => {
+          if (el !== null) el.indeterminate = indeterminate && !checked;
+        }}
+        onChange={(e) => onChange?.(e.target.checked)}
+        onClick={(e) => e.stopPropagation()}
+        className="size-3.5 shrink-0 cursor-pointer accent-primary touch:size-5"
+      />
+    </label>
   );
 }
 

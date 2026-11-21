@@ -15,6 +15,7 @@ export * from "@sincpro/web-ui/components/lines/index";
 export * from "@sincpro/web-ui/components/listing/index";
 export * from "@sincpro/web-ui/components/navigation/index";
 export * from "@sincpro/web-ui/components/preview/index";
+export * from "@sincpro/web-ui/components/receipt/index";
 export * from "@sincpro/web-ui/components/record/index";
 export * from "@sincpro/web-ui/components/search/index";
 export * from "@sincpro/web-ui/components/shell/index";

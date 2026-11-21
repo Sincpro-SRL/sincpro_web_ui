@@ -189,7 +189,7 @@ function ReportLine({
                 aria-label={fillCopy(isOpen ? copy.report.close : copy.report.open, {
                   name: row.label,
                 })}
-                className="-ml-1 inline-flex size-4 shrink-0 items-center justify-center rounded-pill text-muted transition-colors duration-(--duration-instant) hover:bg-ink/8 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
+                className="hit-target -ml-1 inline-flex size-4 shrink-0 items-center justify-center rounded-pill text-muted transition-colors duration-(--duration-instant) hover:bg-ink/8 hover:text-ink focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-primary"
               >
                 <ChevronRight
                   className={`size-(--size-icon-sm) transition-transform duration-(--duration-instant) ${isOpen ? "rotate-90" : ""}`}

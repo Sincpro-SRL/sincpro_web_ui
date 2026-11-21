@@ -31,6 +31,7 @@ export const SPANISH_COPY: UiCopyOverride = {
     rows: "Filas",
     table: "Tabla",
     board: "Tablero",
+    tiles: "Mosaicos",
     sheet: "Planilla",
     report: "Reporte",
     pivot: "Pivote",
@@ -573,6 +574,31 @@ export const SPANISH_COPY: UiCopyOverride = {
     unfold: "Desplegar {column}",
     addColumn: "Agregar etapa",
     addColumnPlaceholder: "Nombre de la etapa… (Enter agrega)",
+  },
+  elapsed: {
+    label: "Esperando",
+    waiting: "Esperando hace {time}",
+  },
+  stepper: {
+    label: "Cantidad",
+    decrease: "Uno menos",
+    increase: "Uno más",
+    remove: "Quitar",
+  },
+  outcome: {
+    figure: "Número",
+  },
+  kiosk: {
+    reach: "Bajar la pantalla al alcance",
+    reachOff: "Volver a la altura completa",
+    start: "Tocá para empezar",
+  },
+  keypad: {
+    label: "Teclado numérico",
+    backspace: "Borrar el último dígito",
+    clear: "Borrar todo",
+    decimal: "Coma decimal",
+    sign: "Cambiar el signo",
   },
   timeline: {
     prev: "Anterior",

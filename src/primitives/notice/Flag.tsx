@@ -47,7 +47,7 @@ const ICON: Record<FlagTone, LucideIcon> = {
 };
 
 const mark = tv({
-  base: "inline-flex size-5 shrink-0 cursor-default items-center justify-center rounded-pill outline-0 transition-colors duration-(--duration-instant) forced-colors:text-[ButtonText]",
+  base: "hit-target inline-flex size-5 shrink-0 cursor-default items-center justify-center rounded-pill outline-0 transition-colors duration-(--duration-instant) forced-colors:text-[ButtonText]",
   variants: {
     tone: {
       bad: "bg-bad/12 text-bad hover:bg-bad/20 aria-expanded:bg-bad/20",

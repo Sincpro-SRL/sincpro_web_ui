@@ -6,4 +6,4 @@ export { Count, type CountProps } from "@sincpro/web-ui/primitives/tag/Count";
 export { countText } from "@sincpro/web-ui/primitives/tag/countText";
 /* The strip of chips: the same in the bar, in the dropdown and anywhere
    a list of short words is drawn. */
-export { type TagItem, Tags } from "@sincpro/web-ui/primitives/tag/Tags";
+export { type TagItem, Tags, type TagsSize } from "@sincpro/web-ui/primitives/tag/Tags";

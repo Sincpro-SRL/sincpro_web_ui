@@ -13,6 +13,9 @@ export interface ChoiceOption {
   /** A second, muted line: what the option IS (a tax id, a city), not a second name. */
   description?: string;
   disabled?: boolean;
+  /** Drawn on the option when the choice is shown as cards (`RadioGroup look="cards"`): the
+   *  card of «Efectivo», «QR», «Tarjeta». Beside the label, never instead of it. */
+  icon?: LucideIcon;
 }
 
 /** One segment of a `SegmentedControl`. The icon goes before the label, never instead of it. */

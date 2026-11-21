@@ -7,6 +7,10 @@ export { type CopyCatalog, createCopy } from "@sincpro/web-ui/foundations/catalo
 export { UiCopyProvider, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 export { type CopyOverride, mergeCopyOver } from "@sincpro/web-ui/foundations/copyStore";
 export { DensityProvider, useDensity } from "@sincpro/web-ui/foundations/density";
+/* NOW, live — one shared ticking clock per interval, `null` on the server. */
+export { useNow } from "@sincpro/web-ui/foundations/clock";
+/* IDLE — nobody touched it for a while: a kiosk forgets the abandoned order. */
+export { useIdle } from "@sincpro/web-ui/foundations/idle";
 export { byDensity, bySurface } from "@sincpro/web-ui/foundations/pickBy";
 export {
   currentCopy,
@@ -61,6 +65,15 @@ export {
   useKeysHint,
   useShortcuts,
 } from "@sincpro/web-ui/foundations/shortcut";
+/* THE POINTER — a finger or a mouse, when the application knows better than the device (a till
+   is a touch monitor with a mouse plugged in). `tokens.css` reads `data-pointer`. */
+export {
+  isPointer,
+  type Pointer,
+  POINTER_ATTRIBUTE,
+  pointerAttributes,
+  POINTERS,
+} from "@sincpro/web-ui/foundations/pointer";
 /* THE THEME — light, dark or the operating system's. The palettes live in `tokens.css`; this
    only writes `data-theme`. */
 export { SurfaceProvider, useSurface } from "@sincpro/web-ui/foundations/surface";

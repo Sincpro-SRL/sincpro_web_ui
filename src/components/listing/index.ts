@@ -18,7 +18,11 @@ export {
   visibleColumns,
 } from "@sincpro/web-ui/components/listing/columnSpecs";
 export { Listing } from "@sincpro/web-ui/components/listing/Listing";
-export { type ListIdentity, ListingBar } from "@sincpro/web-ui/components/listing/ListingBar";
+export {
+  type ListCounter,
+  type ListIdentity,
+  ListingBar,
+} from "@sincpro/web-ui/components/listing/ListingBar";
 export { type ModelCellKind } from "@sincpro/web-ui/components/listing/modelCells";
 export {
   type ClaimedField,
@@ -73,7 +77,11 @@ export {
   PivotExplorer,
   type PivotExplorerProps,
 } from "@sincpro/web-ui/components/listing/PivotExplorer";
-export { RecordCard } from "@sincpro/web-ui/components/listing/RecordCard";
+export {
+  RecordCard,
+  type RecordCardField,
+  type RecordCardLayout,
+} from "@sincpro/web-ui/components/listing/RecordCard";
 export {
   type SortField,
   SortMenu,

@@ -139,8 +139,10 @@ test("the bar is the last thing in the record, sticky to the bottom — its own 
   );
   assert.ok(out.endsWith("</div></div></article>"), "nothing after the bar");
   assert.match(out, /data-thumb-bar="primary" class="[^"]*safe-bottom/);
-  /* The record fills its frame, so the bar reaches the bottom of a short screen. */
-  assert.match(out, /<article class="flex min-w-0 flex-1 flex-col">/);
+  /* The record fills its frame, so the bar reaches the bottom of a short screen — and it is
+     its own stacking context: its sticky bar (z-20) stays over its own content and under a
+     workspace's modal laid on top of the record. */
+  assert.match(out, /<article class="isolate flex min-w-0 flex-1 flex-col">/);
 });
 
 test("both narrow questions measure the record, by name — not an unnamed container", () => {

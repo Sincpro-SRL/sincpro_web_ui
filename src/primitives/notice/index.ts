@@ -9,6 +9,8 @@ export {
   Missing,
   Skeleton,
 } from "@sincpro/web-ui/primitives/notice/Notice";
+/* The END of an operation, said big: a kiosk's «tu número es 118», a paid checkout. */
+export { Outcome, type OutcomeProps } from "@sincpro/web-ui/primitives/notice/Outcome";
 export {
   ToastProvider,
   type ToastSpec,

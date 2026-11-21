@@ -27,4 +27,8 @@ export {
   type TopMenu,
 } from "@sincpro/web-ui/components/shell/TopBar";
 /* A screen of N sets side by side — the reconciliation: each pane scrolls on its own. */
+export {
+  KioskFrame,
+  type KioskFrameProps,
+} from "@sincpro/web-ui/components/shell/KioskFrame";
 export { Pane, Panes } from "@sincpro/web-ui/components/shell/Panes";

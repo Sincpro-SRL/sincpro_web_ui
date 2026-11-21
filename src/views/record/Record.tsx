@@ -529,7 +529,11 @@ export function Record({
        nothing changes. */
     /* The record knows the notes of its fields and rows: their cards register here. */
     <NoteRegistryContext value={registry}>
-      <article className="flex min-w-0 flex-1 flex-col">
+      {/* `isolate`: the record is its own stacking context. Its sticky rail and its floating
+          dock carry z-indexes to stay over its own content — and without this they climbed
+          over whatever the HOST lays on top of the record: a workspace's modal over a panel
+          drew the record's «Ir a pagar» bar across the dialog. */}
+      <article className="isolate flex min-w-0 flex-1 flex-col">
         <NotebookScope tabs={tabs.length > 0}>
           <RecordHeader
             railSurface={surface}

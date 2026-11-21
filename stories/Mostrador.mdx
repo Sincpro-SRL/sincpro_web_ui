@@ -1,0 +1,76 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Táctil y mostrador" />
+
+# Táctil y mostrador · lo que ofrecemos para cobrar, pedir y atender
+
+Un punto de venta, la pantalla de una cocina, un kiosco de autoservicio y una tienda en línea
+se arman con **las mismas piezas que el ERP**. No hay un «POS» dentro del paquete: hay piezas
+genéricas, pensadas para el dedo, que una aplicación compone. Esta página las ordena por lo que
+resuelven. Cada una tiene su historia, y cada flujo una plantilla en `5 · Plantillas/Mostrador`.
+
+## 1 · Táctil: que todo se pueda tocar
+
+| Qué resuelve                                                                                                  | Pieza                                                                                       |
+| ------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| Una caja es un monitor táctil con un mouse enchufado: el navegador dice «mouse» y los controles quedan chicos | `data-pointer="touch"` en `<html>` o en una zona (`pointerAttributes`, `POINTER_ATTRIBUTE`) |
+| Lo que se dibuja chico (la «×» de un chip, la casilla de una fila) contesta al dedo                           | `--size-target` + `hit-target`: 24 px con mouse, 44 px con el dedo                          |
+| Lo que sólo se ve al pasar el mouse tiene que verse con el dedo                                               | la variante `touch:`                                                                        |
+
+`1 · Fundamentos/Táctil` los muestra lado a lado.
+
+## 2 · Elegir y filtrar rápido
+
+| Qué resuelve                                                                                 | Pieza                                                                |
+| -------------------------------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Las categorías de una caja, las facetas de una tienda: a la vista, con cuántos deja cada una | `Tags size="md" \| "lg"`, `count`, `scroll` dentro de `List.Filters` |
+| Una cifra de la barra que filtra al tocarla («14 con stock»)                                 | `ListCounter onClick / active / tone`                                |
+| Pocas opciones elegidas con el dedo: el método de pago, comer aquí / para llevar, el envío   | `RadioGroup look="cards"` (`ChoiceOption.icon`)                      |
+| Un producto, una mesa, un ítem en una grilla que se toca entero                              | `List.Tiles` (`present="tiles"`) con `RecordCard layout="tile"`      |
+
+## 3 · Cantidades e importes
+
+| Qué resuelve                                                                                  | Pieza                                               |
+| --------------------------------------------------------------------------------------------- | --------------------------------------------------- |
+| Escribir cantidades, descuentos, precios, lo recibido, lo contado — sin teclado               | `Keypad` (con `screen`), reglas puras en `applyKey` |
+| Una cantidad que se aprieta: la línea de un pedido, las personas de una mesa; en 1, «−» quita | `Stepper` (`onRemove`)                              |
+| Lo que se cobra, lo recibido y el vuelto                                                      | `Totals`                                            |
+
+## 4 · El tiempo y el estado de cada cosa
+
+| Qué resuelve                                                                                  | Pieza                                                    |
+| --------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Cuánto lleva esperando un ticket de cocina o un caso con SLA, en vivo, ámbar y luego rojo     | `Elapsed`, `RecordCard elapsed`, `useNow`                |
+| Una tarjeta con N datos, cantidad en la esquina, elegida, agotada, con la franja de su estado | `RecordCard fields / badge / selected / disabled / tone` |
+| Un tablero por etapas que se lee como registros (cocina, pedidos, pipeline)                   | `List.Board stages` (`BoardColumns`)                     |
+
+## 5 · El final y el papel
+
+| Qué resuelve                                                              | Pieza                                          |
+| ------------------------------------------------------------------------- | ---------------------------------------------- |
+| El final de una operación, en grande: «tu número es 118», el vuelto       | `Outcome`                                      |
+| Cancelar, cobrar o anular sin «¿seguro?»: hacerlo y ofrecer volver atrás  | `useToast` con `action: { label: "Deshacer" }` |
+| El ticket impreso (80 mm) y el mismo documento en la pantalla del cliente | `Receipt look="paper" \| "screen"`             |
+
+## 6 · El autoservicio
+
+| Qué resuelve                                                                               | Pieza                                           |
+| ------------------------------------------------------------------------------------------ | ----------------------------------------------- |
+| Esperar a alguien, olvidar el pedido abandonado, bajar la pantalla para quien está sentado | `KioskFrame` (`attract`, `idleAfter`, `onIdle`) |
+| Nadie tocó la pantalla en un rato                                                          | `useIdle`                                       |
+| Una pregunta por pantalla                                                                  | `StepFlow`                                      |
+
+## Cómo se arma cada flujo
+
+- **Caja rápida** — tocar y cobrar en un toque, sin modal: lector de código de barras,
+  efectivo exacto, QR o tarjeta, y el siguiente ticket ya está listo.
+- **Punto de venta** — pedidos abiertos en paralelo, mesas, cliente con NIT, factura o nota de
+  venta, vuelto, pedidos del día, cierre de caja, ticket al reimprimir.
+- **Pantalla del cliente** — el pedido que se está cargando, grande, del otro lado del mostrador.
+- **Cocina** — el tablero de pedidos por etapa, con lo que lleva esperando cada uno.
+- **Kiosco** — `KioskFrame` + `StepFlow` + mosaicos + `Stepper` + `Outcome`.
+- **Tienda en línea** — vitrina en mosaicos, facetas, el pedido al costado, el pago.
+
+Las reglas de siempre siguen valiendo: **una acción principal por pantalla**, **el color
+nunca solo**, **deshacer antes que confirmar**, y **las plantillas sólo componen** — si una
+pantalla de mostrador necesita estilo propio, al paquete le falta una pieza.

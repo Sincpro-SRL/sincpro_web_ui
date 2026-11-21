@@ -53,6 +53,17 @@ export {
   type RoundingMethod,
   roundTo,
 } from "@sincpro/web-ui/primitives/value/rounding";
+/* HOW LONG IT HAS BEEN WAITING — a kitchen's ticket, a case under an SLA: live, in a tone by
+   two thresholds. The arithmetic is pure (`elapsedTime.ts`), so a sort or a server reads it. */
+export { Elapsed, type ElapsedProps } from "@sincpro/web-ui/primitives/value/Elapsed";
+export {
+  elapsedMillis,
+  type ElapsedSince,
+  type ElapsedThresholds,
+  elapsedTone,
+  formatElapsed,
+  sinceMillis,
+} from "@sincpro/web-ui/primitives/value/elapsedTime";
 export {
   Totals,
   type TotalsCredit,

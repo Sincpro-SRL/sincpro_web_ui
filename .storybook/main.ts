@@ -58,6 +58,7 @@ const config: StorybookConfig = {
   stories: [
     "../stories/Introduction.mdx",
     "../stories/Estilo.mdx",
+    "../stories/Mostrador.mdx",
     "../stories/foundations/*.stories.@(ts|tsx)",
     "../stories/primitives/**/*.stories.@(ts|tsx)",
     "../stories/components/**/*.stories.@(ts|tsx)",
