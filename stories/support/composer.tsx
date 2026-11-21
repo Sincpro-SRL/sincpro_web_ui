@@ -106,7 +106,9 @@ export function Workspace({
 }: {
   views: readonly ViewSpec[];
   start: ResourceRef;
-  menu?: ReactNode;
+  /** The application's bar. A function receives `go`, to start the workspace on another view
+   *  from a menu — the way a menu leaves: no crumb behind (`workspace.start`). */
+  menu?: ReactNode | ((go: (ref: ResourceRef) => void) => ReactNode);
   /** The module's map beside the workspace (`AppFrame sidebar`); only with a `menu`. */
   sidebar?: ReactNode;
   /** Below this width the workspace is a phone (composer's default: 640). */
@@ -154,6 +156,7 @@ export function Workspace({
     // The first screen only: a re-render must not push it again.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [workspace]);
+  const bar = typeof menu === "function" ? menu((ref) => workspace.start(ref)) : menu;
   /* `agentTools`: the browser's agent (WebMCP) can see where the person is, open and search,
      through the same api a view uses. Feature-detected: without WebMCP nothing happens. */
   const composer = (
@@ -167,12 +170,12 @@ export function Workspace({
   );
   return (
     <ToastProvider>
-      {menu === undefined ? (
+      {bar === undefined ? (
         <div className="flex h-dvh min-h-0 flex-col bg-ground">{composer}</div>
       ) : (
         /* `scroll="view"`: the workspace scrolls inside its own boxes, so the frame is the
            window and the sticky stack starts from zero inside the view. */
-        <AppFrame scroll="view" menu={menu} {...(sidebar === undefined ? {} : { sidebar })}>
+        <AppFrame scroll="view" menu={bar} {...(sidebar === undefined ? {} : { sidebar })}>
           <div className="flex min-h-0 flex-1 flex-col">{composer}</div>
         </AppFrame>
       )}

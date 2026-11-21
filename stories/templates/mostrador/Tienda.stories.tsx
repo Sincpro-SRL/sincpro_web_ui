@@ -35,23 +35,23 @@ import {
 } from "../../support/erp-pos";
 
 /**
- * Context: **una tienda en línea** — la vitrina y el carrito, con las piezas del ERP. La
+ * Context: **una tienda en línea** — la vitrina y el pedido, con las piezas del ERP. La
  * vitrina es una lista en mosaicos grandes (`List.Tiles size="lg"`) con las categorías y las
  * facetas como filtros rápidos (`List.Filters`): cuántos deja cada una, varias a la vez. El
- * CARRITO es otra vista, abierta como panel al costado (composer), que no sabe de la vitrina:
- * las dos leen el mismo carrito. «Ir a pagar» abre el checkout como modal: el envío y el pago
+ * PEDIDO es otra vista, abierta como panel al costado (composer), que no sabe de la vitrina:
+ * las dos leen el mismo pedido. «Pagar el pedido» abre el pago como modal: el envío y el pago
  * como opciones grandes (`RadioGroup look="cards"`). Precio rebajado: el «antes» en una
  * etiqueta.
  */
 const meta: Meta = {
   tags: ["screen"],
-  title: "5 · Plantillas/Mostrador/Tienda en línea · vitrina y carrito",
+  title: "5 · Plantillas/Mostrador/Tienda en línea · vitrina y pedido",
   parameters: {
     layout: "fullscreen",
     docs: {
       description: {
         component:
-          "Tocá un producto: se suma al carrito del costado. Las categorías y las facetas filtran y dicen cuántos dejan. «Ir a pagar» abre el checkout con el envío y el pago.",
+          "Tocá un producto: se suma a tu pedido, al costado. Las categorías y las facetas filtran y dicen cuántos dejan. «Pagar el pedido» abre el pago con la entrega.",
       },
     },
   },
@@ -94,7 +94,7 @@ const totalOf = (lines: readonly CartLine[]) =>
   lines.reduce((s, l) => s + l.price * l.quantity, 0);
 
 const shopRef: ResourceRef = { domain: "tienda", kind: "vitrina" };
-const cartRef: ResourceRef = { domain: "tienda", kind: "carrito" };
+const cartRef: ResourceRef = { domain: "tienda", kind: "pedido" };
 const checkoutRef = (total: number): ResourceRef => ({
   domain: "tienda",
   kind: "checkout",
@@ -133,7 +133,7 @@ function ShopWindow({ api }: ViewProps) {
       present="tiles"
       onChoose={(m) => {
         cart.add(m);
-        toast.show({ message: `${m.name} al carrito.`, tone: "good" });
+        toast.show({ message: `${m.name} sumado a tu pedido.`, tone: "good" });
       }}
       filtered={query !== "" || category !== "all" || facets.length > 0}
       empty={{ sentence: "Nada con esos filtros." }}
@@ -236,7 +236,7 @@ function CartView({ api }: ViewProps) {
   const cart = useCart();
   const toast = useToast();
   const total = totalOf(cart.lines);
-  useEffect(() => api.setTitle("Carrito"), [api]);
+  useEffect(() => api.setTitle("Tu pedido"), [api]);
   const pay = () =>
     api.pick<string>(
       checkoutRef(total),
@@ -250,7 +250,7 @@ function CartView({ api }: ViewProps) {
     <Record
       identity={{
         icon: ShoppingCart,
-        title: "Tu carrito",
+        title: "Tu pedido",
         subtitle:
           cart.lines.length === 0 ? "Todavía vacío" : `${cart.lines.length} productos`,
         figure: { label: "total", value: bs(total) },
@@ -259,7 +259,7 @@ function CartView({ api }: ViewProps) {
       <Record.Rail>
         <Record.Actions>
           <Button role="primary" disabled={total === 0} onClick={pay}>
-            {`Ir a pagar ${bs(total)}`}
+            {`Pagar el pedido ${bs(total)}`}
           </Button>
         </Record.Actions>
       </Record.Rail>
@@ -367,8 +367,8 @@ const VIEWS: readonly ViewSpec[] = [
   },
   {
     domain: "tienda",
-    kind: "carrito",
-    title: () => "Carrito",
+    kind: "pedido",
+    title: () => "Tu pedido",
     icon: ShoppingCart,
     load: async () => CartView,
   },
@@ -381,7 +381,7 @@ const VIEWS: readonly ViewSpec[] = [
   },
 ];
 
-/** **Comprar.** Tocá un latte y dos salteñas; el carrito del costado los suma. «Ir a pagar»:
+/** **Comprar.** Tocá un latte y dos salteñas; el pedido del costado los suma. «Pagar el pedido»:
  *  elegí la entrega y confirmá. */
 export const Comprar: Story = {
   render: () => (
@@ -395,7 +395,7 @@ export const Comprar: Story = {
     await userEvent.click(await canvas.findByRole("button", { name: "Latte de vainilla" }));
     await userEvent.click(canvas.getByRole("button", { name: "Salteña de pollo" }));
     await userEvent.click(canvas.getByRole("button", { name: "Salteña de pollo" }));
-    const pay = await canvas.findByRole("button", { name: "Ir a pagar Bs 46,00" });
+    const pay = await canvas.findByRole("button", { name: "Pagar el pedido Bs 46,00" });
     await userEvent.click(pay);
     const dialog = within(await page.findByRole("dialog", { name: "Pagar" }));
     await userEvent.click(await dialog.findByText("Delivery"));
