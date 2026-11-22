@@ -244,18 +244,18 @@ and the same urgency painted the same way everywhere.
 | A key drawn as a key, the same in every place (four `<kbd>` drew it four ways)            | ✅ 11-22 | `Kbd` (`keys` by platform, or written)                                 |
 | A callout's × named in the session's language (it said «cerrar» in every language)        | ✅ 11-22 | `Callout` (`copy.shell.closeNotice`), `hit-target` + focus ring        |
 | The shop and the tiles show the discount with `Price`, not a hand-made tag                | ✅ 11-22 | `5 · Plantillas/Mostrador/Tienda`, `4 · Vistas/Lista/Mosaicos`         |
-| A context menu (right click, long press) on rows and cards                                | ❓       | later                                                                  |
 | A map as a list's presentation (addresses, deliveries)                                    | ❓       | later — a heavy library, lazily                                        |
 
 ## 4f. Modern UI round, iterated (from 2026-11-22, issue #80)
 
 One component or one measured refinement per iteration, all in one PR.
 
-| Need                                                                                   | Status   | Piece / owner                                                     |
-| -------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------- |
-| A range with two ends: a shop's price filter, an ERP's «amount between»                | ✅ 11-22 | `RangeSlider` (`onChangeEnd`, read mode writes both ends)         |
-| A slider's thumb named once by its field (it was read with the group's whole text)     | ✅ 11-22 | `Slider`, `RangeSlider`; `FieldIds.label` carries the label words |
-| A product's variants: a colour as its swatch, a size as its word; out of stock, struck | ✅ 11-22 | `RadioGroup look="swatches"`, `ChoiceOption.swatch`               |
+| Need                                                                                           | Status   | Piece / owner                                                     |
+| ---------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------- |
+| A range with two ends: a shop's price filter, an ERP's «amount between»                        | ✅ 11-22 | `RangeSlider` (`onChangeEnd`, read mode writes both ends)         |
+| A slider's thumb named once by its field (it was read with the group's whole text)             | ✅ 11-22 | `Slider`, `RangeSlider`; `FieldIds.label` carries the label words |
+| A product's variants: a colour as its swatch, a size as its word; out of stock, struck         | ✅ 11-22 | `RadioGroup look="swatches"`, `ChoiceOption.swatch`               |
+| A context menu: right click, a finger held, Shift+F10 on a row or a card; the row stays marked | ✅ 11-22 | `ContextMenu` (`MenuList` at the pointer)                         |
 
 ## 5. Tests
 

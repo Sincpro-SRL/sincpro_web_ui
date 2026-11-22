@@ -297,7 +297,7 @@ of classes that change with the next refactor:
 }
 ```
 
-The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`,
+The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`, `context-menu`,
 `menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card` (with `data-layout`
 `card` | `compact` | `tile`), `record-card.title`, `record-card.figure`, `record-card.fields`,
 `record-card.media`, `record-card.badge`, `record-card.footer`, `record-card.stripe`,

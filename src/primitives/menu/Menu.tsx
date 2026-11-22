@@ -384,6 +384,7 @@ export function MenuList({
   width = "md",
   layout = "list",
   foldable = true,
+  autoFocus = false,
 }: {
   label: string;
   groups: readonly MenuGroup[];
@@ -394,6 +395,9 @@ export function MenuList({
   layout?: "list" | "columns";
   /** `false` shows every `collapsible` section open — under a search box. */
   foldable?: boolean;
+  /** Focus the first row when it appears. A `MenuTrigger` does it by itself; a panel opened
+   *  without one — the `ContextMenu` — asks for it. */
+  autoFocus?: boolean;
 }) {
   const sectionKey = (g: MenuGroup, index: number) => g.label ?? String(index);
   const folds = (g: MenuGroup) => foldable && g.collapsible === true && g.label !== undefined;
@@ -526,6 +530,7 @@ export function MenuList({
       data-ui="menu"
       aria-label={label}
       shouldCloseOnSelect={closeOnSelect}
+      {...(autoFocus ? { autoFocus: "first" as const } : {})}
       onAction={act}
       renderEmptyState={() => (
         <p className="px-3 py-3 text-meta text-muted italic">{emptyText}</p>
