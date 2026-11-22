@@ -878,6 +878,52 @@ export type UiCopy = {
     /** «−» at the minimum, when it takes the line away. */
     remove: string;
   };
+  /** A price as a shelf says it (`Price`). Each figure is named for a screen reader. */
+  price: {
+    now: string;
+    before: string;
+    /** What a price of zero says. */
+    free: string;
+    /** Between the price and its unit — «Bs 120,00 por mes» — said, not drawn. */
+    per: string;
+    /** The discount tag's title. `{percent}` is the whole number. */
+    off: string;
+  };
+  /** Stars for how good (`Rating`). */
+  rating: {
+    label: string;
+    /** `{value}` is «4,5», `{max}` is 5. */
+    average: string;
+    /** `{count}` opinions, already written in the locale — and the one for a single one. */
+    count: string;
+    countOne: string;
+    none: string;
+    /** Each star of the question: «3 de 5 estrellas». */
+    stars: string;
+  };
+  /** The images of one thing (`Gallery`, `Lightbox`). */
+  gallery: {
+    label: string;
+    /** What assistive technology calls the group. */
+    roledescription: string;
+    previous: string;
+    next: string;
+    /** `{index}` of `{total}`. */
+    position: string;
+    open: string;
+    close: string;
+    empty: string;
+  };
+  /** The notifications (`Inbox`, `InboxList`). */
+  inbox: {
+    label: string;
+    unread: string;
+    /** Beside the title: «3 sin leer». */
+    unreadCount: string;
+    markAllRead: string;
+    seeAll: string;
+    empty: string;
+  };
   /** A finished operation, said big (`Outcome`). */
   outcome: {
     /** Read before the figure: «Tu número: 118». */
@@ -1738,6 +1784,39 @@ export const ENGLISH_COPY: UiCopy = {
     decrease: "One less",
     increase: "One more",
     remove: "Remove",
+  },
+  price: {
+    now: "Now",
+    before: "Before",
+    free: "Free",
+    per: "per",
+    off: "{percent}% off",
+  },
+  rating: {
+    label: "Rating",
+    average: "{value} out of {max}",
+    count: "{count} reviews",
+    countOne: "{count} review",
+    none: "not rated yet",
+    stars: "{value} of {max} stars",
+  },
+  gallery: {
+    label: "Images",
+    roledescription: "gallery",
+    previous: "Previous image",
+    next: "Next image",
+    position: "Image {index} of {total}",
+    open: "Open full size",
+    close: "Close",
+    empty: "No images yet",
+  },
+  inbox: {
+    label: "Notifications",
+    unread: "Unread",
+    unreadCount: "{count} unread",
+    markAllRead: "Mark all as read",
+    seeAll: "See all",
+    empty: "Nothing new",
   },
   outcome: {
     figure: "Number",

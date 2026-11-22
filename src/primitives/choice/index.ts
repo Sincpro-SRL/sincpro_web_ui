@@ -11,10 +11,13 @@ export {
   type SegmentOption,
 } from "@sincpro/web-ui/primitives/choice/options";
 export { Priority, type PriorityProps } from "@sincpro/web-ui/primitives/choice/Priority";
+/* Stars for HOW GOOD: an average shown with its figure and how many opinions, or the opinion
+   asked — `Priority`'s sibling. */
 export {
   RadioGroup,
   type RadioGroupProps,
 } from "@sincpro/web-ui/primitives/choice/RadioGroup";
+export { Rating, type RatingProps } from "@sincpro/web-ui/primitives/choice/Rating";
 export {
   SearchField,
   type SearchFieldProps,

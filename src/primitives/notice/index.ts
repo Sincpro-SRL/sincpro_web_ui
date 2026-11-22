@@ -1,5 +1,7 @@
 /* How a view says that there is nothing, that it failed, or that nobody knows
    how to draw it. */
+/* A notice about the whole application, across the top of the frame (`AppFrame banner`). */
+export { Banner, type BannerProps } from "@sincpro/web-ui/primitives/notice/Banner";
 export { Callout, type CalloutProps } from "@sincpro/web-ui/primitives/notice/Callout";
 export { Flag, type FlagProps, type FlagTone } from "@sincpro/web-ui/primitives/notice/Flag";
 export {
@@ -17,3 +19,4 @@ export {
   useToast,
   useToastIfAny,
 } from "@sincpro/web-ui/primitives/notice/Toast";
+export { type NoticeTone } from "@sincpro/web-ui/primitives/notice/tones";

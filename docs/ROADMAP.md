@@ -229,6 +229,24 @@ shop — and a kanban that reads as records, not as boxes inside boxes.
 | Panels a cashier cannot close by mistake                                          | ❓       | composer                                                                    |
 | A QR drawn for a payment or an invoice                                            | ❓       | later — a heavy library, lazily (`tests/heavyChunks`)                       |
 
+## 4e. The shop, the portal and the frame's notices (round of 2026-11-22, issue #78)
+
+What a shop's product, a customer portal and any application's frame needed and drew by hand —
+and the same urgency painted the same way everywhere.
+
+| Need                                                                                      | Status   | Piece / owner                                                          |
+| ----------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------------------- |
+| A price as a shelf says it: the one before struck, how much less (computed, rounded down) | ✅ 11-22 | `Price` (`compareAt`, `per`, `size`), `discountPercent`, `formatPrice` |
+| Stars for «how good»: an average with its figure and how many opinions, or asked          | ✅ 11-22 | `Rating` (half stars, radio group in a `Field`, read mode)             |
+| The images of one thing: arrows, strip, keyboard, swipe, full size                        | ✅ 11-22 | `Gallery`, `Lightbox`                                                  |
+| The notifications: a bell with the unread count and the list; the list as a page          | ✅ 11-22 | `Inbox`, `InboxList`; `SystrayButton` forwards `ref`                   |
+| A notice about the whole application, above the bar                                       | ✅ 11-22 | `Banner`, `AppFrame banner`; one tone table with `Callout`             |
+| A key drawn as a key, the same in every place (four `<kbd>` drew it four ways)            | ✅ 11-22 | `Kbd` (`keys` by platform, or written)                                 |
+| A callout's × named in the session's language (it said «cerrar» in every language)        | ✅ 11-22 | `Callout` (`copy.shell.closeNotice`), `hit-target` + focus ring        |
+| The shop and the tiles show the discount with `Price`, not a hand-made tag                | ✅ 11-22 | `5 · Plantillas/Mostrador/Tienda`, `4 · Vistas/Lista/Mosaicos`         |
+| A context menu (right click, long press) on rows and cards                                | ❓       | later                                                                  |
+| A map as a list's presentation (addresses, deliveries)                                    | ❓       | later — a heavy library, lazily                                        |
+
 ## 5. Tests
 
 | Need                                                 | Status   | Owner                                                       |

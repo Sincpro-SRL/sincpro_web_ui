@@ -1,4 +1,4 @@
-import { type DataColumn, List, RecordCard, SearchField, Tag, Tags } from "@sincpro/web-ui";
+import { type DataColumn, List, Price, RecordCard, SearchField, Tags } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
 import { expect, userEvent, within } from "storybook/test";
@@ -107,12 +107,15 @@ function Catalog({ size = "md" }: { size?: "sm" | "md" | "lg" }) {
           <RecordCard
             layout="tile"
             title={m.name}
-            figure={bs(m.price)}
+            figure={
+              <Price
+                value={m.price}
+                currency="BOB"
+                {...(m.before === undefined ? {} : { compareAt: m.before })}
+              />
+            }
             media={{ src: m.photo, alt: "" }}
             meta={m.stock === 0 ? "Agotado" : m.stock < 5 ? `Quedan ${m.stock}` : undefined}
-            {...(m.before === undefined
-              ? {}
-              : { tags: <Tag tone="warn">{`antes ${bs(m.before)}`}</Tag> })}
             disabled={m.stock === 0}
             {...(ways.press === undefined ? {} : { onOpen: ways.press })}
           />

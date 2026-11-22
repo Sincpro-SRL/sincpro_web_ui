@@ -51,6 +51,7 @@ const SHOWN_THROUGH: Readonly<Record<string, string>> = {
     "AssistSuggestion, ChangeReview and AssistMark — 3 · Componentes/Ayuda/Asistente",
   SearchEntry:
     "Sidebar's and TopBar's `search` — 3 · Componentes/Shell/Barra lateral · Como cromo, En el teléfono",
+  Lightbox: "Gallery's full size — 3 · Componentes/Archivos/Galería · Tamaño completo",
   SidebarToggle:
     "TopBar draws it first inside a frame with a sidebar — 3 · Componentes/Shell/Barra lateral · En el teléfono",
 };

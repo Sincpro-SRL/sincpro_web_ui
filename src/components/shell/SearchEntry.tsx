@@ -5,6 +5,7 @@ import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { modShortcut, useKeyboardPlatform } from "@sincpro/web-ui/foundations/shortcut";
 import { useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
+import { Kbd } from "@sincpro/web-ui/primitives/hint/Kbd";
 import { Search } from "lucide-react";
 
 /**
@@ -38,11 +39,9 @@ export type SearchEntryProps = {
 const SKIN = {
   canvas: {
     box: "border-ui-control-border bg-ui-control text-muted hover:border-line-strong hover:text-ink focus-visible:outline-primary",
-    keys: "border-line text-muted",
   },
   chrome: {
     box: "border-chrome-ink/15 bg-chrome-ink/6 text-chrome-muted hover:bg-chrome-ink/10 hover:text-chrome-ink focus-visible:outline-chrome-link",
-    keys: "border-chrome-ink/20 text-chrome-muted",
   },
 } as const;
 
@@ -82,15 +81,12 @@ export function SearchEntry({
       {keys === null ? null : (
         /* Seen, not heard: `aria-keyshortcuts` already tells a screen reader, and «⌘K» read
            aloud is noise after the name. Not drawn for a finger: a phone has no ⌘. */
-        <kbd
-          aria-hidden
-          className={`shrink-0 rounded-control border px-1.5 font-mono text-micro touch:hidden ${
-            bar ? "max-sm:hidden" : ""
-          } ${skin.keys}`}
+        <span
+          className={`inline-flex shrink-0 ${bar ? "max-sm:hidden" : ""}`}
           data-ui="search-entry.keys"
         >
-          {keys.label}
-        </kbd>
+          <Kbd surface={sup}>{keys.label}</Kbd>
+        </span>
       )}
     </button>
   );

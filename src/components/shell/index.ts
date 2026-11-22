@@ -26,6 +26,15 @@ export {
   TopBar,
   type TopMenu,
 } from "@sincpro/web-ui/components/shell/TopBar";
+/* The notifications: a bell with how many are unread and the list in a popover — or the list
+   alone, as a portal's page. */
+export {
+  Inbox,
+  type InboxItem,
+  InboxList,
+  type InboxListProps,
+  type InboxProps,
+} from "@sincpro/web-ui/components/shell/Inbox";
 /* A screen of N sets side by side — the reconciliation: each pane scrolls on its own. */
 export {
   KioskFrame,

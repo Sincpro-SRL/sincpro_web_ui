@@ -42,6 +42,7 @@ import { useKeyboardPlatform } from "@sincpro/web-ui/foundations/shortcut";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
 import { CheckMark } from "@sincpro/web-ui/primitives/field/Checks";
+import { Kbd } from "@sincpro/web-ui/primitives/hint/Kbd";
 import type { MenuGroup, MenuOption } from "@sincpro/web-ui/primitives/menu/Menu";
 import { useToastIfAny } from "@sincpro/web-ui/primitives/notice/Toast";
 import { MatchedText } from "@sincpro/web-ui/primitives/picker/MatchedText";
@@ -289,12 +290,10 @@ function KeysHint({ keys }: { keys: readonly (readonly [readonly string[], strin
       {keys.map(([caps, word]) => (
         <span key={word} className="inline-flex items-center gap-1">
           {caps.map((cap) => (
-            <kbd
-              key={cap}
-              className="inline-flex min-w-5 items-center justify-center rounded-control border border-line bg-surface px-1 font-mono text-micro leading-tight text-ink"
-            >
+            /* The dropdown is paper even under a bar on the chrome: the context would say chrome. */
+            <Kbd key={cap} surface="canvas">
               {cap}
-            </kbd>
+            </Kbd>
           ))}
           <span>{word}</span>
         </span>
@@ -2024,15 +2023,9 @@ export function SearchBar({
                 <span className={bySurface(sup, "text-muted", "text-chrome-muted")}>
                   {ghost}
                 </span>
-                <kbd
-                  className={`ml-1.5 rounded-control border px-1 font-mono text-micro leading-none touch:hidden ${bySurface(
-                    sup,
-                    "border-line text-muted",
-                    "border-chrome-ink/30 text-chrome-muted",
-                  )}`}
-                >
-                  Tab
-                </kbd>
+                <span className="ml-1.5 inline-flex">
+                  <Kbd surface={sup}>Tab</Kbd>
+                </span>
               </span>
             )}
           </span>
@@ -2074,15 +2067,7 @@ export function SearchBar({
             data-ui="search.slash"
             className="my-0.5 mr-1 inline-flex h-(--size-control-sm) shrink-0 items-center touch:hidden max-sm:hidden"
           >
-            <kbd
-              className={`rounded-control border px-1.5 font-mono text-micro leading-tight ${bySurface(
-                sup,
-                "border-line text-muted",
-                "border-chrome-ink/30 text-chrome-muted",
-              )}`}
-            >
-              /
-            </kbd>
+            <Kbd surface={sup}>/</Kbd>
           </span>
         )}
 
