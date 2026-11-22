@@ -16,6 +16,10 @@ export interface ChoiceOption {
   /** Drawn on the option when the choice is shown as cards (`RadioGroup look="cards"`): the
    *  card of «Efectivo», «QR», «Tarjeta». Beside the label, never instead of it. */
   icon?: LucideIcon;
+  /** The colour itself, for a variant drawn as a swatch (`RadioGroup look="swatches"`): any CSS
+   *  colour the application has for it («#c8a27a», «oklch(…)»). Without it the swatch is the
+   *  label in a box — a size, a capacity. The colour is never alone: its label names it. */
+  swatch?: string;
 }
 
 /** One segment of a `SegmentedControl`. The icon goes before the label, never instead of it. */
