@@ -964,15 +964,20 @@ export function ListView<T extends object>({
         {isEmpty ? (
           filtered ? (
             <Empty
+              {...empty?.whenFiltered}
               sentence={empty?.whenFiltered?.sentence ?? copy.list.emptyFiltered}
-              {...(empty?.whenFiltered?.action === undefined
-                ? {}
-                : { action: empty.whenFiltered.action })}
             />
           ) : (
             <Empty
+              {...(empty === undefined
+                ? {}
+                : {
+                    action: empty.action,
+                    title: empty.title,
+                    icon: empty.icon,
+                    illustration: empty.illustration,
+                  })}
               sentence={empty?.sentence ?? copy.list.empty}
-              {...(empty?.action === undefined ? {} : { action: empty.action })}
             />
           )
         ) : null}

@@ -6,6 +6,7 @@ export { Callout, type CalloutProps } from "@sincpro/web-ui/primitives/notice/Ca
 export { Flag, type FlagProps, type FlagTone } from "@sincpro/web-ui/primitives/notice/Flag";
 export {
   Empty,
+  type EmptyProps,
   Failed,
   ICONO_ROTO,
   Missing,

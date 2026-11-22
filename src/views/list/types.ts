@@ -111,10 +111,21 @@ export type ListCrumb = { label: string; onClick?: () => void };
 export type ListEmpty = {
   sentence: string;
   action?: ReactNode;
+  /** The empty that IS the screen — a title, and an icon or the application's illustration
+   *  (`Empty`'s). Without them it is the quiet sentence. */
+  title?: string;
+  icon?: LucideIcon;
+  illustration?: ReactNode;
   /** Empty because of a filter is ANOTHER situation: content is not missing,
    *  there is an extra narrowing. Telling «importá tus facturas» to someone who has 180
    *  and mistyped a name is answering a different question. */
-  whenFiltered?: { sentence: string; action?: ReactNode };
+  whenFiltered?: {
+    sentence: string;
+    action?: ReactNode;
+    title?: string;
+    icon?: LucideIcon;
+    illustration?: ReactNode;
+  };
 };
 
 /**

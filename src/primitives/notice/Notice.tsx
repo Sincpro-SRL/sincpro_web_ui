@@ -64,26 +64,94 @@ export function Skeleton({
 
 /** What is shown when there is nothing to show: a sentence, and the gesture
  *  that resolves it if there is one. Never a drawing. */
+export type EmptyProps = {
+  sentence: string;
+  action?: ReactNode;
+  /** Centered for an empty list; left-aligned inside a block, where centering it
+   *  detaches it from everything else. */
+  align?: "center" | "start";
+  /** A heading over the sentence, for an empty that IS the page — «Todavía no tenés pedidos» —
+   *  rather than a quiet line inside a panel. */
+  title?: string;
+  /** A mark in a soft disc above the title: what the place holds (a cart, an invoice). */
+  icon?: LucideIcon;
+  /** The application's own art, in place of the icon: a shop's drawing, a brand's mascot. It
+   *  is decoration — the title and the sentence carry the meaning — so it is hidden from a
+   *  screen reader. */
+  illustration?: ReactNode;
+};
+
+/**
+ * Nothing here yet — or the filter left nothing. It is NORMAL, and it says what to do.
+ *
+ * Context: two sizes from the same piece. Bare — a sentence and maybe a button — it is the
+ * quiet line inside a panel (an empty chart, no attachments), as it always was. With a `title`
+ * and an `icon` or an `illustration` it is the empty that IS the screen — a shop's empty cart,
+ * a portal's «no orders yet», a module the company has not used — where a lone grey sentence
+ * in the middle of a white page reads as broken. The picture is never the message: it is
+ * hidden from a screen reader, and the title says what the drawing shows.
+ */
 export function Empty({
   sentence,
   action,
-  /** Centered for an empty list; left-aligned inside a block, where centering it
-   *  detaches it from everything else. */
   align = "center",
-}: {
-  sentence: string;
-  action?: ReactNode;
-  align?: "center" | "start";
-}) {
+  title,
+  icon: Icon,
+  illustration,
+}: EmptyProps) {
   const centered = align === "center";
+  const visual =
+    illustration !== undefined ? (
+      <div
+        aria-hidden
+        data-ui="empty.visual"
+        className="flex max-w-48 justify-center text-muted"
+      >
+        {illustration}
+      </div>
+    ) : Icon === undefined ? null : (
+      <span
+        aria-hidden
+        data-ui="empty.visual"
+        className="flex size-14 items-center justify-center rounded-pill bg-ink/5 text-muted"
+      >
+        <Icon className="size-7" strokeWidth={1.5} />
+      </span>
+    );
+  /* The bare form keeps its old shape: a sentence and its action on one wrapping line. */
+  if (title === undefined && visual === null) {
+    return (
+      <div
+        data-ui="empty"
+        className={`flex flex-wrap gap-3 px-4 py-10 ${
+          centered ? "flex-col items-center text-center" : "items-center"
+        }`}
+      >
+        <p className="max-w-short text-body text-muted">{sentence}</p>
+        {action}
+      </div>
+    );
+  }
   return (
     <div
-      className={`flex flex-wrap gap-3 px-4 py-10 ${
-        centered ? "flex-col items-center text-center" : "items-center"
-      }`}
+      data-ui="empty"
+      data-size="page"
+      className={`flex flex-col gap-3 px-4 py-12 ${centered ? "items-center text-center" : "items-start"}`}
     >
-      <p className="max-w-short text-body text-muted">{sentence}</p>
-      {action}
+      {visual}
+      <div className={`flex max-w-short flex-col gap-1 ${centered ? "items-center" : ""}`}>
+        {title === undefined ? null : (
+          <p data-ui="empty.title" className="text-lead font-semibold text-ink">
+            {title}
+          </p>
+        )}
+        <p className="text-body text-muted">{sentence}</p>
+      </div>
+      {action === undefined ? null : (
+        <div className={`flex flex-wrap gap-2 pt-1 ${centered ? "justify-center" : ""}`}>
+          {action}
+        </div>
+      )}
     </div>
   );
 }
