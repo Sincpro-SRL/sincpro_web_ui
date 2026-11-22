@@ -955,7 +955,22 @@ export function ListView<T extends object>({
               metrics: <div className="px-3.5">{stats}</div>,
             })}
       >
-        {loading ? <Skeleton label={copy.failed.loading} /> : null}
+        {/* It waits in the shape of what is coming: cards for a grid, lanes for a board, columns
+            for a table — rows for the rest. */}
+        {loading ? (
+          <Skeleton
+            label={copy.failed.loading}
+            shape={
+              present === "tiles"
+                ? "tiles"
+                : present === "board"
+                  ? "board"
+                  : present === "table" || present === "sheet"
+                    ? "table"
+                    : "rows"
+            }
+          />
+        ) : null}
 
         {/* EMPTY. What is declared wins —«importá tus facturas» knows what can be done— and
             if nothing was declared something is said anyway: a blank panel, with no

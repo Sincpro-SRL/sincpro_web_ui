@@ -259,6 +259,7 @@ One component or one measured refinement per iteration, all in one PR.
 | An offer's plans compared line by line: price, what each includes and not, one primary               | ✅ 11-22    | `PlanCard`, `Plans` (`--grid-plans`)                              |
 | A checkout's steps                                                                                   | ✅ (exists) | `StepFlow` — strip, one primary, a blocked step says why          |
 | An empty that IS the screen: a title, an icon or the application's illustration (hidden), what to do | ✅ 11-22    | `Empty title/icon/illustration`; `List empty` passes them         |
+| Loading in the shape of what is coming: rows, a table's columns, a grid's cards, a board's lanes     | ✅ 11-22    | `Skeleton shape`; `List` picks it by presentation                 |
 
 ## 5. Tests
 

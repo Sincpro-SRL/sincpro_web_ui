@@ -303,7 +303,7 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `record-card.media`, `record-card.badge`, `record-card.footer`, `record-card.stripe`,
 `board.lane`, `list.tiles`, `elapsed`, `keypad`, `keypad.key`, `keypad.screen`, `stepper`,
 `radio-group` (with `data-look` `list` | `cards` | `swatches`), `radio-group.card`,
-`radio-group.swatch`, `radio-group.chosen`, `tags.count`, `empty` (with `data-size="page"` when it has a title or a picture), `empty.visual`,
+`radio-group.swatch`, `radio-group.chosen`, `tags.count`, `skeleton` (with `data-shape` `rows` | `table` | `tiles` | `board`), `empty` (with `data-size="page"` when it has a title or a picture), `empty.visual`,
 `empty.title`, `outcome`, `outcome.figure`, `receipt`,
 `receipt.document`, `receipt.lines`, `receipt.totals`, `kiosk`, `kiosk.attract`,
 `kiosk.content`, `kiosk.reach`, `board.tile`,
