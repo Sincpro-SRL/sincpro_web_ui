@@ -34,10 +34,13 @@ export {
 /* A price as a shelf says it: the one to pay, the one before struck through, how much less. */
 export { Price, type PriceProps } from "@sincpro/web-ui/primitives/value/Price";
 export { discountPercent, formatPrice } from "@sincpro/web-ui/primitives/value/priceFormat";
+/* A QR — a payment, an invoice's link — black on white in both themes; the encoder loads
+   when one is drawn. */
 export {
   ProgressBar,
   type ProgressBarProps,
 } from "@sincpro/web-ui/primitives/value/ProgressBar";
+export { QrCode, type QrCodeProps } from "@sincpro/web-ui/primitives/value/QrCode";
 export {
   RelationCard,
   type RelationCardProps,

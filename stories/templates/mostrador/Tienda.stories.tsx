@@ -13,6 +13,7 @@ import {
   List,
   Outcome,
   Price,
+  QrCode,
   RadioGroup,
   Record,
   RecordCard,
@@ -22,7 +23,7 @@ import {
   useToast,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
-import { Bike, CreditCard, QrCode, ShoppingCart, Store, Truck } from "lucide-react";
+import { Bike, CreditCard, QrCode as QrIcon, ShoppingCart, Store, Truck } from "lucide-react";
 import { createContext, type ReactNode, useContext, useEffect, useState } from "react";
 import { expect, userEvent, waitFor, within } from "storybook/test";
 
@@ -349,11 +350,21 @@ function Checkout({ api, resource }: ViewProps) {
             value={payment}
             onChange={setPayment}
             options={[
-              { value: "qr", label: "QR Simple", icon: QrCode },
+              { value: "qr", label: "QR Simple", icon: QrIcon },
               { value: "card", label: "Tarjeta", icon: CreditCard },
             ]}
           />
         </Field>
+        {/* The code is drawn once the delivery is chosen: the amount it carries depends on it. */}
+        {payment === "qr" && shipping !== null ? (
+          <Field label="Escaneá con la app de tu banco">
+            <QrCode
+              value={`sincpro-pay:tienda?monto=${(total + fee).toFixed(2)}&moneda=BOB`}
+              label={`QR para pagar ${bs(total + fee)}`}
+              caption={bs(total + fee)}
+            />
+          </Field>
+        ) : null}
         <FormActions
           secondary={
             <Button role="ghost" onClick={() => api.close()}>

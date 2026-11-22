@@ -227,7 +227,6 @@ shop — and a kanban that reads as records, not as boxes inside boxes.
 | An express till: scan or tap, pay in one tap, the next ticket already open        | ✅ 11-20 | `5 · Plantillas/Mostrador/Caja rápida`                                      |
 | The touch and counter pieces, ordered by what they solve                          | ✅ 11-20 | Storybook «Táctil y mostrador» (`stories/Mostrador.mdx`)                    |
 | Panels a cashier cannot close by mistake                                          | ❓       | composer                                                                    |
-| A QR drawn for a payment or an invoice                                            | ❓       | later — a heavy library, lazily (`tests/heavyChunks`)                       |
 
 ## 4e. The shop, the portal and the frame's notices (round of 2026-11-22, issue #78)
 
@@ -250,16 +249,17 @@ and the same urgency painted the same way everywhere.
 
 One component or one measured refinement per iteration, all in one PR.
 
-| Need                                                                                                 | Status      | Piece / owner                                                     |
-| ---------------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------- |
-| A range with two ends: a shop's price filter, an ERP's «amount between»                              | ✅ 11-22    | `RangeSlider` (`onChangeEnd`, read mode writes both ends)         |
-| A slider's thumb named once by its field (it was read with the group's whole text)                   | ✅ 11-22    | `Slider`, `RangeSlider`; `FieldIds.label` carries the label words |
-| A product's variants: a colour as its swatch, a size as its word; out of stock, struck               | ✅ 11-22    | `RadioGroup look="swatches"`, `ChoiceOption.swatch`               |
-| A context menu: right click, a finger held, Shift+F10 on a row or a card; the row stays marked       | ✅ 11-22    | `ContextMenu` (`MenuList` at the pointer)                         |
-| An offer's plans compared line by line: price, what each includes and not, one primary               | ✅ 11-22    | `PlanCard`, `Plans` (`--grid-plans`)                              |
-| A checkout's steps                                                                                   | ✅ (exists) | `StepFlow` — strip, one primary, a blocked step says why          |
-| An empty that IS the screen: a title, an icon or the application's illustration (hidden), what to do | ✅ 11-22    | `Empty title/icon/illustration`; `List empty` passes them         |
-| Loading in the shape of what is coming: rows, a table's columns, a grid's cards, a board's lanes     | ✅ 11-22    | `Skeleton shape`; `List` picks it by presentation                 |
+| Need                                                                                                  | Status      | Piece / owner                                                          |
+| ----------------------------------------------------------------------------------------------------- | ----------- | ---------------------------------------------------------------------- |
+| A range with two ends: a shop's price filter, an ERP's «amount between»                               | ✅ 11-22    | `RangeSlider` (`onChangeEnd`, read mode writes both ends)              |
+| A slider's thumb named once by its field (it was read with the group's whole text)                    | ✅ 11-22    | `Slider`, `RangeSlider`; `FieldIds.label` carries the label words      |
+| A product's variants: a colour as its swatch, a size as its word; out of stock, struck                | ✅ 11-22    | `RadioGroup look="swatches"`, `ChoiceOption.swatch`                    |
+| A context menu: right click, a finger held, Shift+F10 on a row or a card; the row stays marked        | ✅ 11-22    | `ContextMenu` (`MenuList` at the pointer)                              |
+| An offer's plans compared line by line: price, what each includes and not, one primary                | ✅ 11-22    | `PlanCard`, `Plans` (`--grid-plans`)                                   |
+| A checkout's steps                                                                                    | ✅ (exists) | `StepFlow` — strip, one primary, a blocked step says why               |
+| An empty that IS the screen: a title, an icon or the application's illustration (hidden), what to do  | ✅ 11-22    | `Empty title/icon/illustration`; `List empty` passes them              |
+| Loading in the shape of what is coming: rows, a table's columns, a grid's cards, a board's lanes      | ✅ 11-22    | `Skeleton shape`; `List` picks it by presentation                      |
+| A QR for a payment, an invoice's link, a record: black on white in both themes, encoder loaded lazily | ✅ 11-22    | `QrCode` (`uqr` via `import()`), `--color-qr-*`; the shop's QR payment |
 
 ## 5. Tests
 
