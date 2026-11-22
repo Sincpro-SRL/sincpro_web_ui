@@ -250,12 +250,14 @@ and the same urgency painted the same way everywhere.
 
 One component or one measured refinement per iteration, all in one PR.
 
-| Need                                                                                           | Status   | Piece / owner                                                     |
-| ---------------------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------- |
-| A range with two ends: a shop's price filter, an ERP's «amount between»                        | ✅ 11-22 | `RangeSlider` (`onChangeEnd`, read mode writes both ends)         |
-| A slider's thumb named once by its field (it was read with the group's whole text)             | ✅ 11-22 | `Slider`, `RangeSlider`; `FieldIds.label` carries the label words |
-| A product's variants: a colour as its swatch, a size as its word; out of stock, struck         | ✅ 11-22 | `RadioGroup look="swatches"`, `ChoiceOption.swatch`               |
-| A context menu: right click, a finger held, Shift+F10 on a row or a card; the row stays marked | ✅ 11-22 | `ContextMenu` (`MenuList` at the pointer)                         |
+| Need                                                                                           | Status      | Piece / owner                                                     |
+| ---------------------------------------------------------------------------------------------- | ----------- | ----------------------------------------------------------------- |
+| A range with two ends: a shop's price filter, an ERP's «amount between»                        | ✅ 11-22    | `RangeSlider` (`onChangeEnd`, read mode writes both ends)         |
+| A slider's thumb named once by its field (it was read with the group's whole text)             | ✅ 11-22    | `Slider`, `RangeSlider`; `FieldIds.label` carries the label words |
+| A product's variants: a colour as its swatch, a size as its word; out of stock, struck         | ✅ 11-22    | `RadioGroup look="swatches"`, `ChoiceOption.swatch`               |
+| A context menu: right click, a finger held, Shift+F10 on a row or a card; the row stays marked | ✅ 11-22    | `ContextMenu` (`MenuList` at the pointer)                         |
+| An offer's plans compared line by line: price, what each includes and not, one primary         | ✅ 11-22    | `PlanCard`, `Plans` (`--grid-plans`)                              |
+| A checkout's steps                                                                             | ✅ (exists) | `StepFlow` — strip, one primary, a blocked step says why          |
 
 ## 5. Tests
 

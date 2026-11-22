@@ -621,6 +621,11 @@
   --grid-tiles-sm: repeat(auto-fill, minmax(min(100%, var(--container-tile-sm)), 1fr));
   --grid-tiles-md: repeat(auto-fill, minmax(min(100%, var(--container-tile-md)), 1fr));
   --grid-tiles-lg: repeat(auto-fill, minmax(min(100%, var(--container-tile-lg)), 1fr));
+  /* A plan card is read whole — name, price, what it includes — so it never gets narrower than
+     a short list's width; the plans FILL the row (auto-fit), three side by side on a desk and
+     stacked on a phone. See `Plans`. */
+  --container-plan: 16rem;
+  --grid-plans: repeat(auto-fit, minmax(min(100%, var(--container-plan)), 1fr));
   /* A kiosk's reduced height: the empty band above the flow, so every target sits below
      ~120 cm on a standing kiosk — within a seated person's reach (ADA 308). */
   --size-kiosk-reach: 45dvh;

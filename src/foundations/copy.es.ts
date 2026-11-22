@@ -601,6 +601,12 @@ export const SPANISH_COPY: UiCopyOverride = {
     increase: "Uno más",
     remove: "Quitar",
   },
+  plans: {
+    current: "Tu plan",
+    included: "Incluye",
+    excluded: "No incluye",
+    onRequest: "A convenir",
+  },
   range: {
     min: "Mínimo",
     max: "Máximo",
