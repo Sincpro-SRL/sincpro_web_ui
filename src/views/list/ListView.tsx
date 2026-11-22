@@ -467,12 +467,22 @@ export function ListView<T extends object>({
       </div>
     );
 
+  /* A trail of ONE crumb that says the title — the module's root list — is the title said twice
+     in the traditional bar: «Facturas» small on the search's row and «Facturas» as the heading
+     below (UX-AUDIT §1, finding 3). The modern bar keeps it: there the crumb IS the heading. */
+  const soleCrumbIsTitle =
+    viewStyle !== "modern" && crumbs?.length === 1 && crumbs[0]?.label === identity?.title;
+
   const bar = !barHasControls ? undefined : (
     <ListingBar
       surface={surface}
       look={viewStyle}
       {...(embedded ? { inline: true, count: items.length } : {})}
-      {...(embedded || crumbs === undefined || crumbs.length === 0 || density === "compact"
+      {...(embedded ||
+      crumbs === undefined ||
+      crumbs.length === 0 ||
+      density === "compact" ||
+      soleCrumbIsTitle
         ? {}
         : {
             crumbs: (

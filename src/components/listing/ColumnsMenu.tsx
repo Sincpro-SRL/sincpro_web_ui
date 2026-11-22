@@ -73,8 +73,6 @@ export function ColumnsMenu({
           { label: copy.frame.optional, options: optionalOptions },
         ];
 
-  const hiddenOptional = control.optional.some((column) => !control.isVisible(column.id));
-
   const menu = (
     <Menu
       label={copy.frame.columns}
@@ -82,7 +80,9 @@ export function ColumnsMenu({
       groups={groups}
       onSelect={control.toggle}
       closeOnSelect={false}
-      active={hiddenOptional}
+      /* Marked when the person changed the columns — not when the view's own defaults hide an
+         optional one: at rest every such list read as «something is set here». */
+      active={control.changed}
       {...(surface === undefined ? {} : { surface })}
       size="sm"
     />

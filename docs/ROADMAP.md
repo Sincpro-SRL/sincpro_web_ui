@@ -260,6 +260,7 @@ One component or one measured refinement per iteration, all in one PR.
 | An empty that IS the screen: a title, an icon or the application's illustration (hidden), what to do  | ✅ 11-22    | `Empty title/icon/illustration`; `List empty` passes them              |
 | Loading in the shape of what is coming: rows, a table's columns, a grid's cards, a board's lanes      | ✅ 11-22    | `Skeleton shape`; `List` picks it by presentation                      |
 | A QR for a payment, an invoice's link, a record: black on white in both themes, encoder loaded lazily | ✅ 11-22    | `QrCode` (`uqr` via `import()`), `--color-qr-*`; the shop's QR payment |
+| A list bar that says the title once, and «columnas» marked only when the person changed them          | ✅ 11-22    | `ListView` (sole crumb = title), `ColumnControl.changed`               |
 
 ## 5. Tests
 
