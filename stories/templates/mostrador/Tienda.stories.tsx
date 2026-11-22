@@ -12,12 +12,12 @@ import {
   LineItems,
   List,
   Outcome,
+  Price,
   RadioGroup,
   Record,
   RecordCard,
   SearchField,
   Stepper,
-  Tag,
   Tags,
   useToast,
 } from "@sincpro/web-ui";
@@ -41,8 +41,8 @@ import {
  * facetas como filtros rápidos (`List.Filters`): cuántos deja cada una, varias a la vez. El
  * PEDIDO es otra vista, abierta como panel al costado (composer), que no sabe de la vitrina:
  * las dos leen el mismo pedido. «Pagar el pedido» abre el pago como modal: el envío y el pago
- * como opciones grandes (`RadioGroup look="cards"`). Precio rebajado: el «antes» en una
- * etiqueta.
+ * como opciones grandes (`RadioGroup look="cards"`). Precio rebajado: `Price` con el «antes»
+ * tachado y cuánto menos, calculado.
  */
 const meta: Meta = {
   tags: ["screen"],
@@ -187,11 +187,14 @@ function ShopWindow({ api }: ViewProps) {
               layout="tile"
               title={m.name}
               subtitle={m.description}
-              figure={bs(m.price)}
+              figure={
+                <Price
+                  value={m.price}
+                  currency="BOB"
+                  {...(m.before === undefined ? {} : { compareAt: m.before })}
+                />
+              }
               media={{ src: m.photo, alt: "" }}
-              {...(m.before === undefined
-                ? {}
-                : { tags: <Tag tone="warn">{`antes ${bs(m.before)}`}</Tag> })}
               {...(m.stock === 0 ? { meta: "Agotado" } : {})}
               {...(count === 0 ? {} : { badge: count })}
               disabled={m.stock === 0}

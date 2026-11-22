@@ -188,6 +188,9 @@ function SidebarDrawerPanel({
 }
 
 export function AppFrame({
+  /** A notice about the whole application — a `Banner` — above the bar, edge to edge. It
+   *  scrolls away with the page: stuck on top it would take a line from every screen. */
+  banner,
   /** The bar at the top. It stays in view while scrolling. */
   menu,
   /** The band at the bottom. It goes AFTER the content, not pinned to the
@@ -209,6 +212,7 @@ export function AppFrame({
   scroll = "page",
   children,
 }: {
+  banner?: ReactNode;
   menu?: ReactNode;
   status?: ReactNode;
   sidebar?: ReactNode;
@@ -296,6 +300,11 @@ export function AppFrame({
         data-ui="frame"
         data-scroll={scroll}
       >
+        {banner === undefined ? null : (
+          <div className="shrink-0" data-ui="frame.banner">
+            {banner}
+          </div>
+        )}
         {top === undefined ? null : (
           /* Hidden on a wide screen when it is only the phone's bar: it measures 0 there, so
              nothing below is pushed down by it. */

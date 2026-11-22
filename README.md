@@ -309,7 +309,9 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `search.panel`, `search.suggestions`, `search.suggestion`, `search.record`, `search.recent`,
 `search.advanced`, `search.keys`, `search.completion`, `search.undo`, `search.slash`, `search-entry`, `search-entry.keys`, `table`, `table.pile`, `yes-no`,
 `table.head`, `row.ways`, `topbar`, `topbar.brand`, `topbar.menus`, `topbar.actions`, `topbar.user`,
-`frame`, `frame.bar`, `frame.sidebar`, `frame.main`, `sidebar`, `sidebar.brand`,
+`frame`, `frame.banner`, `frame.bar`, `frame.sidebar`, `frame.main`, `banner`, `banner.action`,
+`inbox`, `inbox.item` (with `data-unread`), `kbd`, `price`, `price.before`, `rating`, `gallery`,
+`gallery.main`, `gallery.strip`, `lightbox`, `sidebar`, `sidebar.brand`,
 `sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
 `navigation.item`, `dirty.blocked`, `dirty.bar`, `field`, `field.label`, `form.section`,
 `form.index`, `dock`, `dock.pill`, `dock.bare`, `pager`, `pagination`, `smart`, `guide`, `guide.veil`, `guide.spot`, `guide.card`,
@@ -334,6 +336,11 @@ only shows on hover follows the `touch:` variant. Then: `List.Tiles` (a product 
 attract screen, `idleAfter`, a reduced-height mode). The Storybook page «Táctil y mostrador»
 orders them by what they solve; `5 · Plantillas/Mostrador` has the till, the express till, the
 kitchen, the kiosk and the shop.
+
+For a shop's product page and a customer portal: `Price` (the price before struck, the discount
+computed), `Rating` (an average with its figure, or the opinion asked), `Gallery` (with a
+full-size `Lightbox`), `Inbox` (the bell in `TopBar systray`, or `InboxList` as a page), and
+`Banner` — a notice about the whole application, in `AppFrame banner`.
 
 #### A form that explains itself: the «settings» style
 

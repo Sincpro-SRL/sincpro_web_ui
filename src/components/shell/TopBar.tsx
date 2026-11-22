@@ -12,7 +12,13 @@ import { Menu, type MenuGroup } from "@sincpro/web-ui/primitives/menu/Menu";
 import { Count, countText } from "@sincpro/web-ui/primitives/tag/Count";
 import { Avatar } from "@sincpro/web-ui/primitives/value/Person";
 import { Grid3x3, type LucideIcon } from "lucide-react";
-import { type ReactNode, useMemo, useState } from "react";
+import {
+  type ButtonHTMLAttributes,
+  type ReactNode,
+  type Ref,
+  useMemo,
+  useState,
+} from "react";
 
 /* ==================================================================== *
  *  TOP BAR — the application bar. Where I am, what I can open, who I am.
@@ -284,13 +290,17 @@ export function SystrayButton({
   tone = "info",
   onClick,
   active = false,
-}: {
+  ref,
+  ...native
+}: Omit<ButtonHTMLAttributes<HTMLButtonElement>, "children" | "type" | "onClick"> & {
   icon: LucideIcon;
   label: string;
   count?: number;
   tone?: "info" | "warn" | "bad";
   onClick?: () => void;
   active?: boolean;
+  /** Forwarded, with the native props, so a popover or a menu can open from it — `Inbox`. */
+  ref?: Ref<HTMLButtonElement>;
 }) {
   const copy = useUiCopy();
   const number = useMemo(() => new Intl.NumberFormat(copy.locale), [copy.locale]);
@@ -300,6 +310,8 @@ export function SystrayButton({
 
   return (
     <button
+      {...native}
+      ref={ref}
       type="button"
       onClick={onClick}
       title={count > 0 ? `${label} (${said})` : label}

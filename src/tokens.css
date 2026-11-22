@@ -507,6 +507,10 @@
      as wide as the page no longer stretches two short rows across it. */
   --container-suggestions: 36rem;
 
+  /* How wide the notifications open from the bar (`Inbox`): a title and two lines of detail
+     at a reading width — and never wider than a phone's screen, where it would hang off it. */
+  --container-inbox: min(24rem, calc(100vw - 1rem));
+
   /* How wide the cuts panel may grow: filters, grouping and favourites side by side — three
      columns of a facet each — and never wider than the screen, so on a phone the columns
      stack and it reads as a popover. It is the SCREEN that decides, not the field: a list's

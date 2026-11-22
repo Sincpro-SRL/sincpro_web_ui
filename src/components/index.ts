@@ -9,6 +9,7 @@ export * from "@sincpro/web-ui/components/chat/index";
 export * from "@sincpro/web-ui/components/flow/index";
 export * from "@sincpro/web-ui/components/form/index";
 export * from "@sincpro/web-ui/components/frame/index";
+export * from "@sincpro/web-ui/components/gallery/index";
 export * from "@sincpro/web-ui/components/gantt/index";
 export * from "@sincpro/web-ui/components/guide/index";
 export * from "@sincpro/web-ui/components/lines/index";

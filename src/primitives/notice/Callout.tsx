@@ -1,14 +1,19 @@
 "use client";
 
+import { useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { byDensity, useDensity } from "@sincpro/web-ui/foundations/density";
-import type { Tone } from "@sincpro/web-ui/foundations/types";
 import {
   currentPage,
   ErrorCopy,
   errorReport,
 } from "@sincpro/web-ui/primitives/notice/Notice";
-import type { LucideIcon } from "lucide-react";
-import { AlertTriangle, CheckCircle2, Info, OctagonAlert, X } from "lucide-react";
+import {
+  NOTICE_DISMISS,
+  NOTICE_ICON,
+  NOTICE_SKIN,
+  type NoticeTone,
+} from "@sincpro/web-ui/primitives/notice/tones";
+import { type LucideIcon, X } from "lucide-react";
 import type { ReactNode } from "react";
 
 /**
@@ -43,7 +48,7 @@ export type CalloutProps = {
   /** What is happening. One sentence, in the product's voice. */
   children: ReactNode;
   /** Without this, `info`. */
-  tone?: Extract<Tone, "info" | "warn" | "bad" | "good">;
+  tone?: NoticeTone;
   /** The heading, when the sentence alone is not enough. Most do not
    *  need it: a two-line notice with a title is a poster. */
   title?: ReactNode;
@@ -52,30 +57,13 @@ export type CalloutProps = {
   /** Present = it can be closed. Absent = it cannot, because what it says stays
    *  true whoever looks at it. */
   onDismiss?: () => void;
-  /** The accessible label of the ×. */
+  /** The accessible label of the ×. «Descartar el aviso» by default. */
   dismissLabel?: string;
   /** An icon of its own, when the tone's does not say enough. */
   icon?: LucideIcon;
   /** What is copied with «Copiar el error» when the tone is `bad`. Without this, the
    *  sentence (if it is text) with the title. For a notice with technical detail, pass it here. */
   report?: string;
-};
-
-const ICON: Record<NonNullable<CalloutProps["tone"]>, LucideIcon> = {
-  info: Info,
-  warn: AlertTriangle,
-  bad: OctagonAlert,
-  good: CheckCircle2,
-};
-
-/* The background is a layer of the colour over the paper and not a colour of its own: so the
-   notice reads on the floor and on white paper without two sets of tokens, and
-   keeps working the day the palette changes. */
-const SKIN: Record<NonNullable<CalloutProps["tone"]>, string> = {
-  info: "border-info/25 bg-info/8 text-info",
-  warn: "border-warn/30 bg-warn/10 text-warn",
-  bad: "border-bad/25 bg-bad/8 text-bad",
-  good: "border-good/25 bg-good/8 text-good",
 };
 
 export function Callout({
@@ -89,7 +77,9 @@ export function Callout({
   report,
 }: CalloutProps) {
   const d = useDensity();
-  const Icon = icon ?? ICON[tone];
+  const copy = useUiCopy();
+  const Icon = icon ?? NOTICE_ICON[tone];
+  const dismiss = dismissLabel ?? copy.shell.closeNotice;
   /* The text a person would paste: the sentence, or what the caller names. A title that
      is text becomes the report's heading; without one the sentence is the heading. */
   const sentence = report ?? (typeof children === "string" ? children : "");
@@ -101,7 +91,7 @@ export function Callout({
          reserved for what happened RIGHT NOW. A notice that was already there when the
          screen opened interrupts nothing. */
       role="status"
-      className={`flex min-w-0 items-start gap-2.5 rounded-box border ${SKIN[tone]} ${byDensity(
+      className={`flex min-w-0 items-start gap-2.5 rounded-box border ${NOTICE_SKIN[tone]} ${byDensity(
         d,
         "px-3 py-2.5",
         "px-2.5 py-2",
@@ -145,9 +135,9 @@ export function Callout({
         <button
           type="button"
           onClick={onDismiss}
-          aria-label={dismissLabel ?? "cerrar"}
-          title={dismissLabel ?? "cerrar"}
-          className="-mr-1 shrink-0 rounded-control p-0.5 text-muted transition-colors duration-(--duration-instant) hover:bg-ink/6 hover:text-ink"
+          aria-label={dismiss}
+          title={dismiss}
+          className={NOTICE_DISMISS}
         >
           <X className="size-(--size-icon-sm)" strokeWidth={2} />
         </button>

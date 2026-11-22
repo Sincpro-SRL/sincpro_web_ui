@@ -31,6 +31,9 @@ export {
   type UserChipProps,
   UserStack,
 } from "@sincpro/web-ui/primitives/value/Person";
+/* A price as a shelf says it: the one to pay, the one before struck through, how much less. */
+export { Price, type PriceProps } from "@sincpro/web-ui/primitives/value/Price";
+export { discountPercent, formatPrice } from "@sincpro/web-ui/primitives/value/priceFormat";
 export {
   ProgressBar,
   type ProgressBarProps,
