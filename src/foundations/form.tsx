@@ -29,6 +29,12 @@ export type FieldIds = {
   /** The id of the field's label. A native input is named by `<label for>`; a React Aria
    *  control — a date picker, a combobox — is a group of elements, and is named by this. */
   labelId: string;
+  /** The label's words. A control that is a group of inputs needs them as a NAME and not as
+   *  a reference: React Aria names each slider thumb by pointing at the group, and a group
+   *  named only through `aria-labelledby` is read by its whole text when pointed at (the
+   *  accessible-name rules do not follow a reference twice) — the thumb said «Bs 50 – Bs 300
+   *  Precio». With the words, the group carries them as `aria-label` too. */
+  label?: string;
   describedBy: string | undefined;
   invalid: boolean;
 };
@@ -69,6 +75,7 @@ export function FieldBoundary({ children }: { children: ReactNode }) {
 export function useFieldIds(own: { id?: string; describedBy?: string; invalid?: boolean }): {
   id: string | undefined;
   labelledBy: string | undefined;
+  label: string | undefined;
   describedBy: string | undefined;
   invalid: boolean;
 } {
@@ -77,6 +84,7 @@ export function useFieldIds(own: { id?: string; describedBy?: string; invalid?: 
   return {
     id: own.id ?? field?.id,
     labelledBy: field?.labelId,
+    label: field?.label,
     describedBy: own.describedBy ?? field?.describedBy ?? place?.describedBy,
     invalid: own.invalid ?? field?.invalid ?? place?.invalid ?? false,
   };

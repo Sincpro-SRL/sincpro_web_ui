@@ -26,6 +26,11 @@ export {
   SegmentedControl,
   type SegmentedControlProps,
 } from "@sincpro/web-ui/primitives/choice/SegmentedControl";
-export { Slider, type SliderProps } from "@sincpro/web-ui/primitives/choice/Slider";
+export {
+  RangeSlider,
+  type RangeSliderProps,
+  Slider,
+  type SliderProps,
+} from "@sincpro/web-ui/primitives/choice/Slider";
 export { Switch, type SwitchProps } from "@sincpro/web-ui/primitives/choice/Switch";
 export { ThemeSwitcher } from "@sincpro/web-ui/primitives/choice/ThemeSwitcher";

@@ -878,6 +878,11 @@ export type UiCopy = {
     /** «−» at the minimum, when it takes the line away. */
     remove: string;
   };
+  /** The two ends of a `RangeSlider`, each thumb's own name after the field's. */
+  range: {
+    min: string;
+    max: string;
+  };
   /** A price as a shelf says it (`Price`). Each figure is named for a screen reader. */
   price: {
     now: string;
@@ -1784,6 +1789,10 @@ export const ENGLISH_COPY: UiCopy = {
     decrease: "One less",
     increase: "One more",
     remove: "Remove",
+  },
+  range: {
+    min: "Minimum",
+    max: "Maximum",
   },
   price: {
     now: "Now",

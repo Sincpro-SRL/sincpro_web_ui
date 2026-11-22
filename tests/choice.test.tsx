@@ -46,7 +46,12 @@ test("every control written inside a field is named by the field's label", () =>
       </Field>,
     );
     assert.match(html, /id="campo-label"/, `${String(control.key)} keeps the field label`);
-    assert.match(html, labelledByField, `${String(control.key)} is labelled by the field`);
+    /* The slider is named by the field's WORDS, not by a reference to them: React Aria names
+       each thumb by pointing at the group, and the name rules do not follow a second
+       reference — see the next-but-one test. Same name, read once. */
+    const named =
+      control.key === "slider" ? /role="group"[^>]*aria-label="Campo"/ : labelledByField;
+    assert.match(html, named, `${String(control.key)} is labelled by the field`);
   }
 });
 
@@ -65,9 +70,20 @@ test("the slider's thumb — the input a screen reader lands on — carries the 
       <Slider value={5} min={0} max={10} />
     </Field>,
   );
+  /* The thumb points at the group, and the group carries the field's WORDS as well as the
+     reference: the name rules do not follow a reference twice, and a group named only by
+     `aria-labelledby` was read by its whole text — «5 Descuento». */
+  const group = /<div[^>]*role="group"[^>]*>/.exec(html)?.[0] ?? "";
+  assert.match(group, /aria-label="Descuento"/);
+  assert.doesNotMatch(
+    group,
+    /descuento-label/,
+    "named once, not by the words AND the reference",
+  );
+  const groupId = /id="([^"]+)"/.exec(group)?.[1] ?? "";
   assert.match(
     html,
-    /<input[^>]*aria-labelledby="[^"]*descuento-label[^"]*"[^>]*type="range"/,
+    new RegExp(`<input[^>]*aria-labelledby="[^"]*\\b${groupId}\\b[^"]*"[^>]*type="range"`),
   );
 });
 

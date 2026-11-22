@@ -601,6 +601,10 @@ export const SPANISH_COPY: UiCopyOverride = {
     increase: "Uno más",
     remove: "Quitar",
   },
+  range: {
+    min: "Mínimo",
+    max: "Máximo",
+  },
   price: {
     now: "Ahora",
     before: "Antes",

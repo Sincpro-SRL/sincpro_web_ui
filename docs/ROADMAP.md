@@ -247,6 +247,15 @@ and the same urgency painted the same way everywhere.
 | A context menu (right click, long press) on rows and cards                                | ❓       | later                                                                  |
 | A map as a list's presentation (addresses, deliveries)                                    | ❓       | later — a heavy library, lazily                                        |
 
+## 4f. Modern UI round, iterated (from 2026-11-22, issue #80)
+
+One component or one measured refinement per iteration, all in one PR.
+
+| Need                                                                               | Status   | Piece / owner                                                     |
+| ---------------------------------------------------------------------------------- | -------- | ----------------------------------------------------------------- |
+| A range with two ends: a shop's price filter, an ERP's «amount between»            | ✅ 11-22 | `RangeSlider` (`onChangeEnd`, read mode writes both ends)         |
+| A slider's thumb named once by its field (it was read with the group's whole text) | ✅ 11-22 | `Slider`, `RangeSlider`; `FieldIds.label` carries the label words |
+
 ## 5. Tests
 
 | Need                                                 | Status   | Owner                                                       |

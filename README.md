@@ -310,7 +310,7 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `search.advanced`, `search.keys`, `search.completion`, `search.undo`, `search.slash`, `search-entry`, `search-entry.keys`, `table`, `table.pile`, `yes-no`,
 `table.head`, `row.ways`, `topbar`, `topbar.brand`, `topbar.menus`, `topbar.actions`, `topbar.user`,
 `frame`, `frame.banner`, `frame.bar`, `frame.sidebar`, `frame.main`, `banner`, `banner.action`,
-`inbox`, `inbox.item` (with `data-unread`), `kbd`, `price`, `price.before`, `rating`, `gallery`,
+`inbox`, `inbox.item` (with `data-unread`), `kbd`, `price`, `price.before`, `range-slider`, `rating`, `gallery`,
 `gallery.main`, `gallery.strip`, `lightbox`, `sidebar`, `sidebar.brand`,
 `sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
 `navigation.item`, `dirty.blocked`, `dirty.bar`, `field`, `field.label`, `form.section`,
