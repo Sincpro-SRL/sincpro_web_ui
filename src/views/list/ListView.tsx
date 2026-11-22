@@ -467,12 +467,22 @@ export function ListView<T extends object>({
       </div>
     );
 
+  /* A trail of ONE crumb that says the title — the module's root list — is the title said twice
+     in the traditional bar: «Facturas» small on the search's row and «Facturas» as the heading
+     below (UX-AUDIT §1, finding 3). The modern bar keeps it: there the crumb IS the heading. */
+  const soleCrumbIsTitle =
+    viewStyle !== "modern" && crumbs?.length === 1 && crumbs[0]?.label === identity?.title;
+
   const bar = !barHasControls ? undefined : (
     <ListingBar
       surface={surface}
       look={viewStyle}
       {...(embedded ? { inline: true, count: items.length } : {})}
-      {...(embedded || crumbs === undefined || crumbs.length === 0 || density === "compact"
+      {...(embedded ||
+      crumbs === undefined ||
+      crumbs.length === 0 ||
+      density === "compact" ||
+      soleCrumbIsTitle
         ? {}
         : {
             crumbs: (
@@ -955,7 +965,22 @@ export function ListView<T extends object>({
               metrics: <div className="px-3.5">{stats}</div>,
             })}
       >
-        {loading ? <Skeleton label={copy.failed.loading} /> : null}
+        {/* It waits in the shape of what is coming: cards for a grid, lanes for a board, columns
+            for a table — rows for the rest. */}
+        {loading ? (
+          <Skeleton
+            label={copy.failed.loading}
+            shape={
+              present === "tiles"
+                ? "tiles"
+                : present === "board"
+                  ? "board"
+                  : present === "table" || present === "sheet"
+                    ? "table"
+                    : "rows"
+            }
+          />
+        ) : null}
 
         {/* EMPTY. What is declared wins —«importá tus facturas» knows what can be done— and
             if nothing was declared something is said anyway: a blank panel, with no
@@ -964,15 +989,20 @@ export function ListView<T extends object>({
         {isEmpty ? (
           filtered ? (
             <Empty
+              {...empty?.whenFiltered}
               sentence={empty?.whenFiltered?.sentence ?? copy.list.emptyFiltered}
-              {...(empty?.whenFiltered?.action === undefined
-                ? {}
-                : { action: empty.whenFiltered.action })}
             />
           ) : (
             <Empty
+              {...(empty === undefined
+                ? {}
+                : {
+                    action: empty.action,
+                    title: empty.title,
+                    icon: empty.icon,
+                    illustration: empty.illustration,
+                  })}
               sentence={empty?.sentence ?? copy.list.empty}
-              {...(empty?.action === undefined ? {} : { action: empty.action })}
             />
           )
         ) : null}

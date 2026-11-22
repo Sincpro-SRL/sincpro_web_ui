@@ -297,12 +297,14 @@ of classes that change with the next refactor:
 }
 ```
 
-The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`,
+The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`, `context-menu`,
 `menu.section`, `menu.item`, `menu.fold`, `dialog`, `block`, `record-card` (with `data-layout`
 `card` | `compact` | `tile`), `record-card.title`, `record-card.figure`, `record-card.fields`,
 `record-card.media`, `record-card.badge`, `record-card.footer`, `record-card.stripe`,
 `board.lane`, `list.tiles`, `elapsed`, `keypad`, `keypad.key`, `keypad.screen`, `stepper`,
-`radio-group`, `radio-group.card`, `tags.count`, `outcome`, `outcome.figure`, `receipt`,
+`radio-group` (with `data-look` `list` | `cards` | `swatches`), `radio-group.card`,
+`radio-group.swatch`, `radio-group.chosen`, `tags.count`, `skeleton` (with `data-shape` `rows` | `table` | `tiles` | `board`), `empty` (with `data-size="page"` when it has a title or a picture), `empty.visual`,
+`empty.title`, `outcome`, `outcome.figure`, `receipt`,
 `receipt.document`, `receipt.lines`, `receipt.totals`, `kiosk`, `kiosk.attract`,
 `kiosk.content`, `kiosk.reach`, `board.tile`,
 `board.stat`, `board.stat.value`, `activity.changes`, `file-list`, `file-list.file`, `file-value`, `metric`, `metric.detail`, `tag`, `tags.item`, `search`, `search.field`, `search.chip`,
@@ -310,7 +312,8 @@ The parts: `button`, `icon-button`, `control`, `popover`, `menu`, `menu.trigger`
 `search.advanced`, `search.keys`, `search.completion`, `search.undo`, `search.slash`, `search-entry`, `search-entry.keys`, `table`, `table.pile`, `yes-no`,
 `table.head`, `row.ways`, `topbar`, `topbar.brand`, `topbar.menus`, `topbar.actions`, `topbar.user`,
 `frame`, `frame.banner`, `frame.bar`, `frame.sidebar`, `frame.main`, `banner`, `banner.action`,
-`inbox`, `inbox.item` (with `data-unread`), `kbd`, `price`, `price.before`, `rating`, `gallery`,
+`inbox`, `inbox.item` (with `data-unread`), `kbd`, `plans`, `plan` (with `data-highlight`, `data-current`), `plan.highlight`, `plan.price`,
+`plan.features`, `plan.action`, `qr`, `price`, `price.before`, `range-slider`, `rating`, `gallery`,
 `gallery.main`, `gallery.strip`, `lightbox`, `sidebar`, `sidebar.brand`,
 `sidebar.user`, `sidebar.search`, `sidebar.nav`, `sidebar.account`, `navigation`,
 `navigation.item`, `dirty.blocked`, `dirty.bar`, `field`, `field.label`, `form.section`,

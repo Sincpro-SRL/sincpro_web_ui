@@ -79,3 +79,38 @@ test("con filas no hay aviso de vacío", () => {
   assert.ok(!out.includes("Todavía no hay nada acá."));
   assert.ok(!out.includes("Nada coincide."));
 });
+
+/* La lista vacía que ES la pantalla: el título y el dibujo llegan al `Empty`, y vacía por el
+   recorte lleva los suyos. */
+test("el título y el dibujo declarados llegan al vacío, cada uno en su situación", () => {
+  const out = draw(
+    <ListView<Fila>
+      items={[]}
+      keyOf={(one) => one.id}
+      row={fila}
+      empty={{
+        title: "Todavía no tenés pedidos",
+        sentence: "Cuando compres, aparecen acá.",
+        illustration: <svg data-art="" />,
+        whenFiltered: { title: "Nada con ese nombre", sentence: "Quitá un filtro." },
+      }}
+    />,
+  );
+  assert.ok(out.includes("Todavía no tenés pedidos"));
+  assert.ok(out.includes('data-art=""'));
+  const filtered = draw(
+    <ListView<Fila>
+      items={[]}
+      keyOf={(one) => one.id}
+      row={fila}
+      filtered
+      empty={{
+        title: "Todavía no tenés pedidos",
+        sentence: "Cuando compres, aparecen acá.",
+        whenFiltered: { title: "Nada con ese nombre", sentence: "Quitá un filtro." },
+      }}
+    />,
+  );
+  assert.ok(filtered.includes("Nada con ese nombre"));
+  assert.ok(!filtered.includes("Todavía no tenés pedidos"));
+});

@@ -878,6 +878,21 @@ export type UiCopy = {
     /** «−» at the minimum, when it takes the line away. */
     remove: string;
   };
+  /** An offer's plans (`PlanCard`). */
+  plans: {
+    /** The tag on the plan the person is on. */
+    current: string;
+    /** Said before a feature, for a screen reader: the icon says it to the eye. */
+    included: string;
+    excluded: string;
+    /** Where the price goes when there is none. */
+    onRequest: string;
+  };
+  /** The two ends of a `RangeSlider`, each thumb's own name after the field's. */
+  range: {
+    min: string;
+    max: string;
+  };
   /** A price as a shelf says it (`Price`). Each figure is named for a screen reader. */
   price: {
     now: string;
@@ -1784,6 +1799,16 @@ export const ENGLISH_COPY: UiCopy = {
     decrease: "One less",
     increase: "One more",
     remove: "Remove",
+  },
+  plans: {
+    current: "Your plan",
+    included: "Included",
+    excluded: "Not included",
+    onRequest: "On request",
+  },
+  range: {
+    min: "Minimum",
+    max: "Maximum",
   },
   price: {
     now: "Now",

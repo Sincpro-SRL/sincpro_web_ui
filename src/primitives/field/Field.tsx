@@ -274,6 +274,7 @@ export function Field({
   const ids: FieldIds = {
     id,
     labelId: `${id}-label`,
+    label,
     describedBy,
     invalid: error !== undefined,
   };

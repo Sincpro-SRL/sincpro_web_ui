@@ -3,8 +3,8 @@ import {
   Gallery,
   type GalleryImage,
   Price,
+  RadioGroup,
   Rating,
-  SegmentedControl,
 } from "@sincpro/web-ui";
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { useState } from "react";
@@ -100,6 +100,7 @@ type Color = keyof typeof COLORES;
 
 function Variantes() {
   const [color, setColor] = useState<Color>("roble");
+  const [talla, setTalla] = useState<string | null>("m");
   const images = (["De frente", "De costado"] as const).map((view) => ({
     src: photo(COLORES[color], view),
     alt: `Silla Nórdica ${color}, ${view.toLowerCase()}`,
@@ -111,13 +112,26 @@ function Variantes() {
       <Rating value={4.6} count={212} />
       <Price value={450} compareAt={520} currency="BOB" size="lg" />
       <Field label="Color">
-        <SegmentedControl
+        <RadioGroup
+          look="swatches"
           value={color}
           onChange={(next) => setColor(next as Color)}
           options={[
-            { value: "roble", label: "Roble" },
-            { value: "nogal", label: "Nogal" },
-            { value: "gris", label: "Gris" },
+            { value: "roble", label: "Roble", swatch: "hsl(28 45% 46%)" },
+            { value: "nogal", label: "Nogal", swatch: "hsl(18 45% 46%)" },
+            { value: "gris", label: "Gris", swatch: "hsl(220 45% 46%)" },
+          ]}
+        />
+      </Field>
+      <Field label="Altura">
+        <RadioGroup
+          look="swatches"
+          value={talla}
+          onChange={setTalla}
+          options={[
+            { value: "s", label: "Baja" },
+            { value: "m", label: "Comedor" },
+            { value: "l", label: "Barra", disabled: true, description: "Sin stock" },
           ]}
         />
       </Field>
@@ -125,7 +139,7 @@ function Variantes() {
   );
 }
 
-/** **Con la variante**: elegir el color cambia las fotos — la galería, el precio y las estrellas juntos. */
+/** **Con la variante**: elegir el color (sus muestras) cambia las fotos — la ficha entera de un producto. */
 export const ConVariante: Story = {
   name: "Con la variante",
   render: () => <Variantes />,

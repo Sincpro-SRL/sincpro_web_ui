@@ -32,6 +32,9 @@ export type ColumnControl = {
   optional: readonly ColumnSpec[];
   required: readonly ColumnSpec[];
   hasOptional: boolean;
+  /** The visible set is not the view's default: the person added or took a column away. What
+   *  the columns menu marks itself for — a column the view hides by default is not a choice. */
+  changed: boolean;
 };
 
 /* The spec and the rules over it — `defaultVisibleIds`, `reconcileVisible`, `toggleColumn`,
@@ -45,6 +48,10 @@ export {
   toggleColumn,
   visibleColumns,
 };
+
+function sameSet(a: readonly string[], b: readonly string[]): boolean {
+  return a.length === b.length && a.every((id) => b.includes(id));
+}
 
 export function useColumnControl(
   columns: readonly ColumnSpec[],
@@ -88,5 +95,6 @@ export function useColumnControl(
     optional,
     required,
     hasOptional: optional.length > 0,
+    changed: !sameSet(visibleIds, defaultVisibleIds(columns)),
   };
 }

@@ -61,8 +61,119 @@ export type RadioGroupProps = {
    * by a finger, where the dot of a list is too small a target. The grid fits as many as the
    * width takes. It is still one radio group: arrows move, one is chosen.
    */
-  look?: "list" | "cards";
+  look?: "list" | "cards" | "swatches";
 };
+
+/**
+ * A product's variants: a colour as its swatch, a size as a small box with its word.
+ *
+ * Context: the third way to show one-of-few, for a shop's page and a catalogue's line — the
+ * colour is seen, not read, so the option IS the colour (`ChoiceOption.swatch`); a size has no
+ * colour, so it is its word in a box. Colour is never alone: each swatch is named by its label
+ * (and shows it on hover), and the chosen one is WRITTEN after the swatches («Roble»). One not
+ * in stock stays in sight, struck through — knowing it exists is part of the choice — and its
+ * `description` («Sin stock en tu talla») is its title. Still one radio group: arrows move.
+ */
+function Swatches({
+  value,
+  onChange,
+  options,
+  id,
+  labelledBy,
+  describedBy,
+  invalid,
+  disabled,
+}: {
+  value: string | null;
+  onChange: ((next: string) => void) | undefined;
+  options: readonly ChoiceOption[];
+  id: string | undefined;
+  labelledBy: string | undefined;
+  describedBy: string | undefined;
+  invalid: boolean;
+  disabled: boolean;
+}) {
+  const colours = options.some((o) => o.swatch !== undefined);
+  const chosen = labelOf(options, value);
+  /* On what is drawn, not on the radio: React Aria's button does not pass a `title` on. */
+  const titleOf = (o: ChoiceOption) =>
+    o.description === undefined ? o.label : `${o.label} · ${o.description}`;
+  return (
+    <AriaRadioGroup
+      id={id}
+      aria-labelledby={labelledBy}
+      aria-describedby={describedBy}
+      value={value}
+      onChange={(next) => onChange?.(next)}
+      orientation="horizontal"
+      isInvalid={invalid}
+      isDisabled={disabled}
+      data-ui="radio-group"
+      data-look="swatches"
+      className="flex min-w-0 flex-wrap items-center gap-2 py-1"
+    >
+      {options.map((o) => (
+        <RadioField key={o.value} value={o.value} isDisabled={o.disabled} className="flex">
+          <RadioButton
+            data-ui="radio-group.swatch"
+            className={({ isSelected, isFocusVisible, isDisabled }) =>
+              `relative flex shrink-0 cursor-pointer items-center justify-center transition-colors duration-(--duration-instant) ${
+                o.swatch === undefined
+                  ? `h-(--size-control-md) min-w-(--size-control-md) rounded-ui-control border px-3 text-meta font-medium ${
+                      isSelected
+                        ? "border-primary bg-primary/6 text-ink ring-1 ring-primary"
+                        : "border-line-strong bg-surface text-ink hover:border-ink/40"
+                    }`
+                  : `size-(--size-control-md) rounded-pill border-2 p-0.5 ${
+                      isSelected
+                        ? "border-primary"
+                        : "border-transparent hover:border-line-strong"
+                    }`
+              } ${isFocusVisible ? "outline-2 outline-offset-2 outline-primary" : ""} ${
+                isDisabled ? "cursor-not-allowed text-muted" : ""
+              }`
+            }
+          >
+            {({ isDisabled }) => (
+              <>
+                {o.swatch === undefined ? (
+                  <span title={titleOf(o)} className={isDisabled ? "line-through" : ""}>
+                    {o.label}
+                  </span>
+                ) : (
+                  <>
+                    {/* The application's colour, on a hairline so a white or a cream one does
+                        not melt into the paper. */}
+                    <span
+                      aria-hidden
+                      title={titleOf(o)}
+                      className="size-full rounded-pill border border-ink/15"
+                      style={{ background: o.swatch }}
+                    />
+                    <span className="sr-only">{o.label}</span>
+                  </>
+                )}
+                {isDisabled && o.swatch !== undefined ? (
+                  /* Struck through, not hidden: a colour out of stock is still a colour that
+                     exists. */
+                  <span
+                    aria-hidden
+                    className="absolute inset-x-1 top-1/2 h-0.5 -rotate-45 rounded-pill bg-ink/55"
+                  />
+                ) : null}
+              </>
+            )}
+          </RadioButton>
+        </RadioField>
+      ))}
+      {colours && chosen !== null ? (
+        <span aria-hidden data-ui="radio-group.chosen" className="ml-1 text-meta text-muted">
+          {chosen}
+        </span>
+      ) : null}
+    </AriaRadioGroup>
+  );
+}
 
 export function RadioGroup({
   value,
@@ -82,6 +193,20 @@ export function RadioGroup({
     invalid: ownInvalid,
   });
   if (useFormMode(mode) === "read") return <ReadValue value={labelOf(options, value)} />;
+  if (look === "swatches") {
+    return (
+      <Swatches
+        value={value}
+        onChange={onChange}
+        options={options}
+        id={id}
+        labelledBy={labelledBy}
+        describedBy={describedBy}
+        invalid={invalid}
+        disabled={disabled}
+      />
+    );
+  }
   if (look === "cards") {
     return (
       <AriaRadioGroup
