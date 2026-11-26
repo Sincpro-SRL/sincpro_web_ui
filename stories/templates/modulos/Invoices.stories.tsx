@@ -337,21 +337,26 @@ const browseFrom =
     );
 type Applied = { selection: BuiltFilter | undefined; said: string | undefined };
 
-/** The cuts somebody already thought of, by name: one click in the bar's panel. */
+/** The cuts somebody already thought of, by name: one click in the bar's panel. The three are
+ *  one question — the invoice's state —, so set together they add up («borradores o
+ *  vencidas»), Odoo's rule. */
 const NAMED_CUTS = [
   {
     id: "draft",
     label: "borradores",
+    group: "state",
     selection: { field: "state", operator: "=", value: "draft" },
   },
   {
     id: "posted",
     label: "por cobrar",
+    group: "state",
     selection: { field: "state", operator: "=", value: "posted" },
   },
   {
     id: "overdue",
     label: "vencidas",
+    group: "state",
     selection: { field: "state", operator: "=", value: "overdue" },
   },
 ] as const;
@@ -571,7 +576,7 @@ function InvoiceList({ api }: ViewProps) {
             ]}
             onFilterSelect={(id) => {
               const cut = NAMED_CUTS.find((one) => one.id === id);
-              if (cut !== undefined) setCriteria(toggleNamed(criteria, cut));
+              if (cut !== undefined) setCriteria(toggleNamed(criteria, cut, { or: "o" }));
             }}
             onOpenBuilder={() =>
               api.pick<Applied>(
