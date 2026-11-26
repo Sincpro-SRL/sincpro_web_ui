@@ -47,6 +47,7 @@ import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import { useViewStyle } from "@sincpro/web-ui/foundations/viewStyle";
 import { Button } from "@sincpro/web-ui/primitives/button/Button";
 import { Empty, Failed, Skeleton } from "@sincpro/web-ui/primitives/notice/Notice";
+import { levelNameOf } from "@sincpro/web-ui/primitives/table/levels";
 import { PivotTable } from "@sincpro/web-ui/primitives/table/PivotTable";
 import { ReportTable } from "@sincpro/web-ui/primitives/table/ReportTable";
 import { Metric, Metrics } from "@sincpro/web-ui/primitives/value/Metric";
@@ -644,7 +645,7 @@ export function ListView<T extends object>({
       return (
         <Fragment key={key}>
           <GroupHeader
-            field={pile.field}
+            field={levelNameOf(pile.field, columns)}
             label={pile.label}
             count={pile.count}
             {...(pile.detail === undefined ? {} : { detail: pile.detail })}

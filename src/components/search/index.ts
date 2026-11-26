@@ -80,6 +80,7 @@ export {
   groupsOf,
   hasNamed,
   levelsOf,
+  type NamedFilterSpec,
   nextJoin,
   type RecordKey,
   type RecordOption,

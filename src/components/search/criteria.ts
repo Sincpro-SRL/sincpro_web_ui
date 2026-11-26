@@ -150,6 +150,13 @@ export type SearchCriteria =
        * lands here (`withValue`), and the chip says «Cliente: Andrés Pérez o Andrés Gutiérrez».
        */
       values?: readonly RecordOption[];
+      /**
+       * The named filters of ONE group this chip holds, when they were declared with a `group`
+       * (`toggleNamed`): Odoo's rule — filters of the same group are OR'd, groups are AND'd.
+       * «Pedidos» + «Trabajando» are one chip, «Pedidos o Trabajando», whose `selection` is
+       * `{ any: [...] }`; ticking a third adds it there, unticking the last removes the chip.
+       */
+      named?: { group: string; members: readonly NamedFilterSpec[] };
     }
   | {
       id: string;
@@ -370,6 +377,47 @@ export function withLevels(
   return [...levels.map((level) => groupCriteria(level, labelOf(level))), ...filtersOf(all)];
 }
 
+/** A filter declared in code: its id, its words and what it keeps. With a `group`, it is OR'd
+ *  with the others of its group that are set (one chip), and AND'd with everything else. */
+export type NamedFilterSpec = {
+  id: string;
+  label: string;
+  selection?: BuiltCondition | BuiltFilter;
+  group?: string;
+};
+
+/** The chip of a group of named filters: the members' words joined by `or`, and what any of
+ *  them keeps. A member that carries no selection makes the chip one its declarer answers. */
+function namedGroupChip(
+  group: string,
+  members: readonly NamedFilterSpec[],
+  or: string,
+): SearchCriteria {
+  const asked = members.flatMap((one) =>
+    one.selection === undefined ? [] : [one.selection],
+  );
+  const selection =
+    asked.length !== members.length
+      ? undefined
+      : asked.length === 1
+        ? asked[0]
+        : { any: asked as BuiltFilter[] };
+  return {
+    id: `named:${group}`,
+    kind: "filter",
+    label: members.map((one) => one.label).join(` ${or} `),
+    ...(selection === undefined ? {} : { selection }),
+    named: {
+      group,
+      members: members.map(({ id, label, selection: kept }) => ({
+        id,
+        label,
+        ...(kept === undefined ? {} : { selection: kept }),
+      })),
+    },
+  };
+}
+
 /**
  * A NAMED filter, set or removed.
  *
@@ -380,8 +428,22 @@ export function withLevels(
  */
 export function toggleNamed(
   all: readonly SearchCriteria[],
-  named: { id: string; label: string; selection?: BuiltCondition | BuiltFilter },
+  named: NamedFilterSpec,
+  words: { or?: string } = {},
 ): SearchCriteria[] {
+  if (named.group !== undefined) {
+    /* One chip per group: its members are OR'd («Pedidos o Trabajando»). */
+    const id = `named:${named.group}`;
+    const at = all.findIndex((one) => one.id === id);
+    const found = at >= 0 ? all[at] : undefined;
+    const members = found?.kind === "filter" ? (found.named?.members ?? []) : [];
+    const next = members.some((one) => one.id === named.id)
+      ? members.filter((one) => one.id !== named.id)
+      : [...members, named];
+    if (next.length === 0) return all.filter((_, index) => index !== at);
+    const chip = namedGroupChip(named.group, next, words.or ?? "or");
+    return at >= 0 ? all.map((one, index) => (index === at ? chip : one)) : [...all, chip];
+  }
   const at = all.findIndex((one) => one.id === named.id);
   if (at >= 0) return all.filter((_, index) => index !== at);
   return [...all, filterCriteria(named.selection, named.label, named.id)];
@@ -390,5 +452,10 @@ export function toggleNamed(
 /** Whether that named filter is set. The panel uses it to draw the mark:
  *  the mark comes from what is SET and not from a separate state that could disagree. */
 export function hasNamed(all: readonly SearchCriteria[], id: string): boolean {
-  return all.some((one) => one.id === id);
+  return all.some(
+    (one) =>
+      one.id === id ||
+      (one.kind === "filter" &&
+        (one.named?.members.some((member) => member.id === id) ?? false)),
+  );
 }

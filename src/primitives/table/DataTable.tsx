@@ -19,6 +19,7 @@ import { Switch } from "@sincpro/web-ui/primitives/choice/Switch";
 import { CellCopy } from "@sincpro/web-ui/primitives/table/CellCopy";
 import { CellEditor } from "@sincpro/web-ui/primitives/table/CellEditor";
 import { EditRow, firstControl } from "@sincpro/web-ui/primitives/table/EditableTable";
+import { levelNameOf } from "@sincpro/web-ui/primitives/table/levels";
 import { PileFootLine } from "@sincpro/web-ui/primitives/table/PileFootLine";
 import { type RowAction, RowActions } from "@sincpro/web-ui/primitives/table/RowActions";
 import { useRowWindow } from "@sincpro/web-ui/primitives/table/rowWindow";
@@ -457,7 +458,7 @@ function entriesOfPiles<T extends object>(
       kind: "pile",
       id: `\u0000pile${key}`,
       depth: pile.depth,
-      level: pile.field,
+      level: levelNameOf(pile.field, columns),
       label: pile.label,
       count: pile.count,
       detail: pile.detail,

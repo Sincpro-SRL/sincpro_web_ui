@@ -26,6 +26,7 @@ export {
   type TabTarget,
   tabTarget,
 } from "@sincpro/web-ui/primitives/table/editRules";
+export { levelNameOf } from "@sincpro/web-ui/primitives/table/levels";
 export { PileFootLine } from "@sincpro/web-ui/primitives/table/PileFootLine";
 export {
   PivotTable,

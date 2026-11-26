@@ -4,6 +4,7 @@ import {
   filterCriteria,
   groupCriteria,
   groupsOf,
+  hasNamed,
   levelsOf,
   removeAt,
   replaceAt,
@@ -12,6 +13,7 @@ import {
   toggleNamed,
 } from "@sincpro/web-ui/components/search/criteria";
 import { CriteriaChips } from "@sincpro/web-ui/components/search/CriteriaChips";
+import { levelNameOf } from "@sincpro/web-ui/primitives/table/levels";
 import { renderToStaticMarkup } from "react-dom/server";
 import { test } from "vitest";
 
@@ -255,4 +257,74 @@ test("una ficha que se abre y se saca no anida un control dentro de otro", () =>
   );
   assert.doesNotMatch(out, /role="button"/);
   assert.doesNotMatch(out, /<button[^>]*>(?:(?!<\/button>).)*<button/s);
+});
+
+/* LOS FILTROS CON NOMBRE DE UN MISMO GRUPO SE SUMAN (#82) — la regla de Odoo: dentro de un
+   grupo «o», entre grupos «y». «Pedidos» + «Trabajando» + «Terminados» son tres valores de un
+   mismo campo: juntos con «y» no dejaban nada. */
+
+const labelOf = (one: SearchCriteria) => (one.kind === "join" ? one.join : one.label);
+
+const PEDIDOS = {
+  id: "requested",
+  label: "Pedidos",
+  group: "status",
+  selection: { field: "status", operator: "=", value: "idle" },
+} as const;
+const TRABAJANDO = {
+  id: "running",
+  label: "Trabajando",
+  group: "status",
+  selection: { field: "status", operator: "=", value: "running" },
+} as const;
+const MIOS = {
+  id: "mine",
+  label: "Míos",
+  selection: { field: "requester", operator: "=", value: "ana@acme.com" },
+} as const;
+
+test("dos filtros de un grupo son UN chip «A o B» que pide cualquiera de los dos", () => {
+  const puesto = toggleNamed(toggleNamed([], PEDIDOS, { or: "o" }), TRABAJANDO, { or: "o" });
+  assert.equal(puesto.length, 1);
+  assert.equal(labelOf(puesto[0]!), "Pedidos o Trabajando");
+  assert.deepEqual(selectionOf(puesto), {
+    any: [PEDIDOS.selection, TRABAJANDO.selection],
+  });
+  assert.ok(hasNamed(puesto, "requested") && hasNamed(puesto, "running"));
+});
+
+test("un grupo se cruza con «y» con lo demás, y sacar el último quita el chip", () => {
+  let puesto = toggleNamed(toggleNamed([], PEDIDOS), MIOS);
+  puesto = toggleNamed(puesto, TRABAJANDO);
+  assert.deepEqual(selectionOf(puesto), {
+    all: [{ any: [PEDIDOS.selection, TRABAJANDO.selection] }, MIOS.selection],
+  });
+  puesto = toggleNamed(toggleNamed(puesto, PEDIDOS), TRABAJANDO);
+  assert.deepEqual(puesto.map(labelOf), ["Míos"]);
+  assert.equal(hasNamed(puesto, "requested"), false);
+});
+
+test("un solo filtro del grupo viaja como es, sin un «cualquiera» de uno", () => {
+  assert.deepEqual(selectionOf(toggleNamed([], PEDIDOS)), PEDIDOS.selection);
+});
+
+test("cada faceta de filtro de la barra lleva su embudo; adentro de un nodo, no", () => {
+  const html = renderToStaticMarkup(<CriteriaChips criteria={[AÑO, DERIVADOS, GRANDES]} />);
+  assert.equal(html.split('data-ui="search.facet-mark"').length - 1, 2);
+  const anidado = renderToStaticMarkup(<CriteriaChips criteria={PUESTO} />);
+  // El nodo «cualquiera» es UNA faceta: un embudo, no uno por cada chip de adentro.
+  assert.equal(anidado.split('data-ui="search.facet-mark"').length - 1, 1);
+});
+
+/* LA CABECERA DE UN GRUPO DICE SU NIVEL CON LA PALABRA DE SU COLUMNA (#36): «Estado», nunca la
+   clave del campo («status»). Un campo que ninguna columna muestra se lee como es. */
+test("un nivel de agrupación se nombra por la cabecera de su columna", () => {
+  const columnas = [
+    { id: "status", header: "Estado" },
+    { id: "total", field: "amount_total", header: "Total" },
+  ];
+  assert.equal(levelNameOf("status", columnas), "Estado");
+  assert.equal(levelNameOf("amount_total", columnas), "Total");
+  assert.equal(levelNameOf("stage", columnas), "stage");
+  assert.equal(levelNameOf("stage", undefined), "stage");
 });
