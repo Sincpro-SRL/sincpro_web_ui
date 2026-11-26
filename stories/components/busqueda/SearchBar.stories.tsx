@@ -11,6 +11,7 @@ import {
   GroupingLevels,
   type GroupLevel,
   hasNamed,
+  levelsOf,
   type ModelDefinition,
   queryField,
   type RecordBrowse,
@@ -118,6 +119,12 @@ function Caja({ children }: { children: React.ReactNode }) {
 /** Apretá el ícono de filtro y marcá un recorte: aterriza como ficha. Dos
  *  recortes puestos se cruzan con «todas» —se ve, es la palabra del nodo— y quien
  *  quiera «cualquiera» la toca y la cambia ahí mismo. La cruz saca el recorte. */
+/** Cómo abre agrupada «Probar»: por estado, y adentro por mes de la fecha. */
+const NIVELES_INICIALES: GroupLevel[] = [
+  { field: "state" },
+  { field: "invoice_date", grain: "month" },
+];
+
 export const Probar: Story = {
   args: { facets: FACETAS, criteria: [], onCriteriaChange: () => {} },
   render: () => {
@@ -125,36 +132,57 @@ export const Probar: Story = {
        y lo que se escriba a mano son todos instancias: por eso el panel no lleva
        un estado propio de qué está tildado —la marca sale de lo puesto— y la
        barra no lleva tres props distintas. */
-    const [criteria, setCriteria] = useState<SearchCriteria[]>([
-      filterCriteria(
-        { field: "product_names", operator: "contains", value: "licencia" },
-        "productos incluye licencia",
+    /* Agrupada desde el principio: la barra lo dice desde el principio («⧉ estado › fecha
+       · mes»), no recién cuando alguien toca el panel. */
+    const [criteria, setCriteria] = useState<SearchCriteria[]>(() =>
+      withLevels(
+        [
+          filterCriteria(
+            { field: "product_names", operator: "contains", value: "licencia" },
+            "productos incluye licencia",
+          ),
+        ],
+        NIVELES_INICIALES,
+        nombreDelNivel,
       ),
-    ]);
+    );
     const [constructor, setConstructor] = useState(false);
     const grouping = useGroupingControl({
-      levels: [{ field: "state" }, { field: "invoice_date", grain: "month" }],
+      levels: levelsOf(criteria),
       onLevelsChange: (levels) =>
         setCriteria((current) => withLevels(current, levels, nombreDelNivel)),
     });
 
     /* Los filtros que la lista declara, con su condición ya pensada: es lo único
        que los distingue de uno escrito a mano. */
+    /* Los del estado son UNA pregunta (`group`): juntos se suman, «sólo publicadas o sólo
+       vencidas»; con el monto se cruzan. */
     const DECLARADOS = [
-      { id: "posted", label: "sólo publicadas", selection: ESTADO("publicada") },
-      { id: "overdue", label: "sólo vencidas", selection: ESTADO("vencida") },
+      {
+        id: "posted",
+        label: "sólo publicadas",
+        group: "estado",
+        selection: ESTADO("publicada"),
+      },
+      {
+        id: "overdue",
+        label: "sólo vencidas",
+        group: "estado",
+        selection: ESTADO("vencida"),
+      },
       { id: "grande", label: "más de Bs. 10.000", selection: TOTAL(10000) },
     ];
 
     const filtros = [
-      {
-        options: DECLARADOS.map((one) => ({
-          id: one.id,
-          label: one.label,
-          checked: hasNamed(criteria, one.id),
-        })),
-      },
-    ];
+      DECLARADOS.filter((one) => one.group === "estado"),
+      DECLARADOS.filter((one) => one.group === undefined),
+    ].map((grupo) => ({
+      options: grupo.map((one) => ({
+        id: one.id,
+        label: one.label,
+        checked: hasNamed(criteria, one.id),
+      })),
+    }));
 
     return (
       <Caja>
@@ -169,7 +197,7 @@ export const Probar: Story = {
           onOpenBuilder={() => setConstructor(true)}
           onFilterSelect={(id) => {
             const uno = DECLARADOS.find((each) => each.id === id);
-            if (uno !== undefined) setCriteria(toggleNamed(criteria, uno));
+            if (uno !== undefined) setCriteria(toggleNamed(criteria, uno, { or: "o" }));
           }}
         />
         {/* El constructor de criteria, que es donde una pregunta que nadie
