@@ -14,6 +14,7 @@ import {
   type DataColumn,
   pileAggregate,
 } from "@sincpro/web-ui/primitives/table/DataTable";
+import { levelNameOf } from "@sincpro/web-ui/primitives/table/levels";
 import type { ReportColumn, ReportRow } from "@sincpro/web-ui/primitives/table/ReportTable";
 import type { SheetColumn } from "@sincpro/web-ui/primitives/table/SheetTable";
 import type { ListGroup, ListSheet, RowOf } from "@sincpro/web-ui/views/list/types";
@@ -151,7 +152,7 @@ export function sheetRowsOf<T extends object>(
       const open = isOpen(pile);
       out.push({
         band: {
-          field: pile.field,
+          field: levelNameOf(pile.field, columns),
           label: pile.label,
           count: pile.count,
           open,
@@ -211,8 +212,7 @@ export function reportRowsOf<T extends object>(
   /* A pile is named by the HEADER of the column that answers for its field — the word the
      person reads in the table — not by the field's id: «stage · pedido» showed the
      model's name for it. */
-  const fieldName = (field: string) =>
-    columns.find((column) => column.id === field || column.field === field)?.header ?? field;
+  const fieldName = (field: string) => levelNameOf(field, columns);
 
   /* Every pile is a GROUP — it opens and closes, and it says what it adds up to under each
      column, the number the table's pile row says (`pileAggregate`). A `section` was tried for

@@ -23,7 +23,7 @@ import { fillCopy, useUiCopy } from "@sincpro/web-ui/foundations/copy";
 import { bySurface, useSurface } from "@sincpro/web-ui/foundations/surface";
 import type { Surface } from "@sincpro/web-ui/foundations/types";
 import { chosenTone } from "@sincpro/web-ui/primitives/tag/Tag";
-import { ChevronRight, Layers, X } from "lucide-react";
+import { ChevronRight, Layers, ListFilter, X } from "lucide-react";
 import { Fragment, type ReactNode, useEffect, useRef, useState } from "react";
 
 /* ==================================================================== *
@@ -417,6 +417,7 @@ function Node({
         "border-chrome-ink/25 bg-chrome-ink/8",
       )} ${isOpen ? "ring-1 ring-primary/60" : ""}`}
     >
+      <FacetMark path={path} surface={surface} />
       <JoinWord
         join={node.join}
         {...(onJoin === undefined ? {} : { onChange: (next) => onJoin(path, next) })}
@@ -446,6 +447,22 @@ function Node({
         />
       ))}
     </span>
+  );
+}
+
+/**
+ * What a facet IS, said once at its start: the funnel, as the grouping chain says ⧉. Only a
+ * facet of the bar carries it (`path` of one step) — inside a node the node already says it.
+ */
+function FacetMark({ path, surface }: { path: CriteriaPath; surface: Surface }) {
+  if (path.length !== 1) return null;
+  return (
+    <ListFilter
+      data-ui="search.facet-mark"
+      className={`size-3 shrink-0 ${bySurface(surface, "text-muted", "text-chrome-muted")}`}
+      strokeWidth={2}
+      aria-hidden
+    />
   );
 }
 
@@ -507,6 +524,7 @@ function Chip({
     return (
       /* The whole sentence in the title: a long value is cut at the chip's width. */
       <span data-ui="search.chip" data-parts="" title={label} className={shell}>
+        <FacetMark path={path} surface={surface} />
         <PartsOf
           node={node}
           path={path}
@@ -525,6 +543,7 @@ function Chip({
   if (onOpen === undefined) {
     return (
       <span data-ui="search.chip" className={shell}>
+        <FacetMark path={path} surface={surface} />
         <span className="min-w-0 truncate">{label}</span>
         {remove}
       </span>
@@ -537,6 +556,7 @@ function Chip({
      (`nested-interactive`). Siblings, each with its own name, are both reachable. */
   return (
     <span data-ui="search.chip" className={shell}>
+      <FacetMark path={path} surface={surface} />
       <button
         type="button"
         onClick={() => onOpen(path)}
